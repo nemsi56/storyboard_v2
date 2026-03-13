@@ -1,834 +1,489 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="cosmos">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Visual Storyboard</title>
+<title>Scriptease — Visual Storyboard</title>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── THEMES ──────────────────────────────────────────────────────────────── */
+[data-theme="cosmos"]    { --bg0:#0f0f1a;--bg1:#1a1a2e;--bg2:#14141f;--s0:#2a2a40;--s1:#3a3a52;--o0:#6b6b8a;--o1:#9090b0;--tx:#d4d4f0;--sub:#a0a0c0;--acc:#c084fc;--bl:#7eb8f7;--gr:#86efac;--yl:#fde68a;--am:#fb923c;--rd:#f87171;--lv:#a5b4fc;--bdr:#2a2a40;--cbg:#1a1a2e;--cbdr:#2a2a40;--mbg:#14141f;--mov:rgba(0,0,0,.72) }
+[data-theme="slate"]     { --bg0:#0d1117;--bg1:#161b22;--bg2:#0d1117;--s0:#21262d;--s1:#30363d;--o0:#6e7681;--o1:#8d96a0;--tx:#e6edf3;--sub:#8d96a0;--acc:#58a6ff;--bl:#58a6ff;--gr:#3fb950;--yl:#e3b341;--am:#f0883e;--rd:#f85149;--lv:#79c0ff;--bdr:#21262d;--cbg:#161b22;--cbdr:#30363d;--mbg:#0d1117;--mov:rgba(0,0,0,.76) }
+[data-theme="forest"]    { --bg0:#0c1a0c;--bg1:#132213;--bg2:#0a1a0a;--s0:#1e3a1e;--s1:#2a4d2a;--o0:#6b8a6b;--o1:#88a888;--tx:#d4f0d4;--sub:#a0c8a0;--acc:#68d868;--bl:#64b8f0;--gr:#68d868;--yl:#f0d868;--am:#f0a868;--rd:#f87878;--lv:#a0c8f0;--bdr:#1e3a1e;--cbg:#132213;--cbdr:#1e3a1e;--mbg:#0a1a0a;--mov:rgba(0,0,0,.8) }
+[data-theme="parchment"] { --bg0:#f5f0e8;--bg1:#ede8dc;--bg2:#f8f4ed;--s0:#ddd8cc;--s1:#cdc8bc;--o0:#8a7e70;--o1:#5a4e40;--tx:#2c2416;--sub:#5c5044;--acc:#9b4a1a;--bl:#1a5a9b;--gr:#2d7a3a;--yl:#b06a00;--am:#c05a10;--rd:#c0321a;--lv:#4a4a9b;--bdr:#cdc8bc;--cbg:#ede8dc;--cbdr:#cdc8bc;--mbg:#f8f4ed;--mov:rgba(0,0,0,.42) }
+[data-theme="studio"]    { --bg0:#f0f2f5;--bg1:#ffffff;--bg2:#f8f9fa;--s0:#e4e6ea;--s1:#d8dadd;--o0:#9da3aa;--o1:#6c737a;--tx:#1a1a2e;--sub:#495057;--acc:#7c3aed;--bl:#2563eb;--gr:#16a34a;--yl:#d97706;--am:#ea580c;--rd:#dc2626;--lv:#6366f1;--bdr:#e4e6ea;--cbg:#ffffff;--cbdr:#e4e6ea;--mbg:#f8f9fa;--mov:rgba(0,0,0,.38) }
 
-:root {
-  --bg0:      #0f0f1a;
-  --bg1:      #1a1a2e;
-  --bg2:      #14141f;
-  --surface0: #2a2a40;
-  --surface1: #3a3a52;
-  --overlay0: #6b6b8a;
-  --overlay1: #8888a8;
-  --text:     #d4d4f0;
-  --subtext:  #a0a0c0;
-  --mauve:    #c084fc;
-  --blue:     #7eb8f7;
-  --green:    #86efac;
-  --yellow:   #fde68a;
-  --red:      #f87171;
-  --lavender: #a5b4fc;
-  --border:   #2a2a40;
-}
+/* ── BASE ────────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);color:var(--tx);height:100vh;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased;font-size:13px}
 
-body {
-  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg0);
-  color: var(--text);
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  font-size: 13px;
-  -webkit-font-smoothing: antialiased;
-}
+/* ── APP HEADER ──────────────────────────────────────────────────────────── */
+#hdr{background:var(--bg1);border-bottom:1px solid var(--bdr);height:50px;padding:0 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:20}
+#hdr h1{font-size:15px;font-weight:700;color:var(--acc);white-space:nowrap}
+#hdr .tip{font-size:11px;color:var(--o0);margin-right:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Theme swatches */
+#theme-pick{display:flex;align-items:center;gap:5px}
+.tsw{width:19px;height:19px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .14s,border-color .14s;flex-shrink:0}
+.tsw:hover{transform:scale(1.18)}
+.tsw.on{border-color:var(--tx);transform:scale(1.12)}
+.tsw[data-t="cosmos"]   {background:conic-gradient(#c084fc 0%,#0f0f1a 50%,#7eb8f7 100%)}
+.tsw[data-t="slate"]    {background:conic-gradient(#58a6ff 0%,#0d1117 50%,#3fb950 100%)}
+.tsw[data-t="forest"]   {background:conic-gradient(#68d868 0%,#0c1a0c 50%,#64b8f0 100%)}
+.tsw[data-t="parchment"]{background:conic-gradient(#9b4a1a 0%,#f5f0e8 50%,#2d7a3a 100%)}
+.tsw[data-t="studio"]   {background:conic-gradient(#7c3aed 0%,#f0f2f5 50%,#2563eb 100%)}
 
-/* ── APP HEADER ── */
-#app-header {
-  background: var(--bg1);
-  border-bottom: 1px solid var(--border);
-  height: 50px;
-  padding: 0 20px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-shrink: 0;
-  z-index: 10;
-}
-#app-header h1 {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--mauve);
-  letter-spacing: 0.4px;
-}
-#app-header .header-tip {
-  font-size: 11px;
-  color: var(--overlay0);
-  margin-left: auto;
-}
+/* ── LAYOUT ──────────────────────────────────────────────────────────────── */
+.main{flex:1;min-height:0;display:flex;overflow:hidden}
 
-/* ── MAIN LAYOUT ── */
-.main-layout {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  overflow: hidden;
-}
+/* ── PANELS (shared) ─────────────────────────────────────────────────────── */
+.panel{display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;transition:width .22s ease}
+/* Collapsed strip */
+.p-strip{display:none;flex-direction:column;align-items:center;padding:14px 0;gap:10px;cursor:pointer;height:100%;background:var(--bg1);border-right:1px solid var(--bdr);user-select:none;color:var(--o0);transition:background .14s;flex-shrink:0;width:28px}
+.p-strip:hover{background:var(--s0)}
+.p-strip .sl{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px}
+.p-strip .sa{font-size:10px}
+.panel.collapsed{width:28px!important}
+.panel.collapsed .p-content{display:none}
+.panel.collapsed .p-strip{display:flex}
+/* Panel content */
+.p-content{display:flex;flex-direction:column;flex:1;overflow:hidden;min-width:0}
+.p-hdr{padding:11px 14px 9px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--o0);border-bottom:1px solid var(--bdr);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.cbtn{background:none;border:none;cursor:pointer;color:var(--o0);font-size:11px;padding:2px 5px;border-radius:3px;line-height:1;transition:color .12s,background .12s}
+.cbtn:hover{color:var(--tx);background:var(--s0)}
+.p-body{flex:1;overflow-y:auto}
+.p-body::-webkit-scrollbar{width:4px}
+.p-body::-webkit-scrollbar-thumb{background:var(--s0);border-radius:2px}
 
-/* ── PANELS ── */
-.panel {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.panel-hdr {
-  padding: 12px 15px 10px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.4px;
-  color: var(--overlay0);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.panel-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px 15px;
-}
-.panel-body::-webkit-scrollbar { width: 4px; }
-.panel-body::-webkit-scrollbar-track { background: transparent; }
-.panel-body::-webkit-scrollbar-thumb { background: var(--surface0); border-radius: 2px; }
+/* ── LEFT PANEL ──────────────────────────────────────────────────────────── */
+#lp{width:216px;background:var(--bg1);border-right:1px solid var(--bdr)}
+#lp .p-body{padding:0}
+.lsec{padding:12px 14px;border-bottom:1px solid var(--bdr)}
+.lsec h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--o0);margin-bottom:9px}
+.arow{display:flex;gap:5px;margin-bottom:7px}
+.arow input{flex:1;min-width:0;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 8px;color:var(--tx);font-size:12px;font-family:inherit;outline:none;transition:border-color .14s}
+.arow input:focus{border-color:var(--acc)}
+.arow input::placeholder{color:var(--o0)}
+.abtn{background:var(--acc);color:#000;border:none;border-radius:6px;width:26px;height:26px;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .14s;line-height:1}
+.abtn:hover{opacity:.82}
+.ilist{display:flex;flex-direction:column;gap:3px}
+/* Library items */
+.li{display:flex;align-items:center;gap:6px;padding:5px 7px;border-radius:6px;font-size:12px;background:var(--s0);border:1.5px solid transparent;user-select:none;transition:background .12s,border-color .12s}
+.li[data-hl="1"]{cursor:pointer}
+.li[data-hl="1"]:hover{background:var(--s1)}
+/* Active highlight color per section */
+.li.on:has(.dc){border-color:var(--bl)!important;background:color-mix(in srgb,var(--bl) 12%,transparent)!important}
+.li.on:has(.dl){border-color:var(--gr)!important;background:color-mix(in srgb,var(--gr) 12%,transparent)!important}
+.li.on:has(.dt){border-color:var(--acc)!important;background:color-mix(in srgb,var(--acc) 12%,transparent)!important}
+.li.on:has(.dm){border-color:var(--am)!important;background:color-mix(in srgb,var(--am) 12%,transparent)!important}
+/* Drag states */
+.li.dib{border-top:2px solid var(--acc)!important}
+.li.dia{border-bottom:2px solid var(--acc)!important}
+.li.dg{opacity:.2}
+/* Drag handle */
+.dh{color:var(--o0);font-size:11px;cursor:grab;padding:0 2px;flex-shrink:0;opacity:0;transition:opacity .1s;line-height:1}
+.li:hover .dh{opacity:1}
+.dh:active{cursor:grabbing}
+/* Dot colors */
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dc{background:var(--bl)}
+.dl{background:var(--gr)}
+.dt{background:var(--acc)}
+.dm{background:var(--am)}
+.iname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.idel{background:none;border:none;color:var(--o0);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;opacity:0;transition:opacity .1s,color .1s}
+.li:hover .idel{opacity:1}
+.idel:hover{color:var(--rd)}
+.eh{font-size:11px;color:var(--o0);font-style:italic;padding:2px 0}
+.ltip{font-size:10px;color:var(--o0);margin-top:7px;line-height:1.5}
 
-/* ── LEFT PANEL ── */
-#left-panel {
-  width: 215px;
-  background: var(--bg1);
-  border-right: 1px solid var(--border);
-}
-#left-panel .panel-body { padding: 0; }
+/* ── CENTER PANEL ────────────────────────────────────────────────────────── */
+#cp{width:254px;background:var(--bg2);border-right:1px solid var(--bdr)}
+#cp .p-body{padding:14px}
+.ff{margin-bottom:12px}
+.ff label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--sub);margin-bottom:5px}
+.ff input[type=text],.ff textarea{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:7px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;transition:border-color .14s;resize:none}
+.ff input[type=text]:focus,.ff textarea:focus{border-color:var(--acc)}
+.ff input[type=text]::placeholder,.ff textarea::placeholder{color:var(--o0)}
+.ff textarea{height:72px}
+.cklist{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:7px;max-height:108px;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.cklist::-webkit-scrollbar{width:3px}
+.cklist::-webkit-scrollbar-thumb{background:var(--s1)}
+.cki{display:flex;align-items:center;gap:9px;font-size:12px;cursor:pointer;padding:3px 5px;border-radius:4px;transition:background .1s}
+.cki:hover{background:var(--s1)}
+.cki input[type=checkbox]{width:12px;height:12px;accent-color:var(--acc);cursor:pointer;flex-shrink:0}
+.cki span{flex:1}
+#asb{width:100%;background:var(--acc);color:#000;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .14s,transform .1s}
+#asb:hover{opacity:.86}
+#asb:active{transform:scale(.98)}
+.errmsg{font-size:11px;color:var(--rd);margin-top:7px;min-height:15px}
 
-.lib-section {
-  padding: 14px 15px;
-  border-bottom: 1px solid var(--border);
-}
-.lib-section h3 {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.4px;
-  color: var(--overlay0);
-  margin-bottom: 11px;
-}
+/* ── STORYBOARD PANEL ────────────────────────────────────────────────────── */
+#sbp{flex:1;min-width:0;background:var(--bg0);display:flex;flex-direction:column;overflow:hidden}
+#sbhdr{height:46px;border-bottom:1px solid var(--bdr);padding:0 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--bg0)}
+.sbt{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--o0);white-space:nowrap}
+.scalew{display:flex;align-items:center;gap:6px}
+.scalelbl{font-size:10px;color:var(--o0)}
+#scaler{width:76px;height:4px;accent-color:var(--acc);cursor:pointer}
+.sbhr{display:flex;align-items:center;gap:8px;margin-left:auto}
+#sbcnt{font-size:12px;color:var(--sub)}
+#clrsel{font-size:11px;color:var(--lv);background:none;border:none;cursor:pointer;padding:3px 7px;border-radius:5px;display:none;transition:background .12s}
+#clrsel:hover{background:color-mix(in srgb,var(--lv) 14%,transparent)}
+/* Scroll container */
+#sbscrl{flex:1;min-height:0;overflow-x:auto;overflow-y:hidden}
+#sbscrl::-webkit-scrollbar{height:5px}
+#sbscrl::-webkit-scrollbar-thumb{background:var(--s0);border-radius:3px}
+/* Board */
+#board{height:100%;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:11px;padding:14px;min-width:max-content;--cs:1}
+/* Empty */
+#sbemp{position:absolute;inset:46px 0 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;pointer-events:none}
+#sbemp .ei{font-size:44px;opacity:.22}
+#sbemp p{font-size:13px;color:var(--o0)}
 
-.add-row {
-  display: flex;
-  gap: 5px;
-  margin-bottom: 8px;
-}
-.add-row input {
-  flex: 1;
-  min-width: 0;
-  background: var(--surface0);
-  border: 1px solid var(--surface1);
-  border-radius: 6px;
-  padding: 5px 8px;
-  color: var(--text);
-  font-size: 12px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color .15s;
-}
-.add-row input:focus { border-color: var(--mauve); }
-.add-row input::placeholder { color: var(--overlay0); }
-.add-btn {
-  background: var(--mauve);
-  color: #0f0f1a;
-  border: none;
-  border-radius: 6px;
-  width: 26px;
-  height: 26px;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  line-height: 1;
-  transition: background .15s;
-}
-.add-btn:hover { background: #d8abff; }
-
-.items-list {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-/* Character items */
-.char-item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  background: var(--surface0);
-  border: 1.5px solid transparent;
-  transition: background .12s, border-color .12s;
-  user-select: none;
-}
-.char-item:hover { background: var(--surface1); }
-.char-item.active {
-  background: rgba(192, 132, 252, .12);
-  border-color: var(--mauve);
-  color: var(--mauve);
-}
-.char-item.active .idot { background: var(--mauve); }
-
-/* Location items */
-.loc-item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  background: var(--surface0);
-  user-select: none;
-}
-
-.idot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.char-dot { background: var(--blue); }
-.loc-dot  { background: var(--green); }
-
-.iname {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.idel {
-  background: none;
-  border: none;
-  color: var(--overlay0);
-  cursor: pointer;
-  font-size: 15px;
-  padding: 0 1px;
-  line-height: 1;
-  opacity: 0;
-  transition: opacity .1s, color .1s;
-  flex-shrink: 0;
-}
-.char-item:hover .idel,
-.loc-item:hover .idel { opacity: 1; }
-.idel:hover { color: var(--red); }
-
-.empty-hint {
-  font-size: 11px;
-  color: var(--overlay0);
-  font-style: italic;
-  padding: 2px 0;
-}
-.char-tip {
-  font-size: 10px;
-  color: var(--overlay0);
-  margin-top: 8px;
-  line-height: 1.5;
-}
-
-/* ── CENTER PANEL ── */
-#center-panel {
-  width: 252px;
-  background: var(--bg2);
-  border-right: 1px solid var(--border);
-}
-
-.form-field { margin-bottom: 13px; }
-.form-field label {
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.1px;
-  color: var(--subtext);
-  margin-bottom: 5px;
-}
-.form-field input[type="text"] {
-  width: 100%;
-  background: var(--surface0);
-  border: 1px solid var(--surface1);
-  border-radius: 6px;
-  padding: 7px 10px;
-  color: var(--text);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color .15s;
-}
-.form-field input[type="text"]:focus { border-color: var(--mauve); }
-.form-field input[type="text"]::placeholder { color: var(--overlay0); }
-
-.checklist {
-  background: var(--surface0);
-  border: 1px solid var(--surface1);
-  border-radius: 6px;
-  padding: 7px;
-  max-height: 120px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.checklist::-webkit-scrollbar { width: 3px; }
-.checklist::-webkit-scrollbar-thumb { background: var(--surface1); border-radius: 2px; }
-
-.ck-item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-  transition: background .1s;
-}
-.ck-item:hover { background: var(--surface1); }
-.ck-item input[type="checkbox"] {
-  width: 12px;
-  height: 12px;
-  accent-color: var(--mauve);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.ck-item span { flex: 1; user-select: none; }
-
-#add-scene-btn {
-  width: 100%;
-  background: var(--mauve);
-  color: #0f0f1a;
-  border: none;
-  border-radius: 8px;
-  padding: 9px;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background .15s, transform .1s;
-  letter-spacing: 0.2px;
-}
-#add-scene-btn:hover { background: #d8abff; }
-#add-scene-btn:active { transform: scale(.98); }
-
-.err-msg {
-  font-size: 11px;
-  color: var(--red);
-  margin-top: 7px;
-  min-height: 15px;
-  line-height: 1.4;
-}
-
-/* ── STORYBOARD PANEL ── */
-#sb-panel {
-  flex: 1;
-  min-width: 0;
-  background: var(--bg0);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-#sb-panel-hdr {
-  height: 44px;
-  border-bottom: 1px solid var(--border);
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  background: var(--bg0);
-}
-#sb-panel-hdr .hdr-title {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.4px;
-  color: var(--overlay0);
-}
-.hdr-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-#hdr-count { font-size: 12px; color: var(--subtext); }
-#sel-clear-btn {
-  font-size: 11px;
-  color: var(--lavender);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 3px 7px;
-  border-radius: 5px;
-  display: none;
-  transition: background .12s;
-}
-#sel-clear-btn:hover { background: rgba(165, 180, 252, .1); }
-
-/* Storyboard scroll container */
-#sb-scroller {
-  flex: 1;
-  min-height: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-#sb-scroller::-webkit-scrollbar { height: 5px; }
-#sb-scroller::-webkit-scrollbar-track { background: var(--bg0); }
-#sb-scroller::-webkit-scrollbar-thumb { background: var(--surface0); border-radius: 3px; }
-
-/* The storyboard: column-wrap flex */
-#storyboard {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 11px;
-  padding: 15px;
-  min-width: max-content;
-}
-
-/* Empty state */
-#sb-empty {
-  position: absolute;
-  inset: 44px 0 0 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  pointer-events: none;
-}
-#sb-empty .ei { font-size: 44px; opacity: .25; }
-#sb-empty p { font-size: 13px; color: var(--overlay0); }
-
-/* ── SCENE CARDS ── */
-.scene-card {
-  width: 174px;
-  background: var(--bg1);
-  border: 2px solid var(--border);
-  border-radius: 10px;
-  padding: 11px 11px 10px;
-  cursor: grab;
-  user-select: none;
-  position: relative;
-  flex-shrink: 0;
-  transition: border-color .15s, box-shadow .15s, opacity .2s;
-}
-.scene-card:hover { border-color: var(--surface1); }
-.scene-card.is-dragging { opacity: .2; cursor: grabbing; }
-
-.scene-card.selected {
-  border-color: var(--lavender);
-  background: rgba(165, 180, 252, .04);
-}
-.scene-card.char-lit {
-  border-color: var(--yellow);
-  box-shadow: 0 0 0 2px rgba(253, 230, 138, .22), 0 4px 18px rgba(253, 230, 138, .08);
-  background: rgba(253, 230, 138, .035);
-}
-/* Drop indicators */
-.scene-card.drop-before { border-top-color: var(--mauve); border-top-width: 3px; }
-.scene-card.drop-after  { border-bottom-color: var(--mauve); border-bottom-width: 3px; }
-
-/* Selected badge */
-.sel-badge {
-  position: absolute;
-  top: 7px;
-  left: 7px;
-  width: 14px;
-  height: 14px;
-  background: var(--lavender);
-  border-radius: 50%;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  font-size: 9px;
-  color: #0f0f1a;
-  font-weight: 900;
-  line-height: 1;
-}
-.scene-card.selected .sel-badge { display: flex; }
-
-/* Delete button */
-.card-del {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  background: none;
-  border: none;
-  color: var(--overlay0);
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-  opacity: 0;
-  transition: opacity .1s, color .1s, background .1s;
-}
-.scene-card:hover .card-del { opacity: 1; }
-.card-del:hover { color: var(--red); background: rgba(248, 113, 113, .1); }
-
+/* ── SCENE CARDS ─────────────────────────────────────────────────────────── */
+.sc{width:calc(174px * var(--cs,1));background:var(--cbg);border:2px solid var(--cbdr);border-radius:10px;padding:calc(11px * var(--cs,1));cursor:grab;user-select:none;position:relative;flex-shrink:0;font-size:calc(13px * var(--cs,1));transition:border-color .15s,box-shadow .15s,opacity .2s}
+.sc:hover{border-color:var(--s1)}
+.sc.isd{opacity:.2}
+.sc.sel{border-color:var(--lv)}
+/* Highlight by section */
+.sc.hl-c{border-color:var(--yl)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--yl) 28%,transparent)}
+.sc.hl-l{border-color:var(--gr)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--gr) 28%,transparent)}
+.sc.hl-t{border-color:var(--acc)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 28%,transparent)}
+.sc.hl-m{border-color:var(--am)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--am) 28%,transparent)}
+.sc.dpb{border-top-color:var(--acc)!important;border-top-width:3px}
+.sc.dpa{border-bottom-color:var(--acc)!important;border-bottom-width:3px}
+/* Selection badge */
+.sbadge{position:absolute;top:6px;left:6px;width:14px;height:14px;background:var(--lv);border-radius:50%;display:none;align-items:center;justify-content:center;font-size:9px;color:#000;font-weight:900}
+.sc.sel .sbadge{display:flex}
+/* Buttons */
+.cdel,.csum{position:absolute;top:5px;background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:4px;opacity:0;transition:opacity .1s,color .1s;line-height:1}
+.cdel{right:5px;color:var(--o0);font-size:15px}
+.csum{right:25px;color:var(--o0);font-size:13px}
+.sc:hover .cdel,.sc:hover .csum{opacity:1}
+.cdel:hover{color:var(--rd)!important}
+.csum:hover{color:var(--acc)!important}
+.csum.hs{opacity:.55;color:var(--acc)}
+.sc:hover .csum.hs{opacity:1}
 /* Card content */
-.card-num {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.1px;
-  color: var(--overlay0);
-  margin-bottom: 3px;
-}
-.card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 9px;
-  line-height: 1.35;
-  word-break: break-word;
-}
-.card-meta { display: flex; flex-direction: column; gap: 6px; }
-.card-meta-row { display: flex; flex-direction: column; gap: 3px; }
-.card-meta-lbl {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--overlay0);
-}
-.card-tags { display: flex; flex-wrap: wrap; gap: 3px; }
-.tag {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.tag.ct { background: rgba(126, 184, 247, .12); color: var(--blue); }
-.tag.lt { background: rgba(134, 239, 172, .12); color: var(--green); }
-.tag-none { font-size: 10px; color: var(--overlay0); font-style: italic; }
+.cnum{font-size:calc(9px * var(--cs,1));font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--o0);margin-bottom:3px}
+.ctit{font-size:calc(13px * var(--cs,1));font-weight:600;color:var(--tx);margin-bottom:calc(8px * var(--cs,1));line-height:1.35;word-break:break-word}
+.cmeta{display:flex;flex-direction:column;gap:calc(5px * var(--cs,1))}
+.crow{display:flex;flex-direction:column;gap:3px}
+.clbl{font-size:calc(9px * var(--cs,1));font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--o0)}
+.ctags{display:flex;flex-wrap:wrap;gap:3px}
+.tag{font-size:calc(10px * var(--cs,1));padding:calc(2px * var(--cs,1)) calc(6px * var(--cs,1));border-radius:4px;font-weight:500;white-space:nowrap}
+.tc{background:color-mix(in srgb,var(--bl) 14%,transparent);color:var(--bl)}
+.tl{background:color-mix(in srgb,var(--gr) 14%,transparent);color:var(--gr)}
+.tt{background:color-mix(in srgb,var(--acc) 14%,transparent);color:var(--acc)}
+.tm{background:color-mix(in srgb,var(--am) 14%,transparent);color:var(--am)}
+.tnone{font-size:calc(10px * var(--cs,1));color:var(--o0);font-style:italic}
 
-/* ── DRAG GHOST ── */
-#drag-ghost {
-  position: fixed;
-  pointer-events: none;
-  z-index: 9999;
-  display: none;
-  width: 174px;
-  background: var(--bg1);
-  border: 2px solid var(--mauve);
-  border-radius: 10px;
-  padding: 11px 11px 10px;
-  box-shadow: 0 14px 44px rgba(0,0,0,.65), 0 0 0 1px rgba(192,132,252,.2);
-  transform: rotate(2.5deg) scale(1.04);
-  transform-origin: top left;
-}
-.ghost-badge {
-  position: absolute;
-  top: -9px;
-  right: -9px;
-  background: var(--mauve);
-  color: #0f0f1a;
-  border-radius: 50%;
-  width: 21px;
-  height: 21px;
-  font-size: 10px;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* ── DRAG GHOST ──────────────────────────────────────────────────────────── */
+#ghost{position:fixed;pointer-events:none;z-index:9999;display:none;width:174px;background:var(--cbg);border:2px solid var(--acc);border-radius:10px;padding:11px;box-shadow:0 14px 44px rgba(0,0,0,.65);transform:rotate(2.5deg) scale(1.04);transform-origin:top left}
+.gbadge{position:absolute;top:-9px;right:-9px;background:var(--acc);color:#000;border-radius:50%;width:21px;height:21px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
+
+/* ── SUMMARY MODAL ───────────────────────────────────────────────────────── */
+#modal{position:fixed;inset:0;background:var(--mov);display:none;align-items:center;justify-content:center;z-index:10000}
+#modal.open{display:flex}
+#mbox{background:var(--mbg);border:1px solid var(--s1);border-radius:12px;padding:24px;max-width:500px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative;max-height:80vh;overflow-y:auto}
+#mbox::-webkit-scrollbar{width:4px}
+#mbox::-webkit-scrollbar-thumb{background:var(--s0);border-radius:2px}
+#mnum{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--o0);margin-bottom:4px}
+#mtit{font-size:18px;font-weight:700;color:var(--tx);margin-bottom:14px;line-height:1.3}
+#msum{font-size:13px;color:var(--sub);line-height:1.7;white-space:pre-wrap}
+#mclose{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--o0);font-size:20px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .12s,background .12s;line-height:1}
+#mclose:hover{color:var(--tx);background:var(--s0)}
 </style>
 </head>
 <body>
 
 <!-- APP HEADER -->
-<div id="app-header">
-  <h1>&#127916; Visual Storyboard</h1>
-  <span class="header-tip">Drag cards to reorder &nbsp;·&nbsp; Click a character to highlight scenes &nbsp;·&nbsp; Click cards to multi-select</span>
+<div id="hdr">
+  <h1>🎬 Scriptease</h1>
+  <span class="tip">Drag cards to reorder · Click a library item to highlight scenes · Click cards to select</span>
+  <div id="theme-pick">
+    <div class="tsw on" data-t="cosmos"    title="Cosmos"></div>
+    <div class="tsw"    data-t="slate"     title="Slate"></div>
+    <div class="tsw"    data-t="forest"    title="Forest"></div>
+    <div class="tsw"    data-t="parchment" title="Parchment"></div>
+    <div class="tsw"    data-t="studio"    title="Studio"></div>
+  </div>
 </div>
 
-<div class="main-layout">
+<div class="main">
 
-  <!-- ── LEFT PANEL: Library ── -->
-  <div id="left-panel" class="panel">
-    <div class="panel-hdr">Library</div>
-    <div class="panel-body">
-
-      <!-- Characters -->
-      <div class="lib-section">
-        <h3>Characters</h3>
-        <div class="add-row">
-          <input type="text" id="char-input" placeholder="Character name…" maxlength="40">
-          <button class="add-btn" id="char-add-btn" title="Add character">+</button>
-        </div>
-        <div class="items-list" id="char-list">
-          <div class="empty-hint">No characters yet</div>
-        </div>
-        <div class="char-tip" id="char-tip" style="display:none">Click a character to highlight their scenes on the storyboard</div>
+  <!-- LEFT PANEL: Library -->
+  <div class="panel" id="lp">
+    <div class="p-strip" onclick="togglePanel('lp')">
+      <span class="sl">Library</span>
+      <span class="sa">▶</span>
+    </div>
+    <div class="p-content">
+      <div class="p-hdr">
+        Library
+        <button class="cbtn" onclick="togglePanel('lp')" title="Collapse">◀</button>
       </div>
-
-      <!-- Locations -->
-      <div class="lib-section">
-        <h3>Locations</h3>
-        <div class="add-row">
-          <input type="text" id="loc-input" placeholder="Location name…" maxlength="40">
-          <button class="add-btn" id="loc-add-btn" title="Add location">+</button>
-        </div>
-        <div class="items-list" id="loc-list">
-          <div class="empty-hint">No locations yet</div>
-        </div>
+      <div class="p-body" id="lp-body">
+        <!-- Sections injected by JS -->
       </div>
-
     </div>
   </div>
 
-  <!-- ── CENTER PANEL: New Scene ── -->
-  <div id="center-panel" class="panel">
-    <div class="panel-hdr">New Scene</div>
-    <div class="panel-body">
-      <div class="form-field">
-        <label>Title</label>
-        <input type="text" id="scene-title" placeholder="Enter scene title…" maxlength="60">
+  <!-- CENTER PANEL: New Scene -->
+  <div class="panel" id="cp">
+    <div class="p-strip" onclick="togglePanel('cp')">
+      <span class="sl">New Scene</span>
+      <span class="sa">▶</span>
+    </div>
+    <div class="p-content">
+      <div class="p-hdr">
+        New Scene
+        <button class="cbtn" onclick="togglePanel('cp')" title="Collapse">◀</button>
       </div>
-      <div class="form-field">
-        <label>Characters</label>
-        <div class="checklist" id="char-ck">
-          <div class="empty-hint">Add characters first</div>
+      <div class="p-body">
+        <div class="ff">
+          <label>Title</label>
+          <input type="text" id="sc-title" placeholder="Enter scene title…" maxlength="60">
         </div>
-      </div>
-      <div class="form-field">
-        <label>Locations</label>
-        <div class="checklist" id="loc-ck">
-          <div class="empty-hint">Add locations first</div>
+        <div class="ff">
+          <label>Summary</label>
+          <textarea id="sc-summary" placeholder="Optional — write a brief description of this scene…"></textarea>
         </div>
+        <div class="ff"><label>Characters</label><div class="cklist" id="ck-characters"></div></div>
+        <div class="ff"><label>Locations</label><div class="cklist" id="ck-locations"></div></div>
+        <div class="ff"><label>Themes</label><div class="cklist" id="ck-themes"></div></div>
+        <div class="ff"><label>Misc</label><div class="cklist" id="ck-misc"></div></div>
+        <button id="asb" onclick="addScene()">+ Add Scene</button>
+        <div class="errmsg" id="scerr"></div>
       </div>
-      <button id="add-scene-btn">+ Add Scene</button>
-      <div class="err-msg" id="scene-err"></div>
     </div>
   </div>
 
-  <!-- ── STORYBOARD PANEL ── -->
-  <div id="sb-panel">
-    <div id="sb-panel-hdr">
-      <span class="hdr-title">Storyboard</span>
-      <div class="hdr-right">
-        <span id="hdr-count">0 scenes</span>
-        <button id="sel-clear-btn" onclick="clearSelection()">Clear selection</button>
+  <!-- STORYBOARD PANEL -->
+  <div id="sbp">
+    <div id="sbhdr">
+      <span class="sbt">Storyboard</span>
+      <div class="scalew">
+        <span class="scalelbl">Size</span>
+        <input type="range" id="scaler" min="0.55" max="1.65" step="0.05" value="1"
+               oninput="setScale(this.value)">
+      </div>
+      <div class="sbhr">
+        <span id="sbcnt">0 scenes</span>
+        <button id="clrsel" onclick="clearSel()">Clear selection</button>
       </div>
     </div>
-    <!-- Empty state overlay -->
-    <div id="sb-empty">
-      <div class="ei">&#127912;</div>
+    <div id="sbemp">
+      <div class="ei">🎭</div>
       <p>Create your first scene to get started</p>
     </div>
-    <!-- Scrollable column-wrap container -->
-    <div id="sb-scroller">
-      <div id="storyboard"></div>
+    <div id="sbscrl">
+      <div id="board"></div>
     </div>
   </div>
-
 </div>
 
 <!-- Drag ghost -->
-<div id="drag-ghost"></div>
+<div id="ghost"></div>
+
+<!-- Summary modal -->
+<div id="modal" onclick="e => { if(e.target===document.getElementById('modal')) closeModal(); }">
+  <div id="mbox">
+    <button id="mclose" onclick="closeModal()">×</button>
+    <div id="mnum"></div>
+    <div id="mtit"></div>
+    <div id="msum"></div>
+  </div>
+</div>
 
 <script>
 'use strict';
 
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const SECS = [
+  { key:'characters', label:'Characters', dot:'dc', tag:'tc', ph:'Character name…' },
+  { key:'locations',  label:'Locations',  dot:'dl', tag:'tl', ph:'Location name…'  },
+  { key:'themes',     label:'Themes',     dot:'dt', tag:'tt', ph:'Theme…'          },
+  { key:'misc',       label:'Misc',       dot:'dm', tag:'tm', ph:'Topic…'          },
+];
+// highlight CSS class per section key
+const HL_CLS = { characters:'hl-c', locations:'hl-l', themes:'hl-t', misc:'hl-m' };
+
 // ── STATE ─────────────────────────────────────────────────────────────────────
 const S = {
-  characters:    [],
-  locations:     [],
-  scenes:        [],   // ordered; index+1 = scene number
-  activeChar:    null, // character name currently highlighted
-  selectedIds:   new Set(),
-  nextId:        1,
+  characters:[], locations:[], themes:[], misc:[],
+  scenes:[], // { id, title, summary, characters, locations, themes, misc }
+  highlight: null, // { sec:'characters'|..., name:string }
+  selIds: new Set(),
+  nextId: 1,
 };
 
-// ── POINTER / DRAG ────────────────────────────────────────────────────────────
-const ptr = { down: false, cardId: null, startX: 0, startY: 0, dragging: false };
-const drag = {
-  active: false,
-  ids: [],
-  offsetX: 0, offsetY: 0,
-  dropId: null,
-  dropBefore: true,
-};
+// ── POINTER / CARD DRAG ───────────────────────────────────────────────────────
+const ptr  = { down:false, id:null, sx:0, sy:0, dragging:false };
+const drag = { on:false, ids:[], ox:0, oy:0, dropId:null, before:true };
 
-// ── UTILS ─────────────────────────────────────────────────────────────────────
-function setText(el, text) { el.textContent = text; }
+// ── LIBRARY ITEM DRAG ─────────────────────────────────────────────────────────
+const ld = { on:false, sec:null, fromIdx:null, dropIdx:null, before:true, startY:0, startX:0, dragging:false, itemKey:null };
 
-// ── CHARACTER ACTIONS ────────────────────────────────────────────────────────
-function addCharacter() {
-  const inp = document.getElementById('char-input');
+// ── THEME ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tsw').forEach(sw => {
+  sw.addEventListener('click', () => {
+    document.documentElement.dataset.theme = sw.dataset.t;
+    document.querySelectorAll('.tsw').forEach(s => s.classList.toggle('on', s===sw));
+  });
+});
+
+// ── PANEL COLLAPSE ────────────────────────────────────────────────────────────
+function togglePanel(id) { document.getElementById(id).classList.toggle('collapsed'); }
+
+// ── CARD SCALE ────────────────────────────────────────────────────────────────
+function setScale(v) { document.getElementById('board').style.setProperty('--cs', v); }
+
+// ── LIBRARY ACTIONS ───────────────────────────────────────────────────────────
+function addItem(sec) {
+  const inp = document.getElementById('inp-' + sec);
   const name = inp.value.trim();
-  if (!name || S.characters.includes(name)) { inp.select(); return; }
-  S.characters.push(name);
+  if (!name || S[sec].includes(name)) { inp.select(); return; }
+  S[sec].push(name);
   inp.value = '';
-  renderChars();
-  renderCharCk();
+  renderLibSec(sec);
+  renderCk(sec);
 }
 
-function removeCharacter(name) {
-  S.characters = S.characters.filter(c => c !== name);
-  S.scenes.forEach(sc => { sc.characters = sc.characters.filter(c => c !== name); });
-  if (S.activeChar === name) S.activeChar = null;
-  renderChars();
-  renderCharCk();
-  renderStoryboard();
+function removeItem(sec, name) {
+  S[sec] = S[sec].filter(x => x !== name);
+  S.scenes.forEach(sc => { sc[sec] = sc[sec].filter(x => x !== name); });
+  if (S.highlight && S.highlight.sec === sec && S.highlight.name === name) S.highlight = null;
+  renderLibSec(sec);
+  renderCk(sec);
+  renderBoard();
 }
 
-function toggleCharHighlight(name) {
-  S.activeChar = S.activeChar === name ? null : name;
-  renderChars();
-  renderStoryboard();
-}
-
-// ── LOCATION ACTIONS ──────────────────────────────────────────────────────────
-function addLocation() {
-  const inp = document.getElementById('loc-input');
-  const name = inp.value.trim();
-  if (!name || S.locations.includes(name)) { inp.select(); return; }
-  S.locations.push(name);
-  inp.value = '';
-  renderLocs();
-  renderLocCk();
-}
-
-function removeLocation(name) {
-  S.locations = S.locations.filter(l => l !== name);
-  S.scenes.forEach(sc => { sc.locations = sc.locations.filter(l => l !== name); });
-  renderLocs();
-  renderLocCk();
-  renderStoryboard();
+function toggleHL(sec, name) {
+  if (S.highlight && S.highlight.sec === sec && S.highlight.name === name)
+    S.highlight = null;
+  else
+    S.highlight = { sec, name };
+  SECS.forEach(s => renderLibSec(s.key));
+  renderBoard();
 }
 
 // ── SCENE ACTIONS ─────────────────────────────────────────────────────────────
 function addScene() {
-  const titleEl = document.getElementById('scene-title');
-  const errEl   = document.getElementById('scene-err');
+  const titleEl = document.getElementById('sc-title');
+  const errEl   = document.getElementById('scerr');
   const title   = titleEl.value.trim();
-
+  const summary = document.getElementById('sc-summary').value.trim();
   errEl.textContent = '';
   if (!title) { errEl.textContent = 'Please enter a scene title.'; titleEl.focus(); return; }
   if (S.scenes.some(s => s.title.toLowerCase() === title.toLowerCase())) {
     errEl.textContent = 'A scene with this title already exists.'; titleEl.select(); return;
   }
-
-  const chars = [...document.querySelectorAll('#char-ck input:checked')].map(cb => cb.value);
-  const locs  = [...document.querySelectorAll('#loc-ck  input:checked')].map(cb => cb.value);
-
-  S.scenes.push({ id: S.nextId++, title, characters: chars, locations: locs });
+  const row = {};
+  SECS.forEach(({ key }) => {
+    row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => c.value);
+  });
+  S.scenes.push({ id: S.nextId++, title, summary, ...row });
   titleEl.value = '';
-  document.querySelectorAll('#char-ck input, #loc-ck input').forEach(cb => { cb.checked = false; });
-  renderStoryboard();
+  document.getElementById('sc-summary').value = '';
+  document.querySelectorAll('.cklist input').forEach(c => { c.checked = false; });
+  renderBoard();
   updateCount();
 }
 
 function deleteScene(id) {
   S.scenes = S.scenes.filter(s => s.id !== id);
-  S.selectedIds.delete(id);
-  renderStoryboard();
-  updateCount();
+  S.selIds.delete(id);
+  renderBoard(); updateCount();
 }
 
-function clearSelection() {
-  S.selectedIds.clear();
-  document.getElementById('sel-clear-btn').style.display = 'none';
-  renderStoryboard();
+function clearSel() {
+  S.selIds.clear();
+  document.getElementById('clrsel').style.display = 'none';
+  renderBoard();
 }
 
-// ── RENDER: LEFT PANEL ────────────────────────────────────────────────────────
-function renderChars() {
-  const list = document.getElementById('char-list');
-  const tip  = document.getElementById('char-tip');
+// ── SUMMARY MODAL ─────────────────────────────────────────────────────────────
+function openModal(id) {
+  const sc = S.scenes.find(s => s.id === id);
+  if (!sc || !sc.summary) return;
+  const idx = S.scenes.indexOf(sc);
+  document.getElementById('mnum').textContent = `Scene ${idx + 1}`;
+  document.getElementById('mtit').textContent = sc.title;
+  document.getElementById('msum').textContent = sc.summary;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
+// ── RENDER: LIBRARY ───────────────────────────────────────────────────────────
+function renderLibAll() { SECS.forEach(s => renderLibSec(s.key)); }
+
+function renderLibSec(sec) {
+  const cfg  = SECS.find(s => s.key === sec);
+  const list = document.getElementById('il-' + sec);
+  if (!list) return;
   list.innerHTML = '';
-
-  if (!S.characters.length) {
-    const d = document.createElement('div');
-    d.className = 'empty-hint'; d.textContent = 'No characters yet';
-    list.appendChild(d); tip.style.display = 'none'; return;
+  if (!S[sec].length) {
+    const d = document.createElement('div'); d.className = 'eh'; d.textContent = 'None yet'; list.appendChild(d); return;
   }
-  tip.style.display = 'block';
+  S[sec].forEach((name, idx) => {
+    const isOn = S.highlight && S.highlight.sec === sec && S.highlight.name === name;
+    const li = document.createElement('div');
+    li.className = 'li' + (isOn ? ' on' : '');
+    li.dataset.hl = '1'; li.dataset.idx = idx; li.dataset.sec = sec;
 
-  S.characters.forEach(name => {
-    const div = document.createElement('div');
-    div.className = 'char-item' + (S.activeChar === name ? ' active' : '');
+    const dh = document.createElement('span'); dh.className = 'dh'; dh.textContent = '⠿';
+    dh.title = 'Drag to reorder';
+    const dot = document.createElement('span'); dot.className = 'dot ' + cfg.dot;
+    const nm = document.createElement('span'); nm.className = 'iname'; nm.textContent = name;
+    const del = document.createElement('button'); del.className = 'idel'; del.title = 'Remove'; del.textContent = '×';
+    del.addEventListener('mousedown', e => e.stopPropagation());
+    del.addEventListener('click', e => { e.stopPropagation(); removeItem(sec, name); });
 
-    const dot = document.createElement('span'); dot.className = 'idot char-dot';
-    const nm  = document.createElement('span'); nm.className  = 'iname'; nm.textContent = name;
-    const del = document.createElement('button');
-    del.className = 'idel'; del.title = 'Remove'; del.textContent = '×';
-    del.addEventListener('click', e => { e.stopPropagation(); removeCharacter(name); });
-
-    div.appendChild(dot); div.appendChild(nm); div.appendChild(del);
-    div.addEventListener('click', () => toggleCharHighlight(name));
-    list.appendChild(div);
+    li.appendChild(dh); li.appendChild(dot); li.appendChild(nm); li.appendChild(del);
+    li.addEventListener('click', () => toggleHL(sec, name));
+    dh.addEventListener('mousedown', e => startLibDrag(e, sec, idx, name));
+    list.appendChild(li);
   });
 }
 
-function renderLocs() {
-  const list = document.getElementById('loc-list');
-  list.innerHTML = '';
-
-  if (!S.locations.length) {
-    const d = document.createElement('div');
-    d.className = 'empty-hint'; d.textContent = 'No locations yet';
-    list.appendChild(d); return;
-  }
-
-  S.locations.forEach(name => {
-    const div = document.createElement('div');
-    div.className = 'loc-item';
-
-    const dot = document.createElement('span'); dot.className = 'idot loc-dot';
-    const nm  = document.createElement('span'); nm.className  = 'iname'; nm.textContent = name;
-    const del = document.createElement('button');
-    del.className = 'idel'; del.title = 'Remove'; del.textContent = '×';
-    del.addEventListener('click', e => { e.stopPropagation(); removeLocation(name); });
-
-    div.appendChild(dot); div.appendChild(nm); div.appendChild(del);
-    list.appendChild(div);
+// Build the library panel body (once)
+function buildLibPanel() {
+  const body = document.getElementById('lp-body');
+  body.innerHTML = '';
+  SECS.forEach(({ key, label, ph }) => {
+    const sec = document.createElement('div'); sec.className = 'lsec';
+    const h3  = document.createElement('h3'); h3.textContent = label;
+    const ar  = document.createElement('div'); ar.className = 'arow';
+    const inp = document.createElement('input'); inp.type = 'text'; inp.id = 'inp-' + key;
+    inp.placeholder = ph; inp.maxLength = 50;
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') addItem(key); });
+    const btn = document.createElement('button'); btn.className = 'abtn'; btn.textContent = '+'; btn.title = 'Add';
+    btn.addEventListener('click', () => addItem(key));
+    ar.appendChild(inp); ar.appendChild(btn);
+    const il = document.createElement('div'); il.className = 'ilist'; il.id = 'il-' + key;
+    il.innerHTML = '<div class="eh">None yet</div>';
+    const tip = document.createElement('div'); tip.className = 'ltip';
+    tip.textContent = 'Click an item to highlight its scenes';
+    sec.appendChild(h3); sec.appendChild(ar); sec.appendChild(il); sec.appendChild(tip);
+    body.appendChild(sec);
   });
 }
 
-// ── RENDER: CENTER PANEL CHECKLISTS ──────────────────────────────────────────
-function renderCharCk() {
-  const box = document.getElementById('char-ck');
+// ── RENDER: CHECKLISTS ────────────────────────────────────────────────────────
+function renderAllCk() { SECS.forEach(s => renderCk(s.key)); }
+
+function renderCk(sec) {
+  const box = document.getElementById('ck-' + sec);
+  if (!box) return;
   box.innerHTML = '';
-  if (!S.characters.length) {
-    const d = document.createElement('div'); d.className = 'empty-hint';
-    d.textContent = 'Add characters first'; box.appendChild(d); return;
+  if (!S[sec].length) {
+    const d = document.createElement('div'); d.className = 'eh';
+    d.textContent = 'Add ' + sec + ' first'; box.appendChild(d); return;
   }
-  S.characters.forEach(name => {
-    const lbl = document.createElement('label'); lbl.className = 'ck-item';
-    const cb  = document.createElement('input'); cb.type = 'checkbox'; cb.value = name;
-    const sp  = document.createElement('span');  sp.textContent = name;
-    lbl.appendChild(cb); lbl.appendChild(sp); box.appendChild(lbl);
-  });
-}
-
-function renderLocCk() {
-  const box = document.getElementById('loc-ck');
-  box.innerHTML = '';
-  if (!S.locations.length) {
-    const d = document.createElement('div'); d.className = 'empty-hint';
-    d.textContent = 'Add locations first'; box.appendChild(d); return;
-  }
-  S.locations.forEach(name => {
-    const lbl = document.createElement('label'); lbl.className = 'ck-item';
+  S[sec].forEach(name => {
+    const lbl = document.createElement('label'); lbl.className = 'cki';
     const cb  = document.createElement('input'); cb.type = 'checkbox'; cb.value = name;
     const sp  = document.createElement('span');  sp.textContent = name;
     lbl.appendChild(cb); lbl.appendChild(sp); box.appendChild(lbl);
@@ -836,276 +491,208 @@ function renderLocCk() {
 }
 
 // ── RENDER: STORYBOARD ────────────────────────────────────────────────────────
-function renderStoryboard() {
-  const board   = document.getElementById('storyboard');
-  const emptyEl = document.getElementById('sb-empty');
+function renderBoard() {
+  const board = document.getElementById('board');
+  const emp   = document.getElementById('sbemp');
   board.innerHTML = '';
-
-  if (!S.scenes.length) {
-    emptyEl.style.display = 'flex'; return;
-  }
-  emptyEl.style.display = 'none';
+  if (!S.scenes.length) { emp.style.display = 'flex'; return; }
+  emp.style.display = 'none';
 
   S.scenes.forEach((scene, idx) => {
-    const num        = idx + 1;
-    const isDragging = drag.active && drag.ids.includes(scene.id);
-    const isSelected = S.selectedIds.has(scene.id);
-    const isLit      = S.activeChar && scene.characters.includes(S.activeChar);
-    const isDBefore  = drag.active && drag.dropId === scene.id && drag.dropBefore;
-    const isDAfter   = drag.active && drag.dropId === scene.id && !drag.dropBefore;
+    const isd = drag.on && drag.ids.includes(scene.id);
+    const sel = S.selIds.has(scene.id);
+    const hlCls = S.highlight && scene[S.highlight.sec] &&
+                  scene[S.highlight.sec].includes(S.highlight.name)
+                  ? HL_CLS[S.highlight.sec] : '';
+    const dpb = drag.on && drag.dropId === scene.id && drag.before;
+    const dpa = drag.on && drag.dropId === scene.id && !drag.before;
 
     const card = document.createElement('div');
-    card.className = [
-      'scene-card',
-      isDragging ? 'is-dragging' : '',
-      isSelected ? 'selected'    : '',
-      isLit      ? 'char-lit'    : '',
-      isDBefore  ? 'drop-before' : '',
-      isDAfter   ? 'drop-after'  : '',
-    ].filter(Boolean).join(' ');
+    card.className = ['sc', isd?'isd':'', sel?'sel':'', hlCls,
+                      dpb?'dpb':'', dpa?'dpa':''].filter(Boolean).join(' ');
     card.dataset.id = scene.id;
 
-    // Selection badge
-    const badge = document.createElement('div');
-    badge.className = 'sel-badge'; badge.textContent = '✓';
+    // Badges & buttons
+    const badge = document.createElement('div'); badge.className = 'sbadge'; badge.textContent = '✓';
+    const delbtn = document.createElement('button'); delbtn.className = 'cdel'; delbtn.title = 'Delete'; delbtn.textContent = '×';
+    delbtn.addEventListener('mousedown', e => e.stopPropagation());
+    delbtn.addEventListener('click', e => { e.stopPropagation(); deleteScene(scene.id); });
+    const sumbtn = document.createElement('button');
+    sumbtn.className = 'csum' + (scene.summary ? ' hs' : '');
+    sumbtn.title = scene.summary ? 'View summary' : 'No summary';
+    sumbtn.textContent = 'ⓘ';
+    sumbtn.addEventListener('mousedown', e => e.stopPropagation());
+    sumbtn.addEventListener('click', e => { e.stopPropagation(); if (scene.summary) openModal(scene.id); });
 
-    // Delete button
-    const delBtn = document.createElement('button');
-    delBtn.className = 'card-del'; delBtn.title = 'Delete scene'; delBtn.textContent = '×';
-    delBtn.addEventListener('mousedown', e => e.stopPropagation());
-    delBtn.addEventListener('click',     e => { e.stopPropagation(); deleteScene(scene.id); });
+    const num = document.createElement('div'); num.className = 'cnum'; num.textContent = `Scene ${idx + 1}`;
+    const tit = document.createElement('div'); tit.className = 'ctit'; tit.textContent = scene.title;
+    const meta = document.createElement('div'); meta.className = 'cmeta';
 
-    // Scene number
-    const numEl = document.createElement('div');
-    numEl.className = 'card-num'; numEl.textContent = `Scene ${num}`;
-
-    // Title
-    const titleEl = document.createElement('div');
-    titleEl.className = 'card-title'; titleEl.textContent = scene.title;
-
-    // Meta section
-    const meta = document.createElement('div'); meta.className = 'card-meta';
-
-    const charRow = document.createElement('div'); charRow.className = 'card-meta-row';
-    const charLbl = document.createElement('div'); charLbl.className = 'card-meta-lbl'; charLbl.textContent = 'Characters';
-    const charTags = document.createElement('div'); charTags.className = 'card-tags';
-    if (scene.characters.length) {
-      scene.characters.forEach(c => {
-        const t = document.createElement('span'); t.className = 'tag ct'; t.textContent = c; charTags.appendChild(t);
+    // Only show non-empty sections
+    SECS.forEach(({ key, label, tag }) => {
+      if (!scene[key] || !scene[key].length) return;
+      const row = document.createElement('div'); row.className = 'crow';
+      const lbl = document.createElement('div'); lbl.className = 'clbl'; lbl.textContent = label;
+      const tags = document.createElement('div'); tags.className = 'ctags';
+      scene[key].forEach(v => {
+        const t = document.createElement('span'); t.className = 'tag ' + tag; t.textContent = v; tags.appendChild(t);
       });
-    } else {
-      const n = document.createElement('span'); n.className = 'tag-none'; n.textContent = 'none'; charTags.appendChild(n);
-    }
-    charRow.appendChild(charLbl); charRow.appendChild(charTags);
+      row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
+    });
 
-    const locRow = document.createElement('div'); locRow.className = 'card-meta-row';
-    const locLbl = document.createElement('div'); locLbl.className = 'card-meta-lbl'; locLbl.textContent = 'Locations';
-    const locTags = document.createElement('div'); locTags.className = 'card-tags';
-    if (scene.locations.length) {
-      scene.locations.forEach(l => {
-        const t = document.createElement('span'); t.className = 'tag lt'; t.textContent = l; locTags.appendChild(t);
-      });
-    } else {
-      const n = document.createElement('span'); n.className = 'tag-none'; n.textContent = 'none'; locTags.appendChild(n);
-    }
-    locRow.appendChild(locLbl); locRow.appendChild(locTags);
-
-    meta.appendChild(charRow); meta.appendChild(locRow);
-
-    card.appendChild(badge);
-    card.appendChild(delBtn);
-    card.appendChild(numEl);
-    card.appendChild(titleEl);
-    card.appendChild(meta);
-
-    card.addEventListener('mousedown', e => onCardMouseDown(e, scene.id));
+    card.appendChild(badge); card.appendChild(delbtn); card.appendChild(sumbtn);
+    card.appendChild(num); card.appendChild(tit); card.appendChild(meta);
+    card.addEventListener('mousedown', e => onCardDown(e, scene.id));
     board.appendChild(card);
   });
 
-  // Selection clear button
-  document.getElementById('sel-clear-btn').style.display = S.selectedIds.size > 0 ? 'inline-block' : 'none';
+  document.getElementById('clrsel').style.display = S.selIds.size > 0 ? 'inline-block' : 'none';
 }
 
 function updateCount() {
   const n = S.scenes.length;
-  document.getElementById('hdr-count').textContent = `${n} scene${n !== 1 ? 's' : ''}`;
+  document.getElementById('sbcnt').textContent = `${n} scene${n !== 1 ? 's' : ''}`;
 }
 
-// ── CARD MOUSE DOWN ───────────────────────────────────────────────────────────
-function onCardMouseDown(e, cardId) {
-  if (e.button !== 0) return;
-  e.preventDefault();
-  ptr.down = true; ptr.cardId = cardId;
-  ptr.startX = e.clientX; ptr.startY = e.clientY;
-  ptr.dragging = false;
+// ── CARD DRAG ─────────────────────────────────────────────────────────────────
+function onCardDown(e, id) {
+  if (e.button !== 0) return; e.preventDefault();
+  ptr.down = true; ptr.id = id; ptr.sx = e.clientX; ptr.sy = e.clientY; ptr.dragging = false;
 }
-
-// ── GLOBAL MOUSE EVENTS ───────────────────────────────────────────────────────
 document.addEventListener('mousemove', e => {
-  if (!ptr.down) return;
-  const dx = e.clientX - ptr.startX, dy = e.clientY - ptr.startY;
-  if (!ptr.dragging && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
-    ptr.dragging = true;
-    beginDrag(ptr.cardId, e);
+  // Card drag
+  if (ptr.down) {
+    if (!ptr.dragging && (Math.abs(e.clientX-ptr.sx)>4 || Math.abs(e.clientY-ptr.sy)>4)) {
+      ptr.dragging = true; beginCardDrag(ptr.id, e);
+    }
+    if (ptr.dragging) moveCardDrag(e);
   }
-  if (ptr.dragging) moveDrag(e);
+  // Lib item drag
+  if (ld.on) moveLibDrag(e);
 });
-
 document.addEventListener('mouseup', e => {
-  if (!ptr.down) return;
-  if (!ptr.dragging) {
-    // Treat as click: toggle scene selection
-    toggleSceneSelect(ptr.cardId, e);
-  } else {
-    endDrag(e);
+  if (ptr.down) {
+    if (!ptr.dragging) toggleCardSel(ptr.id, e);
+    else endCardDrag();
+    ptr.down = false; ptr.dragging = false; ptr.id = null;
   }
-  ptr.down = false; ptr.dragging = false; ptr.cardId = null;
+  if (ld.on) endLibDrag();
 });
 
-function toggleSceneSelect(cardId, e) {
-  if (e && e.target.classList.contains('card-del')) return;
-  if (S.selectedIds.has(cardId)) S.selectedIds.delete(cardId);
-  else S.selectedIds.add(cardId);
-  renderStoryboard();
-  document.getElementById('sel-clear-btn').style.display = S.selectedIds.size > 0 ? 'inline-block' : 'none';
+function toggleCardSel(id, e) {
+  if (e && e.target.classList.contains('cdel')) return;
+  if (S.selIds.has(id)) S.selIds.delete(id); else S.selIds.add(id);
+  renderBoard();
+  document.getElementById('clrsel').style.display = S.selIds.size > 0 ? 'inline-block' : 'none';
 }
 
-// ── DRAG: BEGIN ───────────────────────────────────────────────────────────────
-function beginDrag(cardId, e) {
-  // If dragging a selected card and there's a multi-selection, drag all selected
-  let ids;
-  if (S.selectedIds.has(cardId) && S.selectedIds.size > 1) {
-    ids = S.scenes.filter(s => S.selectedIds.has(s.id)).map(s => s.id);
-  } else {
-    ids = [cardId];
-  }
-
-  drag.active = true; drag.ids = ids; drag.dropId = null; drag.dropBefore = true;
-
-  const card = document.querySelector(`.scene-card[data-id="${cardId}"]`);
-  const rect = card.getBoundingClientRect();
-  drag.offsetX = e.clientX - rect.left;
-  drag.offsetY = e.clientY - rect.top;
-
-  // Build ghost
-  const ghost = document.getElementById('drag-ghost');
-
-  // Replicate card content
+function beginCardDrag(id, e) {
+  let ids = (S.selIds.has(id) && S.selIds.size > 1)
+    ? S.scenes.filter(s => S.selIds.has(s.id)).map(s => s.id)
+    : [id];
+  drag.on = true; drag.ids = ids; drag.dropId = null; drag.before = true;
+  const card = document.querySelector(`.sc[data-id="${id}"]`);
+  const r = card.getBoundingClientRect();
+  drag.ox = e.clientX - r.left; drag.oy = e.clientY - r.top;
+  // Build ghost content
+  const sc = S.scenes.find(s => s.id === id);
+  const ghost = document.getElementById('ghost');
   ghost.innerHTML = '';
-
-  const numEl = document.createElement('div');
-  numEl.className = 'card-num';
-  const sceneIdx = S.scenes.findIndex(s => s.id === cardId);
-  numEl.textContent = `Scene ${sceneIdx + 1}`;
-
-  const scene = S.scenes[sceneIdx];
-  const titleEl = document.createElement('div');
-  titleEl.className = 'card-title'; titleEl.textContent = scene.title;
-
-  const meta = document.createElement('div'); meta.className = 'card-meta';
-  const charRow = document.createElement('div'); charRow.className = 'card-meta-row';
-  const charLbl = document.createElement('div'); charLbl.className = 'card-meta-lbl'; charLbl.textContent = 'Characters';
-  const charTags = document.createElement('div'); charTags.className = 'card-tags';
-  scene.characters.forEach(c => {
-    const t = document.createElement('span'); t.className = 'tag ct'; t.textContent = c; charTags.appendChild(t);
-  });
-  if (!scene.characters.length) { const n = document.createElement('span'); n.className = 'tag-none'; n.textContent = 'none'; charTags.appendChild(n); }
-  charRow.appendChild(charLbl); charRow.appendChild(charTags);
-  const locRow = document.createElement('div'); locRow.className = 'card-meta-row';
-  const locLbl = document.createElement('div'); locLbl.className = 'card-meta-lbl'; locLbl.textContent = 'Locations';
-  const locTags = document.createElement('div'); locTags.className = 'card-tags';
-  scene.locations.forEach(l => {
-    const t = document.createElement('span'); t.className = 'tag lt'; t.textContent = l; locTags.appendChild(t);
-  });
-  if (!scene.locations.length) { const n = document.createElement('span'); n.className = 'tag-none'; n.textContent = 'none'; locTags.appendChild(n); }
-  locRow.appendChild(locLbl); locRow.appendChild(locTags);
-  meta.appendChild(charRow); meta.appendChild(locRow);
-
-  ghost.appendChild(numEl); ghost.appendChild(titleEl); ghost.appendChild(meta);
-
-  // Multi-drag badge
+  const n = document.createElement('div'); n.className = 'cnum'; n.textContent = `Scene ${S.scenes.indexOf(sc)+1}`;
+  const t = document.createElement('div'); t.className = 'ctit'; t.textContent = sc.title;
+  ghost.appendChild(n); ghost.appendChild(t);
   if (ids.length > 1) {
-    const b = document.createElement('div');
-    b.className = 'ghost-badge'; b.textContent = `+${ids.length - 1}`;
-    ghost.appendChild(b);
+    const b = document.createElement('div'); b.className = 'gbadge'; b.textContent = `+${ids.length-1}`; ghost.appendChild(b);
   }
-
   ghost.style.display = 'block';
-  ghost.style.left = (e.clientX - drag.offsetX) + 'px';
-  ghost.style.top  = (e.clientY - drag.offsetY) + 'px';
-
-  renderStoryboard();
+  ghost.style.left = (e.clientX - drag.ox) + 'px';
+  ghost.style.top  = (e.clientY - drag.oy) + 'px';
+  renderBoard();
 }
-
-// ── DRAG: MOVE ────────────────────────────────────────────────────────────────
-function moveDrag(e) {
-  const ghost = document.getElementById('drag-ghost');
-  ghost.style.left = (e.clientX - drag.offsetX) + 'px';
-  ghost.style.top  = (e.clientY - drag.offsetY) + 'px';
-
-  // Find drop target
-  const cards = [...document.querySelectorAll('.scene-card')].filter(c => !drag.ids.includes(+c.dataset.id));
-  let newDropId = null, newDropBefore = true;
-
-  for (const card of cards) {
-    const r = card.getBoundingClientRect();
-    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
-      newDropId     = +card.dataset.id;
-      newDropBefore = e.clientY < r.top + r.height / 2;
-      break;
+function moveCardDrag(e) {
+  const g = document.getElementById('ghost');
+  g.style.left = (e.clientX - drag.ox) + 'px';
+  g.style.top  = (e.clientY - drag.oy) + 'px';
+  const cards = [...document.querySelectorAll('.sc')].filter(c => !drag.ids.includes(+c.dataset.id));
+  let newId = null, newBef = true;
+  for (const c of cards) {
+    const r = c.getBoundingClientRect();
+    if (e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom) {
+      newId = +c.dataset.id; newBef = e.clientY < r.top + r.height/2; break;
     }
   }
-
-  if (newDropId !== drag.dropId || newDropBefore !== drag.dropBefore) {
-    drag.dropId = newDropId; drag.dropBefore = newDropBefore;
-    renderStoryboard();
-  }
+  if (newId !== drag.dropId || newBef !== drag.before) { drag.dropId=newId; drag.before=newBef; renderBoard(); }
 }
-
-// ── DRAG: END ─────────────────────────────────────────────────────────────────
-function endDrag() {
-  document.getElementById('drag-ghost').style.display = 'none';
-
+function endCardDrag() {
+  document.getElementById('ghost').style.display = 'none';
   if (drag.dropId !== null) {
-    const dragged   = drag.ids.map(id => S.scenes.find(s => s.id === id)).filter(Boolean);
-    const remaining = S.scenes.filter(s => !drag.ids.includes(s.id));
-    const targetIdx = remaining.findIndex(s => s.id === drag.dropId);
-    if (targetIdx !== -1) {
-      remaining.splice(drag.dropBefore ? targetIdx : targetIdx + 1, 0, ...dragged);
-      S.scenes = remaining;
-    }
+    const dragged  = drag.ids.map(id => S.scenes.find(s => s.id===id)).filter(Boolean);
+    const rest     = S.scenes.filter(s => !drag.ids.includes(s.id));
+    const ti       = rest.findIndex(s => s.id === drag.dropId);
+    if (ti !== -1) rest.splice(drag.before ? ti : ti+1, 0, ...dragged);
+    S.scenes = rest;
   }
-
-  drag.active = false; drag.ids = []; drag.dropId = null;
-  renderStoryboard();
+  drag.on = false; drag.ids = []; drag.dropId = null;
+  renderBoard();
 }
 
-// ── KEYBOARD SHORTCUTS ────────────────────────────────────────────────────────
-document.getElementById('char-input').addEventListener('keydown', e => { if (e.key === 'Enter') addCharacter(); });
-document.getElementById('loc-input').addEventListener('keydown',  e => { if (e.key === 'Enter') addLocation(); });
-document.getElementById('scene-title').addEventListener('keydown', e => { if (e.key === 'Enter') addScene(); });
-document.getElementById('char-add-btn').addEventListener('click', addCharacter);
-document.getElementById('loc-add-btn').addEventListener('click',  addLocation);
-document.getElementById('add-scene-btn').addEventListener('click', addScene);
+// ── LIBRARY ITEM DRAG ─────────────────────────────────────────────────────────
+function startLibDrag(e, sec, idx, name) {
+  if (e.button !== 0) return; e.preventDefault(); e.stopPropagation();
+  ld.on = true; ld.sec = sec; ld.fromIdx = idx; ld.itemKey = name;
+  ld.dropIdx = null; ld.before = true;
+  ld.startX = e.clientX; ld.startY = e.clientY;
+}
+function moveLibDrag(e) {
+  const list = document.getElementById('il-' + ld.sec);
+  if (!list) return;
+  const items = [...list.querySelectorAll('.li')];
+  items.forEach(i => i.classList.remove('dib','dia','dg'));
+  const fromEl = items[ld.fromIdx];
+  if (fromEl) fromEl.classList.add('dg');
+  let ni = null, nb = true;
+  for (const item of items) {
+    if (+item.dataset.idx === ld.fromIdx) continue;
+    const r = item.getBoundingClientRect();
+    if (e.clientY >= r.top && e.clientY <= r.bottom) {
+      ni = +item.dataset.idx; nb = e.clientY < r.top + r.height/2; break;
+    }
+  }
+  if (ni !== null) {
+    const target = items.find(i => +i.dataset.idx === ni);
+    if (target) target.classList.add(nb ? 'dib' : 'dia');
+  }
+  ld.dropIdx = ni; ld.before = nb;
+}
+function endLibDrag() {
+  const list = document.getElementById('il-' + ld.sec);
+  if (list) list.querySelectorAll('.li').forEach(i => i.classList.remove('dib','dia','dg'));
+  if (ld.dropIdx !== null && ld.dropIdx !== ld.fromIdx) {
+    const arr = S[ld.sec];
+    const [item] = arr.splice(ld.fromIdx, 1);
+    let ti = ld.dropIdx > ld.fromIdx ? ld.dropIdx - 1 : ld.dropIdx;
+    if (!ld.before) ti++;
+    arr.splice(ti, 0, item);
+    renderLibSec(ld.sec);
+    renderCk(ld.sec);
+  }
+  ld.on = false; ld.sec = null; ld.fromIdx = null; ld.dropIdx = null;
+}
 
+// ── KEYBOARD ──────────────────────────────────────────────────────────────────
+document.getElementById('sc-title').addEventListener('keydown',   e => { if (e.key==='Enter') addScene(); });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    S.activeChar = null; S.selectedIds.clear();
-    renderChars(); renderStoryboard();
-    document.getElementById('sel-clear-btn').style.display = 'none';
+    S.highlight = null; S.selIds.clear();
+    renderLibAll(); renderBoard();
+    closeModal();
+    document.getElementById('clrsel').style.display = 'none';
   }
-});
-
-// Click empty storyboard area → deselect all
-document.getElementById('storyboard').addEventListener('click', e => {
-  if (e.target === document.getElementById('storyboard')) clearSelection();
 });
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-renderChars();
-renderLocs();
-renderCharCk();
-renderLocCk();
+buildLibPanel();
+renderAllCk();
 updateCount();
 </script>
 </body>
