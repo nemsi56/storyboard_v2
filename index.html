@@ -1,29 +1,25 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="cosmos">
+<html lang="en" data-theme="ivory">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Visual Storyboard</title>
 <style>
-/* ══ 10 THEMES ══════════════════════════════════════════════════════════════ */
-/* --bl=chars --gr=locs --clt=themes-cat --am=misc  --acc=UI accent --yl=highlight */
-[data-theme="cosmos"]    {--bg0:#0f0f1a;--bg1:#1a1a2e;--bg2:#14141f;--s0:#2a2a40;--s1:#3a3a52;--o0:#6b6b8a;--o1:#9090b0;--tx:#d4d4f0;--sub:#a0a0c0;--acc:#c084fc;--bl:#7eb8f7;--gr:#86efac;--clt:#c084fc;--am:#fb923c;--yl:#fde68a;--rd:#f87171;--lv:#a5b4fc;--bdr:#2a2a40;--cbg:#1a1a2e;--cbdr:#2a2a40;--mbg:#14141f;--mov:rgba(0,0,0,.72);--ontx:#000}
-[data-theme="slate"]     {--bg0:#0d1117;--bg1:#161b22;--bg2:#0d1117;--s0:#21262d;--s1:#30363d;--o0:#6e7681;--o1:#8d96a0;--tx:#e6edf3;--sub:#8d96a0;--acc:#b07ef8;--bl:#58a6ff;--gr:#3fb950;--clt:#b07ef8;--am:#f0883e;--yl:#e3b341;--rd:#f85149;--lv:#79c0ff;--bdr:#21262d;--cbg:#161b22;--cbdr:#30363d;--mbg:#0d1117;--mov:rgba(0,0,0,.76);--ontx:#000}
-[data-theme="forest"]    {--bg0:#0c1a0c;--bg1:#132213;--bg2:#0a1a0a;--s0:#1e3a1e;--s1:#2a4d2a;--o0:#6b8a6b;--o1:#88a888;--tx:#d4f0d4;--sub:#a0c8a0;--acc:#d478f8;--bl:#64b8f0;--gr:#78e878;--clt:#d478f8;--am:#f0c050;--yl:#f0e060;--rd:#f87878;--lv:#a0c8f0;--bdr:#1e3a1e;--cbg:#132213;--cbdr:#1e3a1e;--mbg:#0a1a0a;--mov:rgba(0,0,0,.8);--ontx:#000}
-[data-theme="parchment"] {--bg0:#f5f0e8;--bg1:#ede8dc;--bg2:#f8f4ed;--s0:#ddd8cc;--s1:#cdc8bc;--o0:#8a7e70;--o1:#5a4e40;--tx:#2c2416;--sub:#5c5044;--acc:#9b4a1a;--bl:#1a5a9b;--gr:#2d7a3a;--clt:#8b1a4a;--am:#b55810;--yl:#b06a00;--rd:#c0321a;--lv:#4a4a9b;--bdr:#cdc8bc;--cbg:#ede8dc;--cbdr:#cdc8bc;--mbg:#f8f4ed;--mov:rgba(0,0,0,.42);--ontx:#fff}
-[data-theme="studio"]    {--bg0:#f0f2f5;--bg1:#ffffff;--bg2:#f8f9fa;--s0:#e4e6ea;--s1:#d8dadd;--o0:#9da3aa;--o1:#6c737a;--tx:#1a1a2e;--sub:#495057;--acc:#7c3aed;--bl:#2563eb;--gr:#16a34a;--clt:#7c3aed;--am:#ea580c;--yl:#d97706;--rd:#dc2626;--lv:#6366f1;--bdr:#e4e6ea;--cbg:#ffffff;--cbdr:#e4e6ea;--mbg:#f8f9fa;--mov:rgba(0,0,0,.38);--ontx:#fff}
-[data-theme="midnight"]  {--bg0:#070b14;--bg1:#0f1729;--bg2:#080d1e;--s0:#1a2540;--s1:#253050;--o0:#5a6888;--o1:#8098b8;--tx:#c8d8f0;--sub:#8098b8;--acc:#818cf8;--bl:#818cf8;--gr:#34d399;--clt:#f472b6;--am:#fbbf24;--yl:#fde68a;--rd:#f87171;--lv:#a5b4fc;--bdr:#1a2540;--cbg:#0f1729;--cbdr:#1a2540;--mbg:#080d1e;--mov:rgba(0,0,0,.82);--ontx:#000}
-[data-theme="crimson"]   {--bg0:#150808;--bg1:#221010;--bg2:#100606;--s0:#3a1818;--s1:#4d2020;--o0:#8a6060;--o1:#b08080;--tx:#f0d8d8;--sub:#c0a0a0;--acc:#f43f5e;--bl:#60a5fa;--gr:#2dd4bf;--clt:#f43f5e;--am:#f59e0b;--yl:#fde68a;--rd:#ff6b6b;--lv:#c084fc;--bdr:#3a1818;--cbg:#221010;--cbdr:#3a1818;--mbg:#100606;--mov:rgba(0,0,0,.8);--ontx:#fff}
-[data-theme="ocean"]     {--bg0:#051820;--bg1:#072030;--bg2:#041418;--s0:#0e3848;--s1:#184858;--o0:#508090;--o1:#78a8b8;--tx:#c8e8f0;--sub:#90b8c8;--acc:#06b6d4;--bl:#93c5fd;--gr:#6ee7b7;--clt:#e879f9;--am:#fde68a;--yl:#fde68a;--rd:#f87171;--lv:#a5b4fc;--bdr:#0e3848;--cbg:#072030;--cbdr:#0e3848;--mbg:#041418;--mov:rgba(0,0,0,.78);--ontx:#000}
-[data-theme="sunset"]    {--bg0:#fff8f0;--bg1:#fff0e0;--bg2:#fffaf4;--s0:#f0dfc8;--s1:#e8d0b0;--o0:#a08060;--o1:#705030;--tx:#2a1a08;--sub:#604020;--acc:#ea580c;--bl:#4338ca;--gr:#059669;--clt:#e11d48;--am:#d97706;--yl:#b45309;--rd:#dc2626;--lv:#7c3aed;--bdr:#e8d0b0;--cbg:#fff0e0;--cbdr:#e8d0b0;--mbg:#fffaf4;--mov:rgba(0,0,0,.4);--ontx:#fff}
-[data-theme="mono"]      {--bg0:#1c1c1c;--bg1:#242424;--bg2:#1c1c1c;--s0:#303030;--s1:#404040;--o0:#888;--o1:#aaa;--tx:#e0e0e0;--sub:#bbb;--acc:#c8c8c8;--bl:#8aa8c0;--gr:#8aaa8a;--clt:#c8c8c8;--am:#b49a6a;--yl:#c8b87a;--rd:#c87070;--lv:#9090c0;--bdr:#303030;--cbg:#242424;--cbdr:#303030;--mbg:#1c1c1c;--mov:rgba(0,0,0,.72);--ontx:#000}
+/* ══ 5 THEMES ═══════════════════════════════════════════════════════════════ */
+/* --bl=chars --gr=locs --clt=themes-cat --am=misc  --acc=UI accent --yl=highlight --sbg=storyboard bg */
+[data-theme="slate"]  {--bg0:#0d1117;--bg1:#161b22;--bg2:#0d1117;--s0:#21262d;--s1:#30363d;--o0:#6e7681;--o1:#8d96a0;--tx:#e6edf3;--sub:#8d96a0;--acc:#b07ef8;--bl:#58a6ff;--gr:#3fb950;--clt:#b07ef8;--am:#f0883e;--yl:#e3b341;--rd:#f85149;--lv:#79c0ff;--bdr:#21262d;--cbg:#161b22;--cbdr:#30363d;--mbg:#0d1117;--mov:rgba(0,0,0,.76);--ontx:#000;--sbg:#070a0f}
+[data-theme="ivory"]  {--bg0:#f8f6f2;--bg1:#f0ece6;--bg2:#faf9f6;--s0:#e4dfd8;--s1:#d4cfc8;--o0:#8a7e70;--o1:#5a4e40;--tx:#2c2416;--sub:#5c5044;--acc:#9b4a1a;--bl:#1a5a9b;--gr:#2d7a3a;--clt:#8b1a4a;--am:#b55810;--yl:#b06a00;--rd:#c0321a;--lv:#4a4a9b;--bdr:#d4cfc8;--cbg:#f0ece6;--cbdr:#d4cfc8;--mbg:#faf9f6;--mov:rgba(0,0,0,.42);--ontx:#fff;--sbg:#e8e3dc}
+[data-theme="studio"] {--bg0:#f0f2f5;--bg1:#ffffff;--bg2:#f8f9fa;--s0:#e4e6ea;--s1:#d8dadd;--o0:#9da3aa;--o1:#6c737a;--tx:#1a1a2e;--sub:#495057;--acc:#7c3aed;--bl:#2563eb;--gr:#16a34a;--clt:#7c3aed;--am:#ea580c;--yl:#d97706;--rd:#dc2626;--lv:#6366f1;--bdr:#e4e6ea;--cbg:#ffffff;--cbdr:#e4e6ea;--mbg:#f8f9fa;--mov:rgba(0,0,0,.38);--ontx:#fff;--sbg:#e4e8ed}
+[data-theme="ocean"]  {--bg0:#051820;--bg1:#072030;--bg2:#041418;--s0:#0e3848;--s1:#184858;--o0:#508090;--o1:#78a8b8;--tx:#c8e8f0;--sub:#90b8c8;--acc:#06b6d4;--bl:#93c5fd;--gr:#6ee7b7;--clt:#e879f9;--am:#fde68a;--yl:#fde68a;--rd:#f87171;--lv:#a5b4fc;--bdr:#0e3848;--cbg:#072030;--cbdr:#0e3848;--mbg:#041418;--mov:rgba(0,0,0,.78);--ontx:#000;--sbg:#020c10}
+[data-theme="sunset"] {--bg0:#fff8f0;--bg1:#fff0e0;--bg2:#fffaf4;--s0:#f0dfc8;--s1:#e8d0b0;--o0:#a08060;--o1:#705030;--tx:#2a1a08;--sub:#604020;--acc:#ea580c;--bl:#4338ca;--gr:#059669;--clt:#e11d48;--am:#d97706;--yl:#b45309;--rd:#dc2626;--lv:#7c3aed;--bdr:#e8d0b0;--cbg:#fff0e0;--cbdr:#e8d0b0;--mbg:#fffaf4;--mov:rgba(0,0,0,.4);--ontx:#fff;--sbg:#f0e5d4}
 
 /* Light-theme accent button text overrides */
-[data-theme="parchment"] .lsec-add,[data-theme="parchment"] #asb,[data-theme="parchment"] #saveedit,
-[data-theme="studio"]    .lsec-add,[data-theme="studio"]    #asb,[data-theme="studio"]    #saveedit,
-[data-theme="sunset"]    .lsec-add,[data-theme="sunset"]    #asb,[data-theme="sunset"]    #saveedit,
-[data-theme="crimson"]   .lsec-add,[data-theme="crimson"]   #asb,[data-theme="crimson"]   #saveedit,
-[data-theme="parchment"] #ap-ok,[data-theme="studio"] #ap-ok,[data-theme="sunset"] #ap-ok,[data-theme="crimson"] #ap-ok
+[data-theme="ivory"]  .lsec-add,[data-theme="ivory"]  #asb,[data-theme="ivory"]  #saveedit,
+[data-theme="studio"] .lsec-add,[data-theme="studio"] #asb,[data-theme="studio"] #saveedit,
+[data-theme="sunset"] .lsec-add,[data-theme="sunset"] #asb,[data-theme="sunset"] #saveedit,
+[data-theme="ivory"]  #ap-ok,[data-theme="studio"] #ap-ok,[data-theme="sunset"] #ap-ok,
+[data-theme="ivory"]  #libdel-ok,[data-theme="studio"] #libdel-ok,[data-theme="sunset"] #libdel-ok,
+[data-theme="ivory"]  #savecfm-ok,[data-theme="studio"] #savecfm-ok,[data-theme="sunset"] #savecfm-ok
 { color:#fff!important }
 
 /* ══ BASE ═══════════════════════════════════════════════════════════════════ */
@@ -36,7 +32,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 #hdr .tip{font-size:11px;color:var(--o0);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Undo / Redo */
 #ur-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.ur-btn{background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap;max-width:148px;overflow:hidden;text-overflow:ellipsis;transition:background .12s,color .12s,opacity .14s;line-height:1.5}
+.ur-btn{background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap;max-width:148px;overflow:hidden;text-overflow:ellipsis;transition:background .12s,color .12s,opacity .14s;line-height:1.5;position:relative}
 .ur-btn:hover:not([disabled]){background:var(--s1);color:var(--tx)}
 .ur-btn[disabled]{opacity:.38;cursor:default;pointer-events:none}
 /* Theme */
@@ -112,27 +108,29 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 
 /* ══ CENTER PANEL ══════════════════════════════════════════════════════════ */
 #cp{width:258px;background:var(--bg2);border-right:1px solid var(--bdr)}
-.tabs{display:flex;align-items:stretch;border-bottom:1px solid var(--bdr);flex-shrink:0}
-.tab{flex:1;padding:9px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:none;border:none;border-bottom:2px solid transparent;color:var(--o0);cursor:pointer;transition:color .14s,border-color .14s;font-family:inherit}
-.tab.on{color:var(--acc);border-bottom-color:var(--acc)}
-.tab.dim{color:var(--s1)!important;cursor:default;pointer-events:none}
-.tab:not(.on):not(.dim):hover{color:var(--sub)}
-.tab-cbtn{border-left:1px solid var(--bdr)!important;border-radius:0!important;padding:0 10px!important;font-size:12px!important;align-self:stretch;flex-shrink:0}
+.tabs{display:flex;align-items:flex-end;background:var(--bg0);border-bottom:2px solid var(--bdr);flex-shrink:0;padding:6px 8px 0;gap:4px}
+.tab{flex:1;padding:9px 0 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:var(--s0);border:1.5px solid var(--bdr);border-bottom:none;border-radius:7px 7px 0 0;color:var(--o1);cursor:pointer;transition:color .14s,background .14s,border-color .14s;font-family:inherit;position:relative;bottom:-2px}
+.tab.on{background:var(--bg2);color:var(--acc);border-color:var(--bdr);border-bottom:2px solid var(--bg2);z-index:1}
+.tab.dim{color:var(--o0)!important;cursor:default;pointer-events:none;opacity:.45}
+.tab:not(.on):not(.dim):hover{background:var(--s1);color:var(--sub)}
+.tab-cbtn{background:none!important;border:none!important;border-left:1px solid var(--bdr)!important;border-radius:0!important;padding:0 10px!important;font-size:12px!important;align-self:stretch;flex-shrink:0;margin-bottom:-2px}
 #cp .p-body{padding:12px}
 .ff{margin-bottom:9px}
 .ff label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--sub);margin-bottom:4px}
 .ff input[type=text],.ff textarea{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:7px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;transition:border-color .14s;resize:none}
 .ff input[type=text]:focus,.ff textarea:focus{border-color:var(--acc)}
 .ff input[type=text]::placeholder,.ff textarea::placeholder{color:var(--o0)}
-.ff textarea{height:66px}
-.cklist{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px;max-height:90px;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.ff input[type=text]{padding:9px 10px}
+.ff textarea{height:85px}
+.cklist{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px;max-height:110px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:1px}
 .cklist::-webkit-scrollbar{width:3px}
 .cklist::-webkit-scrollbar-thumb{background:var(--s1)}
 /* Checkbox items */
-.cki{display:flex;align-items:center;gap:14px;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:background .1s;line-height:1.4}
+.cki{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;padding:3px 6px;border-radius:4px;transition:background .1s;line-height:1.4}
 .cki:hover{background:var(--s1)}
 .cki input[type=checkbox]{width:13px;height:13px;accent-color:var(--acc);cursor:pointer;flex-shrink:0;margin:0}
-.cki span{flex:1}
+.cki span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cklist .eh{grid-column:1/-1}
 .form-btns{display:flex;gap:7px;margin-top:5px}
 #asb,#saveedit{flex:1;background:var(--acc);color:#000;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .14s,transform .1s}
 #asb:hover,#saveedit:hover{opacity:.86}
@@ -142,28 +140,32 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .errmsg{font-size:11px;color:var(--rd);margin-top:5px;min-height:14px}
 
 /* ══ STORYBOARD PANEL ══════════════════════════════════════════════════════ */
-#sbp{flex:1;min-width:0;background:var(--bg0);display:flex;flex-direction:column;overflow:hidden}
-#sbhdr{height:46px;border-bottom:1px solid var(--bdr);padding:0 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--bg0)}
+#sbp{flex:1;min-width:0;background:var(--sbg);display:flex;flex-direction:column;overflow:hidden}
+#sbhdr{height:46px;border-bottom:1px solid var(--bdr);padding:0 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--sbg)}
 .sbt{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--o0);white-space:nowrap;flex-shrink:0}
 .sbhl{display:flex;align-items:center;gap:6px;flex-shrink:0}
 #sbcnt{font-size:12px;color:var(--sub)}
 #clrsel{font-size:11px;color:var(--lv);background:none;border:none;cursor:pointer;padding:3px 7px;border-radius:5px;display:none;transition:background .12s;font-family:inherit;white-space:nowrap}
 #clrsel:hover{background:color-mix(in srgb,var(--lv) 14%,transparent)}
 /* Search */
-#srch-wrap{display:flex;align-items:center;gap:5px;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:3px 8px;flex:1;min-width:100px;max-width:310px}
+#srch-wrap{display:flex;align-items:center;gap:5px;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:3px 8px;margin-left:auto;min-width:140px;max-width:280px}
 #srch-inp{flex:1;min-width:0;background:none;border:none;color:var(--tx);font-size:12px;outline:none;font-family:inherit}
 #srch-inp::placeholder{color:var(--o0)}
 #srch-scope{background:transparent;border:none;border-left:1px solid var(--s1);color:var(--sub);font-size:11px;cursor:pointer;outline:none;font-family:inherit;padding:1px 0 1px 6px;flex-shrink:0}
 #srch-scope option{background:var(--bg1);color:var(--tx)}
 #srch-clr{background:none;border:none;color:var(--o0);cursor:pointer;font-size:15px;padding:0 1px;line-height:1;display:none;transition:color .1s;flex-shrink:0}
 #srch-clr:hover{color:var(--rd)}
-.scalew{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:auto}
+.scalew{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .scalelbl{font-size:10px;color:var(--o0)}
-#scaler{width:72px;height:4px;accent-color:var(--acc);cursor:pointer}
+#scaler{width:72px;accent-color:var(--acc);cursor:pointer;display:block}
 #sbscrl{flex:1;min-height:0;overflow-x:auto;overflow-y:hidden}
 #sbscrl::-webkit-scrollbar{height:5px}
 #sbscrl::-webkit-scrollbar-thumb{background:var(--s0);border-radius:3px}
-#board{height:100%;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:11px;padding:14px;min-width:max-content;--cs:1}
+#board{height:100%;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:8px;padding:12px;min-width:max-content;--cs:1}
+#board.hide-details .cmeta{display:none}
+/* Details toggle checkbox */
+.det-ck{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--sub);cursor:pointer;flex-shrink:0;user-select:none}
+.det-ck input{width:12px;height:12px;accent-color:var(--acc);cursor:pointer;flex-shrink:0;margin:0}
 #sbemp{position:absolute;inset:46px 0 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;pointer-events:none}
 #sbemp .ei{font-size:44px;opacity:.22}
 #sbemp p{font-size:13px;color:var(--o0)}
@@ -235,6 +237,14 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 #msum{font-size:13px;color:var(--sub);line-height:1.7;white-space:pre-wrap}
 #mclose{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--o0);font-size:20px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .12s,background .12s;line-height:1}
 #mclose:hover{color:var(--tx);background:var(--s0)}
+
+/* ══ CONFIRM MODALS ════════════════════════════════════════════════════════ */
+.cfm-modal{position:fixed;inset:0;background:var(--mov);display:none;align-items:center;justify-content:center;z-index:10002}
+.cfm-modal.open{display:flex}
+.cfm-box{background:var(--mbg);border:1px solid var(--s1);border-radius:10px;padding:22px 24px;width:320px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.cfm-msg{font-size:13px;color:var(--tx);line-height:1.5;margin-bottom:16px}
+#libdel-ok{background:var(--rd);color:#fff}
+#libdel-ok:hover{opacity:.86}
 </style>
 </head>
 <body>
@@ -250,16 +260,11 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   <div id="theme-wrap">
     <label for="theme-sel">Theme</label>
     <select id="theme-sel" onchange="setTheme(this.value)">
-      <option value="cosmos">Cosmos</option>
+      <option value="ivory">Ivory</option>
       <option value="slate">Slate</option>
-      <option value="forest">Forest</option>
-      <option value="parchment">Parchment</option>
       <option value="studio">Studio</option>
-      <option value="midnight">Midnight</option>
-      <option value="crimson">Crimson</option>
       <option value="ocean">Ocean</option>
       <option value="sunset">Sunset</option>
-      <option value="mono">Monochrome</option>
     </select>
   </div>
 </div>
@@ -274,7 +279,6 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
     <div class="p-content">
       <div class="p-hdr">Library
         <div class="p-hdr-btns">
-          <button class="cbtn rst-btn" onclick="resetAll()" title="Reset — delete all data">Reset</button>
           <button class="cbtn" onclick="togglePanel('lp')" title="Collapse">◀</button>
         </div>
       </div>
@@ -339,6 +343,14 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <span id="sbcnt">0 scenes</span>
         <button id="clrsel" onclick="clearCardSel()">Clear selection</button>
       </div>
+      <label class="det-ck" title="Show library elements on scene cards">
+        <input type="checkbox" id="det-toggle" onchange="toggleDetails(this.checked)">
+        Show Card Details
+      </label>
+      <div class="scalew">
+        <span class="scalelbl">Size</span>
+        <input type="range" id="scaler" min="0.55" max="1.65" step="0.05" value="1" oninput="setScale(this.value)">
+      </div>
       <div id="srch-wrap">
         <input type="text" id="srch-inp" placeholder="🔍 Search…" oninput="onSearch()">
         <select id="srch-scope" onchange="onSearch()" title="Search in…">
@@ -347,10 +359,6 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
           <option value="summary">Summary only</option>
         </select>
         <button id="srch-clr" onclick="clearSearch()" title="Clear search">×</button>
-      </div>
-      <div class="scalew">
-        <span class="scalelbl">Size</span>
-        <input type="range" id="scaler" min="0.55" max="1.65" step="0.05" value="1" oninput="setScale(this.value)">
       </div>
     </div>
     <div id="sbemp"><div class="ei">🎭</div><p>Create your first scene to get started</p></div>
@@ -369,6 +377,28 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
     <div class="ap-btns">
       <button id="ap-cancel" onclick="closeAddPopup()">Cancel</button>
       <button id="ap-ok"     onclick="confirmAdd()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Library Delete Confirm Modal -->
+<div id="libdel-modal" class="cfm-modal">
+  <div class="cfm-box">
+    <div id="libdel-msg" class="cfm-msg"></div>
+    <div class="ap-btns">
+      <button id="libdel-cancel" onclick="closeLibDelModal()">Cancel</button>
+      <button id="libdel-ok" onclick="confirmLibDel()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save Edit Confirm Modal -->
+<div id="savecfm-modal" class="cfm-modal">
+  <div class="cfm-box">
+    <div id="savecfm-msg" class="cfm-msg"></div>
+    <div class="ap-btns">
+      <button id="savecfm-cancel" onclick="closeSaveCfm()">Cancel</button>
+      <button id="savecfm-ok" onclick="confirmSaveEdit()">Save Changes</button>
     </div>
   </div>
 </div>
@@ -425,11 +455,11 @@ function loadState() {
     }));
     S.nextId = d.nextId || 1;
     S.andOr  = d.andOr === 'AND' ? 'AND' : 'OR';
-    if (d.theme) {
-      document.documentElement.dataset.theme = d.theme;
-      const sel = document.getElementById('theme-sel');
-      if (sel) sel.value = d.theme;
-    }
+    const VALID_THEMES = ['ivory','slate','studio','ocean','sunset'];
+    const theme = VALID_THEMES.includes(d.theme) ? d.theme : 'ivory';
+    document.documentElement.dataset.theme = theme;
+    const sel = document.getElementById('theme-sel');
+    if (sel) sel.value = theme;
     return true;
   } catch(e) { return false; }
 }
@@ -512,6 +542,8 @@ function updateUndoRedo() {
   ub.disabled = !canU; rb.disabled = !canR;
   ub.textContent = canU ? '↩ ' + truncStr(hist.past[hist.past.length-1].desc, 20) : '↩ Undo';
   rb.textContent = canR ? '↪ ' + truncStr(hist.future[hist.future.length-1].desc, 20) : '↪ Redo';
+  ub.title = canU ? '↩ ' + hist.past[hist.past.length-1].desc + ' (Ctrl+Z)' : 'Undo (Ctrl+Z)';
+  rb.title = canR ? '↪ ' + hist.future[hist.future.length-1].desc + ' (Ctrl+Y)' : 'Redo (Ctrl+Y)';
 }
 
 // ── SEARCH ────────────────────────────────────────────────────────────────────
@@ -616,6 +648,27 @@ function removeItem(sec, name) {
   saveState();
 }
 
+let libDelSec = null, libDelName = null;
+function openLibDelModal(sec, name) {
+  libDelSec = sec; libDelName = name;
+  const cfg = SECS.find(s => s.key === sec);
+  const label = cfg.label.replace(/s$/, '');
+  document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (${label}) from the entire storyboard? This cannot be undone.`;
+  document.getElementById('libdel-modal').classList.add('open');
+}
+function closeLibDelModal() { document.getElementById('libdel-modal').classList.remove('open'); libDelSec = null; libDelName = null; }
+function confirmLibDel() {
+  if (!libDelSec || !libDelName) return;
+  const s = libDelSec, n = libDelName;
+  closeLibDelModal();
+  removeItem(s, n);
+}
+
+// ── CARD DETAILS TOGGLE ───────────────────────────────────────────────────────
+function toggleDetails(show) {
+  document.getElementById('board').classList.toggle('hide-details', !show);
+}
+
 // ── HIGHLIGHT LOGIC ───────────────────────────────────────────────────────────
 function sceneMatchesLib(scene) {
   const allSel = SECS.flatMap(({ key }) => [...S.selections[key]].map(v => ({ key, v })));
@@ -693,16 +746,25 @@ function cancelEdit() {
 function saveEdit() {
   const sc = S.scenes.find(s => s.id === S.editingId); if (!sc) return;
   const titleEl = document.getElementById('ed-title'), errEl = document.getElementById('ederr');
-  const title = titleEl.value.trim(), summary = document.getElementById('ed-summary').value.trim();
+  const title = titleEl.value.trim();
   errEl.textContent = '';
   if (!title) { errEl.textContent = 'Please enter a title.'; titleEl.focus(); return; }
   if (S.scenes.some(s => s.id !== sc.id && s.title.toLowerCase() === title.toLowerCase())) { errEl.textContent = 'Title already exists.'; titleEl.select(); return; }
+  const sceneNum = S.scenes.indexOf(sc) + 1;
+  document.getElementById('savecfm-msg').textContent = `Save changes to Scene ${sceneNum} — "${title}"?`;
+  document.getElementById('savecfm-modal').classList.add('open');
+}
+function confirmSaveEdit() {
+  const sc = S.scenes.find(s => s.id === S.editingId); if (!sc) return;
+  const title = document.getElementById('ed-title').value.trim();
+  const summary = document.getElementById('ed-summary').value.trim();
   pushHistory('Edit scene "' + truncStr(sc.title, 22) + '"');
   sc.title = title; sc.summary = summary;
   SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value); });
-  cancelEdit(); renderBoard();
+  closeSaveCfm(); cancelEdit(); renderBoard();
   saveState();
 }
+function closeSaveCfm() { document.getElementById('savecfm-modal').classList.remove('open'); }
 function switchTab(t) {
   document.getElementById('tab-new').classList.toggle('on', t === 'new');
   document.getElementById('tab-edit').classList.toggle('on', t === 'edit');
@@ -721,6 +783,12 @@ function openModal(id) {
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
 document.getElementById('modal').addEventListener('click', e => {
   if (e.target === document.getElementById('modal')) closeModal();
+});
+document.getElementById('libdel-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('libdel-modal')) closeLibDelModal();
+});
+document.getElementById('savecfm-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('savecfm-modal')) closeSaveCfm();
 });
 
 // ── RENDER ALL LIBRARY SECTIONS ───────────────────────────────────────────────
@@ -761,7 +829,7 @@ function renderLibSec(sec) {
     const nm  = document.createElement('span'); nm.className  = 'iname'; nm.textContent = name;
     const del = document.createElement('button'); del.className = 'idel'; del.title = 'Remove'; del.textContent = '×';
     del.addEventListener('mousedown', e => e.stopPropagation());
-    del.addEventListener('click',     e => { e.stopPropagation(); removeItem(sec, name); });
+    del.addEventListener('click',     e => { e.stopPropagation(); openLibDelModal(sec, name); });
     li.appendChild(dh); li.appendChild(dot); li.appendChild(nm); li.appendChild(del);
     li.addEventListener('click', () => toggleLibItem(sec, name));
     dh.addEventListener('mousedown', e => startLibDrag(e, sec, idx));
@@ -972,7 +1040,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
     if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); return; }
   }
-  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); }
+  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); }
 });
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -984,6 +1052,8 @@ renderAllCk();
 renderBoard();
 updateLibClearBtn();
 updateUndoRedo();
+// Default: hide card details (user can toggle on)
+document.getElementById('board').classList.add('hide-details');
 </script>
 </body>
 </html>
