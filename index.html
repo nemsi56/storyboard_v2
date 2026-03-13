@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visual Storyboard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg0:      #0f0f1a;
+  --bg1:      #1a1a2e;
+  --bg2:      #14141f;
+  --surface0: #2a2a40;
+  --surface1: #3a3a52;
+  --overlay0: #6b6b8a;
+  --overlay1: #8888a8;
+  --text:     #d4d4f0;
+  --subtext:  #a0a0c0;
+  --mauve:    #c084fc;
+  --blue:     #7eb8f7;
+  --green:    #86efac;
+  --yellow:   #fde68a;
+  --red:      #f87171;
+  --lavender: #a5b4fc;
+  --border:   #2a2a40;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg0);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── APP HEADER ── */
+#app-header {
+  background: var(--bg1);
+  border-bottom: 1px solid var(--border);
+  height: 50px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+#app-header h1 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--mauve);
+  letter-spacing: 0.4px;
+}
+#app-header .header-tip {
+  font-size: 11px;
+  color: var(--overlay0);
+  margin-left: auto;
+}
+
+/* ── MAIN LAYOUT ── */
+.main-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── PANELS ── */
+.panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.panel-hdr {
+  padding: 12px 15px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--overlay0);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 15px;
+}
+.panel-body::-webkit-scrollbar { width: 4px; }
+.panel-body::-webkit-scrollbar-track { background: transparent; }
+.panel-body::-webkit-scrollbar-thumb { background: var(--surface0); border-radius: 2px; }
+
+/* ── LEFT PANEL ── */
+#left-panel {
+  width: 215px;
+  background: var(--bg1);
+  border-right: 1px solid var(--border);
+}
+#left-panel .panel-body { padding: 0; }
+
+.lib-section {
+  padding: 14px 15px;
+  border-bottom: 1px solid var(--border);
+}
+.lib-section h3 {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--overlay0);
+  margin-bottom: 11px;
+}
+
+.add-row {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.add-row input {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface0);
+  border: 1px solid var(--surface1);
+  border-radius: 6px;
+  padding: 5px 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+}
+.add-row input:focus { border-color: var(--mauve); }
+.add-row input::placeholder { color: var(--overlay0); }
+.add-btn {
+  background: var(--mauve);
+  color: #0f0f1a;
+  border: none;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: background .15s;
+}
+.add-btn:hover { background: #d8abff; }
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Character items */
+.char-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  background: var(--surface0);
+  border: 1.5px solid transparent;
+  transition: background .12s, border-color .12s;
+  user-select: none;
+}
+.char-item:hover { background: var(--surface1); }
+.char-item.active {
+  background: rgba(192, 132, 252, .12);
+  border-color: var(--mauve);
+  color: var(--mauve);
+}
+.char-item.active .idot { background: var(--mauve); }
+
+/* Location items */
+.loc-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--surface0);
+  user-select: none;
+}
+
+.idot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.char-dot { background: var(--blue); }
+.loc-dot  { background: var(--green); }
+
+.iname {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.idel {
+  background: none;
+  border: none;
+  color: var(--overlay0);
+  cursor: pointer;
+  font-size: 15px;
+  padding: 0 1px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity .1s, color .1s;
+  flex-shrink: 0;
+}
+.char-item:hover .idel,
+.loc-item:hover .idel { opacity: 1; }
+.idel:hover { color: var(--red); }
+
+.empty-hint {
+  font-size: 11px;
+  color: var(--overlay0);
+  font-style: italic;
+  padding: 2px 0;
+}
+.char-tip {
+  font-size: 10px;
+  color: var(--overlay0);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+/* ── CENTER PANEL ── */
+#center-panel {
+  width: 252px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+}
+
+.form-field { margin-bottom: 13px; }
+.form-field label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.1px;
+  color: var(--subtext);
+  margin-bottom: 5px;
+}
+.form-field input[type="text"] {
+  width: 100%;
+  background: var(--surface0);
+  border: 1px solid var(--surface1);
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+}
+.form-field input[type="text"]:focus { border-color: var(--mauve); }
+.form-field input[type="text"]::placeholder { color: var(--overlay0); }
+
+.checklist {
+  background: var(--surface0);
+  border: 1px solid var(--surface1);
+  border-radius: 6px;
+  padding: 7px;
+  max-height: 120px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.checklist::-webkit-scrollbar { width: 3px; }
+.checklist::-webkit-scrollbar-thumb { background: var(--surface1); border-radius: 2px; }
+
+.ck-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background .1s;
+}
+.ck-item:hover { background: var(--surface1); }
+.ck-item input[type="checkbox"] {
+  width: 12px;
+  height: 12px;
+  accent-color: var(--mauve);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ck-item span { flex: 1; user-select: none; }
+
+#add-scene-btn {
+  width: 100%;
+  background: var(--mauve);
+  color: #0f0f1a;
+  border: none;
+  border-radius: 8px;
+  padding: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+  letter-spacing: 0.2px;
+}
+#add-scene-btn:hover { background: #d8abff; }
+#add-scene-btn:active { transform: scale(.98); }
+
+.err-msg {
+  font-size: 11px;
+  color: var(--red);
+  margin-top: 7px;
+  min-height: 15px;
+  line-height: 1.4;
+}
+
+/* ── STORYBOARD PANEL ── */
+#sb-panel {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg0);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#sb-panel-hdr {
+  height: 44px;
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  background: var(--bg0);
+}
+#sb-panel-hdr .hdr-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--overlay0);
+}
+.hdr-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#hdr-count { font-size: 12px; color: var(--subtext); }
+#sel-clear-btn {
+  font-size: 11px;
+  color: var(--lavender);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 3px 7px;
+  border-radius: 5px;
+  display: none;
+  transition: background .12s;
+}
+#sel-clear-btn:hover { background: rgba(165, 180, 252, .1); }
+
+/* Storyboard scroll container */
+#sb-scroller {
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+#sb-scroller::-webkit-scrollbar { height: 5px; }
+#sb-scroller::-webkit-scrollbar-track { background: var(--bg0); }
+#sb-scroller::-webkit-scrollbar-thumb { background: var(--surface0); border-radius: 3px; }
+
+/* The storyboard: column-wrap flex */
+#storyboard {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 11px;
+  padding: 15px;
+  min-width: max-content;
+}
+
+/* Empty state */
+#sb-empty {
+  position: absolute;
+  inset: 44px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  pointer-events: none;
+}
+#sb-empty .ei { font-size: 44px; opacity: .25; }
+#sb-empty p { font-size: 13px; color: var(--overlay0); }
+
+/* ── SCENE CARDS ── */
+.scene-card {
+  width: 174px;
+  background: var(--bg1);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 11px 10px;
+  cursor: grab;
+  user-select: none;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color .15s, box-shadow .15s, opacity .2s;
+}
+.scene-card:hover { border-color: var(--surface1); }
+.scene-card.is-dragging { opacity: .2; cursor: grabbing; }
+
+.scene-card.selected {
+  border-color: var(--lavender);
+  background: rgba(165, 180, 252, .04);
+}
+.scene-card.char-lit {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 2px rgba(253, 230, 138, .22), 0 4px 18px rgba(253, 230, 138, .08);
+  background: rgba(253, 230, 138, .035);
+}
+/* Drop indicators */
+.scene-card.drop-before { border-top-color: var(--mauve); border-top-width: 3px; }
+.scene-card.drop-after  { border-bottom-color: var(--mauve); border-bottom-width: 3px; }
+
+/* Selected badge */
+.sel-badge {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  width: 14px;
+  height: 14px;
+  background: var(--lavender);
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: #0f0f1a;
+  font-weight: 900;
+  line-height: 1;
+}
+.scene-card.selected .sel-badge { display: flex; }
+
+/* Delete button */
+.card-del {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: none;
+  border: none;
+  color: var(--overlay0);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity .1s, color .1s, background .1s;
+}
+.scene-card:hover .card-del { opacity: 1; }
+.card-del:hover { color: var(--red); background: rgba(248, 113, 113, .1); }
+
+/* Card content */
+.card-num {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.1px;
+  color: var(--overlay0);
+  margin-bottom: 3px;
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 9px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+.card-meta { display: flex; flex-direction: column; gap: 6px; }
+.card-meta-row { display: flex; flex-direction: column; gap: 3px; }
+.card-meta-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--overlay0);
+}
+.card-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+.tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tag.ct { background: rgba(126, 184, 247, .12); color: var(--blue); }
+.tag.lt { background: rgba(134, 239, 172, .12); color: var(--green); }
+.tag-none { font-size: 10px; color: var(--overlay0); font-style: italic; }
+
+/* ── DRAG GHOST ── */
+#drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  display: none;
+  width: 174px;
+  background: var(--bg1);
+  border: 2px solid var(--mauve);
+  border-radius: 10px;
+  padding: 11px 11px 10px;
+  box-shadow: 0 14px 44px rgba(0,0,0,.65), 0 0 0 1px rgba(192,132,252,.2);
+  transform: rotate(2.5deg) scale(1.04);
+  transform-origin: top left;
+}
+.ghost-badge {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  background: var(--mauve);
+  color: #0f0f1a;
+  border-radius: 50%;
+  width: 21px;
+  height: 21px;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>
+</head>
+<body>
+
+<!-- APP HEADER -->
+<div id="app-header">
+  <h1>&#127916; Visual Storyboard</h1>
+  <span class="header-tip">Drag cards to reorder &nbsp;·&nbsp; Click a character to highlight scenes &nbsp;·&nbsp; Click cards to multi-select</span>
+</div>
+
+<div class="main-layout">
+
+  <!-- ── LEFT PANEL: Library ── -->
+  <div id="left-panel" class="panel">
+    <div class="panel-hdr">Library</div>
+    <div class="panel-body">
+
+      <!-- Characters -->
+      <div class="lib-section">
+        <h3>Characters</h3>
+        <div class="add-row">
+          <input type="text" id="char-input" placeholder="Character name…" maxlength="40">
+          <button class="add-btn" id="char-add-btn" title="Add character">+</button>
+        </div>
+        <div class="items-list" id="char-list">
+          <div class="empty-hint">No characters yet</div>
+        </div>
+        <div class="char-tip" id="char-tip" style="display:none">Click a character to highlight their scenes on the storyboard</div>
+      </div>
+
+      <!-- Locations -->
+      <div class="lib-section">
+        <h3>Locations</h3>
+        <div class="add-row">
+          <input type="text" id="loc-input" placeholder="Location name…" maxlength="40">
+          <button class="add-btn" id="loc-add-btn" title="Add location">+</button>
+        </div>
+        <div class="items-list" id="loc-list">
+          <div class="empty-hint">No locations yet</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── CENTER PANEL: New Scene ── -->
+  <div id="center-panel" class="panel">
+    <div class="panel-hdr">New Scene</div>
+    <div class="panel-body">
+      <div class="form-field">
+        <label>Title</label>
+        <input type="text" id="scene-title" placeholder="Enter scene title…" maxlength="60">
+      </div>
+      <div class="form-field">
+        <label>Characters</label>
+        <div class="checklist" id="char-ck">
+          <div class="empty-hint">Add characters first</div>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Locations</label>
+        <div class="checklist" id="loc-ck">
+          <div class="empty-hint">Add locations first</div>
+        </div>
+      </div>
+      <button id="add-scene-btn">+ Add Scene</button>
+      <div class="err-msg" id="scene-err"></div>
+    </div>
+  </div>
+
+  <!-- ── STORYBOARD PANEL ── -->
+  <div id="sb-panel">
+    <div id="sb-panel-hdr">
+      <span class="hdr-title">Storyboard</span>
+      <div class="hdr-right">
+        <span id="hdr-count">0 scenes</span>
+        <button id="sel-clear-btn" onclick="clearSelection()">Clear selection</button>
+      </div>
+    </div>
+    <!-- Empty state overlay -->
+    <div id="sb-empty">
+      <div class="ei">&#127912;</div>
+      <p>Create your first scene to get started</p>
+    </div>
+    <!-- Scrollable column-wrap container -->
+    <div id="sb-scroller">
+      <div id="storyboard"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Drag ghost -->
+<div id="drag-ghost"></div>
+
+<script>
+'use strict';
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const S = {
+  characters:    [],
+  locations:     [],
+  scenes:        [],   // ordered; index+1 = scene number
+  activeChar:    null, // character name currently highlighted
+  selectedIds:   new Set(),
+  nextId:        1,
+};
+
+// ── POINTER / DRAG ────────────────────────────────────────────────────────────
+const ptr = { down: false, cardId: null, startX: 0, startY: 0, dragging: false };
+const drag = {
+  active: false,
+  ids: [],
+  offsetX: 0, offsetY: 0,
+  dropId: null,
+  dropBefore: true,
+};
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function setText(el, text) { el.textContent = text; }
+
+// ── CHARACTER ACTIONS ────────────────────────────────────────────────────────
+function addCharacter() {
+  const inp = document.getElementById('char-input');
+  const name = inp.value.trim();
+  if (!name || S.characters.includes(name)) { inp.select(); return; }
+  S.characters.push(name);
+  inp.value = '';
+  renderChars();
+  renderCharCk();
+}
+
+function removeCharacter(name) {
+  S.characters = S.characters.filter(c => c !== name);
+  S.scenes.forEach(sc => { sc.characters = sc.characters.filter(c => c !== name); });
+  if (S.activeChar === name) S.activeChar = null;
+  renderChars();
+  renderCharCk();
+  renderStoryboard();
+}
+
+function toggleCharHighlight(name) {
+  S.activeChar = S.activeChar === name ? null : name;
+  renderChars();
+  renderStoryboard();
+}
+
+// ── LOCATION ACTIONS ──────────────────────────────────────────────────────────
+function addLocation() {
+  const inp = document.getElementById('loc-input');
+  const name = inp.value.trim();
+  if (!name || S.locations.includes(name)) { inp.select(); return; }
+  S.locations.push(name);
+  inp.value = '';
+  renderLocs();
+  renderLocCk();
+}
+
+function removeLocation(name) {
+  S.locations = S.locations.filter(l => l !== name);
+  S.scenes.forEach(sc => { sc.locations = sc.locations.filter(l => l !== name); });
+  renderLocs();
+  renderLocCk();
+  renderStoryboard();
+}
+
+// ── SCENE ACTIONS ─────────────────────────────────────────────────────────────
+function addScene() {
+  const titleEl = document.getElementById('scene-title');
+  const errEl   = document.getElementById('scene-err');
+  const title   = titleEl.value.trim();
+
+  errEl.textContent = '';
+  if (!title) { errEl.textContent = 'Please enter a scene title.'; titleEl.focus(); return; }
+  if (S.scenes.some(s => s.title.toLowerCase() === title.toLowerCase())) {
+    errEl.textContent = 'A scene with this title already exists.'; titleEl.select(); return;
+  }
+
+  const chars = [...document.querySelectorAll('#char-ck input:checked')].map(cb => cb.value);
+  const locs  = [...document.querySelectorAll('#loc-ck  input:checked')].map(cb => cb.value);
+
+  S.scenes.push({ id: S.nextId++, title, characters: chars, locations: locs });
+  titleEl.value = '';
+  document.querySelectorAll('#char-ck input, #loc-ck input').forEach(cb => { cb.checked = false; });
+  renderStoryboard();
+  updateCount();
+}
+
+function deleteScene(id) {
+  S.scenes = S.scenes.filter(s => s.id !== id);
+  S.selectedIds.delete(id);
+  renderStoryboard();
+  updateCount();
+}
+
+function clearSelection() {
+  S.selectedIds.clear();
+  document.getElementById('sel-clear-btn').style.display = 'none';
+  renderStoryboard();
+}
+
+// ── RENDER: LEFT PANEL ────────────────────────────────────────────────────────
+function renderChars() {
+  const list = document.getElementById('char-list');
+  const tip  = document.getElementById('char-tip');
+  list.innerHTML = '';
+
+  if (!S.characters.length) {
+    const d = document.createElement('div');
+    d.className = 'empty-hint'; d.textContent = 'No characters yet';
+    list.appendChild(d); tip.style.display = 'none'; return;
+  }
+  tip.style.display = 'block';
+
+  S.characters.forEach(name => {
+    const div = document.createElement('div');
+    div.className = 'char-item' + (S.activeChar === name ? ' active' : '');
+
+    const dot = document.createElement('span'); dot.className = 'idot char-dot';
+    const nm  = document.createElement('span'); nm.className  = 'iname'; nm.textContent = name;
+    const del = document.createElement('button');
+    del.className = 'idel'; del.title = 'Remove'; del.textContent = '×';
+    del.addEventListener('click', e => { e.stopPropagation(); removeCharacter(name); });
+
+    div.appendChild(dot); div.appendChild(nm); div.appendChild(del);
+    div.addEventListener('click', () => toggleCharHighlight(name));
+    list.appendChild(div);
+  });
+}
+
+function renderLocs() {
+  const list = document.getElementById('loc-list');
+  list.innerHTML = '';
+
+  if (!S.locations.length) {
+    const d = document.createElement('div');
+    d.className = 'empty-hint'; d.textContent = 'No locations yet';
+    list.appendChild(d); return;
+  }
+
+  S.locations.forEach(name => {
+    const div = document.createElement('div');
+    div.className = 'loc-item';
+
+    const dot = document.createElement('span'); dot.className = 'idot loc-dot';
+    const nm  = document.createElement('span'); nm.className  = 'iname'; nm.textContent = name;
+    const del = document.createElement('button');
+    del.className = 'idel'; del.title = 'Remove'; del.textContent = '×';
+    del.addEventListener('click', e => { e.stopPropagation(); removeLocation(name); });
+
+    div.appendChild(dot); div.appendChild(nm); div.appendChild(del);
+    list.appendChild(div);
+  });
+}
+
+// ── RENDER: CENTER PANEL CHECKLISTS ──────────────────────────────────────────
+function renderCharCk() {
+  const box = document.getElementById('char-ck');
+  box.innerHTML = '';
+  if (!S.characters.length) {
+    const d = document.createElement('div'); d.className = 'empty-hint';
+    d.textContent = 'Add characters first'; box.appendChild(d); return;
+  }
+  S.characters.forEach(name => {
+    const lbl = document.createElement('label'); lbl.className = 'ck-item';
+    const cb  = document.createElement('input'); cb.type = 'checkbox'; cb.value = name;
+    const sp  = document.createElement('span');  sp.textContent = name;
+    lbl.appendChild(cb); lbl.appendChild(sp); box.appendChild(lbl);
+  });
+}
+
+function renderLocCk() {
+  const box = document.getElementById('loc-ck');
+  box.innerHTML = '';
+  if (!S.locations.length) {
+    const d = document.createElement('div'); d.className = 'empty-hint';
+    d.textContent = 'Add locations first'; box.appendChild(d); return;
+  }
+  S.locations.forEach(name => {
+    const lbl = document.createElement('label'); lbl.className = 'ck-item';
+    const cb  = document.createElement('input'); cb.type = 'checkbox'; cb.value = name;
+    const sp  = document.createElement('span');  sp.textContent = name;
+    lbl.appendChild(cb); lbl.appendChild(sp); box.appendChild(lbl);
+  });
+}
+
+// ── RENDER: STORYBOARD ────────────────────────────────────────────────────────
+function renderStoryboard() {
+  const board   = document.getElementById('storyboard');
+  const emptyEl = document.getElementById('sb-empty');
+  board.innerHTML = '';
+
+  if (!S.scenes.length) {
+    emptyEl.style.display = 'flex'; return;
+  }
+  emptyEl.style.display = 'none';
+
+  S.scenes.forEach((scene, idx) => {
+    const num        = idx + 1;
+    const isDragging = drag.active && drag.ids.includes(scene.id);
+    const isSelected = S.selectedIds.has(scene.id);
+    const isLit      = S.activeChar && scene.characters.includes(S.activeChar);
+    const isDBefore  = drag.active && drag.dropId === scene.id && drag.dropBefore;
+    const isDAfter   = drag.active && drag.dropId === scene.id && !drag.dropBefore;
+
+    const card = document.createElement('div');
+    card.className = [
+      'scene-card',
+      isDragging ? 'is-dragging' : '',
+      isSelected ? 'selected'    : '',
+      isLit      ? 'char-lit'    : '',
+      isDBefore  ? 'drop-before' : '',
+      isDAfter   ? 'drop-after'  : '',
+    ].filter(Boolean).join(' ');
+    card.dataset.id = scene.id;
+
+    // Selection badge
+    const badge = document.createElement('div');
+    badge.className = 'sel-badge'; badge.textContent = '✓';
+
+    // Delete button
+    const delBtn = document.createElement('button');
+    delBtn.className = 'card-del'; delBtn.title = 'Delete scene'; delBtn.textContent = '×';
+    delBtn.addEventListener('mousedown', e => e.stopPropagation());
+    delBtn.addEventListener('click',     e => { e.stopPropagation(); deleteScene(scene.id); });
+
+    // Scene number
+    const numEl = document.createElement('div');
+    numEl.className = 'card-num'; numEl.textContent = `Scene ${num}`;
+
+    // Title
+    const titleEl = document.createElement('div');
+    titleEl.className = 'card-title'; titleEl.textContent = scene.title;
+
+    // Meta section
+    const meta = document.createElement('div'); meta.className = 'card-meta';
+
+    const charRow = document.createElement('div'); charRow.className = 'card-meta-row';
+    const charLbl = document.createElement('div'); charLbl.className = 'card-meta-lbl'; charLbl.textContent = 'Characters';
+    const charTags = document.createElement('div'); charTags.className = 'card-tags';
+    if (scene.characters.length) {
+      scene.characters.forEach(c => {
+        const t = document.createElement('span'); t.className = 'tag ct'; t.textContent = c; charTags.appendChild(t);
+      });
+    } else {
+      const n = document.createElement('span'); n.className = 'tag-none'; n.textContent = 'none'; charTags.appendChild(n);
+    }
+    charRow.appendChild(charLbl); charRow.appendChild(charTags);
+
+    const locRow = document.createElement('div'); locRow.className = 'card-meta-row';
+    const locLbl = document.createElement('div'); locLbl.className = 'card-meta-lbl'; locLbl.textContent = 'Locations';
+    const locTags = document.createElement('div'); locTags.className = 'card-tags';
+    if (scene.locations.length) {
+      scene.locations.forEach(l => {
+        const t = document.createElement('span'); t.className = 'tag lt'; t.textContent = l; locTags.appendChild(t);
+      });
+    } else {
+      const n = document.createElement('span'); n.className = 'tag-none'; n.textContent = 'none'; locTags.appendChild(n);
+    }
+    locRow.appendChild(locLbl); locRow.appendChild(locTags);
+
+    meta.appendChild(charRow); meta.appendChild(locRow);
+
+    card.appendChild(badge);
+    card.appendChild(delBtn);
+    card.appendChild(numEl);
+    card.appendChild(titleEl);
+    card.appendChild(meta);
+
+    card.addEventListener('mousedown', e => onCardMouseDown(e, scene.id));
+    board.appendChild(card);
+  });
+
+  // Selection clear button
+  document.getElementById('sel-clear-btn').style.display = S.selectedIds.size > 0 ? 'inline-block' : 'none';
+}
+
+function updateCount() {
+  const n = S.scenes.length;
+  document.getElementById('hdr-count').textContent = `${n} scene${n !== 1 ? 's' : ''}`;
+}
+
+// ── CARD MOUSE DOWN ───────────────────────────────────────────────────────────
+function onCardMouseDown(e, cardId) {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  ptr.down = true; ptr.cardId = cardId;
+  ptr.startX = e.clientX; ptr.startY = e.clientY;
+  ptr.dragging = false;
+}
+
+// ── GLOBAL MOUSE EVENTS ───────────────────────────────────────────────────────
+document.addEventListener('mousemove', e => {
+  if (!ptr.down) return;
+  const dx = e.clientX - ptr.startX, dy = e.clientY - ptr.startY;
+  if (!ptr.dragging && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+    ptr.dragging = true;
+    beginDrag(ptr.cardId, e);
+  }
+  if (ptr.dragging) moveDrag(e);
+});
+
+document.addEventListener('mouseup', e => {
+  if (!ptr.down) return;
+  if (!ptr.dragging) {
+    // Treat as click: toggle scene selection
+    toggleSceneSelect(ptr.cardId, e);
+  } else {
+    endDrag(e);
+  }
+  ptr.down = false; ptr.dragging = false; ptr.cardId = null;
+});
+
+function toggleSceneSelect(cardId, e) {
+  if (e && e.target.classList.contains('card-del')) return;
+  if (S.selectedIds.has(cardId)) S.selectedIds.delete(cardId);
+  else S.selectedIds.add(cardId);
+  renderStoryboard();
+  document.getElementById('sel-clear-btn').style.display = S.selectedIds.size > 0 ? 'inline-block' : 'none';
+}
+
+// ── DRAG: BEGIN ───────────────────────────────────────────────────────────────
+function beginDrag(cardId, e) {
+  // If dragging a selected card and there's a multi-selection, drag all selected
+  let ids;
+  if (S.selectedIds.has(cardId) && S.selectedIds.size > 1) {
+    ids = S.scenes.filter(s => S.selectedIds.has(s.id)).map(s => s.id);
+  } else {
+    ids = [cardId];
+  }
+
+  drag.active = true; drag.ids = ids; drag.dropId = null; drag.dropBefore = true;
+
+  const card = document.querySelector(`.scene-card[data-id="${cardId}"]`);
+  const rect = card.getBoundingClientRect();
+  drag.offsetX = e.clientX - rect.left;
+  drag.offsetY = e.clientY - rect.top;
+
+  // Build ghost
+  const ghost = document.getElementById('drag-ghost');
+
+  // Replicate card content
+  ghost.innerHTML = '';
+
+  const numEl = document.createElement('div');
+  numEl.className = 'card-num';
+  const sceneIdx = S.scenes.findIndex(s => s.id === cardId);
+  numEl.textContent = `Scene ${sceneIdx + 1}`;
+
+  const scene = S.scenes[sceneIdx];
+  const titleEl = document.createElement('div');
+  titleEl.className = 'card-title'; titleEl.textContent = scene.title;
+
+  const meta = document.createElement('div'); meta.className = 'card-meta';
+  const charRow = document.createElement('div'); charRow.className = 'card-meta-row';
+  const charLbl = document.createElement('div'); charLbl.className = 'card-meta-lbl'; charLbl.textContent = 'Characters';
+  const charTags = document.createElement('div'); charTags.className = 'card-tags';
+  scene.characters.forEach(c => {
+    const t = document.createElement('span'); t.className = 'tag ct'; t.textContent = c; charTags.appendChild(t);
+  });
+  if (!scene.characters.length) { const n = document.createElement('span'); n.className = 'tag-none'; n.textContent = 'none'; charTags.appendChild(n); }
+  charRow.appendChild(charLbl); charRow.appendChild(charTags);
+  const locRow = document.createElement('div'); locRow.className = 'card-meta-row';
+  const locLbl = document.createElement('div'); locLbl.className = 'card-meta-lbl'; locLbl.textContent = 'Locations';
+  const locTags = document.createElement('div'); locTags.className = 'card-tags';
+  scene.locations.forEach(l => {
+    const t = document.createElement('span'); t.className = 'tag lt'; t.textContent = l; locTags.appendChild(t);
+  });
+  if (!scene.locations.length) { const n = document.createElement('span'); n.className = 'tag-none'; n.textContent = 'none'; locTags.appendChild(n); }
+  locRow.appendChild(locLbl); locRow.appendChild(locTags);
+  meta.appendChild(charRow); meta.appendChild(locRow);
+
+  ghost.appendChild(numEl); ghost.appendChild(titleEl); ghost.appendChild(meta);
+
+  // Multi-drag badge
+  if (ids.length > 1) {
+    const b = document.createElement('div');
+    b.className = 'ghost-badge'; b.textContent = `+${ids.length - 1}`;
+    ghost.appendChild(b);
+  }
+
+  ghost.style.display = 'block';
+  ghost.style.left = (e.clientX - drag.offsetX) + 'px';
+  ghost.style.top  = (e.clientY - drag.offsetY) + 'px';
+
+  renderStoryboard();
+}
+
+// ── DRAG: MOVE ────────────────────────────────────────────────────────────────
+function moveDrag(e) {
+  const ghost = document.getElementById('drag-ghost');
+  ghost.style.left = (e.clientX - drag.offsetX) + 'px';
+  ghost.style.top  = (e.clientY - drag.offsetY) + 'px';
+
+  // Find drop target
+  const cards = [...document.querySelectorAll('.scene-card')].filter(c => !drag.ids.includes(+c.dataset.id));
+  let newDropId = null, newDropBefore = true;
+
+  for (const card of cards) {
+    const r = card.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+      newDropId     = +card.dataset.id;
+      newDropBefore = e.clientY < r.top + r.height / 2;
+      break;
+    }
+  }
+
+  if (newDropId !== drag.dropId || newDropBefore !== drag.dropBefore) {
+    drag.dropId = newDropId; drag.dropBefore = newDropBefore;
+    renderStoryboard();
+  }
+}
+
+// ── DRAG: END ─────────────────────────────────────────────────────────────────
+function endDrag() {
+  document.getElementById('drag-ghost').style.display = 'none';
+
+  if (drag.dropId !== null) {
+    const dragged   = drag.ids.map(id => S.scenes.find(s => s.id === id)).filter(Boolean);
+    const remaining = S.scenes.filter(s => !drag.ids.includes(s.id));
+    const targetIdx = remaining.findIndex(s => s.id === drag.dropId);
+    if (targetIdx !== -1) {
+      remaining.splice(drag.dropBefore ? targetIdx : targetIdx + 1, 0, ...dragged);
+      S.scenes = remaining;
+    }
+  }
+
+  drag.active = false; drag.ids = []; drag.dropId = null;
+  renderStoryboard();
+}
+
+// ── KEYBOARD SHORTCUTS ────────────────────────────────────────────────────────
+document.getElementById('char-input').addEventListener('keydown', e => { if (e.key === 'Enter') addCharacter(); });
+document.getElementById('loc-input').addEventListener('keydown',  e => { if (e.key === 'Enter') addLocation(); });
+document.getElementById('scene-title').addEventListener('keydown', e => { if (e.key === 'Enter') addScene(); });
+document.getElementById('char-add-btn').addEventListener('click', addCharacter);
+document.getElementById('loc-add-btn').addEventListener('click',  addLocation);
+document.getElementById('add-scene-btn').addEventListener('click', addScene);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    S.activeChar = null; S.selectedIds.clear();
+    renderChars(); renderStoryboard();
+    document.getElementById('sel-clear-btn').style.display = 'none';
+  }
+});
+
+// Click empty storyboard area → deselect all
+document.getElementById('storyboard').addEventListener('click', e => {
+  if (e.target === document.getElementById('storyboard')) clearSelection();
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderChars();
+renderLocs();
+renderCharCk();
+renderLocCk();
+updateCount();
+</script>
+</body>
+</html>
