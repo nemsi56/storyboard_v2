@@ -13,14 +13,6 @@
 [data-theme="ocean"]  {--bg0:#051820;--bg1:#072030;--bg2:#041418;--s0:#0e3848;--s1:#184858;--o0:#508090;--o1:#78a8b8;--tx:#c8e8f0;--sub:#90b8c8;--acc:#06b6d4;--bl:#93c5fd;--gr:#6ee7b7;--clt:#e879f9;--am:#fde68a;--yl:#fde68a;--rd:#f87171;--lv:#a5b4fc;--bdr:#0e3848;--cbg:#072030;--cbdr:#0e3848;--mbg:#041418;--mov:rgba(0,0,0,.78);--ontx:#000;--sbg:#020c10}
 [data-theme="sunset"] {--bg0:#fff8f0;--bg1:#fff0e0;--bg2:#fffaf4;--s0:#f0dfc8;--s1:#e8d0b0;--o0:#a08060;--o1:#705030;--tx:#2a1a08;--sub:#604020;--acc:#ea580c;--bl:#4338ca;--gr:#059669;--clt:#e11d48;--am:#d97706;--yl:#b45309;--rd:#dc2626;--lv:#7c3aed;--bdr:#e8d0b0;--cbg:#fff0e0;--cbdr:#e8d0b0;--mbg:#fffaf4;--mov:rgba(0,0,0,.4);--ontx:#fff;--sbg:#f0e5d4}
 
-/* Light-theme accent button text overrides */
-[data-theme="ivory"]  .lsec-add,[data-theme="ivory"]  #asb,[data-theme="ivory"]  #saveedit,
-[data-theme="studio"] .lsec-add,[data-theme="studio"] #asb,[data-theme="studio"] #saveedit,
-[data-theme="sunset"] .lsec-add,[data-theme="sunset"] #asb,[data-theme="sunset"] #saveedit,
-[data-theme="ivory"]  #ap-ok,[data-theme="studio"] #ap-ok,[data-theme="sunset"] #ap-ok,
-[data-theme="ivory"]  #libdel-ok,[data-theme="studio"] #libdel-ok,[data-theme="sunset"] #libdel-ok,
-[data-theme="ivory"]  #savecfm-ok,[data-theme="studio"] #savecfm-ok,[data-theme="sunset"] #savecfm-ok
-{ color:#fff!important }
 
 /* ══ BASE ═══════════════════════════════════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -46,7 +38,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 
 /* ══ PANELS ════════════════════════════════════════════════════════════════ */
 .panel{display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;transition:width .22s ease}
-.p-strip{display:none;flex-direction:column;align-items:center;padding:14px 0;gap:10px;cursor:pointer;height:100%;background:var(--bg1);border-right:1px solid var(--bdr);user-select:none;color:var(--o0);transition:background .14s;width:28px}
+.p-strip{display:none;flex-direction:column;align-items:center;padding:14px 0;gap:10px;cursor:pointer;height:100%;background:var(--bg1);border-right:2px solid var(--s1);user-select:none;color:var(--o0);transition:background .14s;width:28px}
 .p-strip:hover{background:var(--s0)}
 .p-strip .sl{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px}
 .panel.collapsed{width:28px!important}
@@ -64,7 +56,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .p-body::-webkit-scrollbar-thumb{background:var(--s0);border-radius:2px}
 
 /* ══ LEFT PANEL ════════════════════════════════════════════════════════════ */
-#lp{width:224px;background:var(--bg1);border-right:1px solid var(--bdr)}
+#lp{width:224px;background:var(--bg1);border-right:2px solid var(--s1)}
 #lp .p-body{padding:0}
 /* Global AND/OR row */
 #ao-global-wrap{padding:8px 14px 7px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:5px;flex-shrink:0}
@@ -75,13 +67,13 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 /* AND/OR shared styles */
 .ao-lbl{font-size:10px;color:var(--o0);flex-shrink:0}
 .ao-btn{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;border:1px solid var(--s1);background:var(--s0);color:var(--o1);cursor:pointer;transition:background .12s,color .12s,border-color .12s;font-family:inherit}
-.ao-btn.on{background:var(--acc);color:#000;border-color:var(--acc)}
+.ao-btn.on{background:var(--acc);color:var(--ontx);border-color:var(--acc)}
 .ao-btn:not(.on):hover{background:var(--s1)}
 /* Library sections */
 .lsec{padding:9px 14px 11px;border-bottom:1px solid var(--bdr)}
 .lsec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .lsec-hdr h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--o0)}
-.lsec-add{background:var(--acc);color:#000;border:none;border-radius:5px;width:20px;height:20px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:opacity .14s;flex-shrink:0}
+.lsec-add{background:var(--acc);color:var(--ontx);border:none;border-radius:5px;width:20px;height:20px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:opacity .14s;flex-shrink:0}
 .lsec-add:hover{opacity:.82}
 /* Items */
 .ilist{display:flex;flex-direction:column;gap:2px}
@@ -106,8 +98,13 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .idel:hover{color:var(--rd)}
 .eh{font-size:11px;color:var(--o0);font-style:italic;padding:2px 0}
 
+/* ══ PANEL RESIZE HANDLE ═══════════════════════════════════════════════════ */
+#cp-resize{width:4px;flex-shrink:0;cursor:col-resize;background:var(--s1);transition:background .15s;position:relative;z-index:5}
+#cp-resize:hover,#cp-resize.dragging{background:var(--acc)}
+#cp.collapsed + #cp-resize{display:none}
+
 /* ══ CENTER PANEL ══════════════════════════════════════════════════════════ */
-#cp{width:258px;background:var(--bg2);border-right:1px solid var(--bdr)}
+#cp{width:258px;background:var(--bg2);border-right:none}
 .tabs{display:flex;align-items:flex-end;background:var(--bg0);border-bottom:2px solid var(--bdr);flex-shrink:0;padding:6px 8px 0;gap:4px}
 .tab{flex:1;padding:9px 0 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:var(--s0);border:1.5px solid var(--bdr);border-bottom:none;border-radius:7px 7px 0 0;color:var(--o1);cursor:pointer;transition:color .14s,background .14s,border-color .14s;font-family:inherit;position:relative;bottom:-2px}
 .tab.on{background:var(--bg2);color:var(--acc);border-color:var(--bdr);border-bottom:2px solid var(--bg2);z-index:1}
@@ -116,23 +113,25 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .tab-cbtn{background:none!important;border:none!important;border-left:1px solid var(--bdr)!important;border-radius:0!important;padding:0 10px!important;font-size:12px!important;align-self:stretch;flex-shrink:0;margin-bottom:-2px}
 #cp .p-body{padding:12px}
 .ff{margin-bottom:9px}
-.ff label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--sub);margin-bottom:4px}
+.ff > label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--sub);margin-bottom:4px}
 .ff input[type=text],.ff textarea{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:7px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;transition:border-color .14s;resize:none}
 .ff input[type=text]:focus,.ff textarea:focus{border-color:var(--acc)}
 .ff input[type=text]::placeholder,.ff textarea::placeholder{color:var(--o0)}
 .ff input[type=text]{padding:9px 10px}
-.ff textarea{height:85px}
-.cklist{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px;max-height:110px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:1px}
+.ff textarea{min-height:85px}
+.ff textarea.ta-title{min-height:0;height:auto;resize:none;line-height:1.5;padding:7px 10px}
+.ff textarea.ta-summary{min-height:95px;resize:vertical}
+.cklist{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px;max-height:110px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:3px 4px}
 .cklist::-webkit-scrollbar{width:3px}
 .cklist::-webkit-scrollbar-thumb{background:var(--s1)}
 /* Checkbox items */
-.cki{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;padding:3px 6px;border-radius:4px;transition:background .1s;line-height:1.4}
+.cki{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px 4px;border-radius:4px;transition:background .1s;line-height:1.3;text-transform:none;letter-spacing:0;color:var(--tx)}
 .cki:hover{background:var(--s1)}
 .cki input[type=checkbox]{width:13px;height:13px;accent-color:var(--acc);cursor:pointer;flex-shrink:0;margin:0}
 .cki span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cklist .eh{grid-column:1/-1}
 .form-btns{display:flex;gap:7px;margin-top:5px}
-#asb,#saveedit{flex:1;background:var(--acc);color:#000;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .14s,transform .1s}
+#asb,#saveedit{flex:1;background:var(--acc);color:var(--ontx);border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .14s,transform .1s}
 #asb:hover,#saveedit:hover{opacity:.86}
 #asb:active,#saveedit:active{transform:scale(.98)}
 #canceledit{background:var(--s0);color:var(--sub);border:1px solid var(--s1);border-radius:8px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .14s}
@@ -155,9 +154,10 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 #srch-scope option{background:var(--bg1);color:var(--tx)}
 #srch-clr{background:none;border:none;color:var(--o0);cursor:pointer;font-size:15px;padding:0 1px;line-height:1;display:none;transition:color .1s;flex-shrink:0}
 #srch-clr:hover{color:var(--rd)}
-.scalew{display:flex;align-items:center;gap:6px;flex-shrink:0}
+#srch-wrap.srch-active{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 8%,var(--s0));box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 22%,transparent)}
+.scalew{display:flex;align-items:center;gap:6px;flex-shrink:0;overflow:visible}
 .scalelbl{font-size:10px;color:var(--o0)}
-#scaler{width:72px;accent-color:var(--acc);cursor:pointer;display:block}
+#scaler{width:72px;accent-color:var(--acc);cursor:pointer;display:block;padding:4px 0;box-sizing:content-box}
 #sbscrl{flex:1;min-height:0;overflow-x:auto;overflow-y:hidden}
 #sbscrl::-webkit-scrollbar{height:5px}
 #sbscrl::-webkit-scrollbar-thumb{background:var(--s0);border-radius:3px}
@@ -221,8 +221,10 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 #ap-input::placeholder{color:var(--o0)}
 .ap-btns{display:flex;gap:8px;margin-top:12px}
 .ap-btns button{flex:1;padding:8px;border-radius:7px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border:none;transition:opacity .14s}
-#ap-ok{background:var(--acc);color:#000}
+#ap-ok{background:var(--acc);color:var(--ontx)}
 #ap-ok:hover{opacity:.86}
+#savecfm-ok{background:var(--acc);color:var(--ontx)}
+#savecfm-ok:hover{opacity:.86}
 #ap-cancel{background:var(--s0);color:var(--sub);border:1px solid var(--s1)!important}
 #ap-cancel:hover{background:var(--s1)}
 
@@ -243,7 +245,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .cfm-modal.open{display:flex}
 .cfm-box{background:var(--mbg);border:1px solid var(--s1);border-radius:10px;padding:22px 24px;width:320px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .cfm-msg{font-size:13px;color:var(--tx);line-height:1.5;margin-bottom:16px}
-#libdel-ok{background:var(--rd);color:#fff}
+#libdel-ok{background:var(--rd);color:var(--ontx)}
 #libdel-ok:hover{opacity:.86}
 </style>
 </head>
@@ -309,8 +311,8 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
       </div>
       <!-- New Scene form -->
       <div id="form-new" class="p-body">
-        <div class="ff"><label>Title</label><input type="text" id="sc-title" placeholder="Enter scene title…" maxlength="60"></div>
-        <div class="ff"><label>Summary</label><textarea id="sc-summary" placeholder="Optional brief description…"></textarea></div>
+        <div class="ff"><label>Title</label><textarea id="sc-title" class="ta-title" rows="2" placeholder="Enter scene title…" maxlength="120"></textarea></div>
+        <div class="ff"><label>Summary</label><textarea id="sc-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
         <div class="ff"><label>Characters</label><div class="cklist" id="ck-characters"></div></div>
         <div class="ff"><label>Locations</label><div class="cklist" id="ck-locations"></div></div>
         <div class="ff"><label>Themes</label><div class="cklist" id="ck-themes"></div></div>
@@ -320,8 +322,8 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
       </div>
       <!-- Edit Scene form -->
       <div id="form-edit" class="p-body" style="display:none">
-        <div class="ff"><label>Title</label><input type="text" id="ed-title" placeholder="Scene title…" maxlength="60"></div>
-        <div class="ff"><label>Summary</label><textarea id="ed-summary" placeholder="Optional brief description…"></textarea></div>
+        <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
+        <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
         <div class="ff"><label>Characters</label><div class="cklist" id="ek-characters"></div></div>
         <div class="ff"><label>Locations</label><div class="cklist" id="ek-locations"></div></div>
         <div class="ff"><label>Themes</label><div class="cklist" id="ek-themes"></div></div>
@@ -334,6 +336,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
       </div>
     </div>
   </div>
+  <div id="cp-resize" title="Drag to resize Scene panel"></div>
 
   <!-- STORYBOARD PANEL -->
   <div id="sbp">
@@ -347,10 +350,6 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <input type="checkbox" id="det-toggle" onchange="toggleDetails(this.checked)">
         Show Card Details
       </label>
-      <div class="scalew">
-        <span class="scalelbl">Size</span>
-        <input type="range" id="scaler" min="0.55" max="1.65" step="0.05" value="1" oninput="setScale(this.value)">
-      </div>
       <div id="srch-wrap">
         <input type="text" id="srch-inp" placeholder="🔍 Search…" oninput="onSearch()">
         <select id="srch-scope" onchange="onSearch()" title="Search in…">
@@ -359,6 +358,10 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
           <option value="summary">Summary only</option>
         </select>
         <button id="srch-clr" onclick="clearSearch()" title="Clear search">×</button>
+      </div>
+      <div class="scalew">
+        <span class="scalelbl">Size</span>
+        <input type="range" id="scaler" min="0.55" max="1.65" step="0.05" value="1" oninput="setScale(this.value)">
       </div>
     </div>
     <div id="sbemp"><div class="ei">🎭</div><p>Create your first scene to get started</p></div>
@@ -553,6 +556,7 @@ function onSearch() {
   searchQ    = document.getElementById('srch-inp').value.trim().toLowerCase();
   searchScope = document.getElementById('srch-scope').value;
   document.getElementById('srch-clr').style.display = searchQ ? 'inline' : 'none';
+  document.getElementById('srch-wrap').classList.toggle('srch-active', !!searchQ);
   renderBoard();
 }
 
@@ -560,6 +564,7 @@ function clearSearch() {
   document.getElementById('srch-inp').value = '';
   searchQ = '';
   document.getElementById('srch-clr').style.display = 'none';
+  document.getElementById('srch-wrap').classList.remove('srch-active');
   renderBoard();
 }
 
@@ -694,7 +699,7 @@ function resetAll() {
 // ── SCENE ACTIONS ─────────────────────────────────────────────────────────────
 function addScene() {
   const titleEl = document.getElementById('sc-title'), errEl = document.getElementById('scerr');
-  const title = titleEl.value.trim(), summary = document.getElementById('sc-summary').value.trim();
+  const title = titleEl.value.trim().replace(/[\r\n]+/g,' '), summary = document.getElementById('sc-summary').value.trim();
   errEl.textContent = '';
   if (!title) { errEl.textContent = 'Please enter a scene title.'; titleEl.focus(); return; }
   if (S.scenes.some(s => s.title.toLowerCase() === title.toLowerCase())) { errEl.textContent = 'Title already exists.'; titleEl.select(); return; }
@@ -746,7 +751,7 @@ function cancelEdit() {
 function saveEdit() {
   const sc = S.scenes.find(s => s.id === S.editingId); if (!sc) return;
   const titleEl = document.getElementById('ed-title'), errEl = document.getElementById('ederr');
-  const title = titleEl.value.trim();
+  const title = titleEl.value.trim().replace(/[\r\n]+/g,' ');
   errEl.textContent = '';
   if (!title) { errEl.textContent = 'Please enter a title.'; titleEl.focus(); return; }
   if (S.scenes.some(s => s.id !== sc.id && s.title.toLowerCase() === title.toLowerCase())) { errEl.textContent = 'Title already exists.'; titleEl.select(); return; }
@@ -756,7 +761,7 @@ function saveEdit() {
 }
 function confirmSaveEdit() {
   const sc = S.scenes.find(s => s.id === S.editingId); if (!sc) return;
-  const title = document.getElementById('ed-title').value.trim();
+  const title = document.getElementById('ed-title').value.trim().replace(/[\r\n]+/g,' ');
   const summary = document.getElementById('ed-summary').value.trim();
   pushHistory('Edit scene "' + truncStr(sc.title, 22) + '"');
   sc.title = title; sc.summary = summary;
@@ -1013,6 +1018,15 @@ function endLibDrag() {
   ld.on = false; ld.sec = null; ld.fromIdx = null; ld.dropIdx = null;
 }
 
+// ── CENTER PANEL RESIZE ────────────────────────────────────────────────────────
+const cpDr = { on:false, startX:0, startW:0 };
+document.getElementById('cp-resize').addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  cpDr.on = true; cpDr.startX = e.clientX; cpDr.startW = document.getElementById('cp').offsetWidth;
+  document.getElementById('cp-resize').classList.add('dragging');
+  e.preventDefault(); e.stopPropagation();
+});
+
 // ── GLOBAL MOUSE ──────────────────────────────────────────────────────────────
 document.addEventListener('mousemove', e => {
   if (ptr.down) {
@@ -1022,6 +1036,10 @@ document.addEventListener('mousemove', e => {
     if (ptr.dragging) moveCardDrag(e);
   }
   if (ld.on) moveLibDrag(e);
+  if (cpDr.on) {
+    const newW = Math.max(180, Math.min(520, cpDr.startW + (e.clientX - cpDr.startX)));
+    document.getElementById('cp').style.width = newW + 'px';
+  }
 });
 document.addEventListener('mouseup', e => {
   if (ptr.down) {
@@ -1029,11 +1047,12 @@ document.addEventListener('mouseup', e => {
     ptr.down = false; ptr.dragging = false; ptr.id = null;
   }
   if (ld.on) endLibDrag();
+  if (cpDr.on) { cpDr.on = false; document.getElementById('cp-resize').classList.remove('dragging'); }
 });
 
 // ── KEYBOARD ──────────────────────────────────────────────────────────────────
-document.getElementById('sc-title').addEventListener('keydown', e => { if (e.key === 'Enter') addScene(); });
-document.getElementById('ed-title').addEventListener('keydown', e => { if (e.key === 'Enter') saveEdit(); });
+document.getElementById('sc-title').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addScene(); } });
+document.getElementById('ed-title').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveEdit(); } });
 document.addEventListener('keydown', e => {
   const inInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
   if ((e.ctrlKey || e.metaKey) && !inInput) {
