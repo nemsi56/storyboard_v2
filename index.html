@@ -247,6 +247,73 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .cfm-msg{font-size:13px;color:var(--tx);line-height:1.5;margin-bottom:16px}
 #libdel-ok{background:var(--rd);color:var(--ontx)}
 #libdel-ok:hover{opacity:.86}
+
+/* ══ SECTION GROUPS ════════════════════════════════════════════════════════ */
+#board.has-secs{flex-direction:row;align-items:stretch;gap:0;flex-wrap:nowrap;padding:0}
+.sec-group{display:flex;flex-direction:column;flex-shrink:0;border-right:2px solid var(--s1)}
+.sec-group:last-child{border-right:none}
+.sec-hdr{height:40px;padding:0 10px;display:flex;align-items:center;gap:7px;background:var(--bg1);border-bottom:2px solid var(--s1);flex-shrink:0}
+.sec-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sec-cnt{font-size:10px;color:var(--o0);flex-shrink:0;white-space:nowrap}
+.sec-hbtn{background:none;border:none;color:var(--o0);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:3px;opacity:0;line-height:1;transition:color .1s,opacity .1s,background .1s;flex-shrink:0;font-family:inherit}
+.sec-hdr:hover .sec-hbtn{opacity:1}
+.sec-hbtn:hover{color:var(--tx);background:var(--s0)}
+.sec-hbtn.del:hover{color:var(--rd);background:color-mix(in srgb,var(--rd) 10%,transparent)}
+.sec-body{flex:1;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:8px;padding:12px;min-width:max-content;min-height:0}
+.sec-unasgn .sec-hdr{background:var(--sbg)}
+.sec-unasgn .sec-name{color:var(--sub);font-style:italic;text-transform:none;letter-spacing:0;font-size:12px;font-weight:600}
+
+/* ══ SECTION FILTER & BUTTON IN SBHDR ═════════════════════════════════════ */
+#sec-btn{font-size:11px;font-weight:700;background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--sub);padding:4px 10px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .12s,color .12s;flex-shrink:0}
+#sec-btn:hover{background:var(--s1);color:var(--tx)}
+#sec-filter{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:11px;font-family:inherit;padding:4px 7px;cursor:pointer;outline:none;display:none;flex-shrink:0}
+#sec-filter.vis{display:block}
+#sec-filter option{background:var(--bg1);color:var(--tx)}
+
+/* ══ FORM SECTION SELECT ═══════════════════════════════════════════════════ */
+.ff-sel{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:8px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;cursor:pointer;transition:border-color .14s}
+.ff-sel:focus{border-color:var(--acc)}
+.ff-sel option{background:var(--bg1);color:var(--tx)}
+
+/* ══ SECTIONS MODAL ════════════════════════════════════════════════════════ */
+#sec-modal{position:fixed;inset:0;background:var(--mov);display:none;align-items:center;justify-content:center;z-index:10003}
+#sec-modal.open{display:flex}
+#sec-mbox{background:var(--mbg);border:1px solid var(--s1);border-radius:12px;padding:22px;width:380px;max-width:92%;max-height:82vh;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative}
+#sec-mbox h2{font-size:15px;font-weight:700;color:var(--tx)}
+.sec-mclose{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--o0);font-size:20px;cursor:pointer;padding:2px 6px;border-radius:4px;line-height:1;transition:color .12s,background .12s}
+.sec-mclose:hover{color:var(--tx);background:var(--s0)}
+.sec-add-row{display:flex;gap:6px}
+.sec-add-inp{flex:1;min-width:0;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:7px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;transition:border-color .14s}
+.sec-add-inp:focus{border-color:var(--acc)}
+.sec-add-inp::placeholder{color:var(--o0)}
+.sec-add-btn{background:var(--acc);color:var(--ontx);border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .14s;white-space:nowrap}
+.sec-add-btn:hover{opacity:.86}
+.qs-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 0 2px}
+.qs-lbl{font-size:11px;color:var(--o0);white-space:nowrap}
+.qs-n{width:44px;background:var(--s0);border:1px solid var(--s1);border-radius:5px;padding:4px 7px;color:var(--tx);font-size:12px;font-family:inherit;outline:none;text-align:center}
+.qs-n:focus{border-color:var(--acc)}
+.qs-pfx{width:76px;background:var(--s0);border:1px solid var(--s1);border-radius:5px;padding:4px 7px;color:var(--tx);font-size:12px;font-family:inherit;outline:none}
+.qs-pfx:focus{border-color:var(--acc)}
+.qs-btn{background:var(--s0);border:1px solid var(--s1);border-radius:5px;padding:4px 10px;font-size:12px;font-family:inherit;cursor:pointer;color:var(--tx);transition:background .12s}
+.qs-btn:hover{background:var(--s1)}
+.qs-divider{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--o0);border-bottom:1px solid var(--bdr);padding-bottom:6px}
+#sec-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:3px;min-height:60px}
+#sec-list::-webkit-scrollbar{width:4px}
+#sec-list::-webkit-scrollbar-thumb{background:var(--s1);border-radius:2px}
+.sec-li{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:var(--s0);border:1.5px solid transparent}
+.sec-li .sdh{color:var(--o0);cursor:grab;font-size:11px;opacity:.45;flex-shrink:0;line-height:1;transition:opacity .1s}
+.sec-li:hover .sdh{opacity:.9}
+.sec-li .sdh:active{cursor:grabbing}
+.sec-li-name{flex:1;font-size:13px;color:var(--tx);min-width:0;cursor:text;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sec-li-edt{flex:1;min-width:0;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:2px 7px;color:var(--tx);font-size:13px;font-family:inherit;outline:none}
+.sec-li-cnt{font-size:11px;color:var(--o0);flex-shrink:0;white-space:nowrap}
+.sec-li-del{background:none;border:none;color:var(--o0);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;opacity:0;transition:opacity .1s,color .1s;flex-shrink:0}
+.sec-li:hover .sec-li-del{opacity:1}
+.sec-li-del:hover{color:var(--rd)!important}
+.sec-li.dib{border-top:2px solid var(--acc)!important}
+.sec-li.dia{border-bottom:2px solid var(--acc)!important}
+.sec-li.dg{opacity:.2}
+.sec-empty-hint{font-size:12px;color:var(--o0);font-style:italic;padding:6px 2px}
 </style>
 </head>
 <body>
@@ -314,6 +381,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
       <div id="form-new" class="p-body">
         <div class="ff"><label>Title</label><textarea id="sc-title" class="ta-title" rows="2" placeholder="Enter scene title…" maxlength="120"></textarea></div>
         <div class="ff"><label>Summary</label><textarea id="sc-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+        <div class="ff" id="sc-sec-wrap" style="display:none"><label>Section</label><select id="sc-section" class="ff-sel"><option value="">Unassigned</option></select></div>
         <div class="ff"><label>Characters</label><div class="cklist" id="ck-characters"></div></div>
         <div class="ff"><label>Locations</label><div class="cklist" id="ck-locations"></div></div>
         <div class="ff"><label>Themes</label><div class="cklist" id="ck-themes"></div></div>
@@ -325,6 +393,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
       <div id="form-edit" class="p-body" style="display:none">
         <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
         <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+        <div class="ff" id="ed-sec-wrap" style="display:none"><label>Section</label><select id="ed-section" class="ff-sel"><option value="">Unassigned</option></select></div>
         <div class="ff"><label>Characters</label><div class="cklist" id="ek-characters"></div></div>
         <div class="ff"><label>Locations</label><div class="cklist" id="ek-locations"></div></div>
         <div class="ff"><label>Themes</label><div class="cklist" id="ek-themes"></div></div>
@@ -351,6 +420,8 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <input type="checkbox" id="det-toggle" onchange="toggleDetails(this.checked)">
         Show Card Details
       </label>
+      <button id="sec-btn" onclick="openSecModal()" title="Manage storyboard sections">Sections</button>
+      <select id="sec-filter" onchange="renderBoard()" title="Filter by section"></select>
       <div id="srch-wrap">
         <input type="text" id="srch-inp" placeholder="🔍 Search…" oninput="onSearch()">
         <select id="srch-scope" onchange="onSearch()" title="Search in…">
@@ -407,6 +478,31 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   </div>
 </div>
 
+<!-- Sections modal -->
+<div id="sec-modal">
+  <div id="sec-mbox">
+    <button class="sec-mclose" onclick="closeSecModal()">×</button>
+    <h2>Manage Sections</h2>
+    <div class="sec-add-row">
+      <input type="text" id="sec-add-inp" class="sec-add-inp" placeholder="New section name…" maxlength="60">
+      <button class="sec-add-btn" onclick="addSection()">Add</button>
+    </div>
+    <div>
+      <div class="qs-divider">Quick Setup</div>
+      <div class="qs-row">
+        <span class="qs-lbl">Create</span>
+        <input type="number" id="qs-n" class="qs-n" min="1" max="20" value="3">
+        <span class="qs-lbl">sections named</span>
+        <input type="text" id="qs-pfx" class="qs-pfx" value="Act" maxlength="20" placeholder="prefix">
+        <span class="qs-lbl">1, 2…</span>
+        <button class="qs-btn" onclick="quickSetup()">Create</button>
+      </div>
+    </div>
+    <div class="qs-divider" style="margin-top:2px">Sections <span id="sec-list-lbl" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--o0)"></span></div>
+    <div id="sec-list"></div>
+  </div>
+</div>
+
 <!-- Summary modal -->
 <div id="modal">
   <div id="mbox">
@@ -428,8 +524,9 @@ const SECS = [
 const SINGULAR = { characters:'Character', locations:'Location', themes:'Theme', misc:'Misc item' };
 
 // ── PERSISTENCE ───────────────────────────────────────────────────────────────
-const DATA_VERSION = '1';
+const DATA_VERSION = '2';
 const STORAGE_KEY  = 'storyboard_v' + DATA_VERSION;
+const LEGACY_KEY   = 'storyboard_v1';
 
 function saveState() {
   try {
@@ -438,14 +535,30 @@ function saveState() {
       characters: S.characters, locations: S.locations, themes: S.themes, misc: S.misc,
       scenes: S.scenes, nextId: S.nextId, andOr: S.andOr,
       theme: document.documentElement.dataset.theme,
+      sections: S.sections, nextSecId: S.nextSecId,
     }));
   } catch(e) { /* storage full or unavailable */ }
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return false;
+    let raw = localStorage.getItem(STORAGE_KEY);
+    let migrated = false;
+    if (!raw) {
+      // Try migrating from v1
+      const old = localStorage.getItem(LEGACY_KEY);
+      if (!old) return false;
+      const od = JSON.parse(old);
+      if (!od || od.v !== '1') return false;
+      raw = JSON.stringify({
+        v: DATA_VERSION,
+        characters: od.characters||[], locations: od.locations||[], themes: od.themes||[], misc: od.misc||[],
+        scenes: (od.scenes||[]).map(sc => ({...sc, sectionId: null})),
+        nextId: od.nextId||1, andOr: od.andOr, theme: od.theme,
+        sections: [], nextSecId: 1,
+      });
+      migrated = true;
+    }
     const d = JSON.parse(raw);
     if (!d || d.v !== DATA_VERSION) return false;
     S.characters = d.characters || [];
@@ -456,14 +569,18 @@ function loadState() {
       ...sc,
       characters: sc.characters || [], locations: sc.locations || [],
       themes: sc.themes || [],         misc: sc.misc || [],
+      sectionId: sc.sectionId ?? null,
     }));
-    S.nextId = d.nextId || 1;
-    S.andOr  = d.andOr === 'AND' ? 'AND' : 'OR';
+    S.nextId    = d.nextId    || 1;
+    S.andOr     = d.andOr === 'AND' ? 'AND' : 'OR';
+    S.sections  = d.sections  || [];
+    S.nextSecId = d.nextSecId || 1;
     const VALID_THEMES = ['ivory','slate','studio','ocean','sunset'];
     const theme = VALID_THEMES.includes(d.theme) ? d.theme : 'ivory';
     document.documentElement.dataset.theme = theme;
     const sel = document.getElementById('theme-sel');
     if (sel) sel.value = theme;
+    if (migrated) saveState();
     return true;
   } catch(e) { return false; }
 }
@@ -472,6 +589,7 @@ function loadState() {
 const S = {
   characters:[], locations:[], themes:[], misc:[],
   scenes:[],
+  sections:[], nextSecId:1,
   selections:{ characters:new Set(), locations:new Set(), themes:new Set(), misc:new Set() },
   andOr: 'OR',
   selIds: new Set(),
@@ -492,6 +610,8 @@ function snapshot() {
       themes:[...s.themes],         misc:[...s.misc],
     })),
     nextId: S.nextId,
+    sections: S.sections.map(s => ({...s})),
+    nextSecId: S.nextSecId,
   };
 }
 
@@ -510,7 +630,9 @@ function applySnapshot(snap) {
     characters:[...s.characters], locations:[...s.locations],
     themes:[...s.themes],         misc:[...s.misc],
   }));
-  S.nextId = snap.nextId;
+  S.nextId    = snap.nextId;
+  S.sections  = (snap.sections || []).map(s => ({...s}));
+  S.nextSecId = snap.nextSecId || 1;
   // Clean up stale selections
   SECS.forEach(({ key }) => {
     S.selections[key] = new Set([...S.selections[key]].filter(v => S[key].includes(v)));
@@ -524,7 +646,7 @@ function undo() {
   const entry = hist.past.pop();
   hist.future.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   saveState();
 }
 
@@ -533,7 +655,7 @@ function redo() {
   const entry = hist.future.pop();
   hist.past.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   saveState();
 }
 
@@ -688,12 +810,13 @@ function resetAll() {
   if (!confirm('Reset everything?\n\nAll scenes and library items will be permanently deleted.')) return;
   S.characters = []; S.locations = []; S.themes = []; S.misc = [];
   S.scenes = []; S.nextId = 1; S.andOr = 'OR';
+  S.sections = []; S.nextSecId = 1;
   SECS.forEach(({ key }) => S.selections[key].clear());
   S.selIds.clear(); S.editingId = null;
   hist.past = []; hist.future = [];
   clearSearch();
   syncAndOrUI();
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   localStorage.removeItem(STORAGE_KEY);
 }
 
@@ -706,8 +829,9 @@ function addScene() {
   if (S.scenes.some(s => s.title.toLowerCase() === title.toLowerCase())) { errEl.textContent = 'Title already exists.'; titleEl.select(); return; }
   const row = {};
   SECS.forEach(({ key }) => { row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => c.value); });
+  const sectionId = S.sections.length ? (parseInt(document.getElementById('sc-section').value) || null) : null;
   pushHistory('Add scene "' + truncStr(title, 22) + '"');
-  S.scenes.push({ id: S.nextId++, title, summary, ...row });
+  S.scenes.push({ id: S.nextId++, title, summary, ...row, sectionId });
   titleEl.value = ''; document.getElementById('sc-summary').value = '';
   document.querySelectorAll('#form-new .cklist input').forEach(c => { c.checked = false; });
   renderBoard();
@@ -738,6 +862,9 @@ function openEditMode(id) {
   document.getElementById('ed-title').value   = sc.title;
   document.getElementById('ed-summary').value = sc.summary || '';
   document.getElementById('ederr').textContent = '';
+  if (S.sections.length) {
+    document.getElementById('ed-section').value = sc.sectionId || '';
+  }
   SECS.forEach(({ key }) => renderEditCk(key, sc[key] || []));
   document.getElementById('tab-edit').disabled = false;
   document.getElementById('tab-edit').classList.remove('dim');
@@ -764,8 +891,10 @@ function confirmSaveEdit() {
   const sc = S.scenes.find(s => s.id === S.editingId); if (!sc) return;
   const title = document.getElementById('ed-title').value.trim().replace(/[\r\n]+/g,' ');
   const summary = document.getElementById('ed-summary').value.trim();
+  const sectionId = S.sections.length ? (parseInt(document.getElementById('ed-section').value) || null) : null;
   pushHistory('Edit scene "' + truncStr(sc.title, 22) + '"');
   sc.title = title; sc.summary = summary;
+  if (S.sections.length) sc.sectionId = sectionId;
   SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value); });
   closeSaveCfm(); cancelEdit(); renderBoard();
   saveState();
@@ -795,6 +924,13 @@ document.getElementById('libdel-modal').addEventListener('click', e => {
 });
 document.getElementById('savecfm-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('savecfm-modal')) closeSaveCfm();
+});
+document.getElementById('sec-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('sec-modal')) closeSecModal();
+});
+document.getElementById('sec-add-inp').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addSection(); }
+  if (e.key === 'Escape') closeSecModal();
 });
 
 // ── RENDER ALL LIBRARY SECTIONS ───────────────────────────────────────────────
@@ -869,58 +1005,275 @@ function renderEditCk(sec, checked=[]) {
 }
 
 // ── RENDER: BOARD ─────────────────────────────────────────────────────────────
+function renderCard(container, scene, idx) {
+  const isd = drag.on && drag.ids.includes(scene.id);
+  const sel = S.selIds.has(scene.id);
+  const dpb = drag.on && drag.dropId === scene.id && drag.before;
+  const dpa = drag.on && drag.dropId === scene.id && !drag.before;
+  let hlCls = '';
+  if (searchQ)         { if (sceneMatchesSearch(scene)) hlCls = 'hl-s'; }
+  else                 { if (sceneMatchesLib(scene))    hlCls = 'hl';   }
+  const card = document.createElement('div');
+  card.className = ['sc', isd?'isd':'', sel?'sel':'', hlCls, dpb?'dpb':'', dpa?'dpa':''].filter(Boolean).join(' ');
+  card.dataset.id = scene.id;
+  const badge  = document.createElement('div');    badge.className  = 'sbadge'; badge.textContent = '✓';
+  const delbtn = document.createElement('button'); delbtn.className = 'cdel';   delbtn.title = 'Delete'; delbtn.textContent = '×';
+  const sumbtn = document.createElement('button'); sumbtn.className = 'csum' + (scene.summary ? ' hs' : ''); sumbtn.title = scene.summary ? 'View summary' : 'No summary'; sumbtn.textContent = 'ⓘ';
+  const editbtn= document.createElement('button'); editbtn.className= 'cedit';  editbtn.title = 'Edit scene'; editbtn.textContent = '✏️';
+  delbtn.addEventListener('mousedown', e => e.stopPropagation());
+  delbtn.addEventListener('click', e => { e.stopPropagation(); deleteScene(scene.id); });
+  sumbtn.addEventListener('mousedown', e => e.stopPropagation());
+  sumbtn.addEventListener('click', e => { e.stopPropagation(); if (scene.summary) openModal(scene.id); });
+  editbtn.addEventListener('mousedown', e => e.stopPropagation());
+  editbtn.addEventListener('click', e => { e.stopPropagation(); openEditMode(scene.id); });
+  const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${idx+1}`;
+  const tit  = document.createElement('div'); tit.className  = 'ctit'; tit.textContent = scene.title;
+  const meta = document.createElement('div'); meta.className = 'cmeta';
+  SECS.forEach(({ key, label, tag }) => {
+    if (!scene[key] || !scene[key].length) return;
+    const row  = document.createElement('div'); row.className  = 'crow';
+    const lbl  = document.createElement('div'); lbl.className  = 'clbl'; lbl.textContent = label;
+    const tags = document.createElement('div'); tags.className = 'ctags';
+    scene[key].forEach(v => { const t = document.createElement('span'); t.className = 'tag ' + tag; t.textContent = v; tags.appendChild(t); });
+    row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
+  });
+  card.appendChild(badge); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
+  card.appendChild(num); card.appendChild(tit); card.appendChild(meta);
+  card.addEventListener('mousedown', e => onCardDown(e, scene.id));
+  container.appendChild(card);
+}
+
 function renderBoard() {
   const board = document.getElementById('board'), emp = document.getElementById('sbemp');
   board.innerHTML = '';
   updateCount();
+  const hasSecs = S.sections.length > 0;
+  board.classList.toggle('has-secs', hasSecs);
   if (!S.scenes.length) { emp.style.display='flex'; return; }
   emp.style.display = 'none';
-  S.scenes.forEach((scene, idx) => {
-    const isd = drag.on && drag.ids.includes(scene.id);
-    const sel = S.selIds.has(scene.id);
-    const dpb = drag.on && drag.dropId === scene.id && drag.before;
-    const dpa = drag.on && drag.dropId === scene.id && !drag.before;
-    // Highlight: search overrides library selection
-    let hlCls = '';
-    if (searchQ)              { if (sceneMatchesSearch(scene)) hlCls = 'hl-s'; }
-    else                      { if (sceneMatchesLib(scene))    hlCls = 'hl';   }
-    const card = document.createElement('div');
-    card.className = ['sc', isd?'isd':'', sel?'sel':'', hlCls, dpb?'dpb':'', dpa?'dpa':''].filter(Boolean).join(' ');
-    card.dataset.id = scene.id;
-    // Buttons
-    const badge  = document.createElement('div');    badge.className  = 'sbadge'; badge.textContent = '✓';
-    const delbtn = document.createElement('button'); delbtn.className = 'cdel';   delbtn.title = 'Delete'; delbtn.textContent = '×';
-    const sumbtn = document.createElement('button'); sumbtn.className = 'csum' + (scene.summary ? ' hs' : ''); sumbtn.title = scene.summary ? 'View summary' : 'No summary'; sumbtn.textContent = 'ⓘ';
-    const editbtn= document.createElement('button'); editbtn.className= 'cedit';  editbtn.title = 'Edit scene'; editbtn.textContent = '✏️';
-    delbtn.addEventListener('mousedown', e => e.stopPropagation());
-    delbtn.addEventListener('click', e => { e.stopPropagation(); deleteScene(scene.id); });
-    sumbtn.addEventListener('mousedown', e => e.stopPropagation());
-    sumbtn.addEventListener('click', e => { e.stopPropagation(); if (scene.summary) openModal(scene.id); });
-    editbtn.addEventListener('mousedown', e => e.stopPropagation());
-    editbtn.addEventListener('click', e => { e.stopPropagation(); openEditMode(scene.id); });
-    // Content
-    const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${idx+1}`;
-    const tit  = document.createElement('div'); tit.className  = 'ctit'; tit.textContent = scene.title;
-    const meta = document.createElement('div'); meta.className = 'cmeta';
-    SECS.forEach(({ key, label, tag }) => {
-      if (!scene[key] || !scene[key].length) return;
-      const row  = document.createElement('div'); row.className  = 'crow';
-      const lbl  = document.createElement('div'); lbl.className  = 'clbl'; lbl.textContent = label;
-      const tags = document.createElement('div'); tags.className = 'ctags';
-      scene[key].forEach(v => { const t = document.createElement('span'); t.className = 'tag ' + tag; t.textContent = v; tags.appendChild(t); });
-      row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
+
+  if (!hasSecs) {
+    // Original flat layout
+    S.scenes.forEach((scene, idx) => renderCard(board, scene, idx));
+  } else {
+    // Section group layout
+    const secFilter = document.getElementById('sec-filter').value;
+    const validSecIds = new Set(S.sections.map(s => s.id));
+    const unassigned  = S.scenes.filter(s => !validSecIds.has(s.sectionId));
+    const allGroups   = [
+      ...S.sections.map(sec => ({ id: sec.id, name: sec.name, scenes: S.scenes.filter(s => s.sectionId === sec.id), isUnasgn: false })),
+      { id: null, name: 'Unassigned', scenes: unassigned, isUnasgn: true },
+    ];
+    let groups;
+    if      (secFilter === 'all')        groups = allGroups.filter(g => !g.isUnasgn || g.scenes.length > 0);
+    else if (secFilter === 'unassigned') groups = allGroups.filter(g => g.isUnasgn);
+    else { const fid = parseInt(secFilter); groups = allGroups.filter(g => g.id === fid); }
+
+    groups.forEach(group => {
+      const secGrp = document.createElement('div');
+      secGrp.className = 'sec-group' + (group.isUnasgn ? ' sec-unasgn' : '');
+      if (group.id !== null) secGrp.dataset.secId = group.id;
+
+      // Header
+      const hdr = document.createElement('div'); hdr.className = 'sec-hdr';
+      const nameEl = document.createElement('span'); nameEl.className = 'sec-name'; nameEl.textContent = group.name;
+      const cntEl  = document.createElement('span'); cntEl.className  = 'sec-cnt';  cntEl.textContent  = `${group.scenes.length} scene${group.scenes.length !== 1 ? 's' : ''}`;
+      hdr.appendChild(nameEl); hdr.appendChild(cntEl);
+      if (!group.isUnasgn) {
+        const rnBtn = document.createElement('button'); rnBtn.className = 'sec-hbtn'; rnBtn.textContent = '✎'; rnBtn.title = 'Rename section';
+        rnBtn.addEventListener('mousedown', e => e.stopPropagation());
+        rnBtn.addEventListener('click', e => { e.stopPropagation(); openSecModal(group.id); });
+        const delBtn = document.createElement('button'); delBtn.className = 'sec-hbtn del'; delBtn.textContent = '✕'; delBtn.title = 'Delete section';
+        delBtn.addEventListener('mousedown', e => e.stopPropagation());
+        delBtn.addEventListener('click', e => { e.stopPropagation(); deleteSection(group.id); });
+        hdr.appendChild(rnBtn); hdr.appendChild(delBtn);
+      }
+
+      // Body
+      const body = document.createElement('div'); body.className = 'sec-body';
+      group.scenes.forEach(scene => renderCard(body, scene, S.scenes.indexOf(scene)));
+
+      secGrp.appendChild(hdr); secGrp.appendChild(body);
+      board.appendChild(secGrp);
     });
-    card.appendChild(badge); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
-    card.appendChild(num); card.appendChild(tit); card.appendChild(meta);
-    card.addEventListener('mousedown', e => onCardDown(e, scene.id));
-    board.appendChild(card);
-  });
+  }
   document.getElementById('clrsel').style.display = S.selIds.size > 0 ? 'inline-block' : 'none';
 }
 
 function updateCount() {
   const n = S.scenes.length;
   document.getElementById('sbcnt').textContent = `${n} scene${n !== 1 ? 's' : ''}`;
+}
+
+// ── SECTION SELECTS (forms + filter) ──────────────────────────────────────────
+function renderSectionSelects() {
+  const hasSecs = S.sections.length > 0;
+  document.getElementById('sc-sec-wrap').style.display = hasSecs ? '' : 'none';
+  document.getElementById('ed-sec-wrap').style.display = hasSecs ? '' : 'none';
+  document.getElementById('sec-filter').classList.toggle('vis', hasSecs);
+  // Form dropdowns
+  ['sc-section','ed-section'].forEach(id => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Unassigned</option>';
+    S.sections.forEach(sec => {
+      const opt = document.createElement('option'); opt.value = sec.id; opt.textContent = sec.name;
+      sel.appendChild(opt);
+    });
+    if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+  });
+  // Filter dropdown
+  const filt = document.getElementById('sec-filter');
+  const curF = filt.value;
+  filt.innerHTML = '<option value="all">All Sections</option>';
+  S.sections.forEach(sec => {
+    const opt = document.createElement('option'); opt.value = sec.id; opt.textContent = sec.name;
+    filt.appendChild(opt);
+  });
+  filt.innerHTML += '<option value="unassigned">Unassigned</option>';
+  if ([...filt.options].some(o => o.value === curF)) filt.value = curF; else filt.value = 'all';
+}
+
+// ── SECTION MANAGEMENT ─────────────────────────────────────────────────────────
+function openSecModal(scrollToId) {
+  renderSecList();
+  document.getElementById('sec-modal').classList.add('open');
+  if (scrollToId) {
+    // Scroll list to and focus the item
+    const item = document.querySelector(`#sec-list .sec-li[data-secid="${scrollToId}"]`);
+    if (item) { item.scrollIntoView({ block:'nearest' }); startSecRename(item, scrollToId); }
+  } else {
+    setTimeout(() => document.getElementById('sec-add-inp').focus(), 60);
+  }
+}
+function closeSecModal() { document.getElementById('sec-modal').classList.remove('open'); }
+
+function addSection() {
+  const inp = document.getElementById('sec-add-inp');
+  const name = inp.value.trim();
+  if (!name) { inp.focus(); return; }
+  if (S.sections.some(s => s.name.toLowerCase() === name.toLowerCase())) { inp.select(); return; }
+  pushHistory('Add section "' + truncStr(name, 22) + '"');
+  S.sections.push({ id: S.nextSecId++, name });
+  inp.value = '';
+  renderSecList(); renderSectionSelects(); renderBoard();
+  saveState();
+}
+
+function deleteSection(id) {
+  const sec = S.sections.find(s => s.id === id); if (!sec) return;
+  const count = S.scenes.filter(s => s.sectionId === id).length;
+  const msg = count > 0
+    ? `Delete section "${sec.name}"?\n\nThe ${count} scene${count!==1?'s':''} in it will become Unassigned.`
+    : `Delete section "${sec.name}"?`;
+  if (!confirm(msg)) return;
+  pushHistory('Delete section "' + truncStr(sec.name, 22) + '"');
+  S.sections = S.sections.filter(s => s.id !== id);
+  S.scenes.forEach(s => { if (s.sectionId === id) s.sectionId = null; });
+  renderSecList(); renderSectionSelects(); renderBoard();
+  saveState();
+}
+
+function renameSection(id, newName) {
+  const sec = S.sections.find(s => s.id === id); if (!sec) return;
+  newName = newName.trim();
+  if (!newName || newName === sec.name) { renderSecList(); return; }
+  if (S.sections.some(s => s.id !== id && s.name.toLowerCase() === newName.toLowerCase())) { renderSecList(); return; }
+  pushHistory('Rename section to "' + truncStr(newName, 22) + '"');
+  sec.name = newName;
+  renderSecList(); renderSectionSelects(); renderBoard();
+  saveState();
+}
+
+function quickSetup() {
+  const n   = Math.min(20, Math.max(1, parseInt(document.getElementById('qs-n').value) || 3));
+  const pfx = (document.getElementById('qs-pfx').value.trim() || 'Section');
+  if (!confirm(`Create ${n} sections: "${pfx} 1" through "${pfx} ${n}"?`)) return;
+  pushHistory('Quick setup: ' + n + ' sections');
+  for (let i = 1; i <= n; i++) {
+    const name = pfx + ' ' + i;
+    if (!S.sections.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+      S.sections.push({ id: S.nextSecId++, name });
+    }
+  }
+  renderSecList(); renderSectionSelects(); renderBoard();
+  saveState();
+}
+
+function renderSecList() {
+  const list = document.getElementById('sec-list');
+  list.innerHTML = '';
+  const lbl = document.getElementById('sec-list-lbl');
+  if (lbl) lbl.textContent = S.sections.length ? `(${S.sections.length})` : '';
+  if (!S.sections.length) {
+    list.innerHTML = '<div class="sec-empty-hint">No sections yet — add one above or use Quick Setup.</div>';
+    return;
+  }
+  S.sections.forEach((sec, idx) => {
+    const li = document.createElement('div'); li.className = 'sec-li'; li.dataset.idx = idx; li.dataset.secid = sec.id;
+    const dh = document.createElement('span'); dh.className = 'sdh'; dh.textContent = '⠿';
+    dh.addEventListener('mousedown', e => startSecListDrag(e, idx));
+    const nameEl = document.createElement('span'); nameEl.className = 'sec-li-name'; nameEl.textContent = sec.name;
+    nameEl.addEventListener('click', () => startSecRename(li, sec.id));
+    const cnt = S.scenes.filter(s => s.sectionId === sec.id).length;
+    const cntEl = document.createElement('span'); cntEl.className = 'sec-li-cnt'; cntEl.textContent = cnt + ' scene' + (cnt!==1?'s':'');
+    const del = document.createElement('button'); del.className = 'sec-li-del'; del.textContent = '×'; del.title = 'Delete section';
+    del.addEventListener('mousedown', e => e.stopPropagation());
+    del.addEventListener('click', e => { e.stopPropagation(); deleteSection(sec.id); });
+    li.appendChild(dh); li.appendChild(nameEl); li.appendChild(cntEl); li.appendChild(del);
+    list.appendChild(li);
+  });
+}
+
+function startSecRename(li, id) {
+  const nameEl = li.querySelector('.sec-li-name'); if (!nameEl) return;
+  const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'sec-li-edt';
+  inp.value = nameEl.textContent; inp.maxLength = 60;
+  li.replaceChild(inp, nameEl);
+  inp.focus(); inp.select();
+  let done = false;
+  const finish = () => { if (done) return; done = true; renameSection(id, inp.value); };
+  inp.addEventListener('blur', finish);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); finish(); }
+    if (e.key === 'Escape') { done = true; renderSecList(); }
+  });
+}
+
+// ── SECTION LIST DRAG (in modal) ──────────────────────────────────────────────
+const sld = { on:false, fromIdx:null, dropIdx:null, before:true };
+function startSecListDrag(e, idx) {
+  if (e.button !== 0) return; e.preventDefault(); e.stopPropagation();
+  sld.on = true; sld.fromIdx = idx; sld.dropIdx = null;
+}
+function moveSecListDrag(e) {
+  const list = document.getElementById('sec-list'); if (!list) return;
+  const items = [...list.querySelectorAll('.sec-li')];
+  items.forEach(i => i.classList.remove('dib','dia','dg'));
+  const fromEl = items.find(i => +i.dataset.idx === sld.fromIdx); if (fromEl) fromEl.classList.add('dg');
+  let ni = null, nb = true;
+  for (const item of items) {
+    if (+item.dataset.idx === sld.fromIdx) continue;
+    const r = item.getBoundingClientRect();
+    if (e.clientY >= r.top && e.clientY <= r.bottom) { ni = +item.dataset.idx; nb = e.clientY < r.top + r.height/2; break; }
+  }
+  if (ni !== null) { const tgt = items.find(i => +i.dataset.idx === ni); if (tgt) tgt.classList.add(nb?'dib':'dia'); }
+  sld.dropIdx = ni; sld.before = nb;
+}
+function endSecListDrag() {
+  const list = document.getElementById('sec-list');
+  if (list) list.querySelectorAll('.sec-li').forEach(i => i.classList.remove('dib','dia','dg'));
+  if (sld.dropIdx !== null && sld.dropIdx !== sld.fromIdx) {
+    pushHistory('Reorder sections');
+    const arr = S.sections;
+    const [item] = arr.splice(sld.fromIdx, 1);
+    let ti = sld.dropIdx > sld.fromIdx ? sld.dropIdx - 1 : sld.dropIdx;
+    if (!sld.before) ti++;
+    arr.splice(ti, 0, item);
+    renderSecList(); renderSectionSelects(); renderBoard();
+    saveState();
+  }
+  sld.on = false; sld.fromIdx = null; sld.dropIdx = null;
 }
 
 // ── CARD DRAG ─────────────────────────────────────────────────────────────────
@@ -969,6 +1322,14 @@ function endCardDrag() {
     const dragged = drag.ids.map(id => S.scenes.find(s => s.id === id)).filter(Boolean);
     const rest    = S.scenes.filter(s => !drag.ids.includes(s.id));
     const ti      = rest.findIndex(s => s.id === drag.dropId);
+    // Cross-section: assign dropped cards to the target card's section
+    if (S.sections.length) {
+      const targetScene = S.scenes.find(s => s.id === drag.dropId);
+      if (targetScene) {
+        const targetSecId = targetScene.sectionId ?? null;
+        dragged.forEach(s => { s.sectionId = targetSecId; });
+      }
+    }
     if (ti !== -1) rest.splice(drag.before ? ti : ti + 1, 0, ...dragged);
     S.scenes = rest; changed = true;
   }
@@ -1036,7 +1397,8 @@ document.addEventListener('mousemove', e => {
     }
     if (ptr.dragging) moveCardDrag(e);
   }
-  if (ld.on) moveLibDrag(e);
+  if (ld.on)  moveLibDrag(e);
+  if (sld.on) moveSecListDrag(e);
   if (cpDr.on) {
     const newW = Math.max(180, Math.min(520, cpDr.startW + (e.clientX - cpDr.startX)));
     document.getElementById('cp').style.width = newW + 'px';
@@ -1047,7 +1409,8 @@ document.addEventListener('mouseup', e => {
     if (!ptr.dragging) toggleCardSel(ptr.id, e); else endCardDrag();
     ptr.down = false; ptr.dragging = false; ptr.id = null;
   }
-  if (ld.on) endLibDrag();
+  if (ld.on)  endLibDrag();
+  if (sld.on) endSecListDrag();
   if (cpDr.on) { cpDr.on = false; document.getElementById('cp-resize').classList.remove('dragging'); }
 });
 
@@ -1060,7 +1423,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
     if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); return; }
   }
-  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); }
+  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); closeSecModal(); }
 });
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -1069,6 +1432,7 @@ syncAndOrUI();
 buildLibPanel();
 renderAllLib();
 renderAllCk();
+renderSectionSelects();
 renderBoard();
 updateLibClearBtn();
 updateUndoRedo();
