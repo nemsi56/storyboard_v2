@@ -934,7 +934,7 @@ function saveEdit() {
   errEl.textContent = '';
   if (!title) { errEl.textContent = 'Please enter a title.'; titleEl.focus(); return; }
   if (S.scenes.some(s => s.id !== sc.id && s.title.toLowerCase() === title.toLowerCase())) { errEl.textContent = 'Title already exists.'; titleEl.select(); return; }
-  const sceneNum = S.scenes.indexOf(sc) + 1;
+  const sceneNum = sceneDisplayNum(sc.id);
   document.getElementById('savecfm-msg').textContent = `Save changes to Scene ${sceneNum} — "${title}"?`;
   document.getElementById('savecfm-modal').classList.add('open');
 }
@@ -970,7 +970,7 @@ function switchTab(t) {
 // ── SUMMARY MODAL ─────────────────────────────────────────────────────────────
 function openModal(id) {
   const sc = S.scenes.find(s => s.id === id); if (!sc || !sc.summary) return;
-  document.getElementById('mnum').textContent = `Scene ${S.scenes.indexOf(sc) + 1}`;
+  document.getElementById('mnum').textContent = `Scene ${sceneDisplayNum(sc.id)}`;
   document.getElementById('mtit').textContent = sc.title;
   document.getElementById('msum').textContent = sc.summary;
   document.getElementById('modal').classList.add('open');
@@ -1064,6 +1064,24 @@ function renderEditCk(sec, checked=[]) {
 }
 
 // ── RENDER: BOARD ─────────────────────────────────────────────────────────────
+// Returns the 1-based display number for a scene based on visual board order:
+// unassigned scenes first (leftmost), then each section in S.sections order.
+// This ensures numbers run 1…N left-to-right across ALL sections regardless of
+// the underlying S.scenes array order.
+function sceneDisplayNum(sceneId) {
+  if (!S.sections.length) {
+    const idx = S.scenes.findIndex(s => s.id === sceneId);
+    return idx === -1 ? 1 : idx + 1;
+  }
+  const validSecIds = new Set(S.sections.map(s => s.id));
+  const ordered = [
+    ...S.scenes.filter(s => !validSecIds.has(s.sectionId)),           // unassigned
+    ...S.sections.flatMap(sec => S.scenes.filter(s => s.sectionId === sec.id)), // each section in order
+  ];
+  const idx = ordered.findIndex(s => s.id === sceneId);
+  return idx === -1 ? 1 : idx + 1;
+}
+
 function renderCard(container, scene, idx) {
   const isd = drag.on && drag.ids.includes(scene.id);
   const sel = S.selIds.has(scene.id);
@@ -1085,7 +1103,7 @@ function renderCard(container, scene, idx) {
   sumbtn.addEventListener('click', e => { e.stopPropagation(); if (scene.summary) openModal(scene.id); });
   editbtn.addEventListener('mousedown', e => e.stopPropagation());
   editbtn.addEventListener('click', e => { e.stopPropagation(); openEditMode(scene.id); });
-  const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${idx+1}`;
+  const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${sceneDisplayNum(scene.id)}`;
   const tit  = document.createElement('div'); tit.className  = 'ctit'; tit.textContent = scene.title;
   const meta = document.createElement('div'); meta.className = 'cmeta';
   SECS.forEach(({ key, label, tag }) => {
@@ -1495,7 +1513,7 @@ function beginCardDrag(id, e) {
   drag.ox = e.clientX - r.left; drag.oy = e.clientY - r.top;
   const sc = S.scenes.find(s => s.id === id), ghost = document.getElementById('ghost');
   ghost.innerHTML = '';
-  const n = document.createElement('div'); n.className = 'cnum'; n.textContent = `Scene ${S.scenes.indexOf(sc)+1}`;
+  const n = document.createElement('div'); n.className = 'cnum'; n.textContent = `Scene ${sceneDisplayNum(sc.id)}`;
   const t = document.createElement('div'); t.className = 'ctit'; t.textContent = sc.title;
   ghost.appendChild(n); ghost.appendChild(t);
   if (ids.length > 1) { const b = document.createElement('div'); b.className = 'gbadge'; b.textContent = `+${ids.length-1}`; ghost.appendChild(b); }
