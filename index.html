@@ -824,6 +824,7 @@ function confirmLibDel() {
 // ── CARD DETAILS TOGGLE ───────────────────────────────────────────────────────
 function toggleDetails(show) {
   document.getElementById('board').classList.toggle('hide-details', !show);
+  if (S.sections.length) alignSecHeaders();
 }
 
 // ── HIGHLIGHT LOGIC ───────────────────────────────────────────────────────────
@@ -1567,6 +1568,10 @@ document.addEventListener('keydown', e => {
   }
   if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); closeSecDelModal(); }
 });
+
+// ── WINDOW RESIZE ─────────────────────────────────────────────────────────────
+// Card column layout changes when the window is resized; re-measure header widths.
+window.addEventListener('resize', () => { if (S.sections.length) alignSecHeaders(); });
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 loadState();
