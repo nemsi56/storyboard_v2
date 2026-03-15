@@ -99,9 +99,13 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .eh{font-size:11px;color:var(--o0);font-style:italic;padding:2px 0}
 
 /* ══ PANEL RESIZE HANDLE ═══════════════════════════════════════════════════ */
-#cp-resize{width:4px;flex-shrink:0;cursor:col-resize;background:var(--s1);transition:background .15s;position:relative;z-index:5}
-#cp-resize:hover,#cp-resize.dragging{background:var(--acc)}
+#cp-resize,#sp-resize{width:4px;flex-shrink:0;cursor:col-resize;background:var(--s1);transition:background .15s;position:relative;z-index:5}
+#cp-resize:hover,#cp-resize.dragging,#sp-resize:hover,#sp-resize.dragging{background:var(--acc)}
 #cp.collapsed + #cp-resize{display:none}
+#sp.collapsed + #sp-resize{display:none}
+/* Grip indicator – braille dots centered slightly below midpoint */
+#cp-resize::after,#sp-resize::after{content:'⠿';position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:9px;color:var(--o1);opacity:.55;pointer-events:none;transition:opacity .15s,color .15s}
+#cp-resize:hover::after,#cp-resize.dragging::after,#sp-resize:hover::after,#sp-resize.dragging::after{opacity:1;color:var(--acc)}
 
 /* ══ CENTER PANEL ══════════════════════════════════════════════════════════ */
 #cp{width:258px;background:var(--bg2);border-right:none}
@@ -247,12 +251,14 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .cfm-msg{font-size:13px;color:var(--tx);line-height:1.5;margin-bottom:16px}
 #libdel-ok{background:var(--rd);color:var(--ontx)}
 #libdel-ok:hover{opacity:.86}
+#secdel-ok{background:var(--rd);color:var(--ontx)}
+#secdel-ok:hover{opacity:.86}
 
 /* ══ SECTION GROUPS ════════════════════════════════════════════════════════ */
 #board.has-secs{flex-direction:row;align-items:stretch;gap:0;flex-wrap:nowrap;padding:0}
-.sec-group{display:flex;flex-direction:column;flex-shrink:0;border-right:2px solid var(--s1)}
+.sec-group{display:flex;flex-direction:column;flex-shrink:0;border-right:2px solid var(--s1);min-width:max-content}
 .sec-group:last-child{border-right:none}
-.sec-hdr{height:40px;padding:0 10px;display:flex;align-items:center;gap:7px;background:var(--bg1);border-bottom:2px solid var(--s1);flex-shrink:0}
+.sec-hdr{height:40px;padding:0 10px;display:flex;align-items:center;gap:7px;border-bottom:2px solid var(--s1);flex-shrink:0;min-width:max-content}
 .sec-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sec-cnt{font-size:10px;color:var(--o0);flex-shrink:0;white-space:nowrap}
 .sec-hbtn{background:none;border:none;color:var(--o0);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:3px;opacity:0;line-height:1;transition:color .1s,opacity .1s,background .1s;flex-shrink:0;font-family:inherit}
@@ -260,12 +266,47 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .sec-hbtn:hover{color:var(--tx);background:var(--s0)}
 .sec-hbtn.del:hover{color:var(--rd);background:color-mix(in srgb,var(--rd) 10%,transparent)}
 .sec-body{flex:1;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:8px;padding:12px;min-width:max-content;min-height:0}
-.sec-unasgn .sec-hdr{background:var(--sbg)}
+.sec-unasgn .sec-hdr{background:var(--sbg)!important}
 .sec-unasgn .sec-name{color:var(--sub);font-style:italic;text-transform:none;letter-spacing:0;font-size:12px;font-weight:600}
+/* Drag-over highlight for empty section drop */
+.sec-group.card-drag-over .sec-body{outline:2px dashed color-mix(in srgb,var(--acc) 55%,transparent);outline-offset:-4px}
+.sec-group.card-drag-over .sec-hdr{filter:brightness(.93)}
+/* Color picker in sec-hdr */
+.sec-color-pick{width:18px;height:18px;padding:1px;border:1px solid color-mix(in srgb,var(--s1) 80%,transparent);border-radius:3px;cursor:pointer;flex-shrink:0;background:none;opacity:.6;transition:opacity .1s;-webkit-appearance:none}
+.sec-color-pick::-webkit-color-swatch-wrapper{padding:1px;border-radius:2px}
+.sec-color-pick::-webkit-color-swatch{border:none;border-radius:1px}
+.sec-hdr:hover .sec-color-pick{opacity:1}
+
+/* ══ SECTIONS PANEL ═════════════════════════════════════════════════════════ */
+#sp{width:190px;background:var(--bg1);border-right:2px solid var(--s1)}
+#sp .p-body{padding:0;overflow-y:auto}
+.sp-add-row{display:flex;gap:5px;padding:9px 10px 8px;border-bottom:1px solid var(--bdr)}
+.sp-add-inp{flex:1;min-width:0;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 8px;color:var(--tx);font-size:12px;font-family:inherit;outline:none;transition:border-color .14s}
+.sp-add-inp:focus{border-color:var(--acc)}
+.sp-add-inp::placeholder{color:var(--o0)}
+.sp-add-btn{background:var(--acc);color:var(--ontx);border:none;border-radius:5px;width:24px;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .14s;line-height:1}
+.sp-add-btn:hover{opacity:.82}
+.sp-qs{padding:7px 10px 8px;border-bottom:1px solid var(--bdr)}
+.sp-qs-hdr{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--o0);margin-bottom:5px}
+.sp-qs-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+#sec-list{display:flex;flex-direction:column;gap:3px;padding:7px 8px}
+.sec-li{display:flex;align-items:center;gap:6px;padding:5px 7px;border-radius:6px;background:var(--s0);border:1.5px solid transparent}
+.sec-li .sdh{color:var(--o0);cursor:grab;font-size:11px;opacity:.45;flex-shrink:0;line-height:1;transition:opacity .1s}
+.sec-li:hover .sdh{opacity:.9}
+.sec-li .sdh:active{cursor:grabbing}
+.sec-li-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sec-li-name{flex:1;font-size:12px;color:var(--tx);min-width:0;cursor:text;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sec-li-edt{flex:1;min-width:0;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:2px 6px;color:var(--tx);font-size:12px;font-family:inherit;outline:none}
+.sec-li-cnt{font-size:10px;color:var(--o0);flex-shrink:0;white-space:nowrap}
+.sec-li-del{background:none;border:none;color:var(--o0);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;opacity:0;transition:opacity .1s,color .1s;flex-shrink:0}
+.sec-li:hover .sec-li-del{opacity:1}
+.sec-li-del:hover{color:var(--rd)!important}
+.sec-li.dib{border-top:2px solid var(--acc)!important}
+.sec-li.dia{border-bottom:2px solid var(--acc)!important}
+.sec-li.dg{opacity:.2}
+.sec-empty-hint{font-size:11px;color:var(--o0);font-style:italic;padding:8px 4px}
 
 /* ══ SECTION FILTER & BUTTON IN SBHDR ═════════════════════════════════════ */
-#sec-btn{font-size:11px;font-weight:700;background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--sub);padding:4px 10px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .12s,color .12s;flex-shrink:0}
-#sec-btn:hover{background:var(--s1);color:var(--tx)}
 #sec-filter{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:11px;font-family:inherit;padding:4px 7px;cursor:pointer;outline:none;display:none;flex-shrink:0}
 #sec-filter.vis{display:block}
 #sec-filter option{background:var(--bg1);color:var(--tx)}
@@ -274,21 +315,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .ff-sel{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:8px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;cursor:pointer;transition:border-color .14s}
 .ff-sel:focus{border-color:var(--acc)}
 .ff-sel option{background:var(--bg1);color:var(--tx)}
-
-/* ══ SECTIONS MODAL ════════════════════════════════════════════════════════ */
-#sec-modal{position:fixed;inset:0;background:var(--mov);display:none;align-items:center;justify-content:center;z-index:10003}
-#sec-modal.open{display:flex}
-#sec-mbox{background:var(--mbg);border:1px solid var(--s1);border-radius:12px;padding:22px;width:380px;max-width:92%;max-height:82vh;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative}
-#sec-mbox h2{font-size:15px;font-weight:700;color:var(--tx)}
-.sec-mclose{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--o0);font-size:20px;cursor:pointer;padding:2px 6px;border-radius:4px;line-height:1;transition:color .12s,background .12s}
-.sec-mclose:hover{color:var(--tx);background:var(--s0)}
-.sec-add-row{display:flex;gap:6px}
-.sec-add-inp{flex:1;min-width:0;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:7px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;transition:border-color .14s}
-.sec-add-inp:focus{border-color:var(--acc)}
-.sec-add-inp::placeholder{color:var(--o0)}
-.sec-add-btn{background:var(--acc);color:var(--ontx);border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .14s;white-space:nowrap}
-.sec-add-btn:hover{opacity:.86}
-.qs-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 0 2px}
+/* Quick Setup shared styles (now in sections panel) */
 .qs-lbl{font-size:11px;color:var(--o0);white-space:nowrap}
 .qs-n{width:44px;background:var(--s0);border:1px solid var(--s1);border-radius:5px;padding:4px 7px;color:var(--tx);font-size:12px;font-family:inherit;outline:none;text-align:center}
 .qs-n:focus{border-color:var(--acc)}
@@ -296,24 +323,6 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .qs-pfx:focus{border-color:var(--acc)}
 .qs-btn{background:var(--s0);border:1px solid var(--s1);border-radius:5px;padding:4px 10px;font-size:12px;font-family:inherit;cursor:pointer;color:var(--tx);transition:background .12s}
 .qs-btn:hover{background:var(--s1)}
-.qs-divider{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--o0);border-bottom:1px solid var(--bdr);padding-bottom:6px}
-#sec-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:3px;min-height:60px}
-#sec-list::-webkit-scrollbar{width:4px}
-#sec-list::-webkit-scrollbar-thumb{background:var(--s1);border-radius:2px}
-.sec-li{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;background:var(--s0);border:1.5px solid transparent}
-.sec-li .sdh{color:var(--o0);cursor:grab;font-size:11px;opacity:.45;flex-shrink:0;line-height:1;transition:opacity .1s}
-.sec-li:hover .sdh{opacity:.9}
-.sec-li .sdh:active{cursor:grabbing}
-.sec-li-name{flex:1;font-size:13px;color:var(--tx);min-width:0;cursor:text;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sec-li-edt{flex:1;min-width:0;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:2px 7px;color:var(--tx);font-size:13px;font-family:inherit;outline:none}
-.sec-li-cnt{font-size:11px;color:var(--o0);flex-shrink:0;white-space:nowrap}
-.sec-li-del{background:none;border:none;color:var(--o0);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;opacity:0;transition:opacity .1s,color .1s;flex-shrink:0}
-.sec-li:hover .sec-li-del{opacity:1}
-.sec-li-del:hover{color:var(--rd)!important}
-.sec-li.dib{border-top:2px solid var(--acc)!important}
-.sec-li.dia{border-bottom:2px solid var(--acc)!important}
-.sec-li.dg{opacity:.2}
-.sec-empty-hint{font-size:12px;color:var(--o0);font-style:italic;padding:6px 2px}
 </style>
 </head>
 <body>
@@ -408,6 +417,38 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   </div>
   <div id="cp-resize" title="Drag to resize Scene panel"></div>
 
+  <!-- SECTIONS PANEL -->
+  <div class="panel" id="sp">
+    <div class="p-strip" onclick="togglePanel('sp')">
+      <span class="sl">Sections</span><span>▶</span>
+    </div>
+    <div class="p-content">
+      <div class="p-hdr">Sections
+        <div class="p-hdr-btns">
+          <button class="cbtn" onclick="togglePanel('sp')" title="Collapse">◀</button>
+        </div>
+      </div>
+      <div class="p-body">
+        <div class="sp-add-row">
+          <input type="text" id="sec-add-inp" class="sp-add-inp" placeholder="New section…" maxlength="60">
+          <button class="sp-add-btn" onclick="addSection()" title="Add section">+</button>
+        </div>
+        <div class="sp-qs">
+          <div class="sp-qs-hdr">Quick Setup</div>
+          <div class="sp-qs-row">
+            <span class="qs-lbl">Create</span>
+            <input type="number" id="qs-n" class="qs-n" min="1" max="20" value="3">
+            <span class="qs-lbl">named</span>
+            <input type="text" id="qs-pfx" class="qs-pfx" value="Act" maxlength="20">
+            <button class="qs-btn" onclick="quickSetup()">Go</button>
+          </div>
+        </div>
+        <div id="sec-list"></div>
+      </div>
+    </div>
+  </div>
+  <div id="sp-resize" title="Drag to resize Sections panel"></div>
+
   <!-- STORYBOARD PANEL -->
   <div id="sbp">
     <div id="sbhdr">
@@ -420,7 +461,6 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <input type="checkbox" id="det-toggle" onchange="toggleDetails(this.checked)">
         Show Card Details
       </label>
-      <button id="sec-btn" onclick="openSecModal()" title="Manage storyboard sections">Sections</button>
       <select id="sec-filter" onchange="renderBoard()" title="Filter by section"></select>
       <div id="srch-wrap">
         <input type="text" id="srch-inp" placeholder="🔍 Search…" oninput="onSearch()">
@@ -456,6 +496,17 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   </div>
 </div>
 
+<!-- Section Delete Confirm Modal -->
+<div id="secdel-modal" class="cfm-modal">
+  <div class="cfm-box">
+    <div id="secdel-msg" class="cfm-msg"></div>
+    <div class="ap-btns">
+      <button id="secdel-cancel" onclick="closeSecDelModal()">Cancel</button>
+      <button id="secdel-ok" onclick="confirmSecDel()">Delete Section</button>
+    </div>
+  </div>
+</div>
+
 <!-- Library Delete Confirm Modal -->
 <div id="libdel-modal" class="cfm-modal">
   <div class="cfm-box">
@@ -478,31 +529,6 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   </div>
 </div>
 
-<!-- Sections modal -->
-<div id="sec-modal">
-  <div id="sec-mbox">
-    <button class="sec-mclose" onclick="closeSecModal()">×</button>
-    <h2>Manage Sections</h2>
-    <div class="sec-add-row">
-      <input type="text" id="sec-add-inp" class="sec-add-inp" placeholder="New section name…" maxlength="60">
-      <button class="sec-add-btn" onclick="addSection()">Add</button>
-    </div>
-    <div>
-      <div class="qs-divider">Quick Setup</div>
-      <div class="qs-row">
-        <span class="qs-lbl">Create</span>
-        <input type="number" id="qs-n" class="qs-n" min="1" max="20" value="3">
-        <span class="qs-lbl">sections named</span>
-        <input type="text" id="qs-pfx" class="qs-pfx" value="Act" maxlength="20" placeholder="prefix">
-        <span class="qs-lbl">1, 2…</span>
-        <button class="qs-btn" onclick="quickSetup()">Create</button>
-      </div>
-    </div>
-    <div class="qs-divider" style="margin-top:2px">Sections <span id="sec-list-lbl" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--o0)"></span></div>
-    <div id="sec-list"></div>
-  </div>
-</div>
-
 <!-- Summary modal -->
 <div id="modal">
   <div id="mbox">
@@ -522,6 +548,7 @@ const SECS = [
   { key:'misc',       label:'Misc',       dot:'dm', secCls:'sec-m', tag:'tm', ph:'Topic…'          },
 ];
 const SINGULAR = { characters:'Character', locations:'Location', themes:'Theme', misc:'Misc item' };
+const SEC_COLORS = ['#5b8dd9','#6aaa80','#9b7cc4','#d4844a','#4aadb5','#c47a8a','#c4a84a','#7a8ea8'];
 
 // ── PERSISTENCE ───────────────────────────────────────────────────────────────
 const DATA_VERSION = '2';
@@ -574,6 +601,7 @@ function loadState() {
     S.nextId    = d.nextId    || 1;
     S.andOr     = d.andOr === 'AND' ? 'AND' : 'OR';
     S.sections  = d.sections  || [];
+    S.sections.forEach(s => { if (!s.color) s.color = SEC_COLORS[S.sections.indexOf(s) % SEC_COLORS.length]; });
     S.nextSecId = d.nextSecId || 1;
     const VALID_THEMES = ['ivory','slate','studio','ocean','sunset'];
     const theme = VALID_THEMES.includes(d.theme) ? d.theme : 'ivory';
@@ -646,7 +674,7 @@ function undo() {
   const entry = hist.past.pop();
   hist.future.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   saveState();
 }
 
@@ -655,7 +683,7 @@ function redo() {
   const entry = hist.future.pop();
   hist.past.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   saveState();
 }
 
@@ -777,6 +805,7 @@ function removeItem(sec, name) {
 }
 
 let libDelSec = null, libDelName = null;
+let secDelId = null;
 function openLibDelModal(sec, name) {
   libDelSec = sec; libDelName = name;
   const cfg = SECS.find(s => s.key === sec);
@@ -816,7 +845,7 @@ function resetAll() {
   hist.past = []; hist.future = [];
   clearSearch();
   syncAndOrUI();
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   localStorage.removeItem(STORAGE_KEY);
 }
 
@@ -925,12 +954,11 @@ document.getElementById('libdel-modal').addEventListener('click', e => {
 document.getElementById('savecfm-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('savecfm-modal')) closeSaveCfm();
 });
-document.getElementById('sec-modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('sec-modal')) closeSecModal();
+document.getElementById('secdel-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('secdel-modal')) closeSecDelModal();
 });
 document.getElementById('sec-add-inp').addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); addSection(); }
-  if (e.key === 'Escape') closeSecModal();
 });
 
 // ── RENDER ALL LIBRARY SECTIONS ───────────────────────────────────────────────
@@ -1061,8 +1089,8 @@ function renderBoard() {
     const validSecIds = new Set(S.sections.map(s => s.id));
     const unassigned  = S.scenes.filter(s => !validSecIds.has(s.sectionId));
     const allGroups   = [
-      ...S.sections.map(sec => ({ id: sec.id, name: sec.name, scenes: S.scenes.filter(s => s.sectionId === sec.id), isUnasgn: false })),
       { id: null, name: 'Unassigned', scenes: unassigned, isUnasgn: true },
+      ...S.sections.map(sec => ({ id: sec.id, name: sec.name, scenes: S.scenes.filter(s => s.sectionId === sec.id), isUnasgn: false })),
     ];
     let groups;
     if      (secFilter === 'all')        groups = allGroups.filter(g => !g.isUnasgn || g.scenes.length > 0);
@@ -1071,26 +1099,59 @@ function renderBoard() {
 
     groups.forEach(group => {
       const secGrp = document.createElement('div');
-      secGrp.className = 'sec-group' + (group.isUnasgn ? ' sec-unasgn' : '');
+      const isDragOver = drag.on && drag.dropId === null && (
+        (group.isUnasgn && drag.dropSecId === 0) ||
+        (!group.isUnasgn && drag.dropSecId === group.id)
+      );
+      secGrp.className = 'sec-group' + (group.isUnasgn ? ' sec-unasgn' : '') + (isDragOver ? ' card-drag-over' : '');
       if (group.id !== null) secGrp.dataset.secId = group.id;
+      else secGrp.dataset.secId = '0';
 
       // Header
       const hdr = document.createElement('div'); hdr.className = 'sec-hdr';
       const nameEl = document.createElement('span'); nameEl.className = 'sec-name'; nameEl.textContent = group.name;
       const cntEl  = document.createElement('span'); cntEl.className  = 'sec-cnt';  cntEl.textContent  = `${group.scenes.length} scene${group.scenes.length !== 1 ? 's' : ''}`;
       hdr.appendChild(nameEl); hdr.appendChild(cntEl);
+
+      // Body
+      const body = document.createElement('div'); body.className = 'sec-body';
+
       if (!group.isUnasgn) {
+        const sec = S.sections.find(s => s.id === group.id);
+        if (sec && sec.color) {
+          hdr.style.background = `color-mix(in srgb, ${sec.color} 20%, var(--bg1))`;
+          hdr.style.borderBottomColor = `color-mix(in srgb, ${sec.color} 30%, var(--s1))`;
+          body.style.background = `color-mix(in srgb, ${sec.color} 7%, var(--sbg))`;
+          secGrp.style.borderRightColor = `color-mix(in srgb, ${sec.color} 25%, var(--s1))`;
+        }
+        const colorPick = document.createElement('input');
+        colorPick.type = 'color'; colorPick.className = 'sec-color-pick';
+        colorPick.value = (sec && sec.color) ? sec.color : '#5b8dd9'; colorPick.title = 'Section color';
+        colorPick.addEventListener('mousedown', e => e.stopPropagation());
+        colorPick.addEventListener('input', e => {
+          const s = S.sections.find(x => x.id === group.id); if (!s) return;
+          s.color = e.target.value;
+          hdr.style.background = `color-mix(in srgb, ${e.target.value} 20%, var(--bg1))`;
+          hdr.style.borderBottomColor = `color-mix(in srgb, ${e.target.value} 30%, var(--s1))`;
+          body.style.background = `color-mix(in srgb, ${e.target.value} 7%, var(--sbg))`;
+          secGrp.style.borderRightColor = `color-mix(in srgb, ${e.target.value} 25%, var(--s1))`;
+        });
+        colorPick.addEventListener('change', e => { colorSection(group.id, e.target.value); renderSecPanel(); });
+        hdr.appendChild(colorPick);
         const rnBtn = document.createElement('button'); rnBtn.className = 'sec-hbtn'; rnBtn.textContent = '✎'; rnBtn.title = 'Rename section';
         rnBtn.addEventListener('mousedown', e => e.stopPropagation());
-        rnBtn.addEventListener('click', e => { e.stopPropagation(); openSecModal(group.id); });
+        rnBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          // Scroll to and start rename in the sections panel
+          const item = document.querySelector(`#sec-list .sec-li[data-secid="${group.id}"]`);
+          if (item) { item.scrollIntoView({ block:'nearest' }); startSecRename(item, group.id); }
+        });
         const delBtn = document.createElement('button'); delBtn.className = 'sec-hbtn del'; delBtn.textContent = '✕'; delBtn.title = 'Delete section';
         delBtn.addEventListener('mousedown', e => e.stopPropagation());
         delBtn.addEventListener('click', e => { e.stopPropagation(); deleteSection(group.id); });
         hdr.appendChild(rnBtn); hdr.appendChild(delBtn);
       }
 
-      // Body
-      const body = document.createElement('div'); body.className = 'sec-body';
       group.scenes.forEach(scene => renderCard(body, scene, S.scenes.indexOf(scene)));
 
       secGrp.appendChild(hdr); secGrp.appendChild(body);
@@ -1135,53 +1196,55 @@ function renderSectionSelects() {
 }
 
 // ── SECTION MANAGEMENT ─────────────────────────────────────────────────────────
-function openSecModal(scrollToId) {
-  renderSecList();
-  document.getElementById('sec-modal').classList.add('open');
-  if (scrollToId) {
-    // Scroll list to and focus the item
-    const item = document.querySelector(`#sec-list .sec-li[data-secid="${scrollToId}"]`);
-    if (item) { item.scrollIntoView({ block:'nearest' }); startSecRename(item, scrollToId); }
-  } else {
-    setTimeout(() => document.getElementById('sec-add-inp').focus(), 60);
-  }
-}
-function closeSecModal() { document.getElementById('sec-modal').classList.remove('open'); }
-
 function addSection() {
   const inp = document.getElementById('sec-add-inp');
   const name = inp.value.trim();
   if (!name) { inp.focus(); return; }
   if (S.sections.some(s => s.name.toLowerCase() === name.toLowerCase())) { inp.select(); return; }
   pushHistory('Add section "' + truncStr(name, 22) + '"');
-  S.sections.push({ id: S.nextSecId++, name });
+  const color = SEC_COLORS[S.sections.length % SEC_COLORS.length];
+  S.sections.push({ id: S.nextSecId++, name, color });
   inp.value = '';
-  renderSecList(); renderSectionSelects(); renderBoard();
+  renderSecPanel(); renderSectionSelects(); renderBoard();
   saveState();
 }
 
 function deleteSection(id) {
   const sec = S.sections.find(s => s.id === id); if (!sec) return;
+  secDelId = id;
   const count = S.scenes.filter(s => s.sectionId === id).length;
-  const msg = count > 0
+  document.getElementById('secdel-msg').textContent = count > 0
     ? `Delete section "${sec.name}"?\n\nThe ${count} scene${count!==1?'s':''} in it will become Unassigned.`
     : `Delete section "${sec.name}"?`;
-  if (!confirm(msg)) return;
+  document.getElementById('secdel-modal').classList.add('open');
+}
+function closeSecDelModal() { document.getElementById('secdel-modal').classList.remove('open'); secDelId = null; }
+function confirmSecDel() {
+  if (secDelId === null) return;
+  const id = secDelId;
+  closeSecDelModal();
+  const sec = S.sections.find(s => s.id === id); if (!sec) return;
   pushHistory('Delete section "' + truncStr(sec.name, 22) + '"');
   S.sections = S.sections.filter(s => s.id !== id);
   S.scenes.forEach(s => { if (s.sectionId === id) s.sectionId = null; });
-  renderSecList(); renderSectionSelects(); renderBoard();
+  renderSecPanel(); renderSectionSelects(); renderBoard();
   saveState();
 }
 
 function renameSection(id, newName) {
   const sec = S.sections.find(s => s.id === id); if (!sec) return;
   newName = newName.trim();
-  if (!newName || newName === sec.name) { renderSecList(); return; }
-  if (S.sections.some(s => s.id !== id && s.name.toLowerCase() === newName.toLowerCase())) { renderSecList(); return; }
+  if (!newName || newName === sec.name) { renderSecPanel(); return; }
+  if (S.sections.some(s => s.id !== id && s.name.toLowerCase() === newName.toLowerCase())) { renderSecPanel(); return; }
   pushHistory('Rename section to "' + truncStr(newName, 22) + '"');
   sec.name = newName;
-  renderSecList(); renderSectionSelects(); renderBoard();
+  renderSecPanel(); renderSectionSelects(); renderBoard();
+  saveState();
+}
+
+function colorSection(id, color) {
+  const sec = S.sections.find(s => s.id === id); if (!sec) return;
+  sec.color = color;
   saveState();
 }
 
@@ -1193,34 +1256,35 @@ function quickSetup() {
   for (let i = 1; i <= n; i++) {
     const name = pfx + ' ' + i;
     if (!S.sections.some(s => s.name.toLowerCase() === name.toLowerCase())) {
-      S.sections.push({ id: S.nextSecId++, name });
+      const color = SEC_COLORS[S.sections.length % SEC_COLORS.length];
+      S.sections.push({ id: S.nextSecId++, name, color });
     }
   }
-  renderSecList(); renderSectionSelects(); renderBoard();
+  renderSecPanel(); renderSectionSelects(); renderBoard();
   saveState();
 }
 
-function renderSecList() {
+function renderSecPanel() {
   const list = document.getElementById('sec-list');
+  if (!list) return;
   list.innerHTML = '';
-  const lbl = document.getElementById('sec-list-lbl');
-  if (lbl) lbl.textContent = S.sections.length ? `(${S.sections.length})` : '';
   if (!S.sections.length) {
-    list.innerHTML = '<div class="sec-empty-hint">No sections yet — add one above or use Quick Setup.</div>';
+    list.innerHTML = '<div class="sec-empty-hint">No sections yet.</div>';
     return;
   }
   S.sections.forEach((sec, idx) => {
     const li = document.createElement('div'); li.className = 'sec-li'; li.dataset.idx = idx; li.dataset.secid = sec.id;
     const dh = document.createElement('span'); dh.className = 'sdh'; dh.textContent = '⠿';
     dh.addEventListener('mousedown', e => startSecListDrag(e, idx));
+    const dot = document.createElement('span'); dot.className = 'sec-li-dot'; dot.style.background = sec.color || '#888';
     const nameEl = document.createElement('span'); nameEl.className = 'sec-li-name'; nameEl.textContent = sec.name;
     nameEl.addEventListener('click', () => startSecRename(li, sec.id));
     const cnt = S.scenes.filter(s => s.sectionId === sec.id).length;
     const cntEl = document.createElement('span'); cntEl.className = 'sec-li-cnt'; cntEl.textContent = cnt + ' scene' + (cnt!==1?'s':'');
-    const del = document.createElement('button'); del.className = 'sec-li-del'; del.textContent = '×'; del.title = 'Delete section';
+    const del = document.createElement('button'); del.className = 'sec-li-del'; del.textContent = '×'; del.title = 'Delete';
     del.addEventListener('mousedown', e => e.stopPropagation());
     del.addEventListener('click', e => { e.stopPropagation(); deleteSection(sec.id); });
-    li.appendChild(dh); li.appendChild(nameEl); li.appendChild(cntEl); li.appendChild(del);
+    li.appendChild(dh); li.appendChild(dot); li.appendChild(nameEl); li.appendChild(cntEl); li.appendChild(del);
     list.appendChild(li);
   });
 }
@@ -1236,7 +1300,7 @@ function startSecRename(li, id) {
   inp.addEventListener('blur', finish);
   inp.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); finish(); }
-    if (e.key === 'Escape') { done = true; renderSecList(); }
+    if (e.key === 'Escape') { done = true; renderSecPanel(); }
   });
 }
 
@@ -1270,7 +1334,7 @@ function endSecListDrag() {
     let ti = sld.dropIdx > sld.fromIdx ? sld.dropIdx - 1 : sld.dropIdx;
     if (!sld.before) ti++;
     arr.splice(ti, 0, item);
-    renderSecList(); renderSectionSelects(); renderBoard();
+    renderSecPanel(); renderSectionSelects(); renderBoard();
     saveState();
   }
   sld.on = false; sld.fromIdx = null; sld.dropIdx = null;
@@ -1278,7 +1342,7 @@ function endSecListDrag() {
 
 // ── CARD DRAG ─────────────────────────────────────────────────────────────────
 const ptr  = { down:false, id:null, sx:0, sy:0, dragging:false };
-const drag = { on:false, ids:[], ox:0, oy:0, dropId:null, before:true };
+const drag = { on:false, ids:[], ox:0, oy:0, dropId:null, before:true, dropSecId:null };
 
 function onCardDown(e, id) {
   if (e.button !== 0) return; e.preventDefault();
@@ -1305,14 +1369,25 @@ function moveCardDrag(e) {
   const g = document.getElementById('ghost');
   g.style.left = (e.clientX - drag.ox) + 'px'; g.style.top = (e.clientY - drag.oy) + 'px';
   const cards = [...document.querySelectorAll('.sc')].filter(c => !drag.ids.includes(+c.dataset.id));
-  let newId = null, newBef = true;
+  let newId = null, newBef = true, newSecId = null;
   for (const c of cards) {
     const r = c.getBoundingClientRect();
     if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
       newId = +c.dataset.id; newBef = e.clientY < r.top + r.height / 2; break;
     }
   }
-  if (newId !== drag.dropId || newBef !== drag.before) { drag.dropId = newId; drag.before = newBef; renderBoard(); }
+  if (newId === null && S.sections.length) {
+    for (const grp of document.querySelectorAll('.sec-group')) {
+      const r = grp.getBoundingClientRect();
+      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+        newSecId = grp.dataset.secId ? parseInt(grp.dataset.secId) : 0;
+        break;
+      }
+    }
+  }
+  if (newId !== drag.dropId || newBef !== drag.before || newSecId !== drag.dropSecId) {
+    drag.dropId = newId; drag.before = newBef; drag.dropSecId = newSecId; renderBoard();
+  }
 }
 function endCardDrag() {
   document.getElementById('ghost').style.display = 'none';
@@ -1332,8 +1407,14 @@ function endCardDrag() {
     }
     if (ti !== -1) rest.splice(drag.before ? ti : ti + 1, 0, ...dragged);
     S.scenes = rest; changed = true;
+  } else if (drag.dropSecId !== null) {
+    pushHistory('Assign to section');
+    const targetSecId = drag.dropSecId === 0 ? null : drag.dropSecId;
+    const dragged = drag.ids.map(id => S.scenes.find(s => s.id === id)).filter(Boolean);
+    dragged.forEach(s => { s.sectionId = targetSecId; });
+    changed = true;
   }
-  drag.on = false; drag.ids = []; drag.dropId = null;
+  drag.on = false; drag.ids = []; drag.dropId = null; drag.dropSecId = null;
   renderBoard();
   if (changed) saveState();
 }
@@ -1389,6 +1470,15 @@ document.getElementById('cp-resize').addEventListener('mousedown', e => {
   e.preventDefault(); e.stopPropagation();
 });
 
+// ── SECTIONS PANEL RESIZE ─────────────────────────────────────────────────────
+const spDr = { on:false, startX:0, startW:0 };
+document.getElementById('sp-resize').addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  spDr.on = true; spDr.startX = e.clientX; spDr.startW = document.getElementById('sp').offsetWidth;
+  document.getElementById('sp-resize').classList.add('dragging');
+  e.preventDefault(); e.stopPropagation();
+});
+
 // ── GLOBAL MOUSE ──────────────────────────────────────────────────────────────
 document.addEventListener('mousemove', e => {
   if (ptr.down) {
@@ -1403,6 +1493,10 @@ document.addEventListener('mousemove', e => {
     const newW = Math.max(180, Math.min(520, cpDr.startW + (e.clientX - cpDr.startX)));
     document.getElementById('cp').style.width = newW + 'px';
   }
+  if (spDr.on) {
+    const newW = Math.max(150, Math.min(400, spDr.startW + (e.clientX - spDr.startX)));
+    document.getElementById('sp').style.width = newW + 'px';
+  }
 });
 document.addEventListener('mouseup', e => {
   if (ptr.down) {
@@ -1412,6 +1506,7 @@ document.addEventListener('mouseup', e => {
   if (ld.on)  endLibDrag();
   if (sld.on) endSecListDrag();
   if (cpDr.on) { cpDr.on = false; document.getElementById('cp-resize').classList.remove('dragging'); }
+  if (spDr.on) { spDr.on = false; document.getElementById('sp-resize').classList.remove('dragging'); }
 });
 
 // ── KEYBOARD ──────────────────────────────────────────────────────────────────
@@ -1423,7 +1518,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
     if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); return; }
   }
-  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); closeSecModal(); }
+  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); closeSecDelModal(); }
 });
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -1432,6 +1527,7 @@ syncAndOrUI();
 buildLibPanel();
 renderAllLib();
 renderAllCk();
+renderSecPanel();
 renderSectionSelects();
 renderBoard();
 updateLibClearBtn();
