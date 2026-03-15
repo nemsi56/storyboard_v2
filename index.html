@@ -1708,7 +1708,7 @@ document.addEventListener('mousedown', e => {
 // ── WINDOW RESIZE ─────────────────────────────────────────────────────────────
 // Card column layout changes when the window is resized; re-measure header widths.
 window.addEventListener('resize', () => { if (S.sections.length) alignSecHeaders(); });
-document.getElementById('sbp').addEventListener('scroll', updateSecPins);
+document.getElementById('sbscrl').addEventListener('scroll', updateSecPins);
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 loadState();
