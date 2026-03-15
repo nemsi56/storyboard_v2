@@ -258,10 +258,10 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 #board.has-secs{flex-direction:row;align-items:stretch;gap:0;flex-wrap:nowrap;padding:0}
 .sec-group{display:flex;flex-direction:column;flex-shrink:0;border-right:2px solid var(--s1);overflow:visible;position:relative}
 /* Sticky pin: compact label that slides into view when the section header scrolls off left */
-.sec-pin{position:absolute;top:0;left:0;min-height:40px;display:flex;align-items:center;padding:0 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx);white-space:nowrap;border-bottom:2px solid var(--s1);z-index:100;pointer-events:none;opacity:0;transition:opacity .14s;border-radius:0 0 4px 0}
+.sec-pin{position:fixed;top:0;left:0;min-height:40px;display:flex;align-items:center;padding:0 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx);white-space:nowrap;border-bottom:2px solid var(--s1);z-index:9999;pointer-events:none;opacity:0;transition:opacity .14s;border-radius:0 0 4px 0}
 .sec-group:last-child{border-right:none}
 .sec-hdr{min-height:40px;height:auto;padding:9px 10px;display:flex;align-items:center;gap:7px;border-bottom:2px solid var(--s1);flex-shrink:0}
-.sec-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx);flex:1;min-width:0;white-space:normal;word-break:break-word;line-height:1.35}
+.sec-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx);flex-shrink:1;min-width:0;white-space:normal;word-break:break-word;line-height:1.35}
 .sec-cnt{font-size:10px;color:var(--o0);white-space:nowrap;flex-shrink:0}
 .sec-hdr-controls{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:auto}
 .sec-hbtn{background:none;border:none;color:var(--o0);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:3px;opacity:0;line-height:1;transition:color .1s,opacity .1s,background .1s;flex-shrink:0;font-family:inherit}
@@ -274,11 +274,11 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 /* Drag-over highlight for empty section drop */
 .sec-group.card-drag-over .sec-body{outline:2px dashed color-mix(in srgb,var(--acc) 55%,transparent);outline-offset:-4px}
 .sec-group.card-drag-over .sec-hdr{filter:brightness(.93)}
-/* Color picker in sec-hdr */
-.sec-color-pick{width:18px;height:18px;padding:1px;border:1px solid color-mix(in srgb,var(--s1) 80%,transparent);border-radius:3px;cursor:pointer;flex-shrink:0;background:none;opacity:.6;transition:opacity .1s;-webkit-appearance:none}
+/* Color picker — used in Sections pane list items */
+.sec-color-pick{width:18px;height:18px;padding:1px;border:1px solid color-mix(in srgb,var(--s1) 80%,transparent);border-radius:3px;cursor:pointer;flex-shrink:0;background:none;opacity:.75;transition:opacity .1s;-webkit-appearance:none}
 .sec-color-pick::-webkit-color-swatch-wrapper{padding:1px;border-radius:2px}
 .sec-color-pick::-webkit-color-swatch{border:none;border-radius:1px}
-.sec-hdr:hover .sec-color-pick{opacity:1}
+.sec-li:hover .sec-color-pick{opacity:1}
 
 /* ══ SECTIONS PANEL ═════════════════════════════════════════════════════════ */
 #sp{width:190px;background:var(--bg1);border-right:2px solid var(--s1)}
@@ -879,7 +879,7 @@ function addScene() {
   if (sectionId) {
     let insertIdx = -1;
     S.scenes.forEach((s, i) => { if (s.sectionId === sectionId) insertIdx = i; });
-    S.scenes.splice(insertIdx + 1, 0, newScene);
+    if (insertIdx === -1) S.scenes.push(newScene); else S.scenes.splice(insertIdx + 1, 0, newScene);
   } else {
     S.scenes.push(newScene);
   }
@@ -954,7 +954,7 @@ function confirmSaveEdit() {
     if (idx !== -1) S.scenes.splice(idx, 1);
     let insertIdx = -1;
     S.scenes.forEach((s, i) => { if (s.sectionId === sectionId) insertIdx = i; });
-    S.scenes.splice(insertIdx + 1, 0, sc);
+    if (insertIdx === -1) S.scenes.push(sc); else S.scenes.splice(insertIdx + 1, 0, sc);
   }
   closeSaveCfm(); cancelEdit(); renderSecPanel(); renderBoard();
   saveState();
@@ -1105,6 +1105,7 @@ function renderCard(container, scene, idx) {
 function renderBoard() {
   const board = document.getElementById('board'), emp = document.getElementById('sbemp');
   board.innerHTML = '';
+  document.querySelectorAll('.sec-pin').forEach(p => p.remove()); // clear body-level pins
   updateCount();
   const hasSecs = S.sections.length > 0;
   board.classList.toggle('has-secs', hasSecs);
@@ -1142,11 +1143,9 @@ function renderBoard() {
       // Header
       const hdr = document.createElement('div'); hdr.className = 'sec-hdr';
       const nameEl = document.createElement('span'); nameEl.className = 'sec-name'; nameEl.textContent = group.name;
-      const ctrl = document.createElement('div'); ctrl.className = 'sec-hdr-controls';
       const cntEl = document.createElement('span'); cntEl.className = 'sec-cnt';
       cntEl.textContent = `${group.scenes.length} scene${group.scenes.length !== 1 ? 's' : ''}`;
-      ctrl.appendChild(cntEl);
-      hdr.appendChild(nameEl); hdr.appendChild(ctrl);
+      hdr.appendChild(nameEl); hdr.appendChild(cntEl);
 
       // Body
       const body = document.createElement('div'); body.className = 'sec-body';
@@ -1159,46 +1158,22 @@ function renderBoard() {
           body.style.background = `color-mix(in srgb, ${sec.color} 7%, var(--sbg))`;
           secGrp.style.borderRightColor = `color-mix(in srgb, ${sec.color} 25%, var(--s1))`;
         }
-        const colorPick = document.createElement('input');
-        colorPick.type = 'color'; colorPick.className = 'sec-color-pick';
-        colorPick.value = (sec && sec.color) ? sec.color : '#5b8dd9'; colorPick.title = 'Section color';
-        colorPick.addEventListener('mousedown', e => e.stopPropagation());
-        colorPick.addEventListener('input', e => {
-          const s = S.sections.find(x => x.id === group.id); if (!s) return;
-          s.color = e.target.value;
-          hdr.style.background = `color-mix(in srgb, ${e.target.value} 20%, var(--bg1))`;
-          hdr.style.borderBottomColor = `color-mix(in srgb, ${e.target.value} 30%, var(--s1))`;
-          body.style.background = `color-mix(in srgb, ${e.target.value} 7%, var(--sbg))`;
-          secGrp.style.borderRightColor = `color-mix(in srgb, ${e.target.value} 25%, var(--s1))`;
-        });
-        colorPick.addEventListener('change', e => { colorSection(group.id, e.target.value); renderSecPanel(); });
-        ctrl.appendChild(colorPick);
-        const rnBtn = document.createElement('button'); rnBtn.className = 'sec-hbtn'; rnBtn.textContent = '✎'; rnBtn.title = 'Rename section';
-        rnBtn.addEventListener('mousedown', e => e.stopPropagation());
-        rnBtn.addEventListener('click', e => {
-          e.stopPropagation();
-          const item = document.querySelector(`#sec-list .sec-li[data-secid="${group.id}"]`);
-          if (item) { item.scrollIntoView({ block:'nearest' }); startSecRename(item, group.id); }
-        });
-        const delBtn = document.createElement('button'); delBtn.className = 'sec-hbtn del'; delBtn.textContent = '✕'; delBtn.title = 'Delete section';
-        delBtn.addEventListener('mousedown', e => e.stopPropagation());
-        delBtn.addEventListener('click', e => { e.stopPropagation(); deleteSection(group.id); });
-        ctrl.appendChild(rnBtn); ctrl.appendChild(delBtn);
       }
 
       group.scenes.forEach(scene => renderCard(body, scene, S.scenes.indexOf(scene)));
 
-      // Sticky pin label: appears at the left edge when the header scrolls off-screen
+      // Sticky pin label: appended to body so no stacking context clips it
       if (!group.isUnasgn) {
         const pin = document.createElement('div');
         pin.className = 'sec-pin';
+        pin.dataset.secId = group.id;
         pin.textContent = group.name;
         const sec = S.sections.find(s => s.id === group.id);
         if (sec && sec.color) {
           pin.style.background = `color-mix(in srgb, ${sec.color} 22%, var(--bg1))`;
           pin.style.borderBottomColor = `color-mix(in srgb, ${sec.color} 30%, var(--s1))`;
         } else { pin.style.background = 'var(--bg1)'; }
-        secGrp.appendChild(pin);
+        document.body.appendChild(pin);
       }
 
       secGrp.appendChild(hdr); secGrp.appendChild(body);
@@ -1246,25 +1221,21 @@ function alignSecHeaders() {
 // visible while the user scrolls horizontally.
 function updateSecPins() {
   const sbp = document.getElementById('sbp');
-  if (!sbp || !S.sections.length) return;
+  if (!sbp) return;
   const sbpRect = sbp.getBoundingClientRect();
-  document.querySelectorAll('.sec-group:not(.sec-unasgn)').forEach(grp => {
-    const pin = grp.querySelector('.sec-pin');
-    if (!pin) return;
+  document.querySelectorAll('.sec-pin[data-sec-id]').forEach(pin => {
+    const grp = document.querySelector(`.sec-group[data-sec-id="${pin.dataset.secId}"]`);
+    if (!grp) { pin.style.opacity = '0'; return; }
     const grpRect = grp.getBoundingClientRect();
     const hdr     = grp.querySelector('.sec-hdr');
     // Show pin when the group's left edge has scrolled past sbp's left edge
     // but the group's right edge is still within view (group still partially visible).
     if (grpRect.left < sbpRect.left && grpRect.right > sbpRect.left + 4) {
-      pin.style.position = 'fixed';
-      pin.style.left     = sbpRect.left + 'px';
-      pin.style.top      = (hdr ? hdr.getBoundingClientRect().top : sbpRect.top) + 'px';
-      pin.style.opacity  = '1';
+      pin.style.left    = sbpRect.left + 'px';
+      pin.style.top     = (hdr ? hdr.getBoundingClientRect().top : sbpRect.top) + 'px';
+      pin.style.opacity = '1';
     } else {
-      pin.style.opacity  = '0';
-      pin.style.position = 'absolute';
-      pin.style.left     = '0';
-      pin.style.top      = '0';
+      pin.style.opacity = '0';
     }
   });
 }
@@ -1435,7 +1406,15 @@ function renderSecPanel() {
     const li = document.createElement('div'); li.className = 'sec-li'; li.dataset.idx = idx; li.dataset.secid = sec.id;
     const dh = document.createElement('span'); dh.className = 'sdh'; dh.textContent = '⠿';
     dh.addEventListener('mousedown', e => startSecListDrag(e, idx));
-    const dot = document.createElement('span'); dot.className = 'sec-li-dot'; dot.style.background = sec.color || '#888';
+    const colorPick = document.createElement('input');
+    colorPick.type = 'color'; colorPick.className = 'sec-color-pick';
+    colorPick.value = sec.color || '#5b8dd9'; colorPick.title = 'Section color';
+    colorPick.addEventListener('mousedown', e => e.stopPropagation());
+    colorPick.addEventListener('input', e => {
+      const s = S.sections.find(x => x.id === sec.id); if (!s) return;
+      s.color = e.target.value; renderBoard();
+    });
+    colorPick.addEventListener('change', e => { colorSection(sec.id, e.target.value); renderBoard(); });
     const nameEl = document.createElement('span'); nameEl.className = 'sec-li-name'; nameEl.textContent = sec.name;
     nameEl.addEventListener('click', () => startSecRename(li, sec.id));
     const cnt = S.scenes.filter(s => s.sectionId === sec.id).length;
@@ -1443,7 +1422,7 @@ function renderSecPanel() {
     const del = document.createElement('button'); del.className = 'sec-li-del'; del.textContent = '×'; del.title = 'Delete';
     del.addEventListener('mousedown', e => e.stopPropagation());
     del.addEventListener('click', e => { e.stopPropagation(); deleteSection(sec.id); });
-    li.appendChild(dh); li.appendChild(dot); li.appendChild(nameEl); li.appendChild(cntEl); li.appendChild(del);
+    li.appendChild(dh); li.appendChild(colorPick); li.appendChild(nameEl); li.appendChild(cntEl); li.appendChild(del);
     list.appendChild(li);
   });
 }
@@ -1576,7 +1555,7 @@ function endCardDrag() {
     const rest = S.scenes.filter(s => !drag.ids.includes(s.id));
     let insertIdx = -1;
     rest.forEach((s, i) => { if (s.sectionId === targetSecId) insertIdx = i; });
-    rest.splice(insertIdx + 1, 0, ...dragged);
+    if (insertIdx === -1) rest.push(...dragged); else rest.splice(insertIdx + 1, 0, ...dragged);
     S.scenes = rest;
     changed = true;
   }
