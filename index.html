@@ -99,13 +99,13 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .eh{font-size:11px;color:var(--o0);font-style:italic;padding:2px 0}
 
 /* ══ PANEL RESIZE HANDLE ═══════════════════════════════════════════════════ */
-#cp-resize,#sp-resize{width:4px;flex-shrink:0;cursor:col-resize;background:var(--s1);transition:background .15s;position:relative;z-index:5}
-#cp-resize:hover,#cp-resize.dragging,#sp-resize:hover,#sp-resize.dragging{background:var(--acc)}
+#cp-resize,#sp-resize{width:7px;flex-shrink:0;cursor:col-resize;background:var(--s0);border-left:1px solid var(--bdr);border-right:1px solid var(--bdr);transition:background .15s,border-color .15s;position:relative;z-index:5}
+#cp-resize:hover,#cp-resize.dragging,#sp-resize:hover,#sp-resize.dragging{background:var(--acc);border-color:var(--acc)}
 #cp.collapsed + #cp-resize{display:none}
 #sp.collapsed + #sp-resize{display:none}
-/* Grip indicator – braille dots centered slightly below midpoint */
-#cp-resize::after,#sp-resize::after{content:'⠿';position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:9px;color:var(--o1);opacity:.55;pointer-events:none;transition:opacity .15s,color .15s}
-#cp-resize:hover::after,#cp-resize.dragging::after,#sp-resize:hover::after,#sp-resize.dragging::after{opacity:1;color:var(--acc)}
+/* Grip indicator */
+#cp-resize::after,#sp-resize::after{content:'⠿';position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:var(--o1);opacity:.75;pointer-events:none;transition:opacity .15s,color .15s;line-height:1}
+#cp-resize:hover::after,#cp-resize.dragging::after,#sp-resize:hover::after,#sp-resize.dragging::after{opacity:1;color:var(--ontx)}
 
 /* ══ CENTER PANEL ══════════════════════════════════════════════════════════ */
 #cp{width:258px;background:var(--bg2);border-right:none}
@@ -256,16 +256,16 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 
 /* ══ SECTION GROUPS ════════════════════════════════════════════════════════ */
 #board.has-secs{flex-direction:row;align-items:stretch;gap:0;flex-wrap:nowrap;padding:0}
-.sec-group{display:flex;flex-direction:column;flex-shrink:0;border-right:2px solid var(--s1);min-width:max-content}
+.sec-group{display:flex;flex-direction:column;flex-shrink:0;border-right:2px solid var(--s1);overflow:visible}
 .sec-group:last-child{border-right:none}
-.sec-hdr{height:40px;padding:0 10px;display:flex;align-items:center;gap:7px;border-bottom:2px solid var(--s1);flex-shrink:0;min-width:max-content}
+.sec-hdr{height:40px;padding:0 10px;display:flex;align-items:center;gap:7px;border-bottom:2px solid var(--s1);flex-shrink:0}
 .sec-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sec-cnt{font-size:10px;color:var(--o0);flex-shrink:0;white-space:nowrap}
 .sec-hbtn{background:none;border:none;color:var(--o0);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:3px;opacity:0;line-height:1;transition:color .1s,opacity .1s,background .1s;flex-shrink:0;font-family:inherit}
 .sec-hdr:hover .sec-hbtn{opacity:1}
 .sec-hbtn:hover{color:var(--tx);background:var(--s0)}
 .sec-hbtn.del:hover{color:var(--rd);background:color-mix(in srgb,var(--rd) 10%,transparent)}
-.sec-body{flex:1;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:8px;padding:12px;min-width:max-content;min-height:0}
+.sec-body{flex:1;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:8px;padding:12px;min-height:0;overflow:visible}
 .sec-unasgn .sec-hdr{background:var(--sbg)!important}
 .sec-unasgn .sec-name{color:var(--sub);font-style:italic;text-transform:none;letter-spacing:0;font-size:12px;font-weight:600}
 /* Drag-over highlight for empty section drop */
@@ -764,7 +764,7 @@ function setTheme(name) { document.documentElement.dataset.theme = name; saveSta
 
 // ── PANEL / SCALE ─────────────────────────────────────────────────────────────
 function togglePanel(id) { document.getElementById(id).classList.toggle('collapsed'); }
-function setScale(v) { document.getElementById('board').style.setProperty('--cs', v); }
+function setScale(v) { document.getElementById('board').style.setProperty('--cs', v); if (S.sections.length) alignSecHeaders(); }
 
 // ── AND/OR (global) ────────────────────────────────────────────────────────────
 function setAndOr(mode) {
@@ -1159,6 +1159,37 @@ function renderBoard() {
     });
   }
   document.getElementById('clrsel').style.display = S.selIds.size > 0 ? 'inline-block' : 'none';
+  if (hasSecs) alignSecHeaders();
+}
+
+// ── ALIGN SECTION HEADERS ─────────────────────────────────────────────────────
+// After render, measure each sec-body's actual card extent (including overflow columns)
+// and set explicit widths on the header and group so the header spans all card columns.
+function alignSecHeaders() {
+  // Clear any previously-set explicit widths first so natural layout takes effect
+  document.querySelectorAll('.sec-group').forEach(grp => {
+    grp.style.width = '';
+    const h = grp.querySelector('.sec-hdr');
+    if (h) h.style.width = '';
+  });
+  // One rAF: browser re-lays-out with cleared widths, then we measure card extents
+  requestAnimationFrame(() => {
+    const cs = parseFloat(document.getElementById('board').style.getPropertyValue('--cs') || '1') || 1;
+    const minW = Math.ceil((174 + 24) * cs); // at minimum: one card width + 12px padding each side
+    document.querySelectorAll('.sec-group').forEach(grp => {
+      const hdr = grp.querySelector('.sec-hdr');
+      if (!hdr) return;
+      let w = minW;
+      const gl = grp.getBoundingClientRect().left;
+      // Measure the rightmost edge of any card relative to this group's left edge
+      grp.querySelectorAll('.sc').forEach(c => {
+        const r = c.getBoundingClientRect();
+        w = Math.max(w, Math.ceil(r.right - gl + 12)); // +12 = right padding
+      });
+      hdr.style.width = w + 'px';
+      grp.style.width = w + 'px';
+    });
+  });
 }
 
 function updateCount() {
@@ -1414,6 +1445,12 @@ function endCardDrag() {
     dragged.forEach(s => { s.sectionId = targetSecId; });
     changed = true;
   }
+  // If a scene currently open in Edit mode was dragged, sync its section dropdown
+  if (changed && S.editingId !== null && drag.ids.includes(S.editingId) && S.sections.length) {
+    const editedScene = S.scenes.find(s => s.id === S.editingId);
+    const edSel = document.getElementById('ed-section');
+    if (edSel && editedScene) edSel.value = editedScene.sectionId || '';
+  }
   drag.on = false; drag.ids = []; drag.dropId = null; drag.dropSecId = null;
   renderBoard();
   if (changed) saveState();
@@ -1507,6 +1544,16 @@ document.addEventListener('mouseup', e => {
   if (sld.on) endSecListDrag();
   if (cpDr.on) { cpDr.on = false; document.getElementById('cp-resize').classList.remove('dragging'); }
   if (spDr.on) { spDr.on = false; document.getElementById('sp-resize').classList.remove('dragging'); }
+});
+
+// ── CANCEL EDIT ON CLICK OUTSIDE SCENE PANEL ──────────────────────────────────
+document.addEventListener('mousedown', e => {
+  if (S.editingId === null) return;
+  // Stay in edit mode if clicking within the Scene panel itself
+  if (e.target.closest('#cp')) return;
+  // Stay in edit mode if any modal is open (user may be confirming a save, etc.)
+  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open')) return;
+  cancelEdit();
 });
 
 // ── KEYBOARD ──────────────────────────────────────────────────────────────────
