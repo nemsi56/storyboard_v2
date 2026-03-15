@@ -1241,14 +1241,19 @@ function updateSecPins() {
   const sbp = document.getElementById('sbp');
   if (!sbp) return;
   const sbpRect = sbp.getBoundingClientRect();
+  const allGrps = [...document.querySelectorAll('.sec-group')];
   document.querySelectorAll('.sec-pin[data-sec-id]').forEach(pin => {
     const grp = document.querySelector(`.sec-group[data-sec-id="${pin.dataset.secId}"]`);
     if (!grp) { pin.style.opacity = '0'; return; }
-    const grpRect = grp.getBoundingClientRect();
-    const hdr     = grp.querySelector('.sec-hdr');
-    // Show pin when the group's left edge has scrolled past sbp's left edge
-    // but the group's right edge is still within view (group still partially visible).
-    if (grpRect.left < sbpRect.left && grpRect.right > sbpRect.left + 4) {
+    const grpRect  = grp.getBoundingClientRect();
+    const hdr      = grp.querySelector('.sec-hdr');
+    // Find the next sibling section group (if any) to know when to hide the pin.
+    const grpIdx   = allGrps.indexOf(grp);
+    const nextGrp  = allGrps[grpIdx + 1];
+    const nextLeft = nextGrp ? nextGrp.getBoundingClientRect().left : Infinity;
+    // Show pin when this group's header has scrolled off left AND the next group
+    // hasn't yet reached the left edge (so the pin doesn't bleed into the next section).
+    if (grpRect.left < sbpRect.left && nextLeft > sbpRect.left) {
       pin.style.left    = sbpRect.left + 'px';
       pin.style.top     = (hdr ? hdr.getBoundingClientRect().top : sbpRect.top) + 'px';
       pin.style.opacity = '1';
