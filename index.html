@@ -256,10 +256,12 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 
 /* ══ SECTION GROUPS ════════════════════════════════════════════════════════ */
 #board.has-secs{flex-direction:row;align-items:stretch;gap:0;flex-wrap:nowrap;padding:0}
-.sec-group{display:flex;flex-direction:column;flex-shrink:0;border-right:2px solid var(--s1);overflow:visible}
+.sec-group{display:flex;flex-direction:column;flex-shrink:0;border-right:2px solid var(--s1);overflow:visible;position:relative}
+/* Sticky pin: compact label that slides into view when the section header scrolls off left */
+.sec-pin{position:absolute;top:0;left:0;min-height:40px;display:flex;align-items:center;padding:0 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx);white-space:nowrap;border-bottom:2px solid var(--s1);z-index:8;pointer-events:none;opacity:0;transition:opacity .12s}
 .sec-group:last-child{border-right:none}
-.sec-hdr{height:40px;padding:0 10px;display:flex;align-items:center;gap:7px;border-bottom:2px solid var(--s1);flex-shrink:0}
-.sec-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sec-hdr{min-height:40px;height:auto;padding:9px 10px;display:flex;align-items:flex-start;gap:7px;border-bottom:2px solid var(--s1);flex-shrink:0}
+.sec-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx);flex:1;min-width:0;white-space:normal;word-break:break-word;line-height:1.35}
 .sec-cnt{font-size:10px;color:var(--o0);flex-shrink:0;white-space:nowrap}
 .sec-hbtn{background:none;border:none;color:var(--o0);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:3px;opacity:0;line-height:1;transition:color .1s,opacity .1s,background .1s;flex-shrink:0;font-family:inherit}
 .sec-hdr:hover .sec-hbtn{opacity:1}
@@ -1155,6 +1157,19 @@ function renderBoard() {
 
       group.scenes.forEach(scene => renderCard(body, scene, S.scenes.indexOf(scene)));
 
+      // Sticky pin label: appears at the left edge when the header scrolls off-screen
+      if (!group.isUnasgn) {
+        const pin = document.createElement('div');
+        pin.className = 'sec-pin';
+        pin.textContent = group.name;
+        const sec = S.sections.find(s => s.id === group.id);
+        if (sec && sec.color) {
+          pin.style.background = `color-mix(in srgb, ${sec.color} 22%, var(--bg1))`;
+          pin.style.borderBottomColor = `color-mix(in srgb, ${sec.color} 30%, var(--s1))`;
+        } else { pin.style.background = 'var(--bg1)'; }
+        secGrp.appendChild(pin);
+      }
+
       secGrp.appendChild(hdr); secGrp.appendChild(body);
       board.appendChild(secGrp);
     });
@@ -1190,6 +1205,34 @@ function alignSecHeaders() {
       hdr.style.width = w + 'px';
       grp.style.width = w + 'px';
     });
+    updateSecPins(); // re-sync pins after widths settle
+  });
+}
+
+// ── STICKY SECTION HEADER PINS ────────────────────────────────────────────────
+// When a section's header has scrolled off to the left, slide a compact pin label
+// into view at the left edge of the storyboard panel so the section name is always
+// visible while the user scrolls horizontally.
+function updateSecPins() {
+  const sbp = document.getElementById('sbp');
+  if (!sbp || !S.sections.length) return;
+  const sbpRect = sbp.getBoundingClientRect();
+  document.querySelectorAll('.sec-group:not(.sec-unasgn)').forEach(grp => {
+    const pin = grp.querySelector('.sec-pin');
+    if (!pin) return;
+    const grpRect = grp.getBoundingClientRect();
+    // Distance the group's left edge is to the left of sbp's visible left edge
+    const grpViewLeft = grpRect.left - sbpRect.left;
+    if (grpViewLeft < 0) {
+      // Group has partially scrolled off; slide pin to the visible left edge,
+      // capped so it never slides past the group's right boundary.
+      const maxLeft = grp.offsetWidth - pin.offsetWidth - 10;
+      pin.style.left = Math.min(-grpViewLeft, Math.max(0, maxLeft)) + 'px';
+      pin.style.opacity = '1';
+    } else {
+      pin.style.opacity = '0';
+      pin.style.left = '0';
+    }
   });
 }
 
@@ -1444,6 +1487,13 @@ function endCardDrag() {
     const targetSecId = drag.dropSecId === 0 ? null : drag.dropSecId;
     const dragged = drag.ids.map(id => S.scenes.find(s => s.id === id)).filter(Boolean);
     dragged.forEach(s => { s.sectionId = targetSecId; });
+    // Also reorder in S.scenes: place dragged scenes after the last scene already
+    // in the target section, so scene numbers update to reflect the new position.
+    const rest = S.scenes.filter(s => !drag.ids.includes(s.id));
+    let insertIdx = -1;
+    rest.forEach((s, i) => { if (s.sectionId === targetSecId) insertIdx = i; });
+    rest.splice(insertIdx + 1, 0, ...dragged);
+    S.scenes = rest;
     changed = true;
   }
   // If a scene currently open in Edit mode was dragged, sync its section dropdown
@@ -1453,7 +1503,7 @@ function endCardDrag() {
     if (edSel && editedScene) edSel.value = editedScene.sectionId || '';
   }
   drag.on = false; drag.ids = []; drag.dropId = null; drag.dropSecId = null;
-  renderBoard();
+  renderSecPanel(); renderBoard();
   if (changed) saveState();
 }
 function toggleCardSel(id, e) {
@@ -1572,6 +1622,7 @@ document.addEventListener('keydown', e => {
 // ── WINDOW RESIZE ─────────────────────────────────────────────────────────────
 // Card column layout changes when the window is resized; re-measure header widths.
 window.addEventListener('resize', () => { if (S.sections.length) alignSecHeaders(); });
+document.getElementById('sbp').addEventListener('scroll', updateSecPins);
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 loadState();
