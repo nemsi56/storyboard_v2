@@ -99,9 +99,13 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .eh{font-size:11px;color:var(--o0);font-style:italic;padding:2px 0}
 
 /* ══ PANEL RESIZE HANDLE ═══════════════════════════════════════════════════ */
-#cp-resize{width:4px;flex-shrink:0;cursor:col-resize;background:var(--s1);transition:background .15s;position:relative;z-index:5}
-#cp-resize:hover,#cp-resize.dragging{background:var(--acc)}
+#cp-resize,#sp-resize{width:7px;flex-shrink:0;cursor:col-resize;background:var(--s0);border-left:1px solid var(--bdr);border-right:1px solid var(--bdr);transition:background .15s,border-color .15s;position:relative;z-index:5}
+#cp-resize:hover,#cp-resize.dragging,#sp-resize:hover,#sp-resize.dragging{background:var(--acc);border-color:var(--acc)}
 #cp.collapsed + #cp-resize{display:none}
+#sp.collapsed + #sp-resize{display:none}
+/* Grip indicator */
+#cp-resize::after,#sp-resize::after{content:'⠿';position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:var(--o1);opacity:.75;pointer-events:none;transition:opacity .15s,color .15s;line-height:1}
+#cp-resize:hover::after,#cp-resize.dragging::after,#sp-resize:hover::after,#sp-resize.dragging::after{opacity:1;color:var(--ontx)}
 
 /* ══ CENTER PANEL ══════════════════════════════════════════════════════════ */
 #cp{width:258px;background:var(--bg2);border-right:none}
@@ -247,6 +251,88 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .cfm-msg{font-size:13px;color:var(--tx);line-height:1.5;margin-bottom:16px}
 #libdel-ok{background:var(--rd);color:var(--ontx)}
 #libdel-ok:hover{opacity:.86}
+#secdel-ok{background:var(--rd);color:var(--ontx)}
+#secdel-ok:hover{opacity:.86}
+
+/* ══ SECTION GROUPS ════════════════════════════════════════════════════════ */
+#board.has-secs{flex-direction:row;align-items:stretch;gap:0;flex-wrap:nowrap;padding:0}
+.sec-group{display:flex;flex-direction:column;flex-shrink:0;border-right:2px solid var(--s1);overflow:visible;position:relative}
+/* Sticky pin: compact label that slides into view when the section header scrolls off left */
+.sec-pin{position:fixed;top:0;left:0;min-height:40px;display:flex;align-items:center;padding:0 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx);white-space:nowrap;border-bottom:2px solid var(--s1);z-index:9999;pointer-events:none;opacity:0;transition:opacity .14s;border-radius:0 0 4px 0}
+.sec-group:last-child{border-right:none}
+.sec-hdr{min-height:40px;height:auto;padding:9px 10px;display:flex;align-items:center;gap:7px;border-bottom:2px solid var(--s1);flex-shrink:0}
+.sec-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--tx);flex-shrink:1;min-width:0;white-space:normal;word-break:break-word;line-height:1.35}
+.sec-cnt{font-size:10px;color:var(--o0);white-space:nowrap;flex-shrink:0}
+.sec-hdr-controls{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:auto}
+.sec-hbtn{background:none;border:none;color:var(--o0);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:3px;opacity:0;line-height:1;transition:color .1s,opacity .1s,background .1s;flex-shrink:0;font-family:inherit}
+.sec-hdr:hover .sec-hbtn{opacity:1}
+.sec-hbtn:hover{color:var(--tx);background:var(--s0)}
+.sec-hbtn.del:hover{color:var(--rd);background:color-mix(in srgb,var(--rd) 10%,transparent)}
+.sec-body{flex:1;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:8px;padding:12px;min-height:0;overflow:visible}
+.sec-unasgn .sec-hdr{background:var(--sbg)!important}
+.sec-unasgn .sec-name{color:var(--sub);font-style:italic;text-transform:none;letter-spacing:0;font-size:12px;font-weight:600}
+/* Drag-over highlight for empty section drop */
+.sec-group.card-drag-over .sec-body{outline:2px dashed color-mix(in srgb,var(--acc) 55%,transparent);outline-offset:-4px}
+.sec-group.card-drag-over .sec-hdr{filter:brightness(.93)}
+/* Color picker — used in Sections pane list items */
+.sec-color-pick{width:18px;height:18px;padding:1px;border:1px solid color-mix(in srgb,var(--s1) 80%,transparent);border-radius:3px;cursor:pointer;flex-shrink:0;background:none;opacity:.75;transition:opacity .1s;-webkit-appearance:none}
+.sec-color-pick::-webkit-color-swatch-wrapper{padding:1px;border-radius:2px}
+.sec-color-pick::-webkit-color-swatch{border:none;border-radius:1px}
+.sec-li:hover .sec-color-pick{opacity:1}
+
+/* ══ SECTIONS PANEL ═════════════════════════════════════════════════════════ */
+#sp{width:190px;background:var(--bg1);border-right:2px solid var(--s1)}
+#sp .p-body{padding:0;overflow-y:auto}
+.sp-add-row{display:flex;gap:5px;padding:9px 10px 8px;border-bottom:1px solid var(--bdr)}
+.sp-add-inp{flex:1;min-width:0;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 8px;color:var(--tx);font-size:12px;font-family:inherit;outline:none;transition:border-color .14s}
+.sp-add-inp:focus{border-color:var(--acc)}
+.sp-add-inp::placeholder{color:var(--o0)}
+.sp-add-btn{background:var(--acc);color:var(--ontx);border:none;border-radius:5px;width:24px;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .14s;line-height:1}
+.sp-add-btn:hover{opacity:.82}
+.sp-qs{padding:7px 10px 8px;border-bottom:1px solid var(--bdr)}
+.sp-qs-hdr{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--o0);margin-bottom:5px}
+.sp-qs-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+#sec-list{display:flex;flex-direction:column;gap:3px;padding:7px 8px}
+.sec-li{display:flex;align-items:center;gap:6px;padding:5px 7px;border-radius:6px;background:var(--s0);border:1.5px solid transparent}
+.sec-li .sdh{color:var(--o0);cursor:grab;font-size:11px;opacity:.45;flex-shrink:0;line-height:1;transition:opacity .1s}
+.sec-li:hover .sdh{opacity:.9}
+.sec-li .sdh:active{cursor:grabbing}
+.sec-li-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sec-li-name{flex:1;font-size:12px;color:var(--tx);min-width:0;cursor:text;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sec-li-edt{flex:1;min-width:0;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:2px 6px;color:var(--tx);font-size:12px;font-family:inherit;outline:none}
+.sec-li-cnt{font-size:10px;color:var(--o0);flex-shrink:0;white-space:nowrap}
+.sec-li-del{background:none;border:none;color:var(--o0);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;opacity:0;transition:opacity .1s,color .1s;flex-shrink:0}
+.sec-li:hover .sec-li-del{opacity:1}
+.sec-li-del:hover{color:var(--rd)!important}
+.sec-li.dib{border-top:2px solid var(--acc)!important}
+.sec-li.dia{border-bottom:2px solid var(--acc)!important}
+.sec-li.dg{opacity:.2}
+.sec-empty-hint{font-size:11px;color:var(--o0);font-style:italic;padding:8px 4px}
+
+/* ══ SECTION FILTER MULTI-SELECT ══════════════════════════════════════════ */
+.sec-filter-wrap{position:relative;display:none;flex-shrink:0}
+.sec-filter-wrap.vis{display:block}
+.sec-filter-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:11px;font-family:inherit;padding:4px 8px;cursor:pointer;outline:none;white-space:nowrap;transition:border-color .14s;display:flex;align-items:center;gap:4px}
+.sec-filter-btn:hover{border-color:var(--acc)}
+.sec-filter-drop{display:none;position:absolute;top:calc(100% + 5px);left:0;z-index:300;background:var(--bg0);border:1.5px solid var(--s1);border-radius:8px;padding:5px 4px;min-width:160px;box-shadow:0 5px 18px rgba(0,0,0,.13)}
+.sec-filter-drop.open{display:flex;flex-direction:column;gap:1px}
+.sec-fck{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:5px;cursor:pointer;font-size:12px;color:var(--tx);transition:background .1s;white-space:nowrap;user-select:none}
+.sec-fck:hover{background:var(--s0)}
+.sec-fck input[type=checkbox]{accent-color:var(--acc);width:13px;height:13px;cursor:pointer;flex-shrink:0}
+.sec-fck-sep{height:1px;background:var(--bdr);margin:3px 8px}
+
+/* ══ FORM SECTION SELECT ═══════════════════════════════════════════════════ */
+.ff-sel{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:8px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;cursor:pointer;transition:border-color .14s}
+.ff-sel:focus{border-color:var(--acc)}
+.ff-sel option{background:var(--bg1);color:var(--tx)}
+/* Quick Setup shared styles (now in sections panel) */
+.qs-lbl{font-size:11px;color:var(--o0);white-space:nowrap}
+.qs-n{width:44px;background:var(--s0);border:1px solid var(--s1);border-radius:5px;padding:4px 7px;color:var(--tx);font-size:12px;font-family:inherit;outline:none;text-align:center}
+.qs-n:focus{border-color:var(--acc)}
+.qs-pfx{width:76px;background:var(--s0);border:1px solid var(--s1);border-radius:5px;padding:4px 7px;color:var(--tx);font-size:12px;font-family:inherit;outline:none}
+.qs-pfx:focus{border-color:var(--acc)}
+.qs-btn{background:var(--s0);border:1px solid var(--s1);border-radius:5px;padding:4px 10px;font-size:12px;font-family:inherit;cursor:pointer;color:var(--tx);transition:background .12s}
+.qs-btn:hover{background:var(--s1)}
 </style>
 </head>
 <body>
@@ -254,6 +340,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 <!-- HEADER -->
 <div id="hdr">
   <h1>🎬 Visual Storyboard</h1>
+  <!-- test -->
   <span class="tip">Click library items to highlight · ✏️ to edit a scene · Drag cards to reorder</span>
   <div id="ur-wrap">
     <button id="undo-btn" class="ur-btn" onclick="undo()" disabled title="Undo (Ctrl+Z)">↩ Undo</button>
@@ -313,6 +400,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
       <div id="form-new" class="p-body">
         <div class="ff"><label>Title</label><textarea id="sc-title" class="ta-title" rows="2" placeholder="Enter scene title…" maxlength="120"></textarea></div>
         <div class="ff"><label>Summary</label><textarea id="sc-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+        <div class="ff" id="sc-sec-wrap" style="display:none"><label>Section</label><select id="sc-section" class="ff-sel"><option value="">Unassigned</option></select></div>
         <div class="ff"><label>Characters</label><div class="cklist" id="ck-characters"></div></div>
         <div class="ff"><label>Locations</label><div class="cklist" id="ck-locations"></div></div>
         <div class="ff"><label>Themes</label><div class="cklist" id="ck-themes"></div></div>
@@ -324,6 +412,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
       <div id="form-edit" class="p-body" style="display:none">
         <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
         <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+        <div class="ff" id="ed-sec-wrap" style="display:none"><label>Section</label><select id="ed-section" class="ff-sel"><option value="">Unassigned</option></select></div>
         <div class="ff"><label>Characters</label><div class="cklist" id="ek-characters"></div></div>
         <div class="ff"><label>Locations</label><div class="cklist" id="ek-locations"></div></div>
         <div class="ff"><label>Themes</label><div class="cklist" id="ek-themes"></div></div>
@@ -338,6 +427,38 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   </div>
   <div id="cp-resize" title="Drag to resize Scene panel"></div>
 
+  <!-- SECTIONS PANEL -->
+  <div class="panel" id="sp">
+    <div class="p-strip" onclick="togglePanel('sp')">
+      <span class="sl">Sections</span><span>▶</span>
+    </div>
+    <div class="p-content">
+      <div class="p-hdr">Sections
+        <div class="p-hdr-btns">
+          <button class="cbtn" onclick="togglePanel('sp')" title="Collapse">◀</button>
+        </div>
+      </div>
+      <div class="p-body">
+        <div class="sp-add-row">
+          <input type="text" id="sec-add-inp" class="sp-add-inp" placeholder="New section…" maxlength="60">
+          <button class="sp-add-btn" onclick="addSection()" title="Add section">+</button>
+        </div>
+        <div class="sp-qs">
+          <div class="sp-qs-hdr">Quick Setup</div>
+          <div class="sp-qs-row">
+            <span class="qs-lbl">Create</span>
+            <input type="number" id="qs-n" class="qs-n" min="1" max="20" value="3">
+            <span class="qs-lbl">named</span>
+            <input type="text" id="qs-pfx" class="qs-pfx" value="Act" maxlength="20">
+            <button class="qs-btn" onclick="quickSetup()">Go</button>
+          </div>
+        </div>
+        <div id="sec-list"></div>
+      </div>
+    </div>
+  </div>
+  <div id="sp-resize" title="Drag to resize Sections panel"></div>
+
   <!-- STORYBOARD PANEL -->
   <div id="sbp">
     <div id="sbhdr">
@@ -350,6 +471,10 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <input type="checkbox" id="det-toggle" onchange="toggleDetails(this.checked)">
         Show Card Details
       </label>
+      <div id="sec-filter-wrap" class="sec-filter-wrap">
+        <button id="sec-filter-btn" class="sec-filter-btn" onclick="toggleSecFilter()">All Sections ▾</button>
+        <div id="sec-filter-drop" class="sec-filter-drop"></div>
+      </div>
       <div id="srch-wrap">
         <input type="text" id="srch-inp" placeholder="🔍 Search…" oninput="onSearch()">
         <select id="srch-scope" onchange="onSearch()" title="Search in…">
@@ -380,6 +505,17 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
     <div class="ap-btns">
       <button id="ap-cancel" onclick="closeAddPopup()">Cancel</button>
       <button id="ap-ok"     onclick="confirmAdd()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Section Delete Confirm Modal -->
+<div id="secdel-modal" class="cfm-modal">
+  <div class="cfm-box">
+    <div id="secdel-msg" class="cfm-msg"></div>
+    <div class="ap-btns">
+      <button id="secdel-cancel" onclick="closeSecDelModal()">Cancel</button>
+      <button id="secdel-ok" onclick="confirmSecDel()">Delete Section</button>
     </div>
   </div>
 </div>
@@ -425,10 +561,12 @@ const SECS = [
   { key:'misc',       label:'Misc',       dot:'dm', secCls:'sec-m', tag:'tm', ph:'Topic…'          },
 ];
 const SINGULAR = { characters:'Character', locations:'Location', themes:'Theme', misc:'Misc item' };
+const SEC_COLORS = ['#5b8dd9','#6aaa80','#9b7cc4','#d4844a','#4aadb5','#c47a8a','#c4a84a','#7a8ea8'];
 
 // ── PERSISTENCE ───────────────────────────────────────────────────────────────
-const DATA_VERSION = '1';
+const DATA_VERSION = '2';
 const STORAGE_KEY  = 'storyboard_v' + DATA_VERSION;
+const LEGACY_KEY   = 'storyboard_v1';
 
 function saveState() {
   try {
@@ -437,14 +575,30 @@ function saveState() {
       characters: S.characters, locations: S.locations, themes: S.themes, misc: S.misc,
       scenes: S.scenes, nextId: S.nextId, andOr: S.andOr,
       theme: document.documentElement.dataset.theme,
+      sections: S.sections, nextSecId: S.nextSecId,
     }));
   } catch(e) { /* storage full or unavailable */ }
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return false;
+    let raw = localStorage.getItem(STORAGE_KEY);
+    let migrated = false;
+    if (!raw) {
+      // Try migrating from v1
+      const old = localStorage.getItem(LEGACY_KEY);
+      if (!old) return false;
+      const od = JSON.parse(old);
+      if (!od || od.v !== '1') return false;
+      raw = JSON.stringify({
+        v: DATA_VERSION,
+        characters: od.characters||[], locations: od.locations||[], themes: od.themes||[], misc: od.misc||[],
+        scenes: (od.scenes||[]).map(sc => ({...sc, sectionId: null})),
+        nextId: od.nextId||1, andOr: od.andOr, theme: od.theme,
+        sections: [], nextSecId: 1,
+      });
+      migrated = true;
+    }
     const d = JSON.parse(raw);
     if (!d || d.v !== DATA_VERSION) return false;
     S.characters = d.characters || [];
@@ -455,14 +609,19 @@ function loadState() {
       ...sc,
       characters: sc.characters || [], locations: sc.locations || [],
       themes: sc.themes || [],         misc: sc.misc || [],
+      sectionId: sc.sectionId ?? null,
     }));
-    S.nextId = d.nextId || 1;
-    S.andOr  = d.andOr === 'AND' ? 'AND' : 'OR';
+    S.nextId    = d.nextId    || 1;
+    S.andOr     = d.andOr === 'AND' ? 'AND' : 'OR';
+    S.sections  = d.sections  || [];
+    S.sections.forEach(s => { if (!s.color) s.color = SEC_COLORS[S.sections.indexOf(s) % SEC_COLORS.length]; });
+    S.nextSecId = d.nextSecId || 1;
     const VALID_THEMES = ['ivory','slate','studio','ocean','sunset'];
     const theme = VALID_THEMES.includes(d.theme) ? d.theme : 'ivory';
     document.documentElement.dataset.theme = theme;
     const sel = document.getElementById('theme-sel');
     if (sel) sel.value = theme;
+    if (migrated) saveState();
     return true;
   } catch(e) { return false; }
 }
@@ -471,6 +630,7 @@ function loadState() {
 const S = {
   characters:[], locations:[], themes:[], misc:[],
   scenes:[],
+  sections:[], nextSecId:1,
   selections:{ characters:new Set(), locations:new Set(), themes:new Set(), misc:new Set() },
   andOr: 'OR',
   selIds: new Set(),
@@ -491,6 +651,8 @@ function snapshot() {
       themes:[...s.themes],         misc:[...s.misc],
     })),
     nextId: S.nextId,
+    sections: S.sections.map(s => ({...s})),
+    nextSecId: S.nextSecId,
   };
 }
 
@@ -509,7 +671,9 @@ function applySnapshot(snap) {
     characters:[...s.characters], locations:[...s.locations],
     themes:[...s.themes],         misc:[...s.misc],
   }));
-  S.nextId = snap.nextId;
+  S.nextId    = snap.nextId;
+  S.sections  = (snap.sections || []).map(s => ({...s}));
+  S.nextSecId = snap.nextSecId || 1;
   // Clean up stale selections
   SECS.forEach(({ key }) => {
     S.selections[key] = new Set([...S.selections[key]].filter(v => S[key].includes(v)));
@@ -523,7 +687,7 @@ function undo() {
   const entry = hist.past.pop();
   hist.future.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   saveState();
 }
 
@@ -532,7 +696,7 @@ function redo() {
   const entry = hist.future.pop();
   hist.past.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   saveState();
 }
 
@@ -613,7 +777,7 @@ function setTheme(name) { document.documentElement.dataset.theme = name; saveSta
 
 // ── PANEL / SCALE ─────────────────────────────────────────────────────────────
 function togglePanel(id) { document.getElementById(id).classList.toggle('collapsed'); }
-function setScale(v) { document.getElementById('board').style.setProperty('--cs', v); }
+function setScale(v) { document.getElementById('board').style.setProperty('--cs', v); if (S.sections.length) alignSecHeaders(); }
 
 // ── AND/OR (global) ────────────────────────────────────────────────────────────
 function setAndOr(mode) {
@@ -654,6 +818,7 @@ function removeItem(sec, name) {
 }
 
 let libDelSec = null, libDelName = null;
+let secDelId = null;
 function openLibDelModal(sec, name) {
   libDelSec = sec; libDelName = name;
   const cfg = SECS.find(s => s.key === sec);
@@ -672,6 +837,7 @@ function confirmLibDel() {
 // ── CARD DETAILS TOGGLE ───────────────────────────────────────────────────────
 function toggleDetails(show) {
   document.getElementById('board').classList.toggle('hide-details', !show);
+  if (S.sections.length) alignSecHeaders();
 }
 
 // ── HIGHLIGHT LOGIC ───────────────────────────────────────────────────────────
@@ -687,12 +853,13 @@ function resetAll() {
   if (!confirm('Reset everything?\n\nAll scenes and library items will be permanently deleted.')) return;
   S.characters = []; S.locations = []; S.themes = []; S.misc = [];
   S.scenes = []; S.nextId = 1; S.andOr = 'OR';
+  S.sections = []; S.nextSecId = 1;
   SECS.forEach(({ key }) => S.selections[key].clear());
   S.selIds.clear(); S.editingId = null;
   hist.past = []; hist.future = [];
   clearSearch();
   syncAndOrUI();
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   localStorage.removeItem(STORAGE_KEY);
 }
 
@@ -705,8 +872,17 @@ function addScene() {
   if (S.scenes.some(s => s.title.toLowerCase() === title.toLowerCase())) { errEl.textContent = 'Title already exists.'; titleEl.select(); return; }
   const row = {};
   SECS.forEach(({ key }) => { row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => c.value); });
+  const sectionId = S.sections.length ? (parseInt(document.getElementById('sc-section').value) || null) : null;
   pushHistory('Add scene "' + truncStr(title, 22) + '"');
-  S.scenes.push({ id: S.nextId++, title, summary, ...row });
+  const newScene = { id: S.nextId++, title, summary, ...row, sectionId };
+  // Insert after the last scene already in this section so numbering stays sequential
+  if (sectionId) {
+    let insertIdx = -1;
+    S.scenes.forEach((s, i) => { if (s.sectionId === sectionId) insertIdx = i; });
+    if (insertIdx === -1) S.scenes.push(newScene); else S.scenes.splice(insertIdx + 1, 0, newScene);
+  } else {
+    S.scenes.push(newScene);
+  }
   titleEl.value = ''; document.getElementById('sc-summary').value = '';
   document.querySelectorAll('#form-new .cklist input').forEach(c => { c.checked = false; });
   renderBoard();
@@ -737,6 +913,9 @@ function openEditMode(id) {
   document.getElementById('ed-title').value   = sc.title;
   document.getElementById('ed-summary').value = sc.summary || '';
   document.getElementById('ederr').textContent = '';
+  if (S.sections.length) {
+    document.getElementById('ed-section').value = sc.sectionId || '';
+  }
   SECS.forEach(({ key }) => renderEditCk(key, sc[key] || []));
   document.getElementById('tab-edit').disabled = false;
   document.getElementById('tab-edit').classList.remove('dim');
@@ -755,7 +934,7 @@ function saveEdit() {
   errEl.textContent = '';
   if (!title) { errEl.textContent = 'Please enter a title.'; titleEl.focus(); return; }
   if (S.scenes.some(s => s.id !== sc.id && s.title.toLowerCase() === title.toLowerCase())) { errEl.textContent = 'Title already exists.'; titleEl.select(); return; }
-  const sceneNum = S.scenes.indexOf(sc) + 1;
+  const sceneNum = sceneDisplayNum(sc.id);
   document.getElementById('savecfm-msg').textContent = `Save changes to Scene ${sceneNum} — "${title}"?`;
   document.getElementById('savecfm-modal').classList.add('open');
 }
@@ -763,10 +942,21 @@ function confirmSaveEdit() {
   const sc = S.scenes.find(s => s.id === S.editingId); if (!sc) return;
   const title = document.getElementById('ed-title').value.trim().replace(/[\r\n]+/g,' ');
   const summary = document.getElementById('ed-summary').value.trim();
+  const sectionId = S.sections.length ? (parseInt(document.getElementById('ed-section').value) || null) : null;
   pushHistory('Edit scene "' + truncStr(sc.title, 22) + '"');
+  const oldSecId = sc.sectionId ?? null;
   sc.title = title; sc.summary = summary;
+  if (S.sections.length) sc.sectionId = sectionId;
   SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value); });
-  closeSaveCfm(); cancelEdit(); renderBoard();
+  // If section changed, move scene to end of new section so numbering stays sequential
+  if (S.sections.length && sectionId !== oldSecId) {
+    const idx = S.scenes.indexOf(sc);
+    if (idx !== -1) S.scenes.splice(idx, 1);
+    let insertIdx = -1;
+    S.scenes.forEach((s, i) => { if (s.sectionId === sectionId) insertIdx = i; });
+    if (insertIdx === -1) S.scenes.push(sc); else S.scenes.splice(insertIdx + 1, 0, sc);
+  }
+  closeSaveCfm(); cancelEdit(); renderSecPanel(); renderBoard();
   saveState();
 }
 function closeSaveCfm() { document.getElementById('savecfm-modal').classList.remove('open'); }
@@ -780,7 +970,7 @@ function switchTab(t) {
 // ── SUMMARY MODAL ─────────────────────────────────────────────────────────────
 function openModal(id) {
   const sc = S.scenes.find(s => s.id === id); if (!sc || !sc.summary) return;
-  document.getElementById('mnum').textContent = `Scene ${S.scenes.indexOf(sc) + 1}`;
+  document.getElementById('mnum').textContent = `Scene ${sceneDisplayNum(sc.id)}`;
   document.getElementById('mtit').textContent = sc.title;
   document.getElementById('msum').textContent = sc.summary;
   document.getElementById('modal').classList.add('open');
@@ -794,6 +984,12 @@ document.getElementById('libdel-modal').addEventListener('click', e => {
 });
 document.getElementById('savecfm-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('savecfm-modal')) closeSaveCfm();
+});
+document.getElementById('secdel-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('secdel-modal')) closeSecDelModal();
+});
+document.getElementById('sec-add-inp').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addSection(); }
 });
 
 // ── RENDER ALL LIBRARY SECTIONS ───────────────────────────────────────────────
@@ -868,53 +1064,204 @@ function renderEditCk(sec, checked=[]) {
 }
 
 // ── RENDER: BOARD ─────────────────────────────────────────────────────────────
+// Returns the 1-based display number for a scene based on visual board order:
+// unassigned scenes first (leftmost), then each section in S.sections order.
+// This ensures numbers run 1…N left-to-right across ALL sections regardless of
+// the underlying S.scenes array order.
+function sceneDisplayNum(sceneId) {
+  if (!S.sections.length) {
+    const idx = S.scenes.findIndex(s => s.id === sceneId);
+    return idx === -1 ? 1 : idx + 1;
+  }
+  const validSecIds = new Set(S.sections.map(s => s.id));
+  const ordered = [
+    ...S.scenes.filter(s => !validSecIds.has(s.sectionId)),           // unassigned
+    ...S.sections.flatMap(sec => S.scenes.filter(s => s.sectionId === sec.id)), // each section in order
+  ];
+  const idx = ordered.findIndex(s => s.id === sceneId);
+  return idx === -1 ? 1 : idx + 1;
+}
+
+function renderCard(container, scene, idx) {
+  const isd = drag.on && drag.ids.includes(scene.id);
+  const sel = S.selIds.has(scene.id);
+  const dpb = drag.on && drag.dropId === scene.id && drag.before;
+  const dpa = drag.on && drag.dropId === scene.id && !drag.before;
+  let hlCls = '';
+  if (searchQ)         { if (sceneMatchesSearch(scene)) hlCls = 'hl-s'; }
+  else                 { if (sceneMatchesLib(scene))    hlCls = 'hl';   }
+  const card = document.createElement('div');
+  card.className = ['sc', isd?'isd':'', sel?'sel':'', hlCls, dpb?'dpb':'', dpa?'dpa':''].filter(Boolean).join(' ');
+  card.dataset.id = scene.id;
+  const badge  = document.createElement('div');    badge.className  = 'sbadge'; badge.textContent = '✓';
+  const delbtn = document.createElement('button'); delbtn.className = 'cdel';   delbtn.title = 'Delete'; delbtn.textContent = '×';
+  const sumbtn = document.createElement('button'); sumbtn.className = 'csum' + (scene.summary ? ' hs' : ''); sumbtn.title = scene.summary ? 'View summary' : 'No summary'; sumbtn.textContent = 'ⓘ';
+  const editbtn= document.createElement('button'); editbtn.className= 'cedit';  editbtn.title = 'Edit scene'; editbtn.textContent = '✏️';
+  delbtn.addEventListener('mousedown', e => e.stopPropagation());
+  delbtn.addEventListener('click', e => { e.stopPropagation(); deleteScene(scene.id); });
+  sumbtn.addEventListener('mousedown', e => e.stopPropagation());
+  sumbtn.addEventListener('click', e => { e.stopPropagation(); if (scene.summary) openModal(scene.id); });
+  editbtn.addEventListener('mousedown', e => e.stopPropagation());
+  editbtn.addEventListener('click', e => { e.stopPropagation(); openEditMode(scene.id); });
+  const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${sceneDisplayNum(scene.id)}`;
+  const tit  = document.createElement('div'); tit.className  = 'ctit'; tit.textContent = scene.title;
+  const meta = document.createElement('div'); meta.className = 'cmeta';
+  SECS.forEach(({ key, label, tag }) => {
+    if (!scene[key] || !scene[key].length) return;
+    const row  = document.createElement('div'); row.className  = 'crow';
+    const lbl  = document.createElement('div'); lbl.className  = 'clbl'; lbl.textContent = label;
+    const tags = document.createElement('div'); tags.className = 'ctags';
+    scene[key].forEach(v => { const t = document.createElement('span'); t.className = 'tag ' + tag; t.textContent = v; tags.appendChild(t); });
+    row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
+  });
+  card.appendChild(badge); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
+  card.appendChild(num); card.appendChild(tit); card.appendChild(meta);
+  card.addEventListener('mousedown', e => onCardDown(e, scene.id));
+  container.appendChild(card);
+}
+
 function renderBoard() {
   const board = document.getElementById('board'), emp = document.getElementById('sbemp');
   board.innerHTML = '';
+  document.querySelectorAll('.sec-pin').forEach(p => p.remove()); // clear body-level pins
   updateCount();
+  const hasSecs = S.sections.length > 0;
+  board.classList.toggle('has-secs', hasSecs);
   if (!S.scenes.length) { emp.style.display='flex'; return; }
   emp.style.display = 'none';
-  S.scenes.forEach((scene, idx) => {
-    const isd = drag.on && drag.ids.includes(scene.id);
-    const sel = S.selIds.has(scene.id);
-    const dpb = drag.on && drag.dropId === scene.id && drag.before;
-    const dpa = drag.on && drag.dropId === scene.id && !drag.before;
-    // Highlight: search overrides library selection
-    let hlCls = '';
-    if (searchQ)              { if (sceneMatchesSearch(scene)) hlCls = 'hl-s'; }
-    else                      { if (sceneMatchesLib(scene))    hlCls = 'hl';   }
-    const card = document.createElement('div');
-    card.className = ['sc', isd?'isd':'', sel?'sel':'', hlCls, dpb?'dpb':'', dpa?'dpa':''].filter(Boolean).join(' ');
-    card.dataset.id = scene.id;
-    // Buttons
-    const badge  = document.createElement('div');    badge.className  = 'sbadge'; badge.textContent = '✓';
-    const delbtn = document.createElement('button'); delbtn.className = 'cdel';   delbtn.title = 'Delete'; delbtn.textContent = '×';
-    const sumbtn = document.createElement('button'); sumbtn.className = 'csum' + (scene.summary ? ' hs' : ''); sumbtn.title = scene.summary ? 'View summary' : 'No summary'; sumbtn.textContent = 'ⓘ';
-    const editbtn= document.createElement('button'); editbtn.className= 'cedit';  editbtn.title = 'Edit scene'; editbtn.textContent = '✏️';
-    delbtn.addEventListener('mousedown', e => e.stopPropagation());
-    delbtn.addEventListener('click', e => { e.stopPropagation(); deleteScene(scene.id); });
-    sumbtn.addEventListener('mousedown', e => e.stopPropagation());
-    sumbtn.addEventListener('click', e => { e.stopPropagation(); if (scene.summary) openModal(scene.id); });
-    editbtn.addEventListener('mousedown', e => e.stopPropagation());
-    editbtn.addEventListener('click', e => { e.stopPropagation(); openEditMode(scene.id); });
-    // Content
-    const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${idx+1}`;
-    const tit  = document.createElement('div'); tit.className  = 'ctit'; tit.textContent = scene.title;
-    const meta = document.createElement('div'); meta.className = 'cmeta';
-    SECS.forEach(({ key, label, tag }) => {
-      if (!scene[key] || !scene[key].length) return;
-      const row  = document.createElement('div'); row.className  = 'crow';
-      const lbl  = document.createElement('div'); lbl.className  = 'clbl'; lbl.textContent = label;
-      const tags = document.createElement('div'); tags.className = 'ctags';
-      scene[key].forEach(v => { const t = document.createElement('span'); t.className = 'tag ' + tag; t.textContent = v; tags.appendChild(t); });
-      row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
+
+  if (!hasSecs) {
+    // Original flat layout
+    S.scenes.forEach((scene, idx) => renderCard(board, scene, idx));
+  } else {
+    // Section group layout
+    const validSecIds = new Set(S.sections.map(s => s.id));
+    const unassigned  = S.scenes.filter(s => !validSecIds.has(s.sectionId));
+    const allGroups   = [
+      { id: null, name: 'Unassigned', scenes: unassigned, isUnasgn: true },
+      ...S.sections.map(sec => ({ id: sec.id, name: sec.name, scenes: S.scenes.filter(s => s.sectionId === sec.id), isUnasgn: false })),
+    ];
+    let groups;
+    if (secFilterIds.size === 0) {
+      groups = allGroups.filter(g => !g.isUnasgn || g.scenes.length > 0);
+    } else {
+      groups = allGroups.filter(g => g.isUnasgn ? secFilterIds.has('unassigned') : secFilterIds.has(g.id));
+    }
+
+    groups.forEach(group => {
+      const secGrp = document.createElement('div');
+      const isDragOver = drag.on && drag.dropId === null && (
+        (group.isUnasgn && drag.dropSecId === 0) ||
+        (!group.isUnasgn && drag.dropSecId === group.id)
+      );
+      secGrp.className = 'sec-group' + (group.isUnasgn ? ' sec-unasgn' : '') + (isDragOver ? ' card-drag-over' : '');
+      if (group.id !== null) secGrp.dataset.secId = group.id;
+      else secGrp.dataset.secId = '0';
+
+      // Header
+      const hdr = document.createElement('div'); hdr.className = 'sec-hdr';
+      const nameEl = document.createElement('span'); nameEl.className = 'sec-name'; nameEl.textContent = group.name;
+      const cntEl = document.createElement('span'); cntEl.className = 'sec-cnt';
+      cntEl.textContent = `${group.scenes.length} scene${group.scenes.length !== 1 ? 's' : ''}`;
+      hdr.appendChild(nameEl); hdr.appendChild(cntEl);
+
+      // Body
+      const body = document.createElement('div'); body.className = 'sec-body';
+
+      if (!group.isUnasgn) {
+        const sec = S.sections.find(s => s.id === group.id);
+        if (sec && sec.color) {
+          hdr.style.background = `color-mix(in srgb, ${sec.color} 20%, var(--bg1))`;
+          hdr.style.borderBottomColor = `color-mix(in srgb, ${sec.color} 30%, var(--s1))`;
+          body.style.background = `color-mix(in srgb, ${sec.color} 7%, var(--sbg))`;
+          secGrp.style.borderRightColor = `color-mix(in srgb, ${sec.color} 25%, var(--s1))`;
+        }
+      }
+
+      group.scenes.forEach(scene => renderCard(body, scene, S.scenes.indexOf(scene)));
+
+      // Sticky pin label: appended to body so no stacking context clips it
+      if (!group.isUnasgn) {
+        const pin = document.createElement('div');
+        pin.className = 'sec-pin';
+        pin.dataset.secId = group.id;
+        pin.textContent = group.name;
+        const sec = S.sections.find(s => s.id === group.id);
+        if (sec && sec.color) {
+          pin.style.background = `color-mix(in srgb, ${sec.color} 22%, var(--bg1))`;
+          pin.style.borderBottomColor = `color-mix(in srgb, ${sec.color} 30%, var(--s1))`;
+        } else { pin.style.background = 'var(--bg1)'; }
+        document.body.appendChild(pin);
+      }
+
+      secGrp.appendChild(hdr); secGrp.appendChild(body);
+      board.appendChild(secGrp);
     });
-    card.appendChild(badge); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
-    card.appendChild(num); card.appendChild(tit); card.appendChild(meta);
-    card.addEventListener('mousedown', e => onCardDown(e, scene.id));
-    board.appendChild(card);
-  });
+  }
   document.getElementById('clrsel').style.display = S.selIds.size > 0 ? 'inline-block' : 'none';
+  if (hasSecs) alignSecHeaders();
+}
+
+// ── ALIGN SECTION HEADERS ─────────────────────────────────────────────────────
+// After render, measure each sec-body's actual card extent (including overflow columns)
+// and set explicit widths on the header and group so the header spans all card columns.
+function alignSecHeaders() {
+  // Clear any previously-set explicit widths first so natural layout takes effect
+  document.querySelectorAll('.sec-group').forEach(grp => {
+    grp.style.width = '';
+    const h = grp.querySelector('.sec-hdr');
+    if (h) h.style.width = '';
+  });
+  // One rAF: browser re-lays-out with cleared widths, then we measure card extents
+  requestAnimationFrame(() => {
+    const cs = parseFloat(document.getElementById('board').style.getPropertyValue('--cs') || '1') || 1;
+    const minW = Math.ceil((174 + 24) * cs); // at minimum: one card width + 12px padding each side
+    document.querySelectorAll('.sec-group').forEach(grp => {
+      const hdr = grp.querySelector('.sec-hdr');
+      if (!hdr) return;
+      let w = minW;
+      const gl = grp.getBoundingClientRect().left;
+      // Measure the rightmost edge of any card relative to this group's left edge
+      grp.querySelectorAll('.sc').forEach(c => {
+        const r = c.getBoundingClientRect();
+        w = Math.max(w, Math.ceil(r.right - gl + 12)); // +12 = right padding
+      });
+      hdr.style.width = w + 'px';
+      grp.style.width = w + 'px';
+    });
+    updateSecPins(); // re-sync pins after widths settle
+  });
+}
+
+// ── STICKY SECTION HEADER PINS ────────────────────────────────────────────────
+// When a section's header has scrolled off to the left, slide a compact pin label
+// into view at the left edge of the storyboard panel so the section name is always
+// visible while the user scrolls horizontally.
+function updateSecPins() {
+  const sbp = document.getElementById('sbp');
+  if (!sbp) return;
+  const sbpRect = sbp.getBoundingClientRect();
+  const allGrps = [...document.querySelectorAll('.sec-group')];
+  document.querySelectorAll('.sec-pin[data-sec-id]').forEach(pin => {
+    const grp = document.querySelector(`.sec-group[data-sec-id="${pin.dataset.secId}"]`);
+    if (!grp) { pin.style.opacity = '0'; return; }
+    const grpRect  = grp.getBoundingClientRect();
+    const hdr      = grp.querySelector('.sec-hdr');
+    // Find the next sibling section group (if any) to know when to hide the pin.
+    const grpIdx   = allGrps.indexOf(grp);
+    const nextGrp  = allGrps[grpIdx + 1];
+    const nextLeft = nextGrp ? nextGrp.getBoundingClientRect().left : Infinity;
+    // Pin's right edge in viewport = sbpRect.left + pin width.
+    // Hide as soon as the next group's left edge reaches the pin's right edge.
+    const pinW = pin.getBoundingClientRect().width || pin.offsetWidth || 80;
+    if (grpRect.left < sbpRect.left && nextLeft > sbpRect.left + pinW) {
+      pin.style.left    = sbpRect.left + 'px';
+      pin.style.top     = (hdr ? hdr.getBoundingClientRect().top : sbpRect.top) + 'px';
+      pin.style.opacity = '1';
+    } else {
+      pin.style.opacity = '0';
+    }
+  });
 }
 
 function updateCount() {
@@ -922,9 +1269,242 @@ function updateCount() {
   document.getElementById('sbcnt').textContent = `${n} scene${n !== 1 ? 's' : ''}`;
 }
 
+// ── SECTION SELECTS (forms + filter) ──────────────────────────────────────────
+function renderSectionSelects() {
+  const hasSecs = S.sections.length > 0;
+  document.getElementById('sc-sec-wrap').style.display = hasSecs ? '' : 'none';
+  document.getElementById('ed-sec-wrap').style.display = hasSecs ? '' : 'none';
+  document.getElementById('sec-filter-wrap').classList.toggle('vis', hasSecs);
+  // Form dropdowns
+  ['sc-section','ed-section'].forEach(id => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Unassigned</option>';
+    S.sections.forEach(sec => {
+      const opt = document.createElement('option'); opt.value = sec.id; opt.textContent = sec.name;
+      sel.appendChild(opt);
+    });
+    if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+  });
+  // Filter checkbox dropdown
+  renderFilterDrop();
+}
+
+// ── SECTION FILTER ────────────────────────────────────────────────────────────
+let secFilterIds = new Set(); // empty = show all sections
+
+function toggleSecFilter() {
+  document.getElementById('sec-filter-drop').classList.toggle('open');
+}
+function closeSecFilter() {
+  document.getElementById('sec-filter-drop')?.classList.remove('open');
+}
+function onSecFilterChange(id, checked) {
+  if (id === 'all') {
+    secFilterIds.clear();
+  } else {
+    if (checked) secFilterIds.add(id);
+    else         secFilterIds.delete(id);
+  }
+  updateSecFilterBtn();
+  renderFilterDrop(); // re-sync "All Sections" checkbox state
+  renderBoard();
+}
+function updateSecFilterBtn() {
+  const btn = document.getElementById('sec-filter-btn');
+  if (!btn) return;
+  if (secFilterIds.size === 0) {
+    btn.textContent = 'All Sections ▾';
+  } else if (secFilterIds.size === 1) {
+    const id = [...secFilterIds][0];
+    const sec = S.sections.find(s => s.id === id);
+    btn.textContent = (sec ? sec.name : (id === 'unassigned' ? 'Unassigned' : '1 Section')) + ' ▾';
+  } else {
+    btn.textContent = secFilterIds.size + ' Sections ▾';
+  }
+}
+function buildSecFilterItem(id, name, checked, color) {
+  const lbl = document.createElement('label'); lbl.className = 'sec-fck';
+  const ck  = document.createElement('input'); ck.type = 'checkbox'; ck.dataset.fid = id; ck.checked = checked;
+  ck.addEventListener('change', e => onSecFilterChange(id, e.target.checked));
+  lbl.appendChild(ck);
+  if (color) {
+    const dot = document.createElement('span'); dot.className = 'sec-li-dot'; dot.style.background = color;
+    lbl.appendChild(dot);
+  }
+  const span = document.createElement('span'); span.className = 'sec-fck-name'; span.textContent = name; lbl.appendChild(span);
+  return lbl;
+}
+function renderFilterDrop() {
+  const drop = document.getElementById('sec-filter-drop'); if (!drop) return;
+  drop.innerHTML = '';
+  drop.appendChild(buildSecFilterItem('all', 'All Sections', secFilterIds.size === 0, null));
+  if (S.sections.length) {
+    const sep = document.createElement('div'); sep.className = 'sec-fck-sep'; drop.appendChild(sep);
+    S.sections.forEach(sec => drop.appendChild(buildSecFilterItem(sec.id, sec.name, secFilterIds.has(sec.id), sec.color)));
+    const validSecIds = new Set(S.sections.map(s => s.id));
+    const hasUnassigned = S.scenes.some(s => !validSecIds.has(s.sectionId));
+    if (hasUnassigned) drop.appendChild(buildSecFilterItem('unassigned', 'Unassigned', secFilterIds.has('unassigned'), null));
+  }
+  updateSecFilterBtn();
+}
+
+// ── SECTION MANAGEMENT ─────────────────────────────────────────────────────────
+function addSection() {
+  const inp = document.getElementById('sec-add-inp');
+  const name = inp.value.trim();
+  if (!name) { inp.focus(); return; }
+  if (S.sections.some(s => s.name.toLowerCase() === name.toLowerCase())) { inp.select(); return; }
+  pushHistory('Add section "' + truncStr(name, 22) + '"');
+  const color = SEC_COLORS[S.sections.length % SEC_COLORS.length];
+  S.sections.push({ id: S.nextSecId++, name, color });
+  inp.value = '';
+  renderSecPanel(); renderSectionSelects(); renderBoard();
+  saveState();
+}
+
+function deleteSection(id) {
+  const sec = S.sections.find(s => s.id === id); if (!sec) return;
+  secDelId = id;
+  const count = S.scenes.filter(s => s.sectionId === id).length;
+  document.getElementById('secdel-msg').textContent = count > 0
+    ? `Delete section "${sec.name}"?\n\nThe ${count} scene${count!==1?'s':''} in it will become Unassigned.`
+    : `Delete section "${sec.name}"?`;
+  document.getElementById('secdel-modal').classList.add('open');
+}
+function closeSecDelModal() { document.getElementById('secdel-modal').classList.remove('open'); secDelId = null; }
+function confirmSecDel() {
+  if (secDelId === null) return;
+  const id = secDelId;
+  closeSecDelModal();
+  const sec = S.sections.find(s => s.id === id); if (!sec) return;
+  pushHistory('Delete section "' + truncStr(sec.name, 22) + '"');
+  S.sections = S.sections.filter(s => s.id !== id);
+  S.scenes.forEach(s => { if (s.sectionId === id) s.sectionId = null; });
+  renderSecPanel(); renderSectionSelects(); renderBoard();
+  saveState();
+}
+
+function renameSection(id, newName) {
+  const sec = S.sections.find(s => s.id === id); if (!sec) return;
+  newName = newName.trim();
+  if (!newName || newName === sec.name) { renderSecPanel(); return; }
+  if (S.sections.some(s => s.id !== id && s.name.toLowerCase() === newName.toLowerCase())) { renderSecPanel(); return; }
+  pushHistory('Rename section to "' + truncStr(newName, 22) + '"');
+  sec.name = newName;
+  renderSecPanel(); renderSectionSelects(); renderBoard();
+  saveState();
+}
+
+function colorSection(id, color) {
+  const sec = S.sections.find(s => s.id === id); if (!sec) return;
+  sec.color = color;
+  saveState();
+}
+
+function quickSetup() {
+  const n   = Math.min(20, Math.max(1, parseInt(document.getElementById('qs-n').value) || 3));
+  const pfx = (document.getElementById('qs-pfx').value.trim() || 'Section');
+  if (!confirm(`Create ${n} sections: "${pfx} 1" through "${pfx} ${n}"?`)) return;
+  pushHistory('Quick setup: ' + n + ' sections');
+  for (let i = 1; i <= n; i++) {
+    const name = pfx + ' ' + i;
+    if (!S.sections.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+      const color = SEC_COLORS[S.sections.length % SEC_COLORS.length];
+      S.sections.push({ id: S.nextSecId++, name, color });
+    }
+  }
+  renderSecPanel(); renderSectionSelects(); renderBoard();
+  saveState();
+}
+
+function renderSecPanel() {
+  const list = document.getElementById('sec-list');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!S.sections.length) {
+    list.innerHTML = '<div class="sec-empty-hint">No sections yet.</div>';
+    return;
+  }
+  S.sections.forEach((sec, idx) => {
+    const li = document.createElement('div'); li.className = 'sec-li'; li.dataset.idx = idx; li.dataset.secid = sec.id;
+    const dh = document.createElement('span'); dh.className = 'sdh'; dh.textContent = '⠿';
+    dh.addEventListener('mousedown', e => startSecListDrag(e, idx));
+    const colorPick = document.createElement('input');
+    colorPick.type = 'color'; colorPick.className = 'sec-color-pick';
+    colorPick.value = sec.color || '#5b8dd9'; colorPick.title = 'Section color';
+    colorPick.addEventListener('mousedown', e => e.stopPropagation());
+    colorPick.addEventListener('input', e => {
+      const s = S.sections.find(x => x.id === sec.id); if (!s) return;
+      s.color = e.target.value; renderBoard();
+    });
+    colorPick.addEventListener('change', e => { colorSection(sec.id, e.target.value); renderBoard(); });
+    const nameEl = document.createElement('span'); nameEl.className = 'sec-li-name'; nameEl.textContent = sec.name;
+    nameEl.addEventListener('click', () => startSecRename(li, sec.id));
+    const cnt = S.scenes.filter(s => s.sectionId === sec.id).length;
+    const cntEl = document.createElement('span'); cntEl.className = 'sec-li-cnt'; cntEl.textContent = cnt + ' scene' + (cnt!==1?'s':'');
+    const del = document.createElement('button'); del.className = 'sec-li-del'; del.textContent = '×'; del.title = 'Delete';
+    del.addEventListener('mousedown', e => e.stopPropagation());
+    del.addEventListener('click', e => { e.stopPropagation(); deleteSection(sec.id); });
+    li.appendChild(dh); li.appendChild(colorPick); li.appendChild(nameEl); li.appendChild(cntEl); li.appendChild(del);
+    list.appendChild(li);
+  });
+}
+
+function startSecRename(li, id) {
+  const nameEl = li.querySelector('.sec-li-name'); if (!nameEl) return;
+  const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'sec-li-edt';
+  inp.value = nameEl.textContent; inp.maxLength = 60;
+  li.replaceChild(inp, nameEl);
+  inp.focus(); inp.select();
+  let done = false;
+  const finish = () => { if (done) return; done = true; renameSection(id, inp.value); };
+  inp.addEventListener('blur', finish);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); finish(); }
+    if (e.key === 'Escape') { done = true; renderSecPanel(); }
+  });
+}
+
+// ── SECTION LIST DRAG (in modal) ──────────────────────────────────────────────
+const sld = { on:false, fromIdx:null, dropIdx:null, before:true };
+function startSecListDrag(e, idx) {
+  if (e.button !== 0) return; e.preventDefault(); e.stopPropagation();
+  sld.on = true; sld.fromIdx = idx; sld.dropIdx = null;
+}
+function moveSecListDrag(e) {
+  const list = document.getElementById('sec-list'); if (!list) return;
+  const items = [...list.querySelectorAll('.sec-li')];
+  items.forEach(i => i.classList.remove('dib','dia','dg'));
+  const fromEl = items.find(i => +i.dataset.idx === sld.fromIdx); if (fromEl) fromEl.classList.add('dg');
+  let ni = null, nb = true;
+  for (const item of items) {
+    if (+item.dataset.idx === sld.fromIdx) continue;
+    const r = item.getBoundingClientRect();
+    if (e.clientY >= r.top && e.clientY <= r.bottom) { ni = +item.dataset.idx; nb = e.clientY < r.top + r.height/2; break; }
+  }
+  if (ni !== null) { const tgt = items.find(i => +i.dataset.idx === ni); if (tgt) tgt.classList.add(nb?'dib':'dia'); }
+  sld.dropIdx = ni; sld.before = nb;
+}
+function endSecListDrag() {
+  const list = document.getElementById('sec-list');
+  if (list) list.querySelectorAll('.sec-li').forEach(i => i.classList.remove('dib','dia','dg'));
+  if (sld.dropIdx !== null && sld.dropIdx !== sld.fromIdx) {
+    pushHistory('Reorder sections');
+    const arr = S.sections;
+    const [item] = arr.splice(sld.fromIdx, 1);
+    let ti = sld.dropIdx > sld.fromIdx ? sld.dropIdx - 1 : sld.dropIdx;
+    if (!sld.before) ti++;
+    arr.splice(ti, 0, item);
+    renderSecPanel(); renderSectionSelects(); renderBoard();
+    saveState();
+  }
+  sld.on = false; sld.fromIdx = null; sld.dropIdx = null;
+}
+
 // ── CARD DRAG ─────────────────────────────────────────────────────────────────
 const ptr  = { down:false, id:null, sx:0, sy:0, dragging:false };
-const drag = { on:false, ids:[], ox:0, oy:0, dropId:null, before:true };
+const drag = { on:false, ids:[], ox:0, oy:0, dropId:null, before:true, dropSecId:null };
 
 function onCardDown(e, id) {
   if (e.button !== 0) return; e.preventDefault();
@@ -939,7 +1519,7 @@ function beginCardDrag(id, e) {
   drag.ox = e.clientX - r.left; drag.oy = e.clientY - r.top;
   const sc = S.scenes.find(s => s.id === id), ghost = document.getElementById('ghost');
   ghost.innerHTML = '';
-  const n = document.createElement('div'); n.className = 'cnum'; n.textContent = `Scene ${S.scenes.indexOf(sc)+1}`;
+  const n = document.createElement('div'); n.className = 'cnum'; n.textContent = `Scene ${sceneDisplayNum(sc.id)}`;
   const t = document.createElement('div'); t.className = 'ctit'; t.textContent = sc.title;
   ghost.appendChild(n); ghost.appendChild(t);
   if (ids.length > 1) { const b = document.createElement('div'); b.className = 'gbadge'; b.textContent = `+${ids.length-1}`; ghost.appendChild(b); }
@@ -951,14 +1531,25 @@ function moveCardDrag(e) {
   const g = document.getElementById('ghost');
   g.style.left = (e.clientX - drag.ox) + 'px'; g.style.top = (e.clientY - drag.oy) + 'px';
   const cards = [...document.querySelectorAll('.sc')].filter(c => !drag.ids.includes(+c.dataset.id));
-  let newId = null, newBef = true;
+  let newId = null, newBef = true, newSecId = null;
   for (const c of cards) {
     const r = c.getBoundingClientRect();
     if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
       newId = +c.dataset.id; newBef = e.clientY < r.top + r.height / 2; break;
     }
   }
-  if (newId !== drag.dropId || newBef !== drag.before) { drag.dropId = newId; drag.before = newBef; renderBoard(); }
+  if (newId === null && S.sections.length) {
+    for (const grp of document.querySelectorAll('.sec-group')) {
+      const r = grp.getBoundingClientRect();
+      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+        newSecId = grp.dataset.secId ? parseInt(grp.dataset.secId) : 0;
+        break;
+      }
+    }
+  }
+  if (newId !== drag.dropId || newBef !== drag.before || newSecId !== drag.dropSecId) {
+    drag.dropId = newId; drag.before = newBef; drag.dropSecId = newSecId; renderBoard();
+  }
 }
 function endCardDrag() {
   document.getElementById('ghost').style.display = 'none';
@@ -968,11 +1559,38 @@ function endCardDrag() {
     const dragged = drag.ids.map(id => S.scenes.find(s => s.id === id)).filter(Boolean);
     const rest    = S.scenes.filter(s => !drag.ids.includes(s.id));
     const ti      = rest.findIndex(s => s.id === drag.dropId);
+    // Cross-section: assign dropped cards to the target card's section
+    if (S.sections.length) {
+      const targetScene = S.scenes.find(s => s.id === drag.dropId);
+      if (targetScene) {
+        const targetSecId = targetScene.sectionId ?? null;
+        dragged.forEach(s => { s.sectionId = targetSecId; });
+      }
+    }
     if (ti !== -1) rest.splice(drag.before ? ti : ti + 1, 0, ...dragged);
     S.scenes = rest; changed = true;
+  } else if (drag.dropSecId !== null) {
+    pushHistory('Assign to section');
+    const targetSecId = drag.dropSecId === 0 ? null : drag.dropSecId;
+    const dragged = drag.ids.map(id => S.scenes.find(s => s.id === id)).filter(Boolean);
+    dragged.forEach(s => { s.sectionId = targetSecId; });
+    // Also reorder in S.scenes: place dragged scenes after the last scene already
+    // in the target section, so scene numbers update to reflect the new position.
+    const rest = S.scenes.filter(s => !drag.ids.includes(s.id));
+    let insertIdx = -1;
+    rest.forEach((s, i) => { if (s.sectionId === targetSecId) insertIdx = i; });
+    if (insertIdx === -1) rest.push(...dragged); else rest.splice(insertIdx + 1, 0, ...dragged);
+    S.scenes = rest;
+    changed = true;
   }
-  drag.on = false; drag.ids = []; drag.dropId = null;
-  renderBoard();
+  // If a scene currently open in Edit mode was dragged, sync its section dropdown
+  if (changed && S.editingId !== null && drag.ids.includes(S.editingId) && S.sections.length) {
+    const editedScene = S.scenes.find(s => s.id === S.editingId);
+    const edSel = document.getElementById('ed-section');
+    if (edSel && editedScene) edSel.value = editedScene.sectionId || '';
+  }
+  drag.on = false; drag.ids = []; drag.dropId = null; drag.dropSecId = null;
+  renderSecPanel(); renderBoard();
   if (changed) saveState();
 }
 function toggleCardSel(id, e) {
@@ -1027,6 +1645,15 @@ document.getElementById('cp-resize').addEventListener('mousedown', e => {
   e.preventDefault(); e.stopPropagation();
 });
 
+// ── SECTIONS PANEL RESIZE ─────────────────────────────────────────────────────
+const spDr = { on:false, startX:0, startW:0 };
+document.getElementById('sp-resize').addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  spDr.on = true; spDr.startX = e.clientX; spDr.startW = document.getElementById('sp').offsetWidth;
+  document.getElementById('sp-resize').classList.add('dragging');
+  e.preventDefault(); e.stopPropagation();
+});
+
 // ── GLOBAL MOUSE ──────────────────────────────────────────────────────────────
 document.addEventListener('mousemove', e => {
   if (ptr.down) {
@@ -1035,10 +1662,15 @@ document.addEventListener('mousemove', e => {
     }
     if (ptr.dragging) moveCardDrag(e);
   }
-  if (ld.on) moveLibDrag(e);
+  if (ld.on)  moveLibDrag(e);
+  if (sld.on) moveSecListDrag(e);
   if (cpDr.on) {
     const newW = Math.max(180, Math.min(520, cpDr.startW + (e.clientX - cpDr.startX)));
     document.getElementById('cp').style.width = newW + 'px';
+  }
+  if (spDr.on) {
+    const newW = Math.max(150, Math.min(400, spDr.startW + (e.clientX - spDr.startX)));
+    document.getElementById('sp').style.width = newW + 'px';
   }
 });
 document.addEventListener('mouseup', e => {
@@ -1046,8 +1678,20 @@ document.addEventListener('mouseup', e => {
     if (!ptr.dragging) toggleCardSel(ptr.id, e); else endCardDrag();
     ptr.down = false; ptr.dragging = false; ptr.id = null;
   }
-  if (ld.on) endLibDrag();
+  if (ld.on)  endLibDrag();
+  if (sld.on) endSecListDrag();
   if (cpDr.on) { cpDr.on = false; document.getElementById('cp-resize').classList.remove('dragging'); }
+  if (spDr.on) { spDr.on = false; document.getElementById('sp-resize').classList.remove('dragging'); }
+});
+
+// ── CANCEL EDIT ON CLICK OUTSIDE SCENE PANEL ──────────────────────────────────
+document.addEventListener('mousedown', e => {
+  if (S.editingId === null) return;
+  // Stay in edit mode if clicking within the Scene panel itself
+  if (e.target.closest('#cp')) return;
+  // Stay in edit mode if any modal is open (user may be confirming a save, etc.)
+  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open')) return;
+  cancelEdit();
 });
 
 // ── KEYBOARD ──────────────────────────────────────────────────────────────────
@@ -1059,8 +1703,18 @@ document.addEventListener('keydown', e => {
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
     if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); return; }
   }
-  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); }
+  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); closeSecDelModal(); closeSecFilter(); }
 });
+// Close filter dropdown on click outside
+document.addEventListener('mousedown', e => {
+  const wrap = document.getElementById('sec-filter-wrap');
+  if (wrap && !wrap.contains(e.target)) closeSecFilter();
+});
+
+// ── WINDOW RESIZE ─────────────────────────────────────────────────────────────
+// Card column layout changes when the window is resized; re-measure header widths.
+window.addEventListener('resize', () => { if (S.sections.length) alignSecHeaders(); });
+document.getElementById('sbscrl').addEventListener('scroll', updateSecPins);
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 loadState();
@@ -1068,6 +1722,8 @@ syncAndOrUI();
 buildLibPanel();
 renderAllLib();
 renderAllCk();
+renderSecPanel();
+renderSectionSelects();
 renderBoard();
 updateLibClearBtn();
 updateUndoRedo();
