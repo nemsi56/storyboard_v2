@@ -283,6 +283,9 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .ins-zone:hover{height:32px}
 .ins-btn{opacity:0;font-size:11px;font-weight:600;color:var(--acc);background:color-mix(in srgb,var(--acc) 11%,var(--sbg));border:1.5px dashed color-mix(in srgb,var(--acc) 40%,transparent);border-radius:12px;padding:3px 12px;white-space:nowrap;transition:opacity .15s,transform .15s;transform:scale(.85);pointer-events:none}
 .ins-zone:hover .ins-btn{opacity:1;transform:scale(1)}
+.ins-inert{pointer-events:none;cursor:default}
+.ins-inert:hover{height:8px}
+.ins-inert:hover .ins-btn{opacity:0;transform:scale(.85)}
 /* Color picker — used in Sections pane list items */
 .sec-color-pick{width:18px;height:18px;padding:1px;border:1px solid color-mix(in srgb,var(--s1) 80%,transparent);border-radius:3px;cursor:pointer;flex-shrink:0;background:none;opacity:.75;transition:opacity .1s;-webkit-appearance:none}
 .sec-color-pick::-webkit-color-swatch-wrapper{padding:1px;border-radius:2px}
@@ -909,8 +912,8 @@ function resetAll() {
 let pendingInsert = null; // { afterId: sceneId|null (null=prepend), sectionId: number|null }
 
 function addInsertZone(container, afterSceneId, sectionId) {
-  if (drag.on) return;
-  const zone = document.createElement('div'); zone.className = 'ins-zone';
+  const zone = document.createElement('div');
+  zone.className = 'ins-zone' + (drag.on ? ' ins-inert' : '');
   const btn  = document.createElement('div'); btn.className  = 'ins-btn'; btn.textContent = '＋ Add Scene';
   zone.appendChild(btn);
   zone.addEventListener('click', e => {
