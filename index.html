@@ -1270,15 +1270,12 @@ function renderBoard() {
         }
       }
 
-      // Insert zone before first card (also serves as the only zone for empty sections)
-      addInsertZone(body, null, group.id);
       group.scenes.forEach(scene => {
         renderCard(body, scene, S.scenes.indexOf(scene));
-        const card = body.lastElementChild;
-        if (secColor) card.style.setProperty('--sec-c', secColor);
-        // Insert zone after each card
         addInsertZone(body, scene.id, group.id);
       });
+      // For empty sections, show a single insert zone so the column is still usable
+      if (group.scenes.length === 0) addInsertZone(body, null, group.id);
 
       // Sticky pin label: appended to body so no stacking context clips it
       if (!group.isUnasgn) {
