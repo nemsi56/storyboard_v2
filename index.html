@@ -273,12 +273,16 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .sec-hdr:hover .sec-hbtn{opacity:1}
 .sec-hbtn:hover{color:var(--tx);background:var(--s0)}
 .sec-hbtn.del:hover{color:var(--rd);background:color-mix(in srgb,var(--rd) 10%,transparent)}
-.sec-body{flex:1;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:8px;padding:12px;min-height:0;overflow:visible;background-image:radial-gradient(ellipse 2px 1.5px at 1px 1px,var(--tex-c) 100%,transparent 100%),radial-gradient(ellipse 1.5px 2px at 6px 5px,var(--tex-c) 100%,transparent 100%),radial-gradient(ellipse 2px 1px at 3px 8px,var(--tex-c) 100%,transparent 100%),radial-gradient(ellipse 1px 2px at 8px 3px,var(--tex-c) 100%,transparent 100%);background-size:11px 10px;background-color:var(--sbg)}
+.sec-body{flex:1;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:0;padding:12px;min-height:0;overflow:visible;background-image:radial-gradient(ellipse 2px 1.5px at 1px 1px,var(--tex-c) 100%,transparent 100%),radial-gradient(ellipse 1.5px 2px at 6px 5px,var(--tex-c) 100%,transparent 100%),radial-gradient(ellipse 2px 1px at 3px 8px,var(--tex-c) 100%,transparent 100%),radial-gradient(ellipse 1px 2px at 8px 3px,var(--tex-c) 100%,transparent 100%);background-size:11px 10px;background-color:var(--sbg)}
 .sec-unasgn .sec-hdr{background:var(--sbg)!important}
 .sec-unasgn .sec-name{color:var(--sub);font-style:italic;text-transform:none;letter-spacing:0;font-size:12px;font-weight:600}
 /* Drag-over highlight for empty section drop */
 .sec-group.card-drag-over .sec-body{outline:2px dashed color-mix(in srgb,var(--acc) 55%,transparent);outline-offset:-4px}
 .sec-group.card-drag-over .sec-hdr{filter:brightness(.93)}
+.ins-zone{width:calc(174px * var(--cs,1));height:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:height .17s;overflow:hidden;margin:0}
+.ins-zone:hover{height:32px}
+.ins-btn{opacity:0;font-size:11px;font-weight:600;color:var(--acc);background:color-mix(in srgb,var(--acc) 11%,var(--sbg));border:1.5px dashed color-mix(in srgb,var(--acc) 40%,transparent);border-radius:12px;padding:3px 12px;white-space:nowrap;transition:opacity .15s,transform .15s;transform:scale(.85);pointer-events:none}
+.ins-zone:hover .ins-btn{opacity:1;transform:scale(1)}
 /* Color picker — used in Sections pane list items */
 .sec-color-pick{width:18px;height:18px;padding:1px;border:1px solid color-mix(in srgb,var(--s1) 80%,transparent);border-radius:3px;cursor:pointer;flex-shrink:0;background:none;opacity:.75;transition:opacity .1s;-webkit-appearance:none}
 .sec-color-pick::-webkit-color-swatch-wrapper{padding:1px;border-radius:2px}
@@ -902,6 +906,27 @@ function resetAll() {
 }
 
 // ── SCENE ACTIONS ─────────────────────────────────────────────────────────────
+let pendingInsert = null; // { afterId: sceneId|null (null=prepend), sectionId: number|null }
+
+function addInsertZone(container, afterSceneId, sectionId) {
+  if (drag.on) return;
+  const zone = document.createElement('div'); zone.className = 'ins-zone';
+  const btn  = document.createElement('div'); btn.className  = 'ins-btn'; btn.textContent = '＋ Add Scene';
+  zone.appendChild(btn);
+  zone.addEventListener('click', e => {
+    e.stopPropagation();
+    pendingInsert = { afterId: afterSceneId, sectionId };
+    if (S.sections.length) {
+      const sel = document.getElementById('sc-section');
+      if (sel) sel.value = sectionId !== null ? String(sectionId) : '';
+    }
+    if (document.getElementById('cp').classList.contains('collapsed')) togglePanel('cp');
+    switchTab('new');
+    setTimeout(() => document.getElementById('sc-title').focus(), 40);
+  });
+  container.appendChild(zone);
+}
+
 function addScene() {
   const titleEl = document.getElementById('sc-title'), errEl = document.getElementById('scerr');
   const title = titleEl.value.trim(), summary = document.getElementById('sc-summary').value.trim();
@@ -913,8 +938,21 @@ function addScene() {
   const sectionId = S.sections.length ? (parseInt(document.getElementById('sc-section').value) || null) : null;
   pushHistory('Add scene "' + truncStr(title, 22) + '"');
   const newScene = { id: S.nextId++, title, summary, ...row, sectionId };
-  // Insert after the last scene already in this section so numbering stays sequential
-  if (sectionId) {
+  if (pendingInsert !== null) {
+    const { afterId, sectionId: piSecId } = pendingInsert; pendingInsert = null;
+    if (afterId !== null) {
+      const idx = S.scenes.findIndex(s => s.id === afterId);
+      S.scenes.splice(idx !== -1 ? idx + 1 : S.scenes.length, 0, newScene);
+    } else {
+      // Prepend: insert before the first scene in this section
+      const validSecIds = new Set(S.sections.map(s => s.id));
+      const firstIdx = piSecId !== null
+        ? S.scenes.findIndex(s => s.sectionId === piSecId)
+        : S.scenes.findIndex(s => !validSecIds.has(s.sectionId));
+      S.scenes.splice(firstIdx !== -1 ? firstIdx : S.scenes.length, 0, newScene);
+    }
+  } else if (sectionId) {
+    // Default: insert after the last scene already in this section
     let insertIdx = -1;
     S.scenes.forEach((s, i) => { if (s.sectionId === sectionId) insertIdx = i; });
     if (insertIdx === -1) S.scenes.push(newScene); else S.scenes.splice(insertIdx + 1, 0, newScene);
@@ -928,6 +966,7 @@ function addScene() {
 }
 
 function cancelNewScene() {
+  pendingInsert = null;
   document.getElementById('sc-title').value = '';
   document.getElementById('sc-summary').value = '';
   document.querySelectorAll('#form-new .cklist input').forEach(c => { c.checked = false; });
@@ -1231,9 +1270,14 @@ function renderBoard() {
         }
       }
 
+      // Insert zone before first card (also serves as the only zone for empty sections)
+      addInsertZone(body, null, group.id);
       group.scenes.forEach(scene => {
         renderCard(body, scene, S.scenes.indexOf(scene));
-        if (secColor) body.lastElementChild.style.setProperty('--sec-c', secColor);
+        const card = body.lastElementChild;
+        if (secColor) card.style.setProperty('--sec-c', secColor);
+        // Insert zone after each card
+        addInsertZone(body, scene.id, group.id);
       });
 
       // Sticky pin label: appended to body so no stacking context clips it
