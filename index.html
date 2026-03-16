@@ -274,6 +274,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .sec-hbtn:hover{color:var(--tx);background:var(--s0)}
 .sec-hbtn.del:hover{color:var(--rd);background:color-mix(in srgb,var(--rd) 10%,transparent)}
 .sec-body{flex:1;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:0;padding:12px;min-height:0;overflow:visible;background-image:radial-gradient(ellipse 2px 1.5px at 1px 1px,var(--tex-c) 100%,transparent 100%),radial-gradient(ellipse 1.5px 2px at 6px 5px,var(--tex-c) 100%,transparent 100%),radial-gradient(ellipse 2px 1px at 3px 8px,var(--tex-c) 100%,transparent 100%),radial-gradient(ellipse 1px 2px at 8px 3px,var(--tex-c) 100%,transparent 100%);background-size:11px 10px;background-color:var(--sbg)}
+.card-wrap{display:flex;flex-direction:column;flex-shrink:0}
 .sec-unasgn .sec-hdr{background:var(--sbg)!important}
 .sec-unasgn .sec-name{color:var(--sub);font-style:italic;text-transform:none;letter-spacing:0;font-size:12px;font-weight:600}
 /* Drag-over highlight for empty section drop */
@@ -1274,8 +1275,10 @@ function renderBoard() {
       }
 
       group.scenes.forEach(scene => {
-        renderCard(body, scene, S.scenes.indexOf(scene));
-        addInsertZone(body, scene.id, group.id);
+        const wrap = document.createElement('div'); wrap.className = 'card-wrap';
+        body.appendChild(wrap);
+        renderCard(wrap, scene, S.scenes.indexOf(scene));
+        addInsertZone(wrap, scene.id, group.id);
       });
       // For empty sections, show a single insert zone so the column is still usable
       if (group.scenes.length === 0) addInsertZone(body, null, group.id);
