@@ -396,6 +396,17 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .qs-pfx:focus{border-color:var(--acc)}
 .qs-btn{background:var(--s0);border:1px solid var(--s1);border-radius:5px;padding:4px 10px;font-size:12px;font-family:inherit;cursor:pointer;color:var(--tx);transition:background .12s}
 .qs-btn:hover{background:var(--s1)}
+
+/* ══ HELP OVERLAY ══════════════════════════════════════════════════════════ */
+#help-btn{font-size:14px;font-weight:700;font-family:inherit;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--s1);background:var(--s0);color:var(--sub);cursor:pointer;flex-shrink:0;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s,border-color .12s}
+#help-btn:hover,#help-btn.active{background:var(--acc);border-color:var(--acc);color:var(--ontx)}
+#help-overlay{position:fixed;inset:0;z-index:20000;display:none;background:rgba(0,0,0,.45)}
+#help-overlay.active{display:block}
+.help-zone{position:fixed;border:2px solid #f0a020;background:rgba(240,160,32,.15);border-radius:4px;pointer-events:all;box-sizing:border-box;transition:background .1s;cursor:default}
+.help-zone:hover{background:rgba(240,160,32,.35)}
+#help-tip{position:fixed;z-index:20001;background:#1a1a1a;color:#f0f0f0;font-size:12px;line-height:1.5;padding:8px 12px;border-radius:7px;max-width:270px;pointer-events:none;display:none;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+#help-tip.vis{display:block}
+.help-overlay-hint{position:fixed;top:14px;left:50%;transform:translateX(-50%);color:#fff;font-size:12px;font-weight:500;background:rgba(0,0,0,.6);padding:6px 18px;border-radius:20px;pointer-events:none;white-space:nowrap;z-index:20002}
 </style>
 </head>
 <body>
@@ -419,6 +430,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
       <option value="sunset">Sunset</option>
     </select>
   </div>
+  <button id="help-btn" onclick="toggleHelp()" title="Help – hover over highlighted areas to learn what each element does">?</button>
 </div>
 
 <div class="main">
@@ -563,6 +575,12 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 
 <!-- Drag ghost -->
 <div id="ghost"></div>
+
+<!-- Help overlay -->
+<div id="help-overlay">
+  <div class="help-overlay-hint">Hover over a highlighted area for help &nbsp;·&nbsp; Click anywhere to close</div>
+</div>
+<div id="help-tip"></div>
 
 <!-- Add-item popup -->
 <div id="add-popup">
@@ -2015,7 +2033,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
     if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); return; }
   }
-  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); closeSecDelModal(); closeSecFilter(); closeReportModal(); }
+  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); closeSecDelModal(); closeSecFilter(); closeReportModal(); closeHelp(); }
 });
 // Close filter dropdown on click outside
 document.addEventListener('mousedown', e => {
@@ -2375,6 +2393,94 @@ function buildMatrixReport(secSet) {
   }
   html += `</tbody></table>`;
   return html + '</body></html>';
+}
+
+// ── HELP OVERLAY ──────────────────────────────────────────────────────────────
+const HELP_ZONES = [
+  { sel: '#hdr h1',          tip: 'ScriptEase — the app title. Use the panels on the left to manage your library, sections, and scenes.' },
+  { sel: '#undo-btn',        tip: 'Undo — reverses the last change (up to 10 steps). Shortcut: Ctrl+Z / ⌘Z.' },
+  { sel: '#redo-btn',        tip: 'Redo — restores a previously undone change. Shortcut: Ctrl+Y / ⌘⇧Z.' },
+  { sel: '#theme-wrap',      tip: 'Theme — switch the app\'s color scheme between Ivory, Slate, Studio, Ocean, and Sunset.' },
+  { sel: '#lp .p-hdr',      tip: 'Library panel — stores characters, locations, themes, and misc items. Click any item to highlight matching scenes on the board.' },
+  { sel: '#ao-global-wrap',  tip: 'Highlight mode — OR highlights scenes containing any selected item; AND highlights only scenes that contain all selected items simultaneously.' },
+  { sel: '#lib-clr-wrap',    tip: 'Clear Highlights — removes all active library selections and unhighlights the board.' },
+  { sel: '#sp .p-hdr',      tip: 'Sections panel — organize scenes into named sections such as acts, chapters, or sequences.' },
+  { sel: '.sp-add-row',      tip: 'Add Section — type a name and press + (or Enter) to create a new section.' },
+  { sel: '.sp-qs',           tip: 'Quick Setup — rapidly create multiple numbered sections at once (e.g. "Act 1, Act 2, Act 3").' },
+  { sel: '#cp .tabs',        tip: 'Scene panel — New Scene creates a new scene; Edit Scene (enabled when a card is selected) lets you modify the selected scene.' },
+  { sel: '#form-new',        tip: 'New Scene form — enter a title, optional summary, section assignment, library tags, and notes for the scene.' },
+  { sel: '#sbhdr .sbt',      tip: 'Scene Board — the main workspace. Scenes are arranged by section. Drag cards to reorder them.' },
+  { sel: '#sbcnt',           tip: 'Scene count — shows how many scenes are currently visible (may be fewer when a section filter is active).' },
+  { sel: '#clrsel',          tip: 'Clear Selection — deselects all currently selected scene cards on the board.' },
+  { sel: '#det-toggle',      tip: 'Show Card Details — toggle to show or hide library tags (characters, locations, themes, misc) printed on each card.' },
+  { sel: '#sec-filter-wrap', tip: 'Section Filter — click to choose which sections are visible on the board. Useful for focusing on one part of your story.' },
+  { sel: '#rpt-btn',         tip: 'Report — generate a printable report: Scene List, Character, Location, Theme, or Cross-Reference Matrix.' },
+  { sel: '#srch-wrap',       tip: 'Search — filter visible cards by title or summary text. Press × or Escape to clear the search.' },
+  { sel: '.scalew',          tip: 'Card Size — drag the slider to make scene cards larger or smaller on the board.' },
+  { sel: '#help-btn',        tip: 'Help — you\'re already here! Click ? to toggle this mode on/off. Hover highlighted areas to learn what each element does.' },
+];
+
+let helpMode = false;
+
+function toggleHelp() {
+  helpMode ? closeHelp() : openHelp();
+}
+
+function openHelp() {
+  helpMode = true;
+  document.getElementById('help-btn').classList.add('active');
+  const overlay = document.getElementById('help-overlay');
+  overlay.classList.add('active');
+  overlay.querySelectorAll('.help-zone').forEach(z => z.remove());
+  HELP_ZONES.forEach(zone => {
+    const el = document.querySelector(zone.sel);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 && r.height < 2) return;
+    const div = document.createElement('div');
+    div.className = 'help-zone';
+    div.style.left   = (r.left   - 3) + 'px';
+    div.style.top    = (r.top    - 3) + 'px';
+    div.style.width  = (r.width  + 6) + 'px';
+    div.style.height = (r.height + 6) + 'px';
+    div.addEventListener('mouseenter', () => showHelpTip(zone.tip, r));
+    div.addEventListener('mouseleave', hideHelpTip);
+    div.addEventListener('click', e => { e.stopPropagation(); closeHelp(); });
+    overlay.appendChild(div);
+  });
+  overlay.addEventListener('click', _helpOverlayClose);
+}
+
+function _helpOverlayClose(e) {
+  if (e.target.classList.contains('help-zone')) return;
+  closeHelp();
+}
+
+function closeHelp() {
+  if (!helpMode) return;
+  helpMode = false;
+  hideHelpTip();
+  document.getElementById('help-btn').classList.remove('active');
+  const overlay = document.getElementById('help-overlay');
+  overlay.classList.remove('active');
+  overlay.removeEventListener('click', _helpOverlayClose);
+}
+
+function showHelpTip(text, rect) {
+  const tip = document.getElementById('help-tip');
+  tip.textContent = text;
+  tip.classList.add('vis');
+  let top  = rect.bottom + 10;
+  let left = rect.left;
+  if (top  + 140 > window.innerHeight) top  = rect.top - 148;
+  if (left + 282 > window.innerWidth)  left = window.innerWidth - 288;
+  if (left < 8) left = 8;
+  tip.style.top  = top  + 'px';
+  tip.style.left = left + 'px';
+}
+
+function hideHelpTip() {
+  document.getElementById('help-tip').classList.remove('vis');
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
