@@ -2331,14 +2331,14 @@ function buildMatrixReport(secSet) {
   }
   if (flip) {
     // Scenes as rows, axisItems as columns
-    html += `<table><thead><tr><th style="min-width:160px">Scene</th>`;
+    html += `<table><thead><tr><th style="width:220px;max-width:220px">Scene</th>`;
     axisItems.forEach(item => {
       html += `<th style="text-align:center;white-space:nowrap">${rptEsc(item)}</th>`;
     });
     html += `</tr></thead><tbody>`;
     scenes.forEach(sc => {
       const secStr = showSec ? ` <span class="mx-scene-sec" style="font-weight:400">· ${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
-      html += `<tr><td class="mx-row-hdr">Scene ${rptSceneNum(sc.id)} — ${rptEsc(sc.title||'(Untitled)')}${secStr}</td>`;
+      html += `<tr><td class="mx-row-hdr" style="width:220px;max-width:220px;white-space:normal">${rptSceneNum(sc.id)} — ${rptEsc(sc.title||'(Untitled)')}${secStr}</td>`;
       axisItems.forEach(item => {
         html += (sc[axis] || []).includes(item) ? `<td class="mx-dot">●</td>` : `<td></td>`;
       });
