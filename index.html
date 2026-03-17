@@ -331,6 +331,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .sec-li-del{background:none;border:none;color:var(--o0);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;opacity:0;transition:opacity .1s,color .1s;flex-shrink:0}
 .sec-li:hover .sec-li-del{opacity:1}
 .sec-li-del:hover{color:var(--rd)!important}
+.sec-li-name-dim{color:var(--sub);font-style:italic;cursor:default}
 .sec-li.dib{border-top:2px solid var(--acc)!important}
 .sec-li.dia{border-bottom:2px solid var(--acc)!important}
 .sec-li.dg{opacity:.2}
@@ -1592,8 +1593,16 @@ function renderSecPanel() {
   const list = document.getElementById('sec-list');
   if (!list) return;
   list.innerHTML = '';
+  const unassignedCnt = S.scenes.filter(s => !s.sectionId).length;
+  if (unassignedCnt > 0) {
+    const li = document.createElement('div'); li.className = 'sec-li sec-li-unassigned';
+    const nameEl = document.createElement('span'); nameEl.className = 'sec-li-name sec-li-name-dim'; nameEl.textContent = 'Unassigned';
+    const cntEl = document.createElement('span'); cntEl.className = 'sec-li-cnt'; cntEl.textContent = unassignedCnt + ' scene' + (unassignedCnt !== 1 ? 's' : '');
+    li.appendChild(nameEl); li.appendChild(cntEl);
+    list.appendChild(li);
+  }
   if (!S.sections.length) {
-    list.innerHTML = '<div class="sec-empty-hint">No sections yet.</div>';
+    if (!unassignedCnt) list.innerHTML = '<div class="sec-empty-hint">No sections yet.</div>';
     return;
   }
   S.sections.forEach((sec, idx) => {
