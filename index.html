@@ -239,11 +239,28 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 /* ══ ADD-ITEM POPUP ════════════════════════════════════════════════════════ */
 #add-popup{position:fixed;inset:0;background:var(--mov);display:none;align-items:center;justify-content:center;z-index:10001}
 #add-popup.open{display:flex}
-#ap-box{background:var(--mbg);border:1px solid var(--s1);border-radius:10px;padding:20px;width:280px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#ap-box{background:var(--mbg);border:1px solid var(--s1);border-radius:10px;padding:20px;width:300px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 #ap-title{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:12px}
 #ap-input{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:8px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;transition:border-color .14s}
 #ap-input:focus{border-color:var(--acc)}
 #ap-input::placeholder{color:var(--o0)}
+#ap-notes{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:8px 10px;color:var(--tx);font-size:12px;font-family:inherit;outline:none;resize:vertical;transition:border-color .14s;margin-top:7px;min-height:58px}
+#ap-notes:focus{border-color:var(--acc)}
+#ap-notes::placeholder{color:var(--o0)}
+.ap-notes-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--o0);margin-top:9px;display:block}
+/* Lib-edit modal */
+#lib-edit-modal{position:fixed;inset:0;background:var(--mov);display:none;align-items:center;justify-content:center;z-index:10004}
+#lib-edit-modal.open{display:flex}
+#lib-edit-box{background:var(--mbg);border:1px solid var(--s1);border-radius:10px;padding:22px;width:320px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#lib-edit-hdr{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:14px}
+.lib-edit-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--o0);display:block;margin-bottom:5px}
+#lib-edit-name{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:8px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;transition:border-color .14s}
+#lib-edit-name:focus{border-color:var(--acc)}
+#lib-edit-notes{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:8px 10px;color:var(--tx);font-size:12px;font-family:inherit;outline:none;resize:vertical;transition:border-color .14s;min-height:72px;margin-bottom:0}
+#lib-edit-notes:focus{border-color:var(--acc)}
+#lib-edit-notes::placeholder{color:var(--o0)}
+#lib-edit-ok{background:var(--acc);color:var(--ontx)}
+#lib-edit-ok:hover{opacity:.86}
 .ap-btns{display:flex;gap:8px;margin-top:12px}
 .ap-btns button{flex:1;padding:8px;border-radius:7px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border:none;transition:opacity .14s}
 #ap-ok{background:var(--acc);color:var(--ontx)}
@@ -594,9 +611,26 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   <div id="ap-box">
     <div id="ap-title">Add Item</div>
     <input id="ap-input" type="text" placeholder="Enter name…" maxlength="50">
+    <span class="ap-notes-lbl">Notes (optional)</span>
+    <textarea id="ap-notes" placeholder="Any details about this item…" rows="3"></textarea>
     <div class="ap-btns">
       <button id="ap-cancel" onclick="closeAddPopup()">Cancel</button>
       <button id="ap-ok"     onclick="confirmAdd()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Library Item Edit Modal -->
+<div id="lib-edit-modal">
+  <div id="lib-edit-box">
+    <div id="lib-edit-hdr">Edit Item</div>
+    <label class="lib-edit-lbl">Name</label>
+    <input id="lib-edit-name" type="text" maxlength="50">
+    <label class="lib-edit-lbl" style="margin-top:12px">Notes</label>
+    <textarea id="lib-edit-notes" placeholder="Any details about this item…" rows="4"></textarea>
+    <div class="ap-btns">
+      <button onclick="closeLibEditModal()">Cancel</button>
+      <button id="lib-edit-ok" onclick="saveLibEdit()">Save</button>
     </div>
   </div>
 </div>
@@ -683,6 +717,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <label class="rpt-ck"><input type="checkbox" id="rpt-ch-section"  checked> Section</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-ch-location" checked> Location</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-ch-summary"  checked> Summary</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-ch-notes"    checked> Notes</label>
       </div>
     </div>
 
@@ -693,6 +728,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <label class="rpt-ck"><input type="checkbox" id="rpt-lo-section"    checked> Section</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-lo-characters" checked> Characters</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-lo-summary"    checked> Summary</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-lo-notes"      checked> Notes</label>
       </div>
     </div>
 
@@ -703,6 +739,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <label class="rpt-ck"><input type="checkbox" id="rpt-th-section"    checked> Section</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-th-characters" checked> Characters</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-th-summary"    checked> Summary</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-th-notes"      checked> Notes</label>
       </div>
     </div>
 
@@ -713,6 +750,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <label class="rpt-ck"><input type="checkbox" id="rpt-mi-section"    checked> Section</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-mi-characters" checked> Characters</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-mi-summary"    checked> Summary</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-mi-notes"      checked> Notes</label>
       </div>
     </div>
 
@@ -803,10 +841,12 @@ function loadState() {
     }
     const d = JSON.parse(raw);
     if (!d || d.v !== DATA_VERSION) return false;
-    S.characters = d.characters || [];
-    S.locations  = d.locations  || [];
-    S.themes     = d.themes     || [];
-    S.misc       = d.misc       || [];
+    // Migrate plain strings to {name, notes} objects
+    const toObj = arr => (arr || []).map(x => typeof x === 'string' ? { name: x, notes: '' } : x);
+    S.characters = toObj(d.characters);
+    S.locations  = toObj(d.locations);
+    S.themes     = toObj(d.themes);
+    S.misc       = toObj(d.misc);
     S.scenes = (d.scenes || []).map(sc => ({
       ...sc,
       characters: sc.characters || [], locations: sc.locations || [],
@@ -950,18 +990,25 @@ function openAddPopup(sec) {
   const cfg = SECS.find(s => s.key === sec);
   document.getElementById('ap-title').textContent = 'Add ' + SINGULAR[sec];
   const inp = document.getElementById('ap-input'); inp.value = ''; inp.placeholder = cfg.ph;
+  document.getElementById('ap-notes').value = '';
   document.getElementById('add-popup').classList.add('open');
   setTimeout(() => inp.focus(), 60);
 }
-function closeAddPopup() { document.getElementById('add-popup').classList.remove('open'); apSec = null; }
+function closeAddPopup() {
+  document.getElementById('add-popup').classList.remove('open');
+  document.getElementById('ap-input').value = '';
+  document.getElementById('ap-notes').value = '';
+  apSec = null;
+}
 function confirmAdd() {
   if (!apSec) return;
   const inp = document.getElementById('ap-input');
   const name = inp.value.trim();
+  const notes = document.getElementById('ap-notes').value.trim();
   if (!name) { inp.focus(); return; }
-  if (S[apSec].includes(name)) { inp.select(); return; }
+  if (S[apSec].some(x => x.name === name)) { inp.select(); return; }
   pushHistory('Add ' + SINGULAR[apSec] + ' "' + name + '"');
-  S[apSec].push(name);
+  S[apSec].push({ name, notes });
   renderLibSec(apSec); renderCk(apSec); renderEditCk(apSec);
   closeAddPopup();
   saveState();
@@ -1012,8 +1059,8 @@ function updateLibClearBtn() {
 // ── REMOVE LIB ITEM ───────────────────────────────────────────────────────────
 function removeItem(sec, name) {
   pushHistory('Remove "' + name + '"');
-  S[sec] = S[sec].filter(x => x !== name);
-  S.scenes.forEach(sc => { sc[sec] = sc[sec].filter(x => x !== name); });
+  S[sec] = S[sec].filter(x => x.name !== name);
+  S.scenes.forEach(sc => { sc[sec] = (sc[sec] || []).filter(x => x !== name); });
   S.selections[sec].delete(name);
   renderLibSec(sec); renderCk(sec); renderEditCk(sec); renderBoard(); updateLibClearBtn();
   saveState();
@@ -1036,35 +1083,47 @@ document.addEventListener('click', e => {
   }
 }, true);
 
-function startLibRename(sec, oldName, li) {
-  const nm = li.querySelector('.iname'); if (!nm) return;
-  const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'lib-rename-inp';
-  inp.value = oldName; inp.maxLength = 50;
-  li.replaceChild(inp, nm);
-  inp.focus(); inp.select();
-  let done = false;
-  const finish = () => { if (done) return; done = true; renameLibItem(sec, oldName, inp.value); };
-  inp.addEventListener('blur', finish);
-  inp.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); finish(); }
-    if (e.key === 'Escape') { done = true; renderLibSec(sec); }
-  });
-  inp.addEventListener('mousedown', e => e.stopPropagation());
-  inp.addEventListener('click', e => e.stopPropagation());
-}
+// ── LIBRARY ITEM EDIT MODAL ───────────────────────────────────────────────────
+let libEditSec = null, libEditIdx = null;
 
-function renameLibItem(sec, oldName, newName) {
-  newName = newName.trim();
-  if (!newName || newName === oldName) { renderLibSec(sec); return; }
-  if (S[sec].includes(newName)) { renderLibSec(sec); return; }
-  pushHistory('Rename "' + oldName + '" to "' + newName + '"');
-  const idx = S[sec].indexOf(oldName);
-  if (idx !== -1) S[sec][idx] = newName;
-  S.scenes.forEach(scene => {
-    const i = (scene[sec] || []).indexOf(oldName);
-    if (i !== -1) scene[sec][i] = newName;
-  });
-  if (S.selections[sec].has(oldName)) { S.selections[sec].delete(oldName); S.selections[sec].add(newName); }
+function openLibEditModal(sec, idx) {
+  const item = S[sec][idx]; if (!item) return;
+  libEditSec = sec; libEditIdx = idx;
+  document.getElementById('lib-edit-hdr').textContent = 'Edit ' + (SINGULAR[sec] || 'Item');
+  document.getElementById('lib-edit-name').value  = item.name;
+  document.getElementById('lib-edit-notes').value = item.notes || '';
+  document.getElementById('lib-edit-modal').classList.add('open');
+  setTimeout(() => document.getElementById('lib-edit-name').focus(), 60);
+}
+function closeLibEditModal() {
+  document.getElementById('lib-edit-modal').classList.remove('open');
+  libEditSec = null; libEditIdx = null;
+}
+function saveLibEdit() {
+  if (libEditSec === null || libEditIdx === null) return;
+  const item = S[libEditSec][libEditIdx]; if (!item) return;
+  const sec     = libEditSec;
+  const oldName = item.name;
+  const newName = document.getElementById('lib-edit-name').value.trim();
+  const newNotes = document.getElementById('lib-edit-notes').value.trim();
+  if (!newName) { document.getElementById('lib-edit-name').focus(); return; }
+  if (newName !== oldName && S[sec].some((x, i) => i !== libEditIdx && x.name === newName)) {
+    document.getElementById('lib-edit-name').select(); return;
+  }
+  pushHistory('Edit "' + oldName + '"');
+  item.name  = newName;
+  item.notes = newNotes;
+  if (newName !== oldName) {
+    S.scenes.forEach(scene => {
+      const i = (scene[sec] || []).indexOf(oldName);
+      if (i !== -1) scene[sec][i] = newName;
+    });
+    if (S.selections[sec].has(oldName)) {
+      S.selections[sec].delete(oldName);
+      S.selections[sec].add(newName);
+    }
+  }
+  closeLibEditModal();
   renderLibSec(sec); renderCk(sec); renderEditCk(sec); renderBoard();
   saveState();
 }
@@ -1342,7 +1401,8 @@ function renderLibSec(sec) {
   const list = document.getElementById('il-' + sec); if (!list) return;
   list.innerHTML = '';
   if (!S[sec].length) { list.innerHTML = '<div class="eh">None yet</div>'; return; }
-  S[sec].forEach((name, idx) => {
+  S[sec].forEach((item, idx) => {
+    const name = item.name;
     const isOn = S.selections[sec].has(name);
     const li = document.createElement('div');
     li.className = 'li' + (isOn ? ' on ' + cfg.secCls : '');
@@ -1350,10 +1410,11 @@ function renderLibSec(sec) {
     const dh  = document.createElement('span'); dh.className = 'dh'; dh.textContent = '⠿';
     const dot = document.createElement('span'); dot.className = 'dot ' + cfg.dot;
     const nm   = document.createElement('span');   nm.className   = 'iname'; nm.textContent = name;
-    const edit = document.createElement('button'); edit.className = 'iedit'; edit.title = 'Rename'; edit.textContent = '✎';
+    if (item.notes) { nm.title = item.notes; }
+    const edit = document.createElement('button'); edit.className = 'iedit'; edit.title = 'Edit'; edit.textContent = '✎';
     const del  = document.createElement('button'); del.className  = 'idel';  del.title = 'Remove'; del.textContent = '×';
     edit.addEventListener('mousedown', e => e.stopPropagation());
-    edit.addEventListener('click',     e => { e.stopPropagation(); startLibRename(sec, name, li); });
+    edit.addEventListener('click',     e => { e.stopPropagation(); openLibEditModal(sec, idx); });
     del.addEventListener('mousedown',  e => e.stopPropagation());
     del.addEventListener('click',      e => { e.stopPropagation(); openLibDelModal(sec, name); });
     li.appendChild(dh); li.appendChild(dot); li.appendChild(nm); li.appendChild(edit); li.appendChild(del);
@@ -1376,7 +1437,8 @@ function renderCk(sec) {
     if (btn) btn.textContent = 'No ' + lbl.toLowerCase() + ' selected';
     return;
   }
-  S[sec].forEach(name => {
+  S[sec].forEach(libItem => {
+    const name = libItem.name;
     const item = document.createElement('label'); item.className = 'ck-drop-item';
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = name;
     cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, lbl); });
@@ -1396,7 +1458,8 @@ function renderEditCk(sec, checked=[]) {
     if (btn) btn.textContent = 'No ' + lbl.toLowerCase() + ' selected';
     return;
   }
-  S[sec].forEach(name => {
+  S[sec].forEach(libItem => {
+    const name = libItem.name;
     const item = document.createElement('label'); item.className = 'ck-drop-item';
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = name; cb.checked = checked.includes(name);
     cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, lbl); });
@@ -2085,7 +2148,7 @@ document.addEventListener('mousedown', e => {
   // Stay if clicking within the Scene panel itself
   if (e.target.closest('#cp')) return;
   // Stay if any modal is open
-  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open')) return;
+  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open')) return;
   if (editActive) cancelEdit();
   if (newLive)    cancelNewScene();
 });
@@ -2102,7 +2165,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
     if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); return; }
   }
-  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); closeSecDelModal(); closeSecFilter(); closeReportModal(); closeHelp(); }
+  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); closeSecDelModal(); closeSecFilter(); closeReportModal(); closeLibEditModal(); closeHelp(); }
 });
 // Close filter dropdown on click outside
 document.addEventListener('mousedown', e => {
@@ -2310,15 +2373,18 @@ function buildCharacterReport(secSet) {
     section:  document.getElementById('rpt-ch-section').checked,
     location: document.getElementById('rpt-ch-location').checked,
     summary:  document.getElementById('rpt-ch-summary').checked,
+    notes:    document.getElementById('rpt-ch-notes').checked,
   };
   const scenes = rptFilterScenes(secSet);
   let html = rptPageHeader('Character Report');
   if (!S.characters.length) {
     html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No characters in library.</p>';
   } else {
-    S.characters.forEach(ch => {
+    S.characters.forEach(item => {
+      const ch = item.name;
       const appears = scenes.filter(sc => sc.characters?.includes(ch));
       html += `<h2>${rptEsc(ch)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
+      if (inc.notes && item.notes) html += `<div class="scene-entry-summary" style="margin:-4px 0 8px">${rptEsc(item.notes)}</div>`;
       if (!appears.length) {
         html += `<div class="empty-note">Does not appear in selected scenes</div>`;
       } else {
@@ -2344,15 +2410,18 @@ function buildLocationReport(secSet) {
     section:    document.getElementById('rpt-lo-section').checked,
     characters: document.getElementById('rpt-lo-characters').checked,
     summary:    document.getElementById('rpt-lo-summary').checked,
+    notes:      document.getElementById('rpt-lo-notes').checked,
   };
   const scenes = rptFilterScenes(secSet);
   let html = rptPageHeader('Location Report');
   if (!S.locations.length) {
     html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No locations in library.</p>';
   } else {
-    S.locations.forEach(loc => {
+    S.locations.forEach(item => {
+      const loc = item.name;
       const appears = scenes.filter(sc => sc.locations?.includes(loc));
       html += `<h2>${rptEsc(loc)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
+      if (inc.notes && item.notes) html += `<div class="scene-entry-summary" style="margin:-4px 0 8px">${rptEsc(item.notes)}</div>`;
       if (!appears.length) {
         html += `<div class="empty-note">Not used in selected scenes</div>`;
       } else {
@@ -2378,15 +2447,18 @@ function buildThemeReport(secSet) {
     section:    document.getElementById('rpt-th-section').checked,
     characters: document.getElementById('rpt-th-characters').checked,
     summary:    document.getElementById('rpt-th-summary').checked,
+    notes:      document.getElementById('rpt-th-notes').checked,
   };
   const scenes = rptFilterScenes(secSet);
   let html = rptPageHeader('Theme Report');
   if (!S.themes.length) {
     html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No themes in library.</p>';
   } else {
-    S.themes.forEach(th => {
+    S.themes.forEach(item => {
+      const th = item.name;
       const appears = scenes.filter(sc => sc.themes?.includes(th));
       html += `<h2>${rptEsc(th)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
+      if (inc.notes && item.notes) html += `<div class="scene-entry-summary" style="margin:-4px 0 8px">${rptEsc(item.notes)}</div>`;
       if (!appears.length) {
         html += `<div class="empty-note">Not present in selected scenes</div>`;
       } else {
@@ -2412,6 +2484,7 @@ function buildMiscReport(secSet) {
     section:    document.getElementById('rpt-mi-section').checked,
     characters: document.getElementById('rpt-mi-characters').checked,
     summary:    document.getElementById('rpt-mi-summary').checked,
+    notes:      document.getElementById('rpt-mi-notes').checked,
   };
   const scenes = rptFilterScenes(secSet);
   let html = rptPageHeader('Misc Items Report');
@@ -2419,8 +2492,10 @@ function buildMiscReport(secSet) {
     html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No misc items in library.</p>';
   } else {
     S.misc.forEach(item => {
-      const appears = scenes.filter(sc => sc.misc?.includes(item));
-      html += `<h2>${rptEsc(item)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
+      const name = item.name;
+      const appears = scenes.filter(sc => sc.misc?.includes(name));
+      html += `<h2>${rptEsc(name)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
+      if (inc.notes && item.notes) html += `<div class="scene-entry-summary" style="margin:-4px 0 8px">${rptEsc(item.notes)}</div>`;
       if (!appears.length) {
         html += `<div class="empty-note">Not present in selected scenes</div>`;
       } else {
@@ -2468,14 +2543,14 @@ function buildMatrixReport(secSet) {
     // Scenes as rows, axisItems as columns
     html += `<table><thead><tr><th style="width:200px;max-width:200px">Scene</th>`;
     axisItems.forEach(item => {
-      html += `<th><span class="mx-axis-hdr">${rptEsc(item)}</span></th>`;
+      html += `<th><span class="mx-axis-hdr">${rptEsc(item.name)}</span></th>`;
     });
     html += `</tr></thead><tbody>`;
     scenes.forEach(sc => {
       const secStr = showSec ? ` <span class="mx-scene-sec" style="font-weight:400">· ${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
       html += `<tr><td class="mx-row-hdr" style="width:200px;max-width:200px"><div class="mx-row-wrap"><span class="mx-row-num">${rptSceneNum(sc.id)} —</span><span class="mx-row-title">${rptEsc(sc.title||'(Untitled)')}${secStr}</span></div></td>`;
       axisItems.forEach(item => {
-        html += (sc[axis] || []).includes(item) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
+        html += (sc[axis] || []).includes(item.name) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
       });
       html += `</tr>`;
     });
@@ -2488,9 +2563,9 @@ function buildMatrixReport(secSet) {
     });
     html += `</tr></thead><tbody>`;
     axisItems.forEach(item => {
-      html += `<tr><td class="mx-row-hdr">${rptEsc(item)}</td>`;
+      html += `<tr><td class="mx-row-hdr">${rptEsc(item.name)}</td>`;
       scenes.forEach(sc => {
-        html += (sc[axis] || []).includes(item) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
+        html += (sc[axis] || []).includes(item.name) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
       });
       html += `</tr>`;
     });
