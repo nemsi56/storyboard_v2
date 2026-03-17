@@ -2131,17 +2131,29 @@ function rptBaseCSS() {
     .scene-entry-summary{font-size:11px;color:#888;margin-top:2px;white-space:pre-wrap;line-height:1.5}
     .empty-note{font-size:12px;color:#ccc;font-style:italic;padding-left:10px;margin:4px 0}
     table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
-    thead th{background:#f6f6f6;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;font-size:10px;color:#888;padding:7px 10px;text-align:left;border-bottom:2px solid #eee;border-right:1px solid #e8e8e8}
+    thead th{background:#f6f6f6;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;font-size:10px;color:#888;padding:7px 6px;text-align:left;border-bottom:2px solid #ddd;border-right:1px solid #e0e0e0}
+    thead th:first-child{padding-left:10px}
     thead th:last-child{border-right:none}
-    .mx-scene-hdr{writing-mode:vertical-lr;transform:rotate(180deg);white-space:nowrap;max-height:100px;overflow:hidden;font-size:10px;color:#555;font-weight:600;padding:8px 4px;text-overflow:ellipsis}
+    .mx-scene-hdr{writing-mode:vertical-lr;transform:rotate(180deg);white-space:nowrap;max-height:100px;overflow:hidden;font-size:10px;color:#555;font-weight:600;padding:8px 2px;text-overflow:ellipsis}
     .mx-scene-sec{font-size:9px;color:#bbb;font-weight:400}
-    tbody td{padding:6px 10px;border-bottom:1px solid #f4f4f4;border-right:1px solid #f0f0f0;vertical-align:middle}
+    tbody td{padding:6px 5px;border-bottom:1px solid #ebebeb;border-right:1px solid #ebebeb;vertical-align:middle}
+    tbody td:first-child{padding-left:10px}
     tbody td:last-child{border-right:none}
     tbody tr:last-child td{border-bottom:none}
     tbody tr:hover td{background:#fafafa}
     .mx-dot{text-align:center;color:#3a6bc4;font-size:13px}
     .mx-row-hdr{font-weight:600;color:#333;white-space:nowrap;font-size:12px}
-    @media print{body{padding:20px 24px}.scene-block{break-inside:avoid}h2{break-before:auto}}
+    .mx-row-wrap{display:flex;gap:0;align-items:baseline}
+    .mx-row-num{flex-shrink:0;margin-right:5px;color:#888;font-weight:600}
+    .mx-row-title{white-space:normal;line-height:1.4}
+    @media print{
+      -webkit-print-color-adjust:exact;print-color-adjust:exact;
+      body{padding:20px 24px}
+      .scene-block{break-inside:avoid}
+      h2{break-before:auto}
+      table{border-collapse:collapse}
+      td,th{border-color:#ccc !important}
+    }
   `;
 }
 
@@ -2338,7 +2350,7 @@ function buildMatrixReport(secSet) {
     html += `</tr></thead><tbody>`;
     scenes.forEach(sc => {
       const secStr = showSec ? ` <span class="mx-scene-sec" style="font-weight:400">· ${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
-      html += `<tr><td class="mx-row-hdr" style="width:220px;max-width:220px;white-space:normal">${rptSceneNum(sc.id)} — ${rptEsc(sc.title||'(Untitled)')}${secStr}</td>`;
+      html += `<tr><td class="mx-row-hdr" style="width:220px;max-width:220px"><div class="mx-row-wrap"><span class="mx-row-num">${rptSceneNum(sc.id)} —</span><span class="mx-row-title">${rptEsc(sc.title||'(Untitled)')}${secStr}</span></div></td>`;
       axisItems.forEach(item => {
         html += (sc[axis] || []).includes(item) ? `<td class="mx-dot">●</td>` : `<td></td>`;
       });
