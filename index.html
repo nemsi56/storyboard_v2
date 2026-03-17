@@ -273,6 +273,41 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 #secdel-ok{background:var(--rd);color:var(--ontx)}
 #secdel-ok:hover{opacity:.86}
 
+/* ══ REPORT BUTTON ═════════════════════════════════════════════════════════ */
+#rpt-btn{font-size:11px;font-weight:600;font-family:inherit;padding:4px 10px;border-radius:6px;border:1px solid var(--s1);background:var(--s0);color:var(--sub);cursor:pointer;flex-shrink:0;transition:background .12s,color .12s}
+#rpt-btn:hover{background:var(--s1);color:var(--tx)}
+
+/* ══ REPORT MODAL ══════════════════════════════════════════════════════════ */
+#rpt-modal{position:fixed;inset:0;background:var(--mov);display:none;align-items:center;justify-content:center;z-index:10003}
+#rpt-modal.open{display:flex}
+#rpt-box{background:var(--mbg);border:1px solid var(--s1);border-radius:12px;padding:24px;width:580px;max-width:94vw;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative;max-height:88vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+#rpt-box::-webkit-scrollbar{width:4px}
+#rpt-box::-webkit-scrollbar-thumb{background:var(--s0);border-radius:2px}
+#rpt-hdr{font-size:15px;font-weight:700;color:var(--tx)}
+#rpt-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--o0);font-size:20px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .12s,background .12s;line-height:1}
+#rpt-close:hover{color:var(--tx);background:var(--s0)}
+.rpt-blk{display:flex;flex-direction:column;gap:8px}
+.rpt-blk-hdr{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--sub)}
+.rpt-type-btns{display:flex;gap:6px;flex-wrap:wrap}
+.rpt-type-btn{padding:6px 12px;border-radius:7px;border:1px solid var(--s1);background:var(--s0);color:var(--sub);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .12s}
+.rpt-type-btn.on{background:var(--acc);color:var(--ontx);border-color:var(--acc)}
+.rpt-opts-panel{display:none;flex-direction:column;gap:8px}
+.rpt-opts-panel.on{display:flex}
+.rpt-ck-row{display:flex;flex-wrap:wrap;gap:6px 16px}
+.rpt-ck{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tx);cursor:pointer;user-select:none}
+.rpt-ck input{width:13px;height:13px;cursor:pointer;accent-color:var(--acc)}
+.rpt-secs-grid{display:flex;flex-wrap:wrap;gap:6px 14px}
+.rpt-matrix-sel{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 8px;color:var(--tx);font-size:12px;font-family:inherit;outline:none;transition:border-color .14s}
+.rpt-matrix-sel:focus{border-color:var(--acc)}
+.rpt-matrix-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rpt-matrix-note{font-size:11px;color:var(--sub)}
+.rpt-divider{height:1px;background:var(--s1);flex-shrink:0}
+.rpt-footer{display:flex;justify-content:flex-end;gap:8px}
+#rpt-generate{background:var(--acc);color:var(--ontx);border:none;border-radius:7px;padding:9px 20px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .14s}
+#rpt-generate:hover{opacity:.86}
+#rpt-cancel{background:var(--s0);color:var(--sub);border:1px solid var(--s1);border-radius:7px;padding:9px 20px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .12s}
+#rpt-cancel:hover{background:var(--s1)}
+
 /* ══ SECTION GROUPS ════════════════════════════════════════════════════════ */
 #board.has-secs{flex-direction:row;align-items:stretch;gap:0;flex-wrap:nowrap;padding:0}
 .sec-group{display:flex;flex-direction:column;flex-shrink:0;border-right:2px solid var(--s1);overflow:visible;position:relative}
@@ -506,6 +541,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <button id="sec-filter-btn" class="sec-filter-btn" onclick="toggleSecFilter()">All Sections ▾</button>
         <div id="sec-filter-drop" class="sec-filter-drop"></div>
       </div>
+      <button id="rpt-btn" onclick="openReportModal()" title="Generate a printable report">Report</button>
       <div id="srch-wrap">
         <input type="text" id="srch-inp" placeholder="🔍 Search…" oninput="onSearch()">
         <select id="srch-scope" onchange="onSearch()" title="Search in…">
@@ -580,6 +616,103 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
     <div id="mnum"></div><div id="mtit"></div>
     <div id="msum-section"><div class="m-sec-hdr">Summary</div><div id="msum"></div></div>
     <div id="mnotes-section"><div class="m-sec-hdr">Notes</div><div id="mnotes"></div></div>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div id="rpt-modal">
+  <div id="rpt-box">
+    <button id="rpt-close" onclick="closeReportModal()">×</button>
+    <div id="rpt-hdr">Generate Report</div>
+
+    <div class="rpt-blk">
+      <div class="rpt-blk-hdr">Report Type</div>
+      <div class="rpt-type-btns">
+        <button class="rpt-type-btn on" onclick="switchRptType('scenelist',this)">Scene List</button>
+        <button class="rpt-type-btn"    onclick="switchRptType('character',this)">Character</button>
+        <button class="rpt-type-btn"    onclick="switchRptType('location',this)">Location</button>
+        <button class="rpt-type-btn"    onclick="switchRptType('theme',this)">Theme</button>
+        <button class="rpt-type-btn"    onclick="switchRptType('matrix',this)">Cross-Reference</button>
+      </div>
+    </div>
+
+    <!-- Scene List options -->
+    <div class="rpt-opts-panel on" id="rpt-opts-scenelist">
+      <div class="rpt-blk-hdr">Include Fields</div>
+      <div class="rpt-ck-row">
+        <label class="rpt-ck"><input type="checkbox" id="rpt-sl-section"    checked> Section</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-sl-summary"    checked> Summary</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-sl-notes"      checked> Notes</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-sl-characters" checked> Characters</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-sl-locations"  checked> Locations</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-sl-themes"     checked> Themes</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-sl-misc"       checked> Misc Items</label>
+      </div>
+    </div>
+
+    <!-- Character options -->
+    <div class="rpt-opts-panel" id="rpt-opts-character">
+      <div class="rpt-blk-hdr">Include</div>
+      <div class="rpt-ck-row">
+        <label class="rpt-ck"><input type="checkbox" id="rpt-ch-section"  checked> Section</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-ch-location" checked> Location</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-ch-summary"  checked> Summary</label>
+      </div>
+    </div>
+
+    <!-- Location options -->
+    <div class="rpt-opts-panel" id="rpt-opts-location">
+      <div class="rpt-blk-hdr">Include</div>
+      <div class="rpt-ck-row">
+        <label class="rpt-ck"><input type="checkbox" id="rpt-lo-section"    checked> Section</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-lo-characters" checked> Characters</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-lo-summary"    checked> Summary</label>
+      </div>
+    </div>
+
+    <!-- Theme options -->
+    <div class="rpt-opts-panel" id="rpt-opts-theme">
+      <div class="rpt-blk-hdr">Include</div>
+      <div class="rpt-ck-row">
+        <label class="rpt-ck"><input type="checkbox" id="rpt-th-section"    checked> Section</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-th-characters" checked> Characters</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-th-summary"    checked> Summary</label>
+      </div>
+    </div>
+
+    <!-- Matrix options -->
+    <div class="rpt-opts-panel" id="rpt-opts-matrix">
+      <div class="rpt-blk-hdr">Axis</div>
+      <div class="rpt-matrix-row">
+        <select class="rpt-matrix-sel" id="rpt-mx-axis">
+          <option value="characters">Characters</option>
+          <option value="locations">Locations</option>
+          <option value="themes">Themes</option>
+          <option value="misc">Misc Items</option>
+        </select>
+        <span class="rpt-matrix-note" id="rpt-mx-note">as rows · Scenes as columns</span>
+      </div>
+      <div class="rpt-ck-row">
+        <label class="rpt-ck"><input type="checkbox" id="rpt-mx-flip" onchange="updateMxNote()"> Flip axes (Scenes as rows)</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-mx-section" checked> Show section on scenes</label>
+      </div>
+    </div>
+
+    <div class="rpt-divider"></div>
+
+    <!-- Section filter — shared -->
+    <div class="rpt-blk">
+      <div class="rpt-blk-hdr">Sections to Include</div>
+      <div class="rpt-ck-row">
+        <label class="rpt-ck"><input type="checkbox" id="rpt-sec-all" checked onchange="rptToggleAllSecs(this)"> All sections</label>
+      </div>
+      <div class="rpt-secs-grid" id="rpt-sec-list"></div>
+    </div>
+
+    <div class="rpt-footer">
+      <button id="rpt-cancel"   onclick="closeReportModal()">Cancel</button>
+      <button id="rpt-generate" onclick="generateReport()">Generate Report</button>
+    </div>
   </div>
 </div>
 
@@ -1869,7 +2002,7 @@ document.addEventListener('mousedown', e => {
   // Stay in edit mode if clicking within the Scene panel itself
   if (e.target.closest('#cp')) return;
   // Stay in edit mode if any modal is open (user may be confirming a save, etc.)
-  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open')) return;
+  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open')) return;
   cancelEdit();
 });
 
@@ -1882,7 +2015,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
     if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); return; }
   }
-  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); closeSecDelModal(); closeSecFilter(); }
+  if (e.key === 'Escape') { clearAllSel(); clearCardSel(); cancelEdit(); closeModal(); closeAddPopup(); clearSearch(); closeLibDelModal(); closeSaveCfm(); closeSecDelModal(); closeSecFilter(); closeReportModal(); }
 });
 // Close filter dropdown on click outside
 document.addEventListener('mousedown', e => {
@@ -1894,6 +2027,355 @@ document.addEventListener('mousedown', e => {
 // Card column layout changes when the window is resized; re-measure header widths.
 window.addEventListener('resize', () => { if (S.sections.length) alignSecHeaders(); });
 document.getElementById('sbscrl').addEventListener('scroll', updateSecPins);
+
+// Close report modal on backdrop click
+document.getElementById('rpt-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('rpt-modal')) closeReportModal();
+});
+
+// ── REPORTS ───────────────────────────────────────────────────────────────────
+let rptType = 'scenelist';
+
+function openReportModal() {
+  const secList = document.getElementById('rpt-sec-list');
+  secList.innerHTML = '';
+  S.sections.forEach(sec => {
+    const lbl = document.createElement('label'); lbl.className = 'rpt-ck';
+    const cb  = document.createElement('input'); cb.type = 'checkbox'; cb.value = String(sec.id); cb.checked = true;
+    cb.dataset.rptSec = '1';
+    cb.addEventListener('change', syncRptAllSecs);
+    const sp = document.createElement('span'); sp.textContent = sec.name;
+    lbl.appendChild(cb); lbl.appendChild(sp); secList.appendChild(lbl);
+  });
+  if (S.scenes.some(s => !s.sectionId)) {
+    const lbl = document.createElement('label'); lbl.className = 'rpt-ck';
+    const cb  = document.createElement('input'); cb.type = 'checkbox'; cb.value = '__unassigned__'; cb.checked = true;
+    cb.dataset.rptSec = '1';
+    cb.addEventListener('change', syncRptAllSecs);
+    const sp = document.createElement('span'); sp.textContent = 'Unassigned'; sp.style.fontStyle = 'italic';
+    lbl.appendChild(cb); lbl.appendChild(sp); secList.appendChild(lbl);
+  }
+  document.getElementById('rpt-modal').classList.add('open');
+}
+
+function closeReportModal() { document.getElementById('rpt-modal').classList.remove('open'); }
+
+function switchRptType(type, btn) {
+  rptType = type;
+  document.querySelectorAll('.rpt-type-btn').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  document.querySelectorAll('.rpt-opts-panel').forEach(p => p.classList.remove('on'));
+  const panel = document.getElementById('rpt-opts-' + type);
+  if (panel) panel.classList.add('on');
+}
+
+function rptToggleAllSecs(cb) {
+  document.querySelectorAll('[data-rpt-sec]').forEach(c => { c.checked = cb.checked; });
+}
+function syncRptAllSecs() {
+  const all = [...document.querySelectorAll('[data-rpt-sec]')];
+  document.getElementById('rpt-sec-all').checked = all.every(c => c.checked);
+}
+function rptSelectedSecs() {
+  return new Set([...document.querySelectorAll('[data-rpt-sec]:checked')].map(c => c.value));
+}
+function rptFilterScenes(secSet) {
+  return S.scenes.filter(sc => {
+    const sid = sc.sectionId != null ? String(sc.sectionId) : '__unassigned__';
+    return secSet.has(sid);
+  });
+}
+function rptSecName(sectionId) {
+  if (!sectionId) return 'Unassigned';
+  const sec = S.sections.find(s => s.id === sectionId);
+  return sec ? sec.name : 'Unassigned';
+}
+function rptSceneNum(id) {
+  const idx = S.scenes.findIndex(s => s.id === id);
+  return idx >= 0 ? idx + 1 : '?';
+}
+
+// ── REPORT BUILDERS ───────────────────────────────────────────────────────────
+function generateReport() {
+  const secSet = rptSelectedSecs();
+  let html = '';
+  if (rptType === 'scenelist') html = buildSceneListReport(secSet);
+  if (rptType === 'character') html = buildCharacterReport(secSet);
+  if (rptType === 'location')  html = buildLocationReport(secSet);
+  if (rptType === 'theme')     html = buildThemeReport(secSet);
+  if (rptType === 'matrix')    html = buildMatrixReport(secSet);
+  openReportWindow(html);
+}
+
+function rptBaseCSS() {
+  return `
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#222;background:#fff;padding:24px 28px;max-width:700px;margin:0 auto}
+    h1{font-size:20px;font-weight:800;margin-bottom:4px;color:#111}
+    .rpt-meta{font-size:11px;color:#666;margin-bottom:18px;border-bottom:1px solid #ddd;padding-bottom:10px}
+    h2{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#555;margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid #ddd}
+    .scene-block{padding:8px 0;border-bottom:1px solid #ccc;break-inside:avoid}
+    .scene-block:last-child{border-bottom:none}
+    .scene-num{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#999;margin-bottom:1px}
+    .scene-title{font-size:13px;font-weight:700;color:#111;margin-bottom:4px;white-space:pre-wrap;line-height:1.35}
+    .field-row{display:flex;gap:6px;margin-top:3px;align-items:baseline}
+    .field-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#888;flex-shrink:0;min-width:72px}
+    .field-val{font-size:11px;color:#444;line-height:1.5;white-space:pre-wrap}
+    .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:10px;margin:1px 2px 1px 0;font-weight:600}
+    .tag-c{background:#dce8fb;color:#2a5bb4}
+    .tag-l{background:#d5eede;color:#1e6b3f}
+    .tag-t{background:#e8dff7;color:#5a2f90}
+    .tag-m{background:#fdecd5;color:#8f5520}
+    .scene-entry{margin:3px 0;padding:4px 8px;border-left:2px solid #ccc}
+    .scene-entry-title{font-weight:600;color:#222;font-size:11px}
+    .scene-entry-meta{color:#666;font-size:11px}
+    .scene-entry-summary{font-size:11px;color:#555;margin-top:2px;white-space:pre-wrap;line-height:1.45}
+    .empty-note{font-size:11px;color:#999;font-style:italic;padding-left:8px;margin:3px 0}
+    table{border-collapse:collapse;font-size:11px;margin-top:6px}
+    thead th{background:#f0f0f0;font-weight:700;font-size:10px;color:#555;padding:5px 6px;text-align:center;border:1px solid #ccc;border-bottom-width:2px;vertical-align:bottom}
+    thead th:first-child{text-align:left;padding-left:8px}
+    .mx-scene-num{white-space:nowrap;display:block;font-weight:600;font-size:10px;color:#444;line-height:1.4}
+    .mx-axis-hdr{font-size:10px;color:#444;font-weight:700;white-space:nowrap;line-height:1.3;display:block;letter-spacing:0.04em}
+    .mx-scene-sec{font-size:9px;color:#777;font-weight:400}
+    tbody td{padding:5px 4px;border:1px solid #ccc;vertical-align:middle}
+    tbody td:first-child{padding-left:8px}
+    .mx-cell{padding:4px 2px;text-align:center}
+    tbody tr:hover td{background:#fafafa}
+    .mx-dot{color:#3a6bc4;font-size:12px}
+    .mx-row-hdr{font-weight:600;color:#333;white-space:nowrap;font-size:11px}
+    .mx-row-wrap{display:flex;gap:0;align-items:baseline}
+    .mx-row-num{flex-shrink:0;margin-right:4px;color:#666;font-weight:600}
+    .mx-row-title{white-space:normal;line-height:1.4}
+    @media print{
+      *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+      body{padding:14px 18px;max-width:none}
+      .scene-block{break-inside:avoid}
+      h2{break-before:auto}
+      table{border-collapse:collapse}
+      td,th{border:1px solid #ccc !important}
+      thead th{border-bottom-width:2px !important}
+    }
+  `;
+}
+
+function openReportWindow(html) {
+  const w = window.open('', '_blank');
+  if (!w) { alert('Pop-up blocked — please allow pop-ups for this page and try again.'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
+function rptPageHeader(title) {
+  const d = new Date().toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+  const total = S.scenes.length;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${rptEsc(title)}</title><style>${rptBaseCSS()}</style></head><body>`
+       + `<h1>${rptEsc(title)}</h1>`
+       + `<div class="rpt-meta">Generated ${d} &nbsp;·&nbsp; ${total} scene${total!==1?'s':''} total</div>`;
+}
+
+function rptEsc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function rptFieldRow(label, val) {
+  return `<div class="field-row"><span class="field-lbl">${label}</span><span class="field-val">${val}</span></div>`;
+}
+function rptTagsHtml(arr, cls) {
+  return arr.map(t => `<span class="tag ${cls}">${rptEsc(t)}</span>`).join('');
+}
+
+// Scene List
+function buildSceneListReport(secSet) {
+  const inc = {
+    section:    document.getElementById('rpt-sl-section').checked,
+    summary:    document.getElementById('rpt-sl-summary').checked,
+    notes:      document.getElementById('rpt-sl-notes').checked,
+    characters: document.getElementById('rpt-sl-characters').checked,
+    locations:  document.getElementById('rpt-sl-locations').checked,
+    themes:     document.getElementById('rpt-sl-themes').checked,
+    misc:       document.getElementById('rpt-sl-misc').checked,
+  };
+  const scenes = rptFilterScenes(secSet);
+  let html = rptPageHeader('Scene List');
+  if (!scenes.length) {
+    html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No scenes match the selected sections.</p>';
+  } else {
+    scenes.forEach(sc => {
+      html += `<div class="scene-block">`;
+      html += `<div class="scene-num">Scene ${rptSceneNum(sc.id)}</div>`;
+      html += `<div class="scene-title">${rptEsc(sc.title || '(Untitled)')}</div>`;
+      if (inc.section)                       html += rptFieldRow('Section',    rptEsc(rptSecName(sc.sectionId)));
+      if (inc.summary    && sc.summary)      html += rptFieldRow('Summary',    rptEsc(sc.summary));
+      if (inc.notes      && sc.notes)        html += rptFieldRow('Notes',      rptEsc(sc.notes));
+      if (inc.characters && sc.characters?.length) html += rptFieldRow('Characters', rptTagsHtml(sc.characters, 'tag-c'));
+      if (inc.locations  && sc.locations?.length)  html += rptFieldRow('Locations',  rptTagsHtml(sc.locations,  'tag-l'));
+      if (inc.themes     && sc.themes?.length)     html += rptFieldRow('Themes',      rptTagsHtml(sc.themes,     'tag-t'));
+      if (inc.misc       && sc.misc?.length)       html += rptFieldRow('Misc Items',  rptTagsHtml(sc.misc,       'tag-m'));
+      html += `</div>`;
+    });
+  }
+  return html + '</body></html>';
+}
+
+// Character Report
+function buildCharacterReport(secSet) {
+  const inc = {
+    section:  document.getElementById('rpt-ch-section').checked,
+    location: document.getElementById('rpt-ch-location').checked,
+    summary:  document.getElementById('rpt-ch-summary').checked,
+  };
+  const scenes = rptFilterScenes(secSet);
+  let html = rptPageHeader('Character Report');
+  if (!S.characters.length) {
+    html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No characters in library.</p>';
+  } else {
+    S.characters.forEach(ch => {
+      const appears = scenes.filter(sc => sc.characters?.includes(ch));
+      html += `<h2>${rptEsc(ch)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
+      if (!appears.length) {
+        html += `<div class="empty-note">Does not appear in selected scenes</div>`;
+      } else {
+        appears.forEach(sc => {
+          const meta = [];
+          if (inc.section) meta.push(rptEsc(rptSecName(sc.sectionId)));
+          if (inc.location && sc.locations?.length) meta.push(sc.locations.map(rptEsc).join(', '));
+          html += `<div class="scene-entry">`;
+          html += `<span class="scene-entry-title">Scene ${rptSceneNum(sc.id)} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
+          if (meta.length) html += ` <span class="scene-entry-meta">· ${meta.join(' · ')}</span>`;
+          if (inc.summary && sc.summary) html += `<div class="scene-entry-summary">${rptEsc(sc.summary)}</div>`;
+          html += `</div>`;
+        });
+      }
+    });
+  }
+  return html + '</body></html>';
+}
+
+// Location Report
+function buildLocationReport(secSet) {
+  const inc = {
+    section:    document.getElementById('rpt-lo-section').checked,
+    characters: document.getElementById('rpt-lo-characters').checked,
+    summary:    document.getElementById('rpt-lo-summary').checked,
+  };
+  const scenes = rptFilterScenes(secSet);
+  let html = rptPageHeader('Location Report');
+  if (!S.locations.length) {
+    html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No locations in library.</p>';
+  } else {
+    S.locations.forEach(loc => {
+      const appears = scenes.filter(sc => sc.locations?.includes(loc));
+      html += `<h2>${rptEsc(loc)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
+      if (!appears.length) {
+        html += `<div class="empty-note">Not used in selected scenes</div>`;
+      } else {
+        appears.forEach(sc => {
+          const meta = [];
+          if (inc.section)    meta.push(rptEsc(rptSecName(sc.sectionId)));
+          if (inc.characters && sc.characters?.length) meta.push(sc.characters.map(rptEsc).join(', '));
+          html += `<div class="scene-entry">`;
+          html += `<span class="scene-entry-title">Scene ${rptSceneNum(sc.id)} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
+          if (meta.length) html += ` <span class="scene-entry-meta">· ${meta.join(' · ')}</span>`;
+          if (inc.summary && sc.summary) html += `<div class="scene-entry-summary">${rptEsc(sc.summary)}</div>`;
+          html += `</div>`;
+        });
+      }
+    });
+  }
+  return html + '</body></html>';
+}
+
+// Theme Report
+function buildThemeReport(secSet) {
+  const inc = {
+    section:    document.getElementById('rpt-th-section').checked,
+    characters: document.getElementById('rpt-th-characters').checked,
+    summary:    document.getElementById('rpt-th-summary').checked,
+  };
+  const scenes = rptFilterScenes(secSet);
+  let html = rptPageHeader('Theme Report');
+  if (!S.themes.length) {
+    html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No themes in library.</p>';
+  } else {
+    S.themes.forEach(th => {
+      const appears = scenes.filter(sc => sc.themes?.includes(th));
+      html += `<h2>${rptEsc(th)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
+      if (!appears.length) {
+        html += `<div class="empty-note">Not present in selected scenes</div>`;
+      } else {
+        appears.forEach(sc => {
+          const meta = [];
+          if (inc.section)    meta.push(rptEsc(rptSecName(sc.sectionId)));
+          if (inc.characters && sc.characters?.length) meta.push(sc.characters.map(rptEsc).join(', '));
+          html += `<div class="scene-entry">`;
+          html += `<span class="scene-entry-title">Scene ${rptSceneNum(sc.id)} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
+          if (meta.length) html += ` <span class="scene-entry-meta">· ${meta.join(' · ')}</span>`;
+          if (inc.summary && sc.summary) html += `<div class="scene-entry-summary">${rptEsc(sc.summary)}</div>`;
+          html += `</div>`;
+        });
+      }
+    });
+  }
+  return html + '</body></html>';
+}
+
+// Cross-Reference Matrix
+function updateMxNote() {
+  const flip = document.getElementById('rpt-mx-flip').checked;
+  const note = document.getElementById('rpt-mx-note');
+  if (note) note.textContent = flip ? 'as columns · Scenes as rows' : 'as rows · Scenes as columns';
+}
+
+function buildMatrixReport(secSet) {
+  const axis      = document.getElementById('rpt-mx-axis').value;
+  const showSec   = document.getElementById('rpt-mx-section').checked;
+  const flip      = document.getElementById('rpt-mx-flip').checked;
+  const scenes    = rptFilterScenes(secSet);
+  const axisItems = S[axis] || [];
+  const axisLabel = SECS.find(s => s.key === axis)?.label || axis;
+  const title     = flip ? `Cross-Reference: Scenes × ${axisLabel}` : `Cross-Reference: ${axisLabel} × Scenes`;
+  let html = rptPageHeader(title);
+  if (!axisItems.length) {
+    html += `<p style="color:#aaa;margin-top:20px;font-style:italic">No ${axisLabel.toLowerCase()} in library.</p>`;
+    return html + '</body></html>';
+  }
+  if (!scenes.length) {
+    html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No scenes match the selected sections.</p>';
+    return html + '</body></html>';
+  }
+  if (flip) {
+    // Scenes as rows, axisItems as columns
+    html += `<table><thead><tr><th style="width:200px;max-width:200px">Scene</th>`;
+    axisItems.forEach(item => {
+      html += `<th><span class="mx-axis-hdr">${rptEsc(item)}</span></th>`;
+    });
+    html += `</tr></thead><tbody>`;
+    scenes.forEach(sc => {
+      const secStr = showSec ? ` <span class="mx-scene-sec" style="font-weight:400">· ${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
+      html += `<tr><td class="mx-row-hdr" style="width:200px;max-width:200px"><div class="mx-row-wrap"><span class="mx-row-num">${rptSceneNum(sc.id)} —</span><span class="mx-row-title">${rptEsc(sc.title||'(Untitled)')}${secStr}</span></div></td>`;
+      axisItems.forEach(item => {
+        html += (sc[axis] || []).includes(item) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
+      });
+      html += `</tr>`;
+    });
+  } else {
+    // axisItems as rows, Scenes as columns
+    html += `<table><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
+    scenes.forEach(sc => {
+      const secStr = showSec ? `<span class="mx-scene-sec" style="display:block;white-space:nowrap">${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
+      html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">Sc ${rptSceneNum(sc.id)}</span>${secStr}</th>`;
+    });
+    html += `</tr></thead><tbody>`;
+    axisItems.forEach(item => {
+      html += `<tr><td class="mx-row-hdr">${rptEsc(item)}</td>`;
+      scenes.forEach(sc => {
+        html += (sc[axis] || []).includes(item) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
+      });
+      html += `</tr>`;
+    });
+  }
+  html += `</tbody></table>`;
+  return html + '</body></html>';
+}
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 loadState();
