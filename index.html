@@ -102,19 +102,21 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .eh{font-size:11px;color:var(--o0);font-style:italic;padding:2px 0}
 
 /* ══ PANEL RESIZE HANDLE ═══════════════════════════════════════════════════ */
-#cp-resize,#sp-resize{width:7px;flex-shrink:0;cursor:col-resize;background:var(--s0);border-left:1px solid var(--bdr);border-right:1px solid var(--bdr);transition:background .15s,border-color .15s;position:relative;z-index:5}
-#cp-resize:hover,#cp-resize.dragging,#sp-resize:hover,#sp-resize.dragging{background:var(--acc);border-color:var(--acc)}
+#cp-resize,#sp-resize,#lp-resize{width:7px;flex-shrink:0;cursor:col-resize;background:var(--s0);border-left:1px solid var(--bdr);border-right:1px solid var(--bdr);transition:background .15s,border-color .15s;position:relative;z-index:5}
+#cp-resize:hover,#cp-resize.dragging,#sp-resize:hover,#sp-resize.dragging,#lp-resize:hover,#lp-resize.dragging{background:var(--acc);border-color:var(--acc)}
 #cp.collapsed + #cp-resize{display:none}
 #sp.collapsed + #sp-resize{display:none}
+#lp.collapsed + #lp-resize{display:none}
 /* Grip indicator */
-#cp-resize::after,#sp-resize::after{content:'⠿';position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:var(--o1);opacity:.75;pointer-events:none;transition:opacity .15s,color .15s;line-height:1}
-#cp-resize:hover::after,#cp-resize.dragging::after,#sp-resize:hover::after,#sp-resize.dragging::after{opacity:1;color:var(--ontx)}
+#cp-resize::after,#sp-resize::after,#lp-resize::after{content:'⠿';position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:var(--o1);opacity:.75;pointer-events:none;transition:opacity .15s,color .15s;line-height:1}
+#cp-resize:hover::after,#cp-resize.dragging::after,#sp-resize:hover::after,#sp-resize.dragging::after,#lp-resize:hover::after,#lp-resize.dragging::after{opacity:1;color:var(--ontx)}
 
 /* ══ CENTER PANEL ══════════════════════════════════════════════════════════ */
 #cp{width:258px;background:var(--bg2);border-right:none}
 .tabs{display:flex;align-items:flex-end;background:var(--bg0);border-bottom:2px solid var(--bdr);flex-shrink:0;padding:6px 8px 0;gap:4px}
 .tab{flex:1;padding:9px 0 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:var(--s0);border:1.5px solid var(--bdr);border-bottom:none;border-radius:7px 7px 0 0;color:var(--o1);cursor:pointer;transition:color .14s,background .14s,border-color .14s;font-family:inherit;position:relative;bottom:-2px}
-.tab.on{background:var(--bg2);color:var(--acc);border-color:var(--bdr);border-bottom:2px solid var(--bg2);z-index:1}
+.tab.on{background:var(--bg2);color:var(--acc);border-color:var(--acc);border-top:3px solid var(--acc);border-bottom:2px solid var(--bg2);z-index:1;font-weight:800}
+.tab.on.live{background:var(--acc);color:var(--ontx);border-color:var(--acc2);border-top-color:var(--acc2);border-bottom-color:var(--acc)}
 .tab.dim{color:var(--o0)!important;cursor:default;pointer-events:none;opacity:.45}
 .tab:not(.on):not(.dim):hover{background:var(--s1);color:var(--sub)}
 .tab-cbtn{background:none!important;border:none!important;border-left:1px solid var(--bdr)!important;border-radius:0!important;padding:0 10px!important;font-size:12px!important;align-self:stretch;flex-shrink:0;margin-bottom:-2px}
@@ -366,6 +368,9 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .sec-li-del{background:none;border:none;color:var(--o0);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;opacity:0;transition:opacity .1s,color .1s;flex-shrink:0}
 .sec-li:hover .sec-li-del{opacity:1}
 .sec-li-del:hover{color:var(--rd)!important}
+.sec-li-goto{background:none;border:none;color:var(--o0);cursor:pointer;font-size:11px;padding:1px 4px;line-height:1;opacity:0;transition:opacity .1s,color .1s,background .1s;flex-shrink:0;border-radius:3px;font-family:inherit}
+.sec-li:hover .sec-li-goto{opacity:1}
+.sec-li-goto:hover{color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,transparent)}
 .sec-li-name-dim{color:var(--sub);font-style:italic;cursor:default}
 .sec-li.dib{border-top:2px solid var(--acc)!important}
 .sec-li.dia{border-bottom:2px solid var(--acc)!important}
@@ -460,6 +465,8 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
       </div>
     </div>
   </div>
+
+  <div id="lp-resize" title="Drag to resize Library panel"></div>
 
   <!-- CENTER PANEL -->
   <!-- SECTIONS PANEL -->
@@ -650,6 +657,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <button class="rpt-type-btn"    onclick="switchRptType('character',this)">Character</button>
         <button class="rpt-type-btn"    onclick="switchRptType('location',this)">Location</button>
         <button class="rpt-type-btn"    onclick="switchRptType('theme',this)">Theme</button>
+        <button class="rpt-type-btn"    onclick="switchRptType('misc',this)">Misc Items</button>
         <button class="rpt-type-btn"    onclick="switchRptType('matrix',this)">Cross-Reference</button>
       </div>
     </div>
@@ -695,6 +703,16 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <label class="rpt-ck"><input type="checkbox" id="rpt-th-section"    checked> Section</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-th-characters" checked> Characters</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-th-summary"    checked> Summary</label>
+      </div>
+    </div>
+
+    <!-- Misc Items options -->
+    <div class="rpt-opts-panel" id="rpt-opts-misc">
+      <div class="rpt-blk-hdr">Include</div>
+      <div class="rpt-ck-row">
+        <label class="rpt-ck"><input type="checkbox" id="rpt-mi-section"    checked> Section</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-mi-characters" checked> Characters</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-mi-summary"    checked> Summary</label>
       </div>
     </div>
 
@@ -1114,6 +1132,7 @@ function addInsertZone(container, afterSceneId, sectionId) {
     }
     if (document.getElementById('cp').classList.contains('collapsed')) togglePanel('cp');
     switchTab('new');
+    setNewSceneLive(true);
     setTimeout(() => document.getElementById('sc-title').focus(), 40);
   });
   container.appendChild(zone);
@@ -1155,6 +1174,7 @@ function addScene() {
   titleEl.value = ''; document.getElementById('sc-summary').value = ''; document.getElementById('sc-notes').value = '';
   document.querySelectorAll('#form-new .ck-drop-list input').forEach(c => { c.checked = false; });
   SECS.forEach(({ key, label }) => { const w = document.getElementById('ck-' + key + '-wrap'); if (w) updateCkDropLabel(w, label); });
+  setNewSceneLive(false);
   renderBoard();
   saveState();
 }
@@ -1170,6 +1190,7 @@ function cancelNewScene() {
   const secSel = document.getElementById('sc-section');
   if (secSel) secSel.value = '';
   document.getElementById('scerr').textContent = '';
+  setNewSceneLive(false);
 }
 
 function deleteScene(id) {
@@ -1244,6 +1265,19 @@ function confirmSaveEdit() {
   saveState();
 }
 function closeSaveCfm() { document.getElementById('savecfm-modal').classList.remove('open'); }
+function setNewSceneLive(on) {
+  document.getElementById('tab-new').classList.toggle('live', on);
+}
+function checkNewSceneLive() {
+  const hasContent = !!(
+    document.getElementById('sc-title').value.trim() ||
+    document.getElementById('sc-summary').value.trim() ||
+    document.getElementById('sc-notes').value.trim() ||
+    document.querySelectorAll('#form-new .ck-drop-list input:checked').length
+  );
+  setNewSceneLive(hasContent);
+}
+
 function switchTab(t) {
   document.getElementById('tab-new').classList.toggle('on', t === 'new');
   document.getElementById('tab-edit').classList.toggle('on', t === 'edit');
@@ -1749,7 +1783,9 @@ function renderSecPanel() {
     const li = document.createElement('div'); li.className = 'sec-li sec-li-unassigned';
     const nameEl = document.createElement('span'); nameEl.className = 'sec-li-name sec-li-name-dim'; nameEl.textContent = 'Unassigned';
     const cntEl = document.createElement('span'); cntEl.className = 'sec-li-cnt'; cntEl.textContent = unassignedCnt + ' scene' + (unassignedCnt !== 1 ? 's' : '');
-    li.appendChild(nameEl); li.appendChild(cntEl);
+    const gotoU = document.createElement('button'); gotoU.className = 'sec-li-goto'; gotoU.textContent = '→'; gotoU.title = 'Scroll to on board';
+    gotoU.addEventListener('click', () => scrollToSection(0));
+    li.appendChild(nameEl); li.appendChild(cntEl); li.appendChild(gotoU);
     list.appendChild(li);
   }
   if (!S.sections.length) {
@@ -1776,9 +1812,22 @@ function renderSecPanel() {
     const del = document.createElement('button'); del.className = 'sec-li-del'; del.textContent = '×'; del.title = 'Delete';
     del.addEventListener('mousedown', e => e.stopPropagation());
     del.addEventListener('click', e => { e.stopPropagation(); deleteSection(sec.id); });
-    li.appendChild(dh); li.appendChild(colorPick); li.appendChild(nameEl); li.appendChild(cntEl); li.appendChild(del);
+    const goto = document.createElement('button'); goto.className = 'sec-li-goto'; goto.textContent = '→'; goto.title = 'Scroll to on board';
+    goto.addEventListener('mousedown', e => e.stopPropagation());
+    goto.addEventListener('click', e => { e.stopPropagation(); scrollToSection(sec.id); });
+    li.appendChild(dh); li.appendChild(colorPick); li.appendChild(nameEl); li.appendChild(cntEl); li.appendChild(goto); li.appendChild(del);
     list.appendChild(li);
   });
+}
+
+function scrollToSection(secId) {
+  const target = document.querySelector(`.sec-group[data-sec-id="${secId}"]`);
+  if (!target) return;
+  const scrl = document.getElementById('sbscrl');
+  if (!scrl) return;
+  const containerRect = scrl.getBoundingClientRect();
+  const targetRect    = target.getBoundingClientRect();
+  scrl.scrollTo({ left: scrl.scrollLeft + (targetRect.left - containerRect.left) - 10, behavior: 'smooth' });
 }
 
 function startSecRename(li, id) {
@@ -1966,6 +2015,15 @@ function endLibDrag() {
   ld.on = false; ld.sec = null; ld.fromIdx = null; ld.dropIdx = null;
 }
 
+// ── LIBRARY PANEL RESIZE ───────────────────────────────────────────────────────
+const lpDr = { on:false, startX:0, startW:0 };
+document.getElementById('lp-resize').addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  lpDr.on = true; lpDr.startX = e.clientX; lpDr.startW = document.getElementById('lp').offsetWidth;
+  document.getElementById('lp-resize').classList.add('dragging');
+  e.preventDefault(); e.stopPropagation();
+});
+
 // ── CENTER PANEL RESIZE ────────────────────────────────────────────────────────
 const cpDr = { on:false, startX:0, startW:0 };
 document.getElementById('cp-resize').addEventListener('mousedown', e => {
@@ -1994,6 +2052,10 @@ document.addEventListener('mousemove', e => {
   }
   if (ld.on)  moveLibDrag(e);
   if (sld.on) moveSecListDrag(e);
+  if (lpDr.on) {
+    const newW = Math.max(140, Math.min(480, lpDr.startW + (e.clientX - lpDr.startX)));
+    document.getElementById('lp').style.width = newW + 'px';
+  }
   if (cpDr.on) {
     const newW = Math.max(180, Math.min(520, cpDr.startW + (e.clientX - cpDr.startX)));
     document.getElementById('cp').style.width = newW + 'px';
@@ -2010,22 +2072,29 @@ document.addEventListener('mouseup', e => {
   }
   if (ld.on)  endLibDrag();
   if (sld.on) endSecListDrag();
+  if (lpDr.on) { lpDr.on = false; document.getElementById('lp-resize').classList.remove('dragging'); }
   if (cpDr.on) { cpDr.on = false; document.getElementById('cp-resize').classList.remove('dragging'); }
   if (spDr.on) { spDr.on = false; document.getElementById('sp-resize').classList.remove('dragging'); }
 });
 
-// ── CANCEL EDIT ON CLICK OUTSIDE SCENE PANEL ──────────────────────────────────
+// ── CANCEL ON CLICK OUTSIDE SCENE PANEL ───────────────────────────────────────
 document.addEventListener('mousedown', e => {
-  if (S.editingId === null) return;
-  // Stay in edit mode if clicking within the Scene panel itself
+  const editActive = S.editingId !== null;
+  const newLive    = document.getElementById('tab-new').classList.contains('live');
+  if (!editActive && !newLive) return;
+  // Stay if clicking within the Scene panel itself
   if (e.target.closest('#cp')) return;
-  // Stay in edit mode if any modal is open (user may be confirming a save, etc.)
+  // Stay if any modal is open
   if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open')) return;
-  cancelEdit();
+  if (editActive) cancelEdit();
+  if (newLive)    cancelNewScene();
 });
 
 // ── KEYBOARD ──────────────────────────────────────────────────────────────────
 document.getElementById('sc-title').addEventListener('keydown', e => { if (e.key === 'Enter') { e.stopPropagation(); } });
+// Live indicator: light up New Scene tab whenever the form has content
+document.getElementById('form-new').addEventListener('input', checkNewSceneLive);
+document.getElementById('form-new').addEventListener('change', checkNewSceneLive);
 document.getElementById('ed-title').addEventListener('keydown', e => { if (e.key === 'Enter') { e.stopPropagation(); } });
 document.addEventListener('keydown', e => {
   const inInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
@@ -2121,6 +2190,7 @@ function generateReport() {
   if (rptType === 'character') html = buildCharacterReport(secSet);
   if (rptType === 'location')  html = buildLocationReport(secSet);
   if (rptType === 'theme')     html = buildThemeReport(secSet);
+  if (rptType === 'misc')      html = buildMiscReport(secSet);
   if (rptType === 'matrix')    html = buildMatrixReport(secSet);
   openReportWindow(html);
 }
@@ -2336,6 +2406,40 @@ function buildThemeReport(secSet) {
   return html + '</body></html>';
 }
 
+// Misc Items Report
+function buildMiscReport(secSet) {
+  const inc = {
+    section:    document.getElementById('rpt-mi-section').checked,
+    characters: document.getElementById('rpt-mi-characters').checked,
+    summary:    document.getElementById('rpt-mi-summary').checked,
+  };
+  const scenes = rptFilterScenes(secSet);
+  let html = rptPageHeader('Misc Items Report');
+  if (!S.misc.length) {
+    html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No misc items in library.</p>';
+  } else {
+    S.misc.forEach(item => {
+      const appears = scenes.filter(sc => sc.misc?.includes(item));
+      html += `<h2>${rptEsc(item)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
+      if (!appears.length) {
+        html += `<div class="empty-note">Not present in selected scenes</div>`;
+      } else {
+        appears.forEach(sc => {
+          const meta = [];
+          if (inc.section)    meta.push(rptEsc(rptSecName(sc.sectionId)));
+          if (inc.characters && sc.characters?.length) meta.push(sc.characters.map(rptEsc).join(', '));
+          html += `<div class="scene-entry">`;
+          html += `<span class="scene-entry-title">Scene ${rptSceneNum(sc.id)} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
+          if (meta.length) html += ` <span class="scene-entry-meta">· ${meta.join(' · ')}</span>`;
+          if (inc.summary && sc.summary) html += `<div class="scene-entry-summary">${rptEsc(sc.summary)}</div>`;
+          html += `</div>`;
+        });
+      }
+    });
+  }
+  return html + '</body></html>';
+}
+
 // Cross-Reference Matrix
 function updateMxNote() {
   const flip = document.getElementById('rpt-mx-flip').checked;
@@ -2400,7 +2504,7 @@ const HELP_ZONES = [
   { sel: '#undo-btn',        tip: 'Undo — reverses the last change (up to 10 steps). Shortcut: Ctrl+Z / ⌘Z.' },
   { sel: '#redo-btn',        tip: 'Redo — restores a previously undone change. Shortcut: Ctrl+Y / ⌘⇧Z.' },
   { sel: '#theme-wrap',      tip: 'Theme — switch the app\'s color scheme between Ivory, Slate, Studio, Ocean, and Sunset.' },
-  { sel: '#lp .p-hdr',      tip: 'Library panel — stores characters, locations, themes, and misc items. Click + to add an item. Click any item to highlight matching scenes on the board. Hover an item to shuffle, edit, or delete it. Use ◀ to hide the panel.' },
+  { sel: '#lp .p-hdr',      tip: 'Library panel — stores characters, locations, themes, and misc items. Click + to add an item. Click any item to highlight matching scenes on the board. Hover an item to shuffle, edit, or delete it. Use ◀ to hide the panel or drag the right edge to resize it.' },
   { sel: '#ao-global-wrap',  tip: 'Highlight mode — OR highlights scenes containing any selected item; AND highlights only scenes that contain all selected items simultaneously.' },
   { sel: '#lib-clr-wrap',    tip: 'Clear Highlights — removes all active library selections and unhighlights the board.' },
   { sel: '#sp .p-hdr',      tip: 'Sections panel — organize scenes into named sections such as acts, chapters, or sequences. Use ◀ or drag the panel edge to hide or resize.' },
