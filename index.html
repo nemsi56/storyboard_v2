@@ -157,6 +157,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .ck-drop-empty{font-size:11px;color:var(--sub);padding:6px 7px;font-style:italic}
 #msum-section,#mnotes-section{margin-top:12px}
 .m-sec-hdr{font-size:11px;font-weight:700;text-decoration:underline;text-transform:uppercase;color:var(--sub);margin-bottom:5px;letter-spacing:0.06em}
+#mnotes{font-size:13px;color:var(--sub);line-height:1.7;white-space:pre-wrap}
 .errmsg{font-size:11px;color:var(--rd);margin-top:5px;min-height:14px}
 
 /* ══ STORYBOARD PANEL ══════════════════════════════════════════════════════ */
@@ -398,7 +399,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         </div>
       </div>
       <div class="p-body" id="lp-body">
-        <p class="lib-hint"><em>Add, Edit, or Highlight elements below</em></p>
+        <p class="lib-hint"><em>Add, Edit, or Highlight items below</em></p>
         <!-- Global AND/OR toggle -->
         <div id="ao-global-wrap">
           <span class="ao-lbl">Highlight:</span>
@@ -445,6 +446,49 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   </div>
   <div id="sp-resize" title="Drag to resize Sections panel"></div>
 
+  <div class="panel" id="cp">
+    <div class="p-strip" onclick="togglePanel('cp')">
+      <span class="sl">Scene</span><span>▶</span>
+    </div>
+    <div class="p-content">
+      <div class="tabs">
+        <button class="tab on"  id="tab-new"  onclick="switchTab('new')">New Scene</button>
+        <button class="tab dim" id="tab-edit" onclick="switchTab('edit')" disabled>Edit Scene</button>
+        <button class="cbtn tab-cbtn" onclick="togglePanel('cp')" title="Collapse">◀</button>
+      </div>
+      <!-- New Scene form -->
+      <div id="form-new" class="p-body">
+        <div class="form-btns"><button id="new-cancel" onclick="cancelNewScene()">Cancel</button><button id="asb" onclick="addScene()">Save</button></div>
+        <div class="errmsg" id="scerr"></div>
+        <div class="ff"><label>Title</label><textarea id="sc-title" class="ta-title" rows="2" placeholder="Enter scene title…" maxlength="120"></textarea></div>
+        <div class="ff"><label>Summary</label><textarea id="sc-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+        <div class="ff" id="sc-sec-wrap" style="display:none"><label>Section</label><select id="sc-section" class="ff-sel"><option value="">Unassigned</option></select></div>
+        <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ck-characters-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-characters-wrap','characters')">No characters selected</button><div class="ck-drop-list" id="ck-characters"></div></div></div>
+        <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ck-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ck-locations"></div></div></div>
+        <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ck-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ck-themes"></div></div></div>
+        <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ck-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ck-misc"></div></div></div>
+        <div class="ff"><label>Notes</label><textarea id="sc-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+      </div>
+      <!-- Edit Scene form -->
+      <div id="form-edit" class="p-body" style="display:none">
+        <div class="form-btns">
+          <button id="canceledit" onclick="cancelEdit()">Cancel</button>
+          <button id="saveedit"   onclick="saveEdit()">Save Changes</button>
+        </div>
+        <div class="errmsg" id="ederr"></div>
+        <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
+        <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+        <div class="ff" id="ed-sec-wrap" style="display:none"><label>Section</label><select id="ed-section" class="ff-sel"><option value="">Unassigned</option></select></div>
+        <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ek-characters-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-characters-wrap','characters')">No characters selected</button><div class="ck-drop-list" id="ek-characters"></div></div></div>
+        <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ek-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ek-locations"></div></div></div>
+        <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ek-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ek-themes"></div></div></div>
+        <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ek-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ek-misc"></div></div></div>
+        <div class="ff"><label>Notes</label><textarea id="ed-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+      </div>
+    </div>
+  </div>
+  <div id="cp-resize" title="Drag to resize Scene panel"></div>
+
   <!-- SCENE BOARD PANEL -->
   <div id="sbp">
     <div id="sbhdr">
@@ -477,49 +521,6 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
     </div>
     <div id="sbemp"><div class="ei">🎭</div><p>Create your first scene to get started</p></div>
     <div id="sbscrl"><div id="board"></div></div>
-  </div>
-  <div id="cp-resize" title="Drag to resize Scene panel"></div>
-
-  <div class="panel" id="cp">
-    <div class="p-strip" onclick="togglePanel('cp')">
-      <span class="sl">Scene</span><span>◀</span>
-    </div>
-    <div class="p-content">
-      <div class="tabs">
-        <button class="tab on"  id="tab-new"  onclick="switchTab('new')">New Scene</button>
-        <button class="tab dim" id="tab-edit" onclick="switchTab('edit')" disabled>Edit Scene</button>
-        <button class="cbtn tab-cbtn" onclick="togglePanel('cp')" title="Collapse">▶</button>
-      </div>
-      <!-- New Scene form -->
-      <div id="form-new" class="p-body">
-        <div class="form-btns"><button id="new-cancel" onclick="cancelNewScene()">Cancel</button><button id="asb" onclick="addScene()">Save</button></div>
-        <div class="errmsg" id="scerr"></div>
-        <div class="ff"><label>Title</label><textarea id="sc-title" class="ta-title" rows="2" placeholder="Enter scene title…" maxlength="120"></textarea></div>
-        <div class="ff"><label>Summary</label><textarea id="sc-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
-        <div class="ff" id="sc-sec-wrap" style="display:none"><label>Section</label><select id="sc-section" class="ff-sel"><option value="">Unassigned</option></select></div>
-        <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ck-characters-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-characters-wrap','characters')">No characters selected</button><div class="ck-drop-list" id="ck-characters"></div></div></div>
-        <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ck-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ck-locations"></div></div></div>
-        <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ck-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ck-themes"></div></div></div>
-        <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ck-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ck-misc"></div></div></div>
-        <div class="ff"><label>Notes</label><textarea id="sc-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
-      </div>
-      <!-- Edit Scene form -->
-      <div id="form-edit" class="p-body" style="display:none">
-        <div class="form-btns">
-          <button id="canceledit" onclick="cancelEdit()">Cancel</button>
-          <button id="saveedit"   onclick="saveEdit()">Save Changes</button>
-        </div>
-        <div class="errmsg" id="ederr"></div>
-        <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
-        <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
-        <div class="ff" id="ed-sec-wrap" style="display:none"><label>Section</label><select id="ed-section" class="ff-sel"><option value="">Unassigned</option></select></div>
-        <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ek-characters-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-characters-wrap','characters')">No characters selected</button><div class="ck-drop-list" id="ek-characters"></div></div></div>
-        <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ek-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ek-locations"></div></div></div>
-        <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ek-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ek-themes"></div></div></div>
-        <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ek-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ek-misc"></div></div></div>
-        <div class="ff"><label>Notes</label><textarea id="ed-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -904,7 +905,7 @@ function openLibDelModal(sec, name) {
   libDelSec = sec; libDelName = name;
   const cfg = SECS.find(s => s.key === sec);
   const label = cfg.label.replace(/s$/, '');
-  document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (${label}) from the entire scene board? This cannot be undone.`;
+  document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (${label}) from the entire file? This cannot be undone.`;
   document.getElementById('libdel-modal').classList.add('open');
 }
 function closeLibDelModal() { document.getElementById('libdel-modal').classList.remove('open'); libDelSec = null; libDelName = null; }
