@@ -690,10 +690,11 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
           <option value="themes">Themes</option>
           <option value="misc">Misc Items</option>
         </select>
-        <span class="rpt-matrix-note">as rows · Scenes as columns</span>
+        <span class="rpt-matrix-note" id="rpt-mx-note">as rows · Scenes as columns</span>
       </div>
       <div class="rpt-ck-row">
-        <label class="rpt-ck"><input type="checkbox" id="rpt-mx-section" checked> Show section label on scenes</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-mx-flip" onchange="updateMxNote()"> Flip axes (Scenes as rows)</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-mx-section" checked> Show section on scenes</label>
       </div>
     </div>
 
@@ -2305,13 +2306,21 @@ function buildThemeReport(secSet) {
 }
 
 // Cross-Reference Matrix
+function updateMxNote() {
+  const flip = document.getElementById('rpt-mx-flip').checked;
+  const note = document.getElementById('rpt-mx-note');
+  if (note) note.textContent = flip ? 'as columns · Scenes as rows' : 'as rows · Scenes as columns';
+}
+
 function buildMatrixReport(secSet) {
-  const axis     = document.getElementById('rpt-mx-axis').value;
-  const showSec  = document.getElementById('rpt-mx-section').checked;
-  const scenes   = rptFilterScenes(secSet);
+  const axis      = document.getElementById('rpt-mx-axis').value;
+  const showSec   = document.getElementById('rpt-mx-section').checked;
+  const flip      = document.getElementById('rpt-mx-flip').checked;
+  const scenes    = rptFilterScenes(secSet);
   const axisItems = S[axis] || [];
   const axisLabel = SECS.find(s => s.key === axis)?.label || axis;
-  let html = rptPageHeader(`Cross-Reference: ${axisLabel} × Scenes`);
+  const title     = flip ? `Cross-Reference: Scenes × ${axisLabel}` : `Cross-Reference: ${axisLabel} × Scenes`;
+  let html = rptPageHeader(title);
   if (!axisItems.length) {
     html += `<p style="color:#aaa;margin-top:20px;font-style:italic">No ${axisLabel.toLowerCase()} in library.</p>`;
     return html + '</body></html>';
@@ -2320,19 +2329,37 @@ function buildMatrixReport(secSet) {
     html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No scenes match the selected sections.</p>';
     return html + '</body></html>';
   }
-  html += `<table><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
-  scenes.forEach(sc => {
-    const secStr = showSec ? `<br><span class="mx-scene-sec">${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
-    html += `<th><div class="mx-scene-hdr" title="${rptEsc(sc.title||'(Untitled)')}">Sc ${rptSceneNum(sc.id)}${secStr}</div></th>`;
-  });
-  html += `</tr></thead><tbody>`;
-  axisItems.forEach(item => {
-    html += `<tr><td class="mx-row-hdr">${rptEsc(item)}</td>`;
-    scenes.forEach(sc => {
-      html += (sc[axis] || []).includes(item) ? `<td class="mx-dot">●</td>` : `<td></td>`;
+  if (flip) {
+    // Scenes as rows, axisItems as columns
+    html += `<table><thead><tr><th style="min-width:160px">Scene</th>`;
+    axisItems.forEach(item => {
+      html += `<th style="text-align:center;white-space:nowrap">${rptEsc(item)}</th>`;
     });
-    html += `</tr>`;
-  });
+    html += `</tr></thead><tbody>`;
+    scenes.forEach(sc => {
+      const secStr = showSec ? ` <span class="mx-scene-sec" style="font-weight:400">· ${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
+      html += `<tr><td class="mx-row-hdr">Scene ${rptSceneNum(sc.id)} — ${rptEsc(sc.title||'(Untitled)')}${secStr}</td>`;
+      axisItems.forEach(item => {
+        html += (sc[axis] || []).includes(item) ? `<td class="mx-dot">●</td>` : `<td></td>`;
+      });
+      html += `</tr>`;
+    });
+  } else {
+    // axisItems as rows, Scenes as columns
+    html += `<table><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
+    scenes.forEach(sc => {
+      const secStr = showSec ? `<br><span class="mx-scene-sec">${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
+      html += `<th><div class="mx-scene-hdr" title="${rptEsc(sc.title||'(Untitled)')}">Sc ${rptSceneNum(sc.id)}${secStr}</div></th>`;
+    });
+    html += `</tr></thead><tbody>`;
+    axisItems.forEach(item => {
+      html += `<tr><td class="mx-row-hdr">${rptEsc(item)}</td>`;
+      scenes.forEach(sc => {
+        html += (sc[axis] || []).includes(item) ? `<td class="mx-dot">●</td>` : `<td></td>`;
+      });
+      html += `</tr>`;
+    });
+  }
   html += `</tbody></table>`;
   return html + '</body></html>';
 }
