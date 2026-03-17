@@ -2040,7 +2040,7 @@ function openReportModal() {
   secList.innerHTML = '';
   S.sections.forEach(sec => {
     const lbl = document.createElement('label'); lbl.className = 'rpt-ck';
-    const cb  = document.createElement('input'); cb.type = 'checkbox'; cb.value = sec.id; cb.checked = true;
+    const cb  = document.createElement('input'); cb.type = 'checkbox'; cb.value = String(sec.id); cb.checked = true;
     cb.dataset.rptSec = '1';
     cb.addEventListener('change', syncRptAllSecs);
     const sp = document.createElement('span'); sp.textContent = sec.name;
@@ -2079,7 +2079,10 @@ function rptSelectedSecs() {
   return new Set([...document.querySelectorAll('[data-rpt-sec]:checked')].map(c => c.value));
 }
 function rptFilterScenes(secSet) {
-  return S.scenes.filter(sc => secSet.has(sc.sectionId || '__unassigned__'));
+  return S.scenes.filter(sc => {
+    const sid = sc.sectionId != null ? String(sc.sectionId) : '__unassigned__';
+    return secSet.has(sid);
+  });
 }
 function rptSecName(sectionId) {
   if (!sectionId) return 'Unassigned';
