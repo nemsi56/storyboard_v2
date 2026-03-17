@@ -2131,7 +2131,7 @@ function rptBaseCSS() {
     .scene-entry-meta{color:#666;font-size:11px}
     .scene-entry-summary{font-size:11px;color:#555;margin-top:2px;white-space:pre-wrap;line-height:1.45}
     .empty-note{font-size:11px;color:#999;font-style:italic;padding-left:8px;margin:3px 0}
-    table{border-collapse:collapse;font-size:11px;margin-top:6px}
+    table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
     thead th{background:#f0f0f0;font-weight:700;font-size:10px;color:#555;padding:5px 6px;text-align:center;border:1px solid #ccc;border-bottom-width:2px;vertical-align:bottom}
     thead th:first-child{text-align:left;padding-left:8px}
     .mx-scene-hdr{font-size:10px;color:#444;font-weight:600;min-width:52px;max-width:110px;white-space:normal;line-height:1.3;display:block}
@@ -2368,7 +2368,7 @@ function buildMatrixReport(secSet) {
     axisItems.forEach(item => {
       html += `<tr><td class="mx-row-hdr">${rptEsc(item)}</td>`;
       scenes.forEach(sc => {
-        html += (sc[axis] || []).includes(item) ? `<td class="mx-dot">●</td>` : `<td></td>`;
+        html += (sc[axis] || []).includes(item) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
       });
       html += `</tr>`;
     });
