@@ -116,6 +116,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .tabs{display:flex;align-items:flex-end;background:var(--bg0);border-bottom:2px solid var(--bdr);flex-shrink:0;padding:6px 8px 0;gap:4px}
 .tab{flex:1;padding:9px 0 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:var(--s0);border:1.5px solid var(--bdr);border-bottom:none;border-radius:7px 7px 0 0;color:var(--o1);cursor:pointer;transition:color .14s,background .14s,border-color .14s;font-family:inherit;position:relative;bottom:-2px}
 .tab.on{background:var(--bg2);color:var(--acc);border-color:var(--acc);border-top:3px solid var(--acc);border-bottom:2px solid var(--bg2);z-index:1;font-weight:800}
+.tab.on.live{background:var(--acc);color:var(--ontx);border-color:var(--acc2);border-top-color:var(--acc2);border-bottom-color:var(--acc)}
 .tab.dim{color:var(--o0)!important;cursor:default;pointer-events:none;opacity:.45}
 .tab:not(.on):not(.dim):hover{background:var(--s1);color:var(--sub)}
 .tab-cbtn{background:none!important;border:none!important;border-left:1px solid var(--bdr)!important;border-radius:0!important;padding:0 10px!important;font-size:12px!important;align-self:stretch;flex-shrink:0;margin-bottom:-2px}
@@ -1131,6 +1132,7 @@ function addInsertZone(container, afterSceneId, sectionId) {
     }
     if (document.getElementById('cp').classList.contains('collapsed')) togglePanel('cp');
     switchTab('new');
+    setNewSceneLive(true);
     setTimeout(() => document.getElementById('sc-title').focus(), 40);
   });
   container.appendChild(zone);
@@ -1172,6 +1174,7 @@ function addScene() {
   titleEl.value = ''; document.getElementById('sc-summary').value = ''; document.getElementById('sc-notes').value = '';
   document.querySelectorAll('#form-new .ck-drop-list input').forEach(c => { c.checked = false; });
   SECS.forEach(({ key, label }) => { const w = document.getElementById('ck-' + key + '-wrap'); if (w) updateCkDropLabel(w, label); });
+  setNewSceneLive(false);
   renderBoard();
   saveState();
 }
@@ -1187,6 +1190,7 @@ function cancelNewScene() {
   const secSel = document.getElementById('sc-section');
   if (secSel) secSel.value = '';
   document.getElementById('scerr').textContent = '';
+  setNewSceneLive(false);
 }
 
 function deleteScene(id) {
@@ -1261,6 +1265,19 @@ function confirmSaveEdit() {
   saveState();
 }
 function closeSaveCfm() { document.getElementById('savecfm-modal').classList.remove('open'); }
+function setNewSceneLive(on) {
+  document.getElementById('tab-new').classList.toggle('live', on);
+}
+function checkNewSceneLive() {
+  const hasContent = !!(
+    document.getElementById('sc-title').value.trim() ||
+    document.getElementById('sc-summary').value.trim() ||
+    document.getElementById('sc-notes').value.trim() ||
+    document.querySelectorAll('#form-new .ck-drop-list input:checked').length
+  );
+  setNewSceneLive(hasContent);
+}
+
 function switchTab(t) {
   document.getElementById('tab-new').classList.toggle('on', t === 'new');
   document.getElementById('tab-edit').classList.toggle('on', t === 'edit');
@@ -2072,6 +2089,9 @@ document.addEventListener('mousedown', e => {
 
 // ── KEYBOARD ──────────────────────────────────────────────────────────────────
 document.getElementById('sc-title').addEventListener('keydown', e => { if (e.key === 'Enter') { e.stopPropagation(); } });
+// Live indicator: light up New Scene tab whenever the form has content
+document.getElementById('form-new').addEventListener('input', checkNewSceneLive);
+document.getElementById('form-new').addEventListener('change', checkNewSceneLive);
 document.getElementById('ed-title').addEventListener('keydown', e => { if (e.key === 'Enter') { e.stopPropagation(); } });
 document.addEventListener('keydown', e => {
   const inInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
