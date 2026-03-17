@@ -2400,7 +2400,7 @@ const HELP_ZONES = [
   { sel: '#undo-btn',        tip: 'Undo — reverses the last change (up to 10 steps). Shortcut: Ctrl+Z / ⌘Z.' },
   { sel: '#redo-btn',        tip: 'Redo — restores a previously undone change. Shortcut: Ctrl+Y / ⌘⇧Z.' },
   { sel: '#theme-wrap',      tip: 'Theme — switch the app\'s color scheme between Ivory, Slate, Studio, Ocean, and Sunset.' },
-  { sel: '#lp .p-hdr',      tip: 'Library panel — stores characters, locations, themes, and misc items. Click + to add an item. Click any item to highlight matching scenes on the board. Hover an item to shuffle, edit, or delete it. Use ◀ or drag the panel edge to hide or resize.' },
+  { sel: '#lp .p-hdr',      tip: 'Library panel — stores characters, locations, themes, and misc items. Click + to add an item. Click any item to highlight matching scenes on the board. Hover an item to shuffle, edit, or delete it. Use ◀ to hide the panel.' },
   { sel: '#ao-global-wrap',  tip: 'Highlight mode — OR highlights scenes containing any selected item; AND highlights only scenes that contain all selected items simultaneously.' },
   { sel: '#lib-clr-wrap',    tip: 'Clear Highlights — removes all active library selections and unhighlights the board.' },
   { sel: '#sp .p-hdr',      tip: 'Sections panel — organize scenes into named sections such as acts, chapters, or sequences. Use ◀ or drag the panel edge to hide or resize.' },
@@ -2430,6 +2430,13 @@ function openHelp() {
   const overlay = document.getElementById('help-overlay');
   overlay.classList.add('active');
   overlay.querySelectorAll('.help-zone').forEach(z => z.remove());
+  // Temporarily reveal elements that are hidden but should still get a help zone
+  const tempShow = ['#lib-clr-wrap'];
+  const restored = [];
+  tempShow.forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el && el.style.display === 'none') { el.style.display = 'block'; restored.push(el); }
+  });
   HELP_ZONES.forEach(zone => {
     const el = document.querySelector(zone.sel);
     if (!el) return;
@@ -2446,6 +2453,7 @@ function openHelp() {
     div.addEventListener('click', e => { e.stopPropagation(); closeHelp(); });
     overlay.appendChild(div);
   });
+  restored.forEach(el => { el.style.display = 'none'; });
   overlay.addEventListener('click', _helpOverlayClose);
 }
 
