@@ -2397,19 +2397,17 @@ function buildMatrixReport(secSet) {
 
 // ── HELP OVERLAY ──────────────────────────────────────────────────────────────
 const HELP_ZONES = [
-  { sel: '#hdr h1',          tip: 'ScriptEase — the app title. Use the panels on the left to manage your library, sections, and scenes.' },
   { sel: '#undo-btn',        tip: 'Undo — reverses the last change (up to 10 steps). Shortcut: Ctrl+Z / ⌘Z.' },
   { sel: '#redo-btn',        tip: 'Redo — restores a previously undone change. Shortcut: Ctrl+Y / ⌘⇧Z.' },
   { sel: '#theme-wrap',      tip: 'Theme — switch the app\'s color scheme between Ivory, Slate, Studio, Ocean, and Sunset.' },
-  { sel: '#lp .p-hdr',      tip: 'Library panel — stores characters, locations, themes, and misc items. Click any item to highlight matching scenes on the board.' },
+  { sel: '#lp .p-hdr',      tip: 'Library panel — stores characters, locations, themes, and misc items. Click + to add an item. Click any item to highlight matching scenes on the board. Hover an item to shuffle, edit, or delete it. Use ◀ or drag the panel edge to hide or resize.' },
   { sel: '#ao-global-wrap',  tip: 'Highlight mode — OR highlights scenes containing any selected item; AND highlights only scenes that contain all selected items simultaneously.' },
   { sel: '#lib-clr-wrap',    tip: 'Clear Highlights — removes all active library selections and unhighlights the board.' },
-  { sel: '#sp .p-hdr',      tip: 'Sections panel — organize scenes into named sections such as acts, chapters, or sequences.' },
+  { sel: '#sp .p-hdr',      tip: 'Sections panel — organize scenes into named sections such as acts, chapters, or sequences. Use ◀ or drag the panel edge to hide or resize.' },
   { sel: '.sp-add-row',      tip: 'Add Section — type a name and press + (or Enter) to create a new section.' },
   { sel: '.sp-qs',           tip: 'Quick Setup — rapidly create multiple numbered sections at once (e.g. "Act 1, Act 2, Act 3").' },
-  { sel: '#cp .tabs',        tip: 'Scene panel — New Scene creates a new scene; Edit Scene (enabled when a card is selected) lets you modify the selected scene.' },
-  { sel: '#form-new',        tip: 'New Scene form — enter a title, optional summary, section assignment, library tags, and notes for the scene.' },
-  { sel: '#sbhdr .sbt',      tip: 'Scene Board — the main workspace. Scenes are arranged by section. Drag cards to reorder them.' },
+  { sel: '#cp .tabs',        tip: 'Scene panel — New Scene creates a scene; Edit Scene (enabled when a card is selected) lets you modify it. Enter a title, summary, section, library tags, and notes. Use ◀ or drag the panel edge to hide or resize.' },
+  { sel: '#sbhdr .sbt',      tip: 'Scene Board — the main workspace. Scenes are arranged by section. Drag cards to reorder them. Click a card to select it; click multiple cards to select them together and move them as a group.' },
   { sel: '#sbcnt',           tip: 'Scene count — shows how many scenes are currently visible (may be fewer when a section filter is active).' },
   { sel: '#clrsel',          tip: 'Clear Selection — deselects all currently selected scene cards on the board.' },
   { sel: '#det-toggle',      tip: 'Show Card Details — toggle to show or hide library tags (characters, locations, themes, misc) printed on each card.' },
@@ -2473,6 +2471,8 @@ function showHelpTip(text, rect) {
   let top  = rect.bottom + 10;
   let left = rect.left;
   if (top  + 140 > window.innerHeight) top  = rect.top - 148;
+  // Clamp fully within viewport so tips on tall/top elements never go off-screen
+  top  = Math.max(8, Math.min(top,  window.innerHeight - 150));
   if (left + 282 > window.innerWidth)  left = window.innerWidth - 288;
   if (left < 8) left = 8;
   tip.style.top  = top  + 'px';
