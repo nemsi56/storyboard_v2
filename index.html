@@ -144,6 +144,19 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 #canceledit,#new-cancel{background:var(--s0);color:var(--sub);border:1px solid var(--s1);border-radius:8px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .14s}
 #canceledit:hover,#new-cancel:hover{background:var(--s1)}
 .lib-rename-inp{flex:1;min-width:0;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:1px 5px;color:var(--tx);font-size:12px;font-family:inherit;outline:none}
+.lib-hint{font-style:italic;font-size:11px;color:var(--sub);text-align:center;margin:0 0 8px;line-height:1.4;padding:0 4px}
+.ck-drop-wrap{position:relative}
+.ck-drop-btn{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:7px;padding:7px 28px 7px 10px;font-size:12px;color:var(--sub);cursor:pointer;text-align:left;font-family:inherit;transition:background .13s,border-color .13s;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck-drop-btn::after{content:'▾';position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:10px;opacity:0.6;pointer-events:none}
+.ck-drop-wrap.open .ck-drop-btn{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 8%,var(--s0))}
+.ck-drop-list{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--cbg);border:1px solid var(--s1);border-radius:8px;padding:6px;z-index:300;max-height:180px;overflow-y:auto;box-shadow:0 4px 14px rgba(0,0,0,.13)}
+.ck-drop-wrap.open .ck-drop-list{display:block}
+.ck-drop-item{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:5px;cursor:pointer;font-size:12px;color:var(--tx);user-select:none}
+.ck-drop-item:hover{background:var(--s0)}
+.ck-drop-item input{cursor:pointer;accent-color:var(--acc)}
+.ck-drop-empty{font-size:11px;color:var(--sub);padding:6px 7px;font-style:italic}
+#msum-section,#mnotes-section{margin-top:12px}
+.m-sec-hdr{font-size:11px;font-weight:700;text-decoration:underline;text-transform:uppercase;color:var(--sub);margin-bottom:5px;letter-spacing:0.06em}
 .errmsg{font-size:11px;color:var(--rd);margin-top:5px;min-height:14px}
 
 /* ══ STORYBOARD PANEL ══════════════════════════════════════════════════════ */
@@ -385,6 +398,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         </div>
       </div>
       <div class="p-body" id="lp-body">
+        <p class="lib-hint"><em>Add, Edit, or Highlight elements below</em></p>
         <!-- Global AND/OR toggle -->
         <div id="ao-global-wrap">
           <span class="ao-lbl">Highlight:</span>
@@ -399,47 +413,6 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   </div>
 
   <!-- CENTER PANEL -->
-  <div class="panel" id="cp">
-    <div class="p-strip" onclick="togglePanel('cp')">
-      <span class="sl">Scene</span><span>▶</span>
-    </div>
-    <div class="p-content">
-      <div class="tabs">
-        <button class="tab on"  id="tab-new"  onclick="switchTab('new')">New Scene</button>
-        <button class="tab dim" id="tab-edit" onclick="switchTab('edit')" disabled>Edit Scene</button>
-        <button class="cbtn tab-cbtn" onclick="togglePanel('cp')" title="Collapse">◀</button>
-      </div>
-      <!-- New Scene form -->
-      <div id="form-new" class="p-body">
-        <div class="ff"><label>Title</label><textarea id="sc-title" class="ta-title" rows="2" placeholder="Enter scene title…" maxlength="120"></textarea></div>
-        <div class="ff"><label>Summary</label><textarea id="sc-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
-        <div class="ff" id="sc-sec-wrap" style="display:none"><label>Section</label><select id="sc-section" class="ff-sel"><option value="">Unassigned</option></select></div>
-        <div class="ff"><label>Characters</label><div class="cklist" id="ck-characters"></div></div>
-        <div class="ff"><label>Locations</label><div class="cklist" id="ck-locations"></div></div>
-        <div class="ff"><label>Themes</label><div class="cklist" id="ck-themes"></div></div>
-        <div class="ff"><label>Misc</label><div class="cklist" id="ck-misc"></div></div>
-        <div class="form-btns"><button id="new-cancel" onclick="cancelNewScene()">Cancel</button><button id="asb" onclick="addScene()">+ Add Scene</button></div>
-        <div class="errmsg" id="scerr"></div>
-      </div>
-      <!-- Edit Scene form -->
-      <div id="form-edit" class="p-body" style="display:none">
-        <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
-        <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
-        <div class="ff" id="ed-sec-wrap" style="display:none"><label>Section</label><select id="ed-section" class="ff-sel"><option value="">Unassigned</option></select></div>
-        <div class="ff"><label>Characters</label><div class="cklist" id="ek-characters"></div></div>
-        <div class="ff"><label>Locations</label><div class="cklist" id="ek-locations"></div></div>
-        <div class="ff"><label>Themes</label><div class="cklist" id="ek-themes"></div></div>
-        <div class="ff"><label>Misc</label><div class="cklist" id="ek-misc"></div></div>
-        <div class="form-btns">
-          <button id="canceledit" onclick="cancelEdit()">Cancel</button>
-          <button id="saveedit"   onclick="saveEdit()">Save Changes</button>
-        </div>
-        <div class="errmsg" id="ederr"></div>
-      </div>
-    </div>
-  </div>
-  <div id="cp-resize" title="Drag to resize Scene panel"></div>
-
   <!-- SECTIONS PANEL -->
   <div class="panel" id="sp">
     <div class="p-strip" onclick="togglePanel('sp')">
@@ -472,10 +445,10 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   </div>
   <div id="sp-resize" title="Drag to resize Sections panel"></div>
 
-  <!-- STORYBOARD PANEL -->
+  <!-- SCENE BOARD PANEL -->
   <div id="sbp">
     <div id="sbhdr">
-      <span class="sbt">Storyboard</span>
+      <span class="sbt">Scene Board</span>
       <div class="sbhl">
         <span id="sbcnt">0 scenes</span>
         <button id="clrsel" onclick="clearCardSel()">Clear selection</button>
@@ -504,6 +477,49 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
     </div>
     <div id="sbemp"><div class="ei">🎭</div><p>Create your first scene to get started</p></div>
     <div id="sbscrl"><div id="board"></div></div>
+  </div>
+  <div id="cp-resize" title="Drag to resize Scene panel"></div>
+
+  <div class="panel" id="cp">
+    <div class="p-strip" onclick="togglePanel('cp')">
+      <span class="sl">Scene</span><span>◀</span>
+    </div>
+    <div class="p-content">
+      <div class="tabs">
+        <button class="tab on"  id="tab-new"  onclick="switchTab('new')">New Scene</button>
+        <button class="tab dim" id="tab-edit" onclick="switchTab('edit')" disabled>Edit Scene</button>
+        <button class="cbtn tab-cbtn" onclick="togglePanel('cp')" title="Collapse">▶</button>
+      </div>
+      <!-- New Scene form -->
+      <div id="form-new" class="p-body">
+        <div class="form-btns"><button id="new-cancel" onclick="cancelNewScene()">Cancel</button><button id="asb" onclick="addScene()">Save</button></div>
+        <div class="errmsg" id="scerr"></div>
+        <div class="ff"><label>Title</label><textarea id="sc-title" class="ta-title" rows="2" placeholder="Enter scene title…" maxlength="120"></textarea></div>
+        <div class="ff"><label>Summary</label><textarea id="sc-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+        <div class="ff" id="sc-sec-wrap" style="display:none"><label>Section</label><select id="sc-section" class="ff-sel"><option value="">Unassigned</option></select></div>
+        <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ck-characters-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-characters-wrap','characters')">No characters selected</button><div class="ck-drop-list" id="ck-characters"></div></div></div>
+        <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ck-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ck-locations"></div></div></div>
+        <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ck-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ck-themes"></div></div></div>
+        <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ck-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ck-misc"></div></div></div>
+        <div class="ff"><label>Notes</label><textarea id="sc-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+      </div>
+      <!-- Edit Scene form -->
+      <div id="form-edit" class="p-body" style="display:none">
+        <div class="form-btns">
+          <button id="canceledit" onclick="cancelEdit()">Cancel</button>
+          <button id="saveedit"   onclick="saveEdit()">Save Changes</button>
+        </div>
+        <div class="errmsg" id="ederr"></div>
+        <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
+        <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+        <div class="ff" id="ed-sec-wrap" style="display:none"><label>Section</label><select id="ed-section" class="ff-sel"><option value="">Unassigned</option></select></div>
+        <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ek-characters-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-characters-wrap','characters')">No characters selected</button><div class="ck-drop-list" id="ek-characters"></div></div></div>
+        <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ek-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ek-locations"></div></div></div>
+        <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ek-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ek-themes"></div></div></div>
+        <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ek-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ek-misc"></div></div></div>
+        <div class="ff"><label>Notes</label><textarea id="ed-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -559,7 +575,9 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 <div id="modal">
   <div id="mbox">
     <button id="mclose" onclick="closeModal()">×</button>
-    <div id="mnum"></div><div id="mtit"></div><div id="msum"></div>
+    <div id="mnum"></div><div id="mtit"></div>
+    <div id="msum-section"><div class="m-sec-hdr">Summary</div><div id="msum"></div></div>
+    <div id="mnotes-section"><div class="m-sec-hdr">Notes</div><div id="mnotes"></div></div>
   </div>
 </div>
 
@@ -571,7 +589,7 @@ const SECS = [
   { key:'characters', label:'Characters', dot:'dc', secCls:'sec-c', tag:'tc', ph:'Character name…' },
   { key:'locations',  label:'Locations',  dot:'dl', secCls:'sec-l', tag:'tl', ph:'Location name…'  },
   { key:'themes',     label:'Themes',     dot:'dt', secCls:'sec-t', tag:'tt', ph:'Theme…'          },
-  { key:'misc',       label:'Misc',       dot:'dm', secCls:'sec-m', tag:'tm', ph:'Topic…'          },
+  { key:'misc',       label:'Misc Items',  dot:'dm', secCls:'sec-m', tag:'tm', ph:'Topic…'          },
 ];
 const SINGULAR = { characters:'Character', locations:'Location', themes:'Theme', misc:'Misc item' };
 const SEC_COLORS = ['#5b8dd9','#6aaa80','#9b7cc4','#d4844a','#4aadb5','#c47a8a','#c4a84a','#7a8ea8'];
@@ -830,6 +848,23 @@ function removeItem(sec, name) {
   saveState();
 }
 
+function toggleCkDrop(wrapId, sec) {
+  const wrap = document.getElementById(wrapId); if (!wrap) return;
+  const isOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.ck-drop-wrap.open').forEach(w => w.classList.remove('open'));
+  if (!isOpen) wrap.classList.add('open');
+}
+function updateCkDropLabel(wrap, lbl) {
+  const btn = wrap.querySelector('.ck-drop-btn'); if (!btn) return;
+  const n = wrap.querySelectorAll('input:checked').length;
+  btn.textContent = n === 0 ? 'No ' + lbl.toLowerCase() + ' selected' : n + ' selected';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ck-drop-wrap')) {
+    document.querySelectorAll('.ck-drop-wrap.open').forEach(w => w.classList.remove('open'));
+  }
+}, true);
+
 function startLibRename(sec, oldName, li) {
   const nm = li.querySelector('.iname'); if (!nm) return;
   const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'lib-rename-inp';
@@ -869,7 +904,7 @@ function openLibDelModal(sec, name) {
   libDelSec = sec; libDelName = name;
   const cfg = SECS.find(s => s.key === sec);
   const label = cfg.label.replace(/s$/, '');
-  document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (${label}) from the entire storyboard? This cannot be undone.`;
+  document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (${label}) from the entire scene board? This cannot be undone.`;
   document.getElementById('libdel-modal').classList.add('open');
 }
 function closeLibDelModal() { document.getElementById('libdel-modal').classList.remove('open'); libDelSec = null; libDelName = null; }
@@ -934,6 +969,7 @@ function addInsertZone(container, afterSceneId, sectionId) {
 function addScene() {
   const titleEl = document.getElementById('sc-title'), errEl = document.getElementById('scerr');
   const title = titleEl.value.trim(), summary = document.getElementById('sc-summary').value.trim();
+  const notes = document.getElementById('sc-notes').value.trim();
   errEl.textContent = '';
   if (!title) { errEl.textContent = 'Please enter a scene title.'; titleEl.focus(); return; }
   if (S.scenes.some(s => s.title.toLowerCase() === title.toLowerCase())) { errEl.textContent = 'Title already exists.'; titleEl.select(); return; }
@@ -941,7 +977,7 @@ function addScene() {
   SECS.forEach(({ key }) => { row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => c.value); });
   const sectionId = S.sections.length ? (parseInt(document.getElementById('sc-section').value) || null) : null;
   pushHistory('Add scene "' + truncStr(title, 22) + '"');
-  const newScene = { id: S.nextId++, title, summary, ...row, sectionId };
+  const newScene = { id: S.nextId++, title, summary, notes, ...row, sectionId };
   if (pendingInsert !== null) {
     const { afterId, sectionId: piSecId } = pendingInsert; pendingInsert = null;
     if (afterId !== null) {
@@ -963,8 +999,9 @@ function addScene() {
   } else {
     S.scenes.push(newScene);
   }
-  titleEl.value = ''; document.getElementById('sc-summary').value = '';
-  document.querySelectorAll('#form-new .cklist input').forEach(c => { c.checked = false; });
+  titleEl.value = ''; document.getElementById('sc-summary').value = ''; document.getElementById('sc-notes').value = '';
+  document.querySelectorAll('#form-new .ck-drop-list input').forEach(c => { c.checked = false; });
+  SECS.forEach(({ key, label }) => { const w = document.getElementById('ck-' + key + '-wrap'); if (w) updateCkDropLabel(w, label); });
   renderBoard();
   saveState();
 }
@@ -973,7 +1010,10 @@ function cancelNewScene() {
   pendingInsert = null;
   document.getElementById('sc-title').value = '';
   document.getElementById('sc-summary').value = '';
-  document.querySelectorAll('#form-new .cklist input').forEach(c => { c.checked = false; });
+  document.getElementById('sc-notes').value = '';
+  document.querySelectorAll('#form-new .ck-drop-list input').forEach(c => { c.checked = false; });
+  SECS.forEach(({ key, label }) => { const w = document.getElementById('ck-' + key + '-wrap'); if (w) updateCkDropLabel(w, label); });
+  document.querySelectorAll('.ck-drop-wrap.open').forEach(w => w.classList.remove('open'));
   const secSel = document.getElementById('sc-section');
   if (secSel) secSel.value = '';
   document.getElementById('scerr').textContent = '';
@@ -1002,6 +1042,7 @@ function openEditMode(id) {
   S.editingId = id;
   document.getElementById('ed-title').value   = sc.title;
   document.getElementById('ed-summary').value = sc.summary || '';
+  document.getElementById('ed-notes').value   = sc.notes || '';
   document.getElementById('ederr').textContent = '';
   if (S.sections.length) {
     document.getElementById('ed-section').value = sc.sectionId || '';
@@ -1035,7 +1076,7 @@ function confirmSaveEdit() {
   const sectionId = S.sections.length ? (parseInt(document.getElementById('ed-section').value) || null) : null;
   pushHistory('Edit scene "' + truncStr(sc.title, 22) + '"');
   const oldSecId = sc.sectionId ?? null;
-  sc.title = title; sc.summary = summary;
+  sc.title = title; sc.summary = summary; sc.notes = document.getElementById('ed-notes').value.trim();
   if (S.sections.length) sc.sectionId = sectionId;
   SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value); });
   // If section changed, move scene to end of new section so numbering stays sequential
@@ -1059,10 +1100,14 @@ function switchTab(t) {
 
 // ── SUMMARY MODAL ─────────────────────────────────────────────────────────────
 function openModal(id) {
-  const sc = S.scenes.find(s => s.id === id); if (!sc || !sc.summary) return;
+  const sc = S.scenes.find(s => s.id === id); if (!sc) return;
+  const hasInfo = !!(sc.summary || sc.notes); if (!hasInfo) return;
   document.getElementById('mnum').textContent = `Scene ${sceneDisplayNum(sc.id)}`;
   document.getElementById('mtit').textContent = sc.title;
-  document.getElementById('msum').textContent = sc.summary;
+  const sumSec = document.getElementById('msum-section'), sumEl = document.getElementById('msum');
+  const notesSec = document.getElementById('mnotes-section'), notesEl = document.getElementById('mnotes');
+  sumSec.style.display = sc.summary ? '' : 'none'; if (sc.summary) sumEl.textContent = sc.summary;
+  notesSec.style.display = sc.notes ? '' : 'none'; if (sc.notes) notesEl.textContent = sc.notes;
   document.getElementById('modal').classList.add('open');
 }
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
@@ -1134,26 +1179,44 @@ function renderLibSec(sec) {
 // ── RENDER: CHECKLISTS ────────────────────────────────────────────────────────
 function renderAllCk() { SECS.forEach(s => { renderCk(s.key); renderEditCk(s.key); }); }
 function renderCk(sec) {
-  const box = document.getElementById('ck-' + sec); if (!box) return;
+  const wrap = document.getElementById('ck-' + sec + '-wrap');
+  const box  = document.getElementById('ck-' + sec); if (!box) return;
+  const btn  = wrap ? wrap.querySelector('.ck-drop-btn') : null;
+  const lbl  = SECS.find(s => s.key === sec)?.label || sec;
   box.innerHTML = '';
-  if (!S[sec].length) { box.innerHTML = '<div class="eh">Add ' + sec + ' first</div>'; return; }
+  if (!S[sec].length) {
+    box.innerHTML = '<div class="ck-drop-empty">Add ' + lbl.toLowerCase() + ' to library first</div>';
+    if (btn) btn.textContent = 'No ' + lbl.toLowerCase() + ' selected';
+    return;
+  }
   S[sec].forEach(name => {
-    const lbl = document.createElement('label'); lbl.className = 'cki';
-    const cb  = document.createElement('input'); cb.type = 'checkbox'; cb.value = name;
-    const sp  = document.createElement('span');  sp.textContent = name;
-    lbl.appendChild(cb); lbl.appendChild(sp); box.appendChild(lbl);
+    const item = document.createElement('label'); item.className = 'ck-drop-item';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = name;
+    cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, lbl); });
+    const sp = document.createElement('span'); sp.textContent = name;
+    item.appendChild(cb); item.appendChild(sp); box.appendChild(item);
   });
+  if (btn) updateCkDropLabel(wrap, lbl);
 }
 function renderEditCk(sec, checked=[]) {
-  const box = document.getElementById('ek-' + sec); if (!box) return;
+  const wrap = document.getElementById('ek-' + sec + '-wrap');
+  const box  = document.getElementById('ek-' + sec); if (!box) return;
+  const btn  = wrap ? wrap.querySelector('.ck-drop-btn') : null;
+  const lbl  = SECS.find(s => s.key === sec)?.label || sec;
   box.innerHTML = '';
-  if (!S[sec].length) { box.innerHTML = '<div class="eh">Add ' + sec + ' first</div>'; return; }
+  if (!S[sec].length) {
+    box.innerHTML = '<div class="ck-drop-empty">Add ' + lbl.toLowerCase() + ' to library first</div>';
+    if (btn) btn.textContent = 'No ' + lbl.toLowerCase() + ' selected';
+    return;
+  }
   S[sec].forEach(name => {
-    const lbl = document.createElement('label'); lbl.className = 'cki';
-    const cb  = document.createElement('input'); cb.type = 'checkbox'; cb.value = name; cb.checked = checked.includes(name);
-    const sp  = document.createElement('span');  sp.textContent = name;
-    lbl.appendChild(cb); lbl.appendChild(sp); box.appendChild(lbl);
+    const item = document.createElement('label'); item.className = 'ck-drop-item';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = name; cb.checked = checked.includes(name);
+    cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, lbl); });
+    const sp = document.createElement('span'); sp.textContent = name;
+    item.appendChild(cb); item.appendChild(sp); box.appendChild(item);
   });
+  if (wrap) updateCkDropLabel(wrap, lbl);
 }
 
 // ── RENDER: BOARD ─────────────────────────────────────────────────────────────
@@ -1189,12 +1252,13 @@ function renderCard(container, scene, idx) {
   const bar    = document.createElement('div');    bar.className    = 'sc-bar';
   const badge  = document.createElement('div');    badge.className  = 'sbadge'; badge.textContent = '✓';
   const delbtn = document.createElement('button'); delbtn.className = 'cdel';   delbtn.title = 'Delete'; delbtn.textContent = '×';
-  const sumbtn = document.createElement('button'); sumbtn.className = 'csum' + (scene.summary ? ' hs' : ''); sumbtn.title = scene.summary ? 'View summary' : 'No summary'; sumbtn.textContent = 'ⓘ';
+  const hasInfo = !!(scene.summary || scene.notes);
+  const sumbtn = document.createElement('button'); sumbtn.className = 'csum' + (hasInfo ? ' hs' : ''); sumbtn.title = hasInfo ? 'View summary / notes' : ''; sumbtn.textContent = 'ⓘ'; if (!hasInfo) sumbtn.style.visibility = 'hidden';
   const editbtn= document.createElement('button'); editbtn.className= 'cedit';  editbtn.title = 'Edit scene'; editbtn.textContent = '✏️';
   delbtn.addEventListener('mousedown', e => e.stopPropagation());
   delbtn.addEventListener('click', e => { e.stopPropagation(); deleteScene(scene.id); });
   sumbtn.addEventListener('mousedown', e => e.stopPropagation());
-  sumbtn.addEventListener('click', e => { e.stopPropagation(); if (scene.summary) openModal(scene.id); });
+  sumbtn.addEventListener('click', e => { e.stopPropagation(); if (hasInfo) openModal(scene.id); });
   editbtn.addEventListener('mousedown', e => e.stopPropagation());
   editbtn.addEventListener('click', e => { e.stopPropagation(); openEditMode(scene.id); });
   const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${sceneDisplayNum(scene.id)}`;
