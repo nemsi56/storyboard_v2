@@ -2077,14 +2077,17 @@ document.addEventListener('mouseup', e => {
   if (spDr.on) { spDr.on = false; document.getElementById('sp-resize').classList.remove('dragging'); }
 });
 
-// ── CANCEL EDIT ON CLICK OUTSIDE SCENE PANEL ──────────────────────────────────
+// ── CANCEL ON CLICK OUTSIDE SCENE PANEL ───────────────────────────────────────
 document.addEventListener('mousedown', e => {
-  if (S.editingId === null) return;
-  // Stay in edit mode if clicking within the Scene panel itself
+  const editActive = S.editingId !== null;
+  const newLive    = document.getElementById('tab-new').classList.contains('live');
+  if (!editActive && !newLive) return;
+  // Stay if clicking within the Scene panel itself
   if (e.target.closest('#cp')) return;
-  // Stay in edit mode if any modal is open (user may be confirming a save, etc.)
+  // Stay if any modal is open
   if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open')) return;
-  cancelEdit();
+  if (editActive) cancelEdit();
+  if (newLive)    cancelNewScene();
 });
 
 // ── KEYBOARD ──────────────────────────────────────────────────────────────────
