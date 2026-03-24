@@ -200,10 +200,8 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .sc-bar{position:absolute;top:-2px;left:-2px;right:-2px;height:3px;border-radius:10px 10px 0 0;background:var(--sec-c,transparent);pointer-events:none}
 .sc.isd{opacity:.28}
 .sc.sel{border-color:var(--lv);box-shadow:0 0 0 1px var(--lv),0 2px 8px rgba(0,0,0,.07),inset 0 1px 0 rgba(255,255,255,.28)}
-/* Unified yellow highlight — library selection */
-.sc.hl{border:3px solid var(--yl)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--yl) 36%,transparent),0 4px 22px color-mix(in srgb,var(--yl) 28%,transparent)!important;background:color-mix(in srgb,var(--yl) 7%,var(--cbg))!important}
-/* Search match highlight */
-.sc.hl-s{border:3px solid var(--yl)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--yl) 36%,transparent),0 4px 22px color-mix(in srgb,var(--yl) 28%,transparent)!important;background:color-mix(in srgb,var(--yl) 7%,var(--cbg))!important}
+/* Unified yellow highlight — library selection & search match */
+.sc.hl,.sc.hl-s{border:3px solid var(--yl)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--yl) 36%,transparent),0 4px 22px color-mix(in srgb,var(--yl) 28%,transparent)!important;background:color-mix(in srgb,var(--yl) 7%,var(--cbg))!important}
 /* Drop line indicators */
 .sc.dpb::before{content:'';position:absolute;top:-9px;left:-2px;right:-2px;height:3px;background:var(--acc);border-radius:2px;box-shadow:0 0 8px var(--acc),0 0 3px var(--acc);z-index:2}
 .sc.dpa::after{content:'';position:absolute;bottom:-9px;left:-2px;right:-2px;height:3px;background:var(--acc);border-radius:2px;box-shadow:0 0 8px var(--acc),0 0 3px var(--acc);z-index:2}
@@ -436,7 +434,6 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 <!-- HEADER -->
 <div id="hdr">
   <h1>🎬 ScriptEase</h1>
-  <!-- test -->
   <span class="tip">Click library items to highlight · ✏️ to edit a scene · Drag cards to reorder</span>
   <div id="ur-wrap">
     <button id="undo-btn" class="ur-btn" onclick="undo()" disabled title="Undo (Ctrl+Z)">↩ Undo</button>
@@ -1017,9 +1014,12 @@ document.getElementById('ap-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') confirmAdd();
   if (e.key === 'Escape') closeAddPopup();
 });
-document.getElementById('add-popup').addEventListener('click', e => {
-  if (e.target === document.getElementById('add-popup')) closeAddPopup();
-});
+// Backdrop-click-to-close helper (used by all modals)
+function onBackdropClick(id, closeFn) {
+  const el = document.getElementById(id);
+  el.addEventListener('click', e => { if (e.target === el) closeFn(); });
+}
+onBackdropClick('add-popup', closeAddPopup);
 
 // ── THEME ─────────────────────────────────────────────────────────────────────
 function setTheme(name) { document.documentElement.dataset.theme = name; saveState(); }
@@ -1357,18 +1357,10 @@ function openModal(id) {
   document.getElementById('modal').classList.add('open');
 }
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
-document.getElementById('modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('modal')) closeModal();
-});
-document.getElementById('libdel-modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('libdel-modal')) closeLibDelModal();
-});
-document.getElementById('savecfm-modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('savecfm-modal')) closeSaveCfm();
-});
-document.getElementById('secdel-modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('secdel-modal')) closeSecDelModal();
-});
+onBackdropClick('modal', closeModal);
+onBackdropClick('libdel-modal', closeLibDelModal);
+onBackdropClick('savecfm-modal', closeSaveCfm);
+onBackdropClick('secdel-modal', closeSecDelModal);
 document.getElementById('sec-add-inp').addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); addSection(); }
 });
@@ -1426,30 +1418,9 @@ function renderLibSec(sec) {
 
 // ── RENDER: CHECKLISTS ────────────────────────────────────────────────────────
 function renderAllCk() { SECS.forEach(s => { renderCk(s.key); renderEditCk(s.key); }); }
-function renderCk(sec) {
-  const wrap = document.getElementById('ck-' + sec + '-wrap');
-  const box  = document.getElementById('ck-' + sec); if (!box) return;
-  const btn  = wrap ? wrap.querySelector('.ck-drop-btn') : null;
-  const lbl  = SECS.find(s => s.key === sec)?.label || sec;
-  box.innerHTML = '';
-  if (!S[sec].length) {
-    box.innerHTML = '<div class="ck-drop-empty">Add ' + lbl.toLowerCase() + ' to library first</div>';
-    if (btn) btn.textContent = 'No ' + lbl.toLowerCase() + ' selected';
-    return;
-  }
-  S[sec].forEach(libItem => {
-    const name = libItem.name;
-    const item = document.createElement('label'); item.className = 'ck-drop-item';
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = name;
-    cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, lbl); });
-    const sp = document.createElement('span'); sp.textContent = name;
-    item.appendChild(cb); item.appendChild(sp); box.appendChild(item);
-  });
-  if (btn) updateCkDropLabel(wrap, lbl);
-}
-function renderEditCk(sec, checked=[]) {
-  const wrap = document.getElementById('ek-' + sec + '-wrap');
-  const box  = document.getElementById('ek-' + sec); if (!box) return;
+function renderCkList(prefix, sec, checked=[]) {
+  const wrap = document.getElementById(prefix + '-' + sec + '-wrap');
+  const box  = document.getElementById(prefix + '-' + sec); if (!box) return;
   const btn  = wrap ? wrap.querySelector('.ck-drop-btn') : null;
   const lbl  = SECS.find(s => s.key === sec)?.label || sec;
   box.innerHTML = '';
@@ -1468,6 +1439,8 @@ function renderEditCk(sec, checked=[]) {
   });
   if (wrap) updateCkDropLabel(wrap, lbl);
 }
+function renderCk(sec) { renderCkList('ck', sec); }
+function renderEditCk(sec, checked=[]) { renderCkList('ek', sec, checked); }
 
 // ── RENDER: BOARD ─────────────────────────────────────────────────────────────
 // Returns the 1-based display number for a scene based on visual board order:
@@ -2078,32 +2051,20 @@ function endLibDrag() {
   ld.on = false; ld.sec = null; ld.fromIdx = null; ld.dropIdx = null;
 }
 
-// ── LIBRARY PANEL RESIZE ───────────────────────────────────────────────────────
-const lpDr = { on:false, startX:0, startW:0 };
-document.getElementById('lp-resize').addEventListener('mousedown', e => {
-  if (e.button !== 0) return;
-  lpDr.on = true; lpDr.startX = e.clientX; lpDr.startW = document.getElementById('lp').offsetWidth;
-  document.getElementById('lp-resize').classList.add('dragging');
-  e.preventDefault(); e.stopPropagation();
-});
-
-// ── CENTER PANEL RESIZE ────────────────────────────────────────────────────────
-const cpDr = { on:false, startX:0, startW:0 };
-document.getElementById('cp-resize').addEventListener('mousedown', e => {
-  if (e.button !== 0) return;
-  cpDr.on = true; cpDr.startX = e.clientX; cpDr.startW = document.getElementById('cp').offsetWidth;
-  document.getElementById('cp-resize').classList.add('dragging');
-  e.preventDefault(); e.stopPropagation();
-});
-
-// ── SECTIONS PANEL RESIZE ─────────────────────────────────────────────────────
-const spDr = { on:false, startX:0, startW:0 };
-document.getElementById('sp-resize').addEventListener('mousedown', e => {
-  if (e.button !== 0) return;
-  spDr.on = true; spDr.startX = e.clientX; spDr.startW = document.getElementById('sp').offsetWidth;
-  document.getElementById('sp-resize').classList.add('dragging');
-  e.preventDefault(); e.stopPropagation();
-});
+// ── PANEL RESIZE ──────────────────────────────────────────────────────────────
+function initPanelResize(panelId, handleId, min, max) {
+  const dr = { on:false, startX:0, startW:0, panelId, handleId, min, max };
+  document.getElementById(handleId).addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    dr.on = true; dr.startX = e.clientX; dr.startW = document.getElementById(panelId).offsetWidth;
+    document.getElementById(handleId).classList.add('dragging');
+    e.preventDefault(); e.stopPropagation();
+  });
+  return dr;
+}
+const lpDr = initPanelResize('lp', 'lp-resize', 140, 480);
+const cpDr = initPanelResize('cp', 'cp-resize', 180, 520);
+const spDr = initPanelResize('sp', 'sp-resize', 150, 400);
 
 // ── GLOBAL MOUSE ──────────────────────────────────────────────────────────────
 document.addEventListener('mousemove', e => {
@@ -2115,18 +2076,11 @@ document.addEventListener('mousemove', e => {
   }
   if (ld.on)  moveLibDrag(e);
   if (sld.on) moveSecListDrag(e);
-  if (lpDr.on) {
-    const newW = Math.max(140, Math.min(480, lpDr.startW + (e.clientX - lpDr.startX)));
-    document.getElementById('lp').style.width = newW + 'px';
-  }
-  if (cpDr.on) {
-    const newW = Math.max(180, Math.min(520, cpDr.startW + (e.clientX - cpDr.startX)));
-    document.getElementById('cp').style.width = newW + 'px';
-  }
-  if (spDr.on) {
-    const newW = Math.max(150, Math.min(400, spDr.startW + (e.clientX - spDr.startX)));
-    document.getElementById('sp').style.width = newW + 'px';
-  }
+  [lpDr, cpDr, spDr].forEach(dr => {
+    if (!dr.on) return;
+    const newW = Math.max(dr.min, Math.min(dr.max, dr.startW + (e.clientX - dr.startX)));
+    document.getElementById(dr.panelId).style.width = newW + 'px';
+  });
 });
 document.addEventListener('mouseup', e => {
   if (ptr.down) {
@@ -2135,9 +2089,10 @@ document.addEventListener('mouseup', e => {
   }
   if (ld.on)  endLibDrag();
   if (sld.on) endSecListDrag();
-  if (lpDr.on) { lpDr.on = false; document.getElementById('lp-resize').classList.remove('dragging'); }
-  if (cpDr.on) { cpDr.on = false; document.getElementById('cp-resize').classList.remove('dragging'); }
-  if (spDr.on) { spDr.on = false; document.getElementById('sp-resize').classList.remove('dragging'); }
+  [lpDr, cpDr, spDr].forEach(dr => {
+    if (!dr.on) return;
+    dr.on = false; document.getElementById(dr.handleId).classList.remove('dragging');
+  });
 });
 
 // ── CANCEL ON CLICK OUTSIDE SCENE PANEL ───────────────────────────────────────
@@ -2179,9 +2134,7 @@ window.addEventListener('resize', () => { if (S.sections.length) alignSecHeaders
 document.getElementById('sbscrl').addEventListener('scroll', updateSecPins);
 
 // Close report modal on backdrop click
-document.getElementById('rpt-modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('rpt-modal')) closeReportModal();
-});
+onBackdropClick('rpt-modal', closeReportModal);
 
 // ── REPORTS ───────────────────────────────────────────────────────────────────
 let rptType = 'scenelist';
@@ -2230,19 +2183,24 @@ function rptSelectedSecs() {
   return new Set([...document.querySelectorAll('[data-rpt-sec]:checked')].map(c => c.value));
 }
 function rptFilterScenes(secSet) {
-  return S.scenes.filter(sc => {
+  // Filter then sort by board display order (unassigned first, then sections in order)
+  const filtered = S.scenes.filter(sc => {
     const sid = sc.sectionId != null ? String(sc.sectionId) : '__unassigned__';
     return secSet.has(sid);
+  });
+  const validSecIds = S.sections.map(s => s.id);
+  const secOrder = new Map(validSecIds.map((id, i) => [id, i + 1]));
+  return filtered.sort((a, b) => {
+    const oa = secOrder.get(a.sectionId) ?? 0;
+    const ob = secOrder.get(b.sectionId) ?? 0;
+    if (oa !== ob) return oa - ob;
+    return filtered.indexOf(a) - filtered.indexOf(b);
   });
 }
 function rptSecName(sectionId) {
   if (!sectionId) return 'Unassigned';
   const sec = S.sections.find(s => s.id === sectionId);
   return sec ? sec.name : 'Unassigned';
-}
-function rptSceneNum(id) {
-  const idx = S.scenes.findIndex(s => s.id === id);
-  return idx >= 0 ? idx + 1 : '?';
 }
 
 // ── REPORT BUILDERS ───────────────────────────────────────────────────────────
@@ -2352,7 +2310,7 @@ function buildSceneListReport(secSet) {
   } else {
     scenes.forEach(sc => {
       html += `<div class="scene-block">`;
-      html += `<div class="scene-num">Scene ${rptSceneNum(sc.id)}</div>`;
+      html += `<div class="scene-num">Scene ${sceneDisplayNum(sc.id)}</div>`;
       html += `<div class="scene-title">${rptEsc(sc.title || '(Untitled)')}</div>`;
       if (inc.section)                       html += rptFieldRow('Section',    rptEsc(rptSecName(sc.sectionId)));
       if (inc.summary    && sc.summary)      html += rptFieldRow('Summary',    rptEsc(sc.summary));
@@ -2367,33 +2325,45 @@ function buildSceneListReport(secSet) {
   return html + '</body></html>';
 }
 
-// Character Report
-function buildCharacterReport(secSet) {
-  const inc = {
-    section:  document.getElementById('rpt-ch-section').checked,
-    location: document.getElementById('rpt-ch-location').checked,
-    summary:  document.getElementById('rpt-ch-summary').checked,
-    notes:    document.getElementById('rpt-ch-notes').checked,
-  };
+// Generic Library Item Report (Character, Location, Theme, Misc)
+const LIB_RPT_CFG = {
+  character: { key:'characters', prefix:'rpt-ch', title:'Character Report', emptyMsg:'No characters in library.', emptyScene:'Does not appear in selected scenes',
+               extraMeta: (inc, sc) => inc.location && sc.locations?.length ? sc.locations.map(rptEsc).join(', ') : null },
+  location:  { key:'locations',  prefix:'rpt-lo', title:'Location Report',  emptyMsg:'No locations in library.',  emptyScene:'Not used in selected scenes',
+               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
+  theme:     { key:'themes',     prefix:'rpt-th', title:'Theme Report',     emptyMsg:'No themes in library.',     emptyScene:'Not present in selected scenes',
+               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
+  misc:      { key:'misc',       prefix:'rpt-mi', title:'Misc Items Report',emptyMsg:'No misc items in library.', emptyScene:'Not present in selected scenes',
+               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
+};
+
+function buildLibItemReport(secSet, type) {
+  const cfg = LIB_RPT_CFG[type];
+  const pfx = cfg.prefix;
+  const inc = {};
+  document.querySelectorAll(`[id^="${pfx}-"]`).forEach(el => {
+    const field = el.id.slice(pfx.length + 1); // e.g. 'section', 'summary', etc.
+    inc[field] = el.checked;
+  });
   const scenes = rptFilterScenes(secSet);
-  let html = rptPageHeader('Character Report');
-  if (!S.characters.length) {
-    html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No characters in library.</p>';
+  let html = rptPageHeader(cfg.title);
+  if (!S[cfg.key].length) {
+    html += `<p style="color:#aaa;margin-top:20px;font-style:italic">${cfg.emptyMsg}</p>`;
   } else {
-    S.characters.forEach(item => {
-      const ch = item.name;
-      const appears = scenes.filter(sc => sc.characters?.includes(ch));
-      html += `<h2>${rptEsc(ch)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
+    S[cfg.key].forEach(item => {
+      const appears = scenes.filter(sc => (sc[cfg.key] || []).includes(item.name));
+      html += `<h2>${rptEsc(item.name)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
       if (inc.notes && item.notes) html += `<div class="scene-entry-summary" style="margin:-4px 0 8px">${rptEsc(item.notes)}</div>`;
       if (!appears.length) {
-        html += `<div class="empty-note">Does not appear in selected scenes</div>`;
+        html += `<div class="empty-note">${cfg.emptyScene}</div>`;
       } else {
         appears.forEach(sc => {
           const meta = [];
           if (inc.section) meta.push(rptEsc(rptSecName(sc.sectionId)));
-          if (inc.location && sc.locations?.length) meta.push(sc.locations.map(rptEsc).join(', '));
+          const extra = cfg.extraMeta(inc, sc);
+          if (extra) meta.push(extra);
           html += `<div class="scene-entry">`;
-          html += `<span class="scene-entry-title">Scene ${rptSceneNum(sc.id)} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
+          html += `<span class="scene-entry-title">Scene ${sceneDisplayNum(sc.id)} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
           if (meta.length) html += ` <span class="scene-entry-meta">· ${meta.join(' · ')}</span>`;
           if (inc.summary && sc.summary) html += `<div class="scene-entry-summary">${rptEsc(sc.summary)}</div>`;
           html += `</div>`;
@@ -2403,117 +2373,10 @@ function buildCharacterReport(secSet) {
   }
   return html + '</body></html>';
 }
-
-// Location Report
-function buildLocationReport(secSet) {
-  const inc = {
-    section:    document.getElementById('rpt-lo-section').checked,
-    characters: document.getElementById('rpt-lo-characters').checked,
-    summary:    document.getElementById('rpt-lo-summary').checked,
-    notes:      document.getElementById('rpt-lo-notes').checked,
-  };
-  const scenes = rptFilterScenes(secSet);
-  let html = rptPageHeader('Location Report');
-  if (!S.locations.length) {
-    html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No locations in library.</p>';
-  } else {
-    S.locations.forEach(item => {
-      const loc = item.name;
-      const appears = scenes.filter(sc => sc.locations?.includes(loc));
-      html += `<h2>${rptEsc(loc)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
-      if (inc.notes && item.notes) html += `<div class="scene-entry-summary" style="margin:-4px 0 8px">${rptEsc(item.notes)}</div>`;
-      if (!appears.length) {
-        html += `<div class="empty-note">Not used in selected scenes</div>`;
-      } else {
-        appears.forEach(sc => {
-          const meta = [];
-          if (inc.section)    meta.push(rptEsc(rptSecName(sc.sectionId)));
-          if (inc.characters && sc.characters?.length) meta.push(sc.characters.map(rptEsc).join(', '));
-          html += `<div class="scene-entry">`;
-          html += `<span class="scene-entry-title">Scene ${rptSceneNum(sc.id)} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
-          if (meta.length) html += ` <span class="scene-entry-meta">· ${meta.join(' · ')}</span>`;
-          if (inc.summary && sc.summary) html += `<div class="scene-entry-summary">${rptEsc(sc.summary)}</div>`;
-          html += `</div>`;
-        });
-      }
-    });
-  }
-  return html + '</body></html>';
-}
-
-// Theme Report
-function buildThemeReport(secSet) {
-  const inc = {
-    section:    document.getElementById('rpt-th-section').checked,
-    characters: document.getElementById('rpt-th-characters').checked,
-    summary:    document.getElementById('rpt-th-summary').checked,
-    notes:      document.getElementById('rpt-th-notes').checked,
-  };
-  const scenes = rptFilterScenes(secSet);
-  let html = rptPageHeader('Theme Report');
-  if (!S.themes.length) {
-    html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No themes in library.</p>';
-  } else {
-    S.themes.forEach(item => {
-      const th = item.name;
-      const appears = scenes.filter(sc => sc.themes?.includes(th));
-      html += `<h2>${rptEsc(th)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
-      if (inc.notes && item.notes) html += `<div class="scene-entry-summary" style="margin:-4px 0 8px">${rptEsc(item.notes)}</div>`;
-      if (!appears.length) {
-        html += `<div class="empty-note">Not present in selected scenes</div>`;
-      } else {
-        appears.forEach(sc => {
-          const meta = [];
-          if (inc.section)    meta.push(rptEsc(rptSecName(sc.sectionId)));
-          if (inc.characters && sc.characters?.length) meta.push(sc.characters.map(rptEsc).join(', '));
-          html += `<div class="scene-entry">`;
-          html += `<span class="scene-entry-title">Scene ${rptSceneNum(sc.id)} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
-          if (meta.length) html += ` <span class="scene-entry-meta">· ${meta.join(' · ')}</span>`;
-          if (inc.summary && sc.summary) html += `<div class="scene-entry-summary">${rptEsc(sc.summary)}</div>`;
-          html += `</div>`;
-        });
-      }
-    });
-  }
-  return html + '</body></html>';
-}
-
-// Misc Items Report
-function buildMiscReport(secSet) {
-  const inc = {
-    section:    document.getElementById('rpt-mi-section').checked,
-    characters: document.getElementById('rpt-mi-characters').checked,
-    summary:    document.getElementById('rpt-mi-summary').checked,
-    notes:      document.getElementById('rpt-mi-notes').checked,
-  };
-  const scenes = rptFilterScenes(secSet);
-  let html = rptPageHeader('Misc Items Report');
-  if (!S.misc.length) {
-    html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No misc items in library.</p>';
-  } else {
-    S.misc.forEach(item => {
-      const name = item.name;
-      const appears = scenes.filter(sc => sc.misc?.includes(name));
-      html += `<h2>${rptEsc(name)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
-      if (inc.notes && item.notes) html += `<div class="scene-entry-summary" style="margin:-4px 0 8px">${rptEsc(item.notes)}</div>`;
-      if (!appears.length) {
-        html += `<div class="empty-note">Not present in selected scenes</div>`;
-      } else {
-        appears.forEach(sc => {
-          const meta = [];
-          if (inc.section)    meta.push(rptEsc(rptSecName(sc.sectionId)));
-          if (inc.characters && sc.characters?.length) meta.push(sc.characters.map(rptEsc).join(', '));
-          html += `<div class="scene-entry">`;
-          html += `<span class="scene-entry-title">Scene ${rptSceneNum(sc.id)} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
-          if (meta.length) html += ` <span class="scene-entry-meta">· ${meta.join(' · ')}</span>`;
-          if (inc.summary && sc.summary) html += `<div class="scene-entry-summary">${rptEsc(sc.summary)}</div>`;
-          html += `</div>`;
-        });
-      }
-    });
-  }
-  return html + '</body></html>';
-}
+function buildCharacterReport(secSet) { return buildLibItemReport(secSet, 'character'); }
+function buildLocationReport(secSet)  { return buildLibItemReport(secSet, 'location'); }
+function buildThemeReport(secSet)     { return buildLibItemReport(secSet, 'theme'); }
+function buildMiscReport(secSet)      { return buildLibItemReport(secSet, 'misc'); }
 
 // Cross-Reference Matrix
 function updateMxNote() {
@@ -2548,18 +2411,20 @@ function buildMatrixReport(secSet) {
     html += `</tr></thead><tbody>`;
     scenes.forEach(sc => {
       const secStr = showSec ? ` <span class="mx-scene-sec" style="font-weight:400">· ${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
-      html += `<tr><td class="mx-row-hdr" style="width:200px;max-width:200px"><div class="mx-row-wrap"><span class="mx-row-num">${rptSceneNum(sc.id)} —</span><span class="mx-row-title">${rptEsc(sc.title||'(Untitled)')}${secStr}</span></div></td>`;
+      html += `<tr><td class="mx-row-hdr" style="width:200px;max-width:200px"><div class="mx-row-wrap"><span class="mx-row-num">${sceneDisplayNum(sc.id)} —</span><span class="mx-row-title">${rptEsc(sc.title||'(Untitled)')}${secStr}</span></div></td>`;
       axisItems.forEach(item => {
         html += (sc[axis] || []).includes(item.name) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
       });
       html += `</tr>`;
     });
+    html += `</tbody></table>`;
   } else {
-    // axisItems as rows, Scenes as columns
-    html += `<table><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
+    // axisItems as rows, Scenes as columns — render full table, then auto-chunk via script
+    html += `<div id="mx-wrap">`;
+    html += `<table id="mx-full"><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
     scenes.forEach(sc => {
       const secStr = showSec ? `<span class="mx-scene-sec" style="display:block;white-space:nowrap">${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
-      html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">Sc ${rptSceneNum(sc.id)}</span>${secStr}</th>`;
+      html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">Sc ${sceneDisplayNum(sc.id)}</span>${secStr}</th>`;
     });
     html += `</tr></thead><tbody>`;
     axisItems.forEach(item => {
@@ -2569,8 +2434,58 @@ function buildMatrixReport(secSet) {
       });
       html += `</tr>`;
     });
+    html += `</tbody></table></div>`;
+    // Post-render script: measure actual column widths, split into fitted chunks
+    html += `<script>
+(function(){
+  var tbl = document.getElementById('mx-full');
+  if (!tbl) return;
+  var ths = tbl.querySelectorAll('thead th');
+  if (ths.length < 2) return;
+  var pageW = document.body.clientWidth || 760;
+  var hdrW = ths[0].offsetWidth;
+  var colWs = [];
+  for (var i = 1; i < ths.length; i++) colWs.push(ths[i].offsetWidth);
+  // Determine how many columns fit per chunk
+  var chunks = [], ci = 0;
+  while (ci < colWs.length) {
+    var used = hdrW, end = ci;
+    while (end < colWs.length && used + colWs[end] <= pageW) { used += colWs[end]; end++; }
+    if (end === ci) end = ci + 1; // at least one column
+    chunks.push([ci, end]);
+    ci = end;
   }
-  html += `</tbody></table>`;
+  if (chunks.length <= 1) return; // fits in one table, nothing to do
+  // Build chunk tables
+  var rows = tbl.querySelectorAll('tbody tr');
+  var wrap = document.getElementById('mx-wrap');
+  var frag = document.createDocumentFragment();
+  chunks.forEach(function(c) {
+    var t = document.createElement('table');
+    t.style.marginBottom = '18px';
+    t.style.pageBreakInside = 'avoid';
+    var thead = document.createElement('thead');
+    var hr = document.createElement('tr');
+    hr.appendChild(ths[0].cloneNode(true));
+    for (var i = c[0]; i < c[1]; i++) hr.appendChild(ths[i+1].cloneNode(true));
+    thead.appendChild(hr);
+    t.appendChild(thead);
+    var tbody = document.createElement('tbody');
+    rows.forEach(function(row) {
+      var cells = row.querySelectorAll('td');
+      var nr = document.createElement('tr');
+      nr.appendChild(cells[0].cloneNode(true));
+      for (var i = c[0]; i < c[1]; i++) nr.appendChild(cells[i+1].cloneNode(true));
+      tbody.appendChild(nr);
+    });
+    t.appendChild(tbody);
+    frag.appendChild(t);
+  });
+  wrap.innerHTML = '';
+  wrap.appendChild(frag);
+})();
+<\/script>`;
+  }
   return html + '</body></html>';
 }
 
