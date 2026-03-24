@@ -2416,7 +2416,7 @@ function buildMatrixReport(secSet) {
     const cols = Math.max(5, Math.floor((PAGE_W - HDR_W) / COL_W));
     for (let ci = 0; ci < scenes.length; ci += cols) {
       const chunk = scenes.slice(ci, ci + cols);
-      html += `<table style="margin-bottom:18px;page-break-inside:avoid"><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
+      html += `<table style="width:100%;margin-bottom:18px;page-break-inside:avoid"><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
       chunk.forEach(sc => {
         const secStr = showSec ? `<span class="mx-scene-sec" style="display:block;white-space:nowrap">${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
         html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">Sc ${sceneDisplayNum(sc.id)}</span>${secStr}</th>`;
