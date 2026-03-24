@@ -2410,12 +2410,13 @@ function buildMatrixReport(secSet) {
     });
     html += `</tbody></table>`;
   } else {
-    // axisItems as rows, Scenes as columns — chunked for print
-    const CHUNK = 15;
-    for (let ci = 0; ci < scenes.length; ci += CHUNK) {
-      const chunk = scenes.slice(ci, ci + CHUNK);
-      if (ci > 0) html += `<div style="page-break-before:always;margin-top:24px"></div>`;
-      html += `<table><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
+    // axisItems as rows, Scenes as columns — auto-chunked to fit page width
+    // Estimate: ~130px row header + ~50px per scene column; fit to ~680px (portrait safe)
+    const COL_W = 50, HDR_W = 130, PAGE_W = 680;
+    const cols = Math.max(5, Math.floor((PAGE_W - HDR_W) / COL_W));
+    for (let ci = 0; ci < scenes.length; ci += cols) {
+      const chunk = scenes.slice(ci, ci + cols);
+      html += `<table style="margin-bottom:18px;page-break-inside:avoid"><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
       chunk.forEach(sc => {
         const secStr = showSec ? `<span class="mx-scene-sec" style="display:block;white-space:nowrap">${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
         html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">Sc ${sceneDisplayNum(sc.id)}</span>${secStr}</th>`;
