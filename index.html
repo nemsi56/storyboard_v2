@@ -2183,9 +2183,18 @@ function rptSelectedSecs() {
   return new Set([...document.querySelectorAll('[data-rpt-sec]:checked')].map(c => c.value));
 }
 function rptFilterScenes(secSet) {
-  return S.scenes.filter(sc => {
+  // Filter then sort by board display order (unassigned first, then sections in order)
+  const filtered = S.scenes.filter(sc => {
     const sid = sc.sectionId != null ? String(sc.sectionId) : '__unassigned__';
     return secSet.has(sid);
+  });
+  const validSecIds = S.sections.map(s => s.id);
+  const secOrder = new Map(validSecIds.map((id, i) => [id, i + 1]));
+  return filtered.sort((a, b) => {
+    const oa = secOrder.get(a.sectionId) ?? 0;
+    const ob = secOrder.get(b.sectionId) ?? 0;
+    if (oa !== ob) return oa - ob;
+    return filtered.indexOf(a) - filtered.indexOf(b);
   });
 }
 function rptSecName(sectionId) {
@@ -2410,27 +2419,72 @@ function buildMatrixReport(secSet) {
     });
     html += `</tbody></table>`;
   } else {
-    // axisItems as rows, Scenes as columns — auto-chunked to fit page width
-    // Estimate: ~130px row header + ~50px per scene column; fit to ~680px (portrait safe)
-    const COL_W = 50, HDR_W = 130, PAGE_W = 680;
-    const cols = Math.max(5, Math.floor((PAGE_W - HDR_W) / COL_W));
-    for (let ci = 0; ci < scenes.length; ci += cols) {
-      const chunk = scenes.slice(ci, ci + cols);
-      html += `<table style="width:100%;margin-bottom:18px;page-break-inside:avoid"><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
-      chunk.forEach(sc => {
-        const secStr = showSec ? `<span class="mx-scene-sec" style="display:block;white-space:nowrap">${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
-        html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">Sc ${sceneDisplayNum(sc.id)}</span>${secStr}</th>`;
+    // axisItems as rows, Scenes as columns — render full table, then auto-chunk via script
+    html += `<div id="mx-wrap">`;
+    html += `<table id="mx-full"><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
+    scenes.forEach(sc => {
+      const secStr = showSec ? `<span class="mx-scene-sec" style="display:block;white-space:nowrap">${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
+      html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">Sc ${sceneDisplayNum(sc.id)}</span>${secStr}</th>`;
+    });
+    html += `</tr></thead><tbody>`;
+    axisItems.forEach(item => {
+      html += `<tr><td class="mx-row-hdr">${rptEsc(item.name)}</td>`;
+      scenes.forEach(sc => {
+        html += (sc[axis] || []).includes(item.name) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
       });
-      html += `</tr></thead><tbody>`;
-      axisItems.forEach(item => {
-        html += `<tr><td class="mx-row-hdr">${rptEsc(item.name)}</td>`;
-        chunk.forEach(sc => {
-          html += (sc[axis] || []).includes(item.name) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
-        });
-        html += `</tr>`;
-      });
-      html += `</tbody></table>`;
-    }
+      html += `</tr>`;
+    });
+    html += `</tbody></table></div>`;
+    // Post-render script: measure actual column widths, split into fitted chunks
+    html += `<script>
+(function(){
+  var tbl = document.getElementById('mx-full');
+  if (!tbl) return;
+  var ths = tbl.querySelectorAll('thead th');
+  if (ths.length < 2) return;
+  var pageW = document.body.clientWidth || 760;
+  var hdrW = ths[0].offsetWidth;
+  var colWs = [];
+  for (var i = 1; i < ths.length; i++) colWs.push(ths[i].offsetWidth);
+  // Determine how many columns fit per chunk
+  var chunks = [], ci = 0;
+  while (ci < colWs.length) {
+    var used = hdrW, end = ci;
+    while (end < colWs.length && used + colWs[end] <= pageW) { used += colWs[end]; end++; }
+    if (end === ci) end = ci + 1; // at least one column
+    chunks.push([ci, end]);
+    ci = end;
+  }
+  if (chunks.length <= 1) return; // fits in one table, nothing to do
+  // Build chunk tables
+  var rows = tbl.querySelectorAll('tbody tr');
+  var wrap = document.getElementById('mx-wrap');
+  var frag = document.createDocumentFragment();
+  chunks.forEach(function(c) {
+    var t = document.createElement('table');
+    t.style.marginBottom = '18px';
+    t.style.pageBreakInside = 'avoid';
+    var thead = document.createElement('thead');
+    var hr = document.createElement('tr');
+    hr.appendChild(ths[0].cloneNode(true));
+    for (var i = c[0]; i < c[1]; i++) hr.appendChild(ths[i+1].cloneNode(true));
+    thead.appendChild(hr);
+    t.appendChild(thead);
+    var tbody = document.createElement('tbody');
+    rows.forEach(function(row) {
+      var cells = row.querySelectorAll('td');
+      var nr = document.createElement('tr');
+      nr.appendChild(cells[0].cloneNode(true));
+      for (var i = c[0]; i < c[1]; i++) nr.appendChild(cells[i+1].cloneNode(true));
+      tbody.appendChild(nr);
+    });
+    t.appendChild(tbody);
+    frag.appendChild(t);
+  });
+  wrap.innerHTML = '';
+  wrap.appendChild(frag);
+})();
+<\/script>`;
   }
   return html + '</body></html>';
 }
