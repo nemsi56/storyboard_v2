@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Visual Storyboard</title>
+<title>Interactive Beatboard</title>
 <style>
 /* ══ 5 THEMES ═══════════════════════════════════════════════════════════════ */
 /* --bl=chars --gr=locs --clt=themes-cat --am=misc  --acc=UI accent --yl=highlight --sbg=storyboard bg */
@@ -482,8 +482,8 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 <!-- ══ PROJECT MANAGER SCREEN ══════════════════════════════════════════════ -->
 <div id="proj-mgr">
   <div class="pm-hdr">
-    <h1>🎬 ScriptEase</h1>
-    <span class="pm-sub">Visual Storyboard</span>
+    <h1>🎬 SceneSetter</h1>
+    <span class="pm-sub">Interactive Beatboard</span>
     <div class="pm-hdr-right">
       <div id="pm-theme-wrap" style="display:flex;align-items:center;gap:7px;background:var(--s0);border:1px solid var(--s1);border-radius:7px;padding:5px 9px">
         <label for="pm-theme-sel" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--o0);white-space:nowrap">Theme</label>
@@ -539,7 +539,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 <!-- HEADER -->
 <div id="hdr">
   <button class="proj-back" onclick="backToProjects()" title="Back to project list">◂ Projects</button>
-  <h1>🎬 ScriptEase</h1>
+  <h1>🎬 SceneSetter</h1>
   <span id="proj-name"></span>
   <span class="tip">Click library items to highlight · ✏️ to edit a scene · Drag cards to reorder</span>
   <div id="ur-wrap">
@@ -3012,7 +3012,7 @@ function importProjectJSON(inputEl) {
       saveProjectIndex(index);
       renderProjectGrid();
     } catch(err) {
-      alert('Could not read project file. Make sure it is a valid ScriptEase JSON export.');
+      alert('Could not read project file. Make sure it is a valid SceneSetter JSON export.');
     }
   };
   reader.readAsText(file);
