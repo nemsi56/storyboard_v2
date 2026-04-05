@@ -461,6 +461,11 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .pm-empty-icon{font-size:48px;margin-bottom:16px;opacity:.6}
 .pm-empty-title{font-size:18px;font-weight:700;color:var(--tx);margin-bottom:8px}
 .pm-empty-sub{font-size:13px;color:var(--sub);max-width:360px;margin:0 auto;line-height:1.6}
+.pm-intro{margin-bottom:28px}
+.pm-intro-main{font-size:18px;font-weight:600;color:var(--tx);margin-bottom:8px;line-height:1.5}
+.pm-intro-sub{font-size:13px;color:var(--sub);line-height:1.6}
+.pm-intro-tagline{font-size:12px;color:var(--o0);font-weight:600;letter-spacing:0.5px;margin-top:12px;text-transform:uppercase}
+.pm-intro-privacy{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.5}
 /* Project modals */
 .pm-modal{position:fixed;inset:0;background:var(--mov);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .18s}
 .pm-modal.open{opacity:1;pointer-events:auto}
@@ -499,6 +504,12 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   </div>
   <div class="pm-body">
     <div class="pm-inner">
+      <div class="pm-intro">
+        <div class="pm-intro-main">SceneSetter is a visual story organizer for writers. Get your characters, locations, themes, and scenes in order so you can focus on telling your best story.</div>
+        <div class="pm-intro-sub">Organize. Visualize. Write. See your story take shape.</div>
+        <div class="pm-intro-tagline">Free to use · No account required</div>
+        <div class="pm-intro-privacy">Your content remains yours: All data is stored locally in your browser, per project — nothing is sent to any server.</div>
+      </div>
       <div class="pm-toolbar">
         <button class="pm-btn pm-btn-primary" onclick="createAndOpenProject()">+ New Project</button>
         <button class="pm-btn pm-btn-secondary" onclick="document.getElementById('proj-import-input').click()">Import JSON</button>
