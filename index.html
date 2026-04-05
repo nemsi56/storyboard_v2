@@ -502,6 +502,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
       <div class="pm-toolbar">
         <button class="pm-btn pm-btn-primary" onclick="createAndOpenProject()">+ New Project</button>
         <button class="pm-btn pm-btn-secondary" onclick="document.getElementById('proj-import-input').click()">Import JSON</button>
+        <a href="tutorial.html" target="_blank" class="pm-btn pm-btn-secondary" style="text-decoration:none;text-align:center">Tutorial</a>
         <input type="file" id="proj-import-input" accept=".json" style="display:none" onchange="importProjectJSON(this)">
       </div>
       <div id="proj-grid" class="pm-grid"></div>
@@ -556,6 +557,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
       <option value="sunset">Sunset</option>
     </select>
   </div>
+  <a href="tutorial.html" target="_blank" title="Open tutorial in a new tab" style="background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background .12s,color .12s;flex-shrink:0">Tutorial</a>
   <button id="help-btn" onclick="toggleHelp()" title="Help – hover over highlighted areas to learn what each element does">?</button>
 </div>
 
