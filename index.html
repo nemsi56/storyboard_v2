@@ -518,13 +518,13 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
     <div class="pm-inner">
       <div class="pm-intro">
         <div class="pm-intro-sub">Organize. Visualize. Write.<br>See your story take shape.</div>
-        <div class="pm-intro-main">SceneSetter is a visual story organizer for writers. Get your characters, locations, themes, and scenes in order so you can focus on telling your best story.</div>
+        <div class="pm-intro-main">SceneSetter is a card-based visual story organizer for writers. Get your characters, locations, themes, and scenes in order so you can focus on telling your best story.</div>
         <div class="pm-intro-tagline">Free to use · No account required</div>
         <div class="pm-intro-privacy"><u>Your content remains privately yours.</u> All data is stored locally in your browser, per project. (We use Google Analytics to understand feature usage and improve the app, but no personal data or project content is shared.)</div>
         <div class="pm-intro-contact">
           <div style="margin-top: 16px; font-size: 12px; line-height: 1.6; color: var(--sub);">
             Thoughts? Suggestions? Issues? Urge to donate? Or simply want to be alerted to updates?<br>
-            Email to: <a href="mailto:scenesetter.contact@gmail.com" style="color: var(--acc); text-decoration: none;">scenesetter.contact@gmail.com</a>
+            <a href="mailto:scenesetter@protonmail.com" style="color: var(--acc); text-decoration: none; font-weight: 500;">Email us</a>
           </div>
           <div style="margin-top: 14px; font-size: 13px; font-weight: 500; color: var(--tx);">Enjoy!</div>
         </div>
@@ -1180,6 +1180,7 @@ function confirmAdd() {
   if (!name) { inp.focus(); return; }
   if (S[apSec].some(x => x.name === name)) { inp.select(); return; }
   pushHistory('Add ' + SINGULAR[apSec] + ' "' + name + '"');
+  gtag('event', 'item_added', { category: apSec });
   S[apSec].push({ name, notes });
   renderLibSec(apSec); renderCk(apSec); renderEditCk(apSec);
   closeAddPopup();
@@ -1198,6 +1199,7 @@ onBackdropClick('add-popup', closeAddPopup);
 
 // ── THEME ─────────────────────────────────────────────────────────────────────
 function setTheme(name) {
+  gtag('event', 'theme_changed', { theme: name });
   document.documentElement.dataset.theme = name;
   saveState();
   // Sync global prefs and both theme selectors
@@ -1398,6 +1400,7 @@ function addScene() {
   SECS.forEach(({ key }) => { row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => c.value); });
   const sectionId = S.sections.length ? (parseInt(document.getElementById('sc-section').value) || null) : null;
   pushHistory('Add scene "' + truncStr(title, 22) + '"');
+  gtag('event', 'scene_added');
   const newScene = { id: S.nextId++, title, summary, notes, ...row, sectionId };
   if (pendingInsert !== null) {
     const { afterId, sectionId: piSecId } = pendingInsert; pendingInsert = null;
@@ -1446,6 +1449,7 @@ function deleteScene(id) {
   const sc = S.scenes.find(s => s.id === id); if (!sc) return;
   if (!confirm(`Delete "${sc.title}"?`)) return;
   pushHistory('Delete scene "' + truncStr(sc.title, 22) + '"');
+  gtag('event', 'scene_deleted');
   S.scenes = S.scenes.filter(s => s.id !== id);
   S.selIds.delete(id);
   if (S.editingId === id) cancelEdit();
@@ -1938,6 +1942,7 @@ function addSection() {
   if (!name) { inp.focus(); return; }
   if (S.sections.some(s => s.name.toLowerCase() === name.toLowerCase())) { inp.select(); return; }
   pushHistory('Add section "' + truncStr(name, 22) + '"');
+  gtag('event', 'section_added');
   const color = SEC_COLORS[S.sections.length % SEC_COLORS.length];
   S.sections.push({ id: S.nextSecId++, name, color });
   inp.value = '';
@@ -2909,6 +2914,7 @@ function openProject(id) {
 }
 
 function createAndOpenProject() {
+  gtag('event', 'project_created');
   const id = genProjId();
   const now = new Date().toISOString();
   const index = loadProjectIndex();
@@ -2972,6 +2978,7 @@ function startProjDel(id) {
 function closeProjDel() { document.getElementById('proj-del-modal').classList.remove('open'); deletingProjId = null; }
 function confirmProjDel() {
   if (!deletingProjId) return;
+  gtag('event', 'project_deleted');
   localStorage.removeItem(projKey(deletingProjId));
   const index = loadProjectIndex().filter(p => p.id !== deletingProjId);
   saveProjectIndex(index);
@@ -2981,6 +2988,7 @@ function confirmProjDel() {
 
 // Duplicate
 function duplicateProject(id) {
+  gtag('event', 'project_duplicated');
   const raw = localStorage.getItem(projKey(id));
   if (!raw) return;
   const index = loadProjectIndex();
@@ -3000,6 +3008,7 @@ function duplicateProject(id) {
 
 // Export JSON
 function exportProjectJSON(id) {
+  gtag('event', 'project_exported');
   const raw = localStorage.getItem(projKey(id));
   if (!raw) return;
   const index = loadProjectIndex();
@@ -3042,6 +3051,7 @@ function importProjectJSON(inputEl) {
       const index = loadProjectIndex();
       index.push({ id, name, createdAt: now, modifiedAt: now, sceneCount: (d.scenes||[]).length, theme: d.theme || 'ivory' });
       saveProjectIndex(index);
+      gtag('event', 'project_imported');
       renderProjectGrid();
     } catch(err) {
       alert('Could not read project file. Make sure it is a valid SceneSetter JSON export.');
