@@ -4,6 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Interactive Beatboard</title>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NNVHKFSNPG"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-NNVHKFSNPG', {
+    'anonymize_ip': true,
+    'allow_google_signals': false,
+    'allow_ad_personalization_signals': false
+  });
+</script>
 <style>
 /* ══ 5 THEMES ═══════════════════════════════════════════════════════════════ */
 /* --bl=chars --gr=locs --clt=themes-cat --am=misc  --acc=UI accent --yl=highlight --sbg=storyboard bg */
@@ -488,7 +500,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 <div id="proj-mgr">
   <div class="pm-hdr">
     <h1>🎬 SceneSetter</h1>
-    <span class="pm-sub">Interactive Beatboard</span>
+    <span class="pm-sub">Interactive Beatboard for Writers</span>
     <div class="pm-hdr-right">
       <div id="pm-theme-wrap" style="display:flex;align-items:center;gap:7px;background:var(--s0);border:1px solid var(--s1);border-radius:7px;padding:5px 9px">
         <label for="pm-theme-sel" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--o0);white-space:nowrap">Theme</label>
@@ -505,10 +517,17 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   <div class="pm-body">
     <div class="pm-inner">
       <div class="pm-intro">
+        <div class="pm-intro-sub">Organize. Visualize. Write.<br>See your story take shape.</div>
         <div class="pm-intro-main">SceneSetter is a visual story organizer for writers. Get your characters, locations, themes, and scenes in order so you can focus on telling your best story.</div>
-        <div class="pm-intro-sub">Organize. Visualize. Write. See your story take shape.</div>
         <div class="pm-intro-tagline">Free to use · No account required</div>
-        <div class="pm-intro-privacy">Your content remains yours: All data is stored locally in your browser, per project — nothing is sent to any server.</div>
+        <div class="pm-intro-privacy"><u>Your content remains privately yours.</u> All data is stored locally in your browser, per project. (We use Google Analytics to understand feature usage and improve the app, but no personal data or project content is shared.)</div>
+        <div class="pm-intro-contact">
+          <div style="margin-top: 16px; font-size: 12px; line-height: 1.6; color: var(--sub);">
+            Thoughts? Suggestions? Issues? Urge to donate? Or simply want to be alerted to updates?<br>
+            Email to: <a href="mailto:scenesetter.contact@gmail.com" style="color: var(--acc); text-decoration: none;">scenesetter.contact@gmail.com</a>
+          </div>
+          <div style="margin-top: 14px; font-size: 13px; font-weight: 500; color: var(--tx);">Enjoy!</div>
+        </div>
       </div>
       <div class="pm-toolbar">
         <button class="pm-btn pm-btn-primary" onclick="createAndOpenProject()">+ New Project</button>
