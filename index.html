@@ -3,7 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Visual Storyboard</title>
+<title>Interactive Beatboard</title>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NNVHKFSNPG"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-NNVHKFSNPG', {
+    'anonymize_ip': true,
+    'allow_google_signals': false,
+    'allow_ad_personalization_signals': false
+  });
+</script>
 <style>
 /* ══ 5 THEMES ═══════════════════════════════════════════════════════════════ */
 /* --bl=chars --gr=locs --clt=themes-cat --am=misc  --acc=UI accent --yl=highlight --sbg=storyboard bg */
@@ -427,13 +439,139 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 #help-tip{position:fixed;z-index:20001;background:#1a1a1a;color:#f0f0f0;font-size:12px;line-height:1.5;padding:8px 12px;border-radius:7px;max-width:270px;pointer-events:none;display:none;box-shadow:0 4px 14px rgba(0,0,0,.45)}
 #help-tip.vis{display:block}
 .help-overlay-hint{position:fixed;top:14px;left:50%;transform:translateX(-50%);color:#fff;font-size:12px;font-weight:500;background:rgba(0,0,0,.6);padding:6px 18px;border-radius:20px;pointer-events:none;white-space:nowrap;z-index:20002}
+
+/* ══ PROJECT MANAGER ═══════════════════════════════════════════════════════ */
+#proj-mgr{display:flex;flex-direction:column;height:100vh;background:var(--bg0);overflow:hidden}
+.pm-hdr{background:var(--bg1);border-bottom:1px solid var(--bdr);padding:0 24px;height:56px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.pm-hdr h1{font-size:20px;font-weight:800;color:var(--acc);white-space:nowrap}
+.pm-hdr .pm-sub{font-size:12px;color:var(--sub);margin-left:2px}
+.pm-hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pm-body{flex:1;overflow-y:auto;padding:32px 24px 48px}
+.pm-inner{max-width:960px;margin:0 auto}
+.pm-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+.pm-btn{border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .14s,transform .1s,box-shadow .14s;white-space:nowrap}
+.pm-btn:active{transform:scale(.97)}
+.pm-btn-primary{background:var(--acc);color:var(--ontx);box-shadow:0 2px 8px color-mix(in srgb,var(--acc) 30%,transparent)}
+.pm-btn-primary:hover{filter:brightness(1.1);box-shadow:0 4px 14px color-mix(in srgb,var(--acc) 40%,transparent)}
+.pm-btn-secondary{background:var(--s0);color:var(--tx);border:1px solid var(--s1)}
+.pm-btn-secondary:hover{background:var(--s1)}
+.pm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.pm-card{background:var(--cbg);border:2px solid var(--cbdr);border-radius:12px;padding:20px;cursor:pointer;transition:border-color .15s,box-shadow .2s,transform .15s;position:relative;display:flex;flex-direction:column;gap:10px}
+.pm-card:hover{border-color:var(--acc);box-shadow:0 6px 24px color-mix(in srgb,var(--acc) 18%,transparent);transform:translateY(-2px)}
+.pm-card-top{display:flex;align-items:flex-start;gap:10px}
+.pm-card-icon{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:color-mix(in srgb,var(--acc) 12%,var(--bg0))}
+.pm-card-info{flex:1;min-width:0}
+.pm-card-name{font-size:15px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pm-card-meta{font-size:11px;color:var(--sub);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 12px}
+.pm-card-stats{display:flex;gap:12px;font-size:11px;color:var(--o0)}
+.pm-card-stat{display:flex;align-items:center;gap:3px}
+.pm-card-actions{display:flex;gap:6px;margin-top:2px;flex-wrap:wrap}
+.pm-card-btn{background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;transition:background .12s,color .12s;white-space:nowrap}
+.pm-card-btn:hover{background:var(--s1);color:var(--tx)}
+.pm-card-btn.del:hover{background:color-mix(in srgb,var(--rd) 14%,transparent);color:var(--rd);border-color:color-mix(in srgb,var(--rd) 30%,transparent)}
+.pm-empty{text-align:center;padding:80px 20px;color:var(--sub)}
+.pm-empty-icon{font-size:48px;margin-bottom:16px;opacity:.6}
+.pm-empty-title{font-size:18px;font-weight:700;color:var(--tx);margin-bottom:8px}
+.pm-empty-sub{font-size:13px;color:var(--sub);max-width:360px;margin:0 auto;line-height:1.6}
+.pm-intro{margin-bottom:28px}
+.pm-intro-main{font-size:18px;font-weight:600;color:var(--tx);margin-bottom:8px;line-height:1.5}
+.pm-intro-sub{font-size:13px;color:var(--sub);line-height:1.6}
+.pm-intro-tagline{font-size:12px;color:var(--o0);font-weight:600;letter-spacing:0.5px;margin-top:12px;text-transform:uppercase}
+.pm-intro-privacy{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.5}
+/* Project modals */
+.pm-modal{position:fixed;inset:0;background:var(--mov);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .18s}
+.pm-modal.open{opacity:1;pointer-events:auto}
+.pm-modal-box{background:var(--bg1);border:1px solid var(--bdr);border-radius:14px;padding:24px;min-width:340px;max-width:420px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.pm-modal-title{font-size:15px;font-weight:700;margin-bottom:14px;color:var(--tx)}
+.pm-modal-input{width:100%;padding:9px 12px;font-size:13px;font-family:inherit;background:var(--bg0);border:1px solid var(--s1);border-radius:7px;color:var(--tx);outline:none;margin-bottom:16px}
+.pm-modal-input:focus{border-color:var(--acc)}
+.pm-modal-btns{display:flex;gap:8px;justify-content:flex-end}
+.pm-modal-del-msg{font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:16px}
+.pm-modal-del-name{font-weight:700;color:var(--tx)}
+/* Back to projects button in storyboard header */
+.proj-back{background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;transition:background .12s,color .12s;white-space:nowrap;flex-shrink:0}
+.proj-back:hover{background:var(--s1);color:var(--tx)}
+#proj-name{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;flex-shrink:1}
 </style>
 </head>
 <body>
 
+<!-- ══ PROJECT MANAGER SCREEN ══════════════════════════════════════════════ -->
+<div id="proj-mgr">
+  <div class="pm-hdr">
+    <h1>🎬 SceneSetter</h1>
+    <span class="pm-sub">Interactive Beatboard for Writers</span>
+    <div class="pm-hdr-right">
+      <div id="pm-theme-wrap" style="display:flex;align-items:center;gap:7px;background:var(--s0);border:1px solid var(--s1);border-radius:7px;padding:5px 9px">
+        <label for="pm-theme-sel" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--o0);white-space:nowrap">Theme</label>
+        <select id="pm-theme-sel" onchange="setGlobalTheme(this.value)" style="background:transparent;border:none;color:var(--tx);font-size:12px;cursor:pointer;outline:none;font-family:inherit">
+          <option value="ivory">Ivory</option>
+          <option value="slate">Slate</option>
+          <option value="studio">Studio</option>
+          <option value="ocean">Ocean</option>
+          <option value="sunset">Sunset</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="pm-body">
+    <div class="pm-inner">
+      <div class="pm-intro">
+        <div class="pm-intro-sub">Organize. Visualize. Write.<br>See your story take shape.</div>
+        <div class="pm-intro-main">SceneSetter is a visual story organizer for writers. Get your characters, locations, themes, and scenes in order so you can focus on telling your best story.</div>
+        <div class="pm-intro-tagline">Free to use · No account required</div>
+        <div class="pm-intro-privacy"><u>Your content remains privately yours.</u> All data is stored locally in your browser, per project. (We use Google Analytics to understand feature usage and improve the app, but no personal data or project content is shared.)</div>
+        <div class="pm-intro-contact">
+          <div style="margin-top: 16px; font-size: 12px; line-height: 1.6; color: var(--sub);">
+            Thoughts? Suggestions? Issues? Urge to donate? Or simply want to be alerted to updates?<br>
+            Email to: <a href="mailto:scenesetter.contact@gmail.com" style="color: var(--acc); text-decoration: none;">scenesetter.contact@gmail.com</a>
+          </div>
+          <div style="margin-top: 14px; font-size: 13px; font-weight: 500; color: var(--tx);">Enjoy!</div>
+        </div>
+      </div>
+      <div class="pm-toolbar">
+        <button class="pm-btn pm-btn-primary" onclick="createAndOpenProject()">+ New Project</button>
+        <button class="pm-btn pm-btn-secondary" onclick="document.getElementById('proj-import-input').click()">Import JSON</button>
+        <a href="tutorial.html" target="_blank" class="pm-btn pm-btn-secondary" style="text-decoration:none;text-align:center">Tutorial</a>
+        <input type="file" id="proj-import-input" accept=".json" style="display:none" onchange="importProjectJSON(this)">
+      </div>
+      <div id="proj-grid" class="pm-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Project rename modal -->
+<div id="proj-rename-modal" class="pm-modal">
+  <div class="pm-modal-box">
+    <div class="pm-modal-title">Rename Project</div>
+    <input type="text" id="proj-rename-input" class="pm-modal-input" placeholder="Project name" maxlength="80">
+    <div class="pm-modal-btns">
+      <button class="pm-btn pm-btn-secondary" onclick="closeProjRename()">Cancel</button>
+      <button class="pm-btn pm-btn-primary" onclick="confirmProjRename()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project delete modal -->
+<div id="proj-del-modal" class="pm-modal">
+  <div class="pm-modal-box">
+    <div class="pm-modal-title">Delete Project</div>
+    <div class="pm-modal-del-msg">Are you sure you want to delete <span id="proj-del-name" class="pm-modal-del-name"></span>? This cannot be undone.</div>
+    <div class="pm-modal-btns">
+      <button class="pm-btn pm-btn-secondary" onclick="closeProjDel()">Cancel</button>
+      <button class="pm-btn pm-btn-primary" style="background:var(--rd)" onclick="confirmProjDel()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STORYBOARD APP ═════════════════════════════════════════════════════ -->
+<div id="app-storyboard" style="display:none;flex-direction:column;height:100vh">
+
 <!-- HEADER -->
 <div id="hdr">
-  <h1>🎬 ScriptEase</h1>
+  <button class="proj-back" onclick="backToProjects()" title="Back to project list">◂ Projects</button>
+  <h1>🎬 SceneSetter</h1>
+  <span id="proj-name"></span>
   <span class="tip">Click library items to highlight · ✏️ to edit a scene · Drag cards to reorder</span>
   <div id="ur-wrap">
     <button id="undo-btn" class="ur-btn" onclick="undo()" disabled title="Undo (Ctrl+Z)">↩ Undo</button>
@@ -449,6 +587,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
       <option value="sunset">Sunset</option>
     </select>
   </div>
+  <a href="tutorial.html" target="_blank" title="Open tutorial in a new tab" style="background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background .12s,color .12s;flex-shrink:0">Tutorial</a>
   <button id="help-btn" onclick="toggleHelp()" title="Help – hover over highlighted areas to learn what each element does">?</button>
 </div>
 
@@ -575,6 +714,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
         <div id="sec-filter-drop" class="sec-filter-drop"></div>
       </div>
       <button id="rpt-btn" onclick="openReportModal()" title="Generate a printable report">Report</button>
+      <button id="export-btn" onclick="exportCurrentProject()" title="Export project as JSON file" style="background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap">Export</button>
       <div id="srch-wrap">
         <input type="text" id="srch-inp" placeholder="🔍 Search…" oninput="onSearch()">
         <select id="srch-scope" onchange="onSearch()" title="Search in…">
@@ -787,6 +927,8 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
   </div>
 </div>
 
+</div><!-- /app-storyboard -->
+
 <script>
 'use strict';
 
@@ -804,24 +946,56 @@ const SEC_COLORS = ['#5b8dd9','#6aaa80','#9b7cc4','#d4844a','#4aadb5','#c47a8a',
 const DATA_VERSION = '2';
 const STORAGE_KEY  = 'storyboard_v' + DATA_VERSION;
 const LEGACY_KEY   = 'storyboard_v1';
+const PROJECT_INDEX_KEY = 'scriptease_projects';
+const GLOBAL_PREFS_KEY  = 'scriptease_prefs';
+let currentProjectId = null;
+
+function projKey(id) { return 'scriptease_proj_' + id; }
+function genProjId() { return 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
+
+function loadProjectIndex() {
+  try { return JSON.parse(localStorage.getItem(PROJECT_INDEX_KEY)) || []; }
+  catch(e) { return []; }
+}
+function saveProjectIndex(index) {
+  try { localStorage.setItem(PROJECT_INDEX_KEY, JSON.stringify(index)); } catch(e) {}
+}
+function loadGlobalPrefs() {
+  try { return JSON.parse(localStorage.getItem(GLOBAL_PREFS_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+function saveGlobalPrefs(prefs) {
+  try { localStorage.setItem(GLOBAL_PREFS_KEY, JSON.stringify(prefs)); } catch(e) {}
+}
 
 function saveState() {
+  if (!currentProjectId) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    localStorage.setItem(projKey(currentProjectId), JSON.stringify({
       v: DATA_VERSION,
       characters: S.characters, locations: S.locations, themes: S.themes, misc: S.misc,
       scenes: S.scenes, nextId: S.nextId, andOr: S.andOr,
       theme: document.documentElement.dataset.theme,
       sections: S.sections, nextSecId: S.nextSecId,
     }));
+    // Update project index metadata
+    const index = loadProjectIndex();
+    const entry = index.find(p => p.id === currentProjectId);
+    if (entry) {
+      entry.modifiedAt = new Date().toISOString();
+      entry.sceneCount = S.scenes.length;
+      entry.theme = document.documentElement.dataset.theme;
+      saveProjectIndex(index);
+    }
   } catch(e) { /* storage full or unavailable */ }
 }
 
-function loadState() {
+function loadState(storageKey) {
   try {
-    let raw = localStorage.getItem(STORAGE_KEY);
+    const key = storageKey || STORAGE_KEY;
+    let raw = localStorage.getItem(key);
     let migrated = false;
-    if (!raw) {
+    if (!raw && !storageKey) {
       // Try migrating from v1
       const old = localStorage.getItem(LEGACY_KEY);
       if (!old) return false;
@@ -836,6 +1010,7 @@ function loadState() {
       });
       migrated = true;
     }
+    if (!raw) return false;
     const d = JSON.parse(raw);
     if (!d || d.v !== DATA_VERSION) return false;
     // Migrate plain strings to {name, notes} objects
@@ -1022,7 +1197,21 @@ function onBackdropClick(id, closeFn) {
 onBackdropClick('add-popup', closeAddPopup);
 
 // ── THEME ─────────────────────────────────────────────────────────────────────
-function setTheme(name) { document.documentElement.dataset.theme = name; saveState(); }
+function setTheme(name) {
+  document.documentElement.dataset.theme = name;
+  saveState();
+  // Sync global prefs and both theme selectors
+  const prefs = loadGlobalPrefs(); prefs.theme = name; saveGlobalPrefs(prefs);
+  document.getElementById('pm-theme-sel').value = name;
+  document.getElementById('theme-sel').value = name;
+}
+function setGlobalTheme(name) {
+  document.documentElement.dataset.theme = name;
+  const prefs = loadGlobalPrefs(); prefs.theme = name; saveGlobalPrefs(prefs);
+  document.getElementById('pm-theme-sel').value = name;
+  document.getElementById('theme-sel').value = name;
+  if (currentProjectId) saveState();
+}
 
 // ── PANEL / SCALE ─────────────────────────────────────────────────────────────
 function togglePanel(id) { document.getElementById(id).classList.toggle('collapsed'); }
@@ -1171,7 +1360,8 @@ function resetAll() {
   clearSearch();
   syncAndOrUI();
   buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
-  localStorage.removeItem(STORAGE_KEY);
+  if (currentProjectId) saveState();
+  else localStorage.removeItem(STORAGE_KEY);
 }
 
 // ── SCENE ACTIONS ─────────────────────────────────────────────────────────────
@@ -2584,19 +2774,304 @@ function hideHelpTip() {
   document.getElementById('help-tip').classList.remove('vis');
 }
 
+// ── PROJECT MANAGER ──────────────────────────────────────────────────────────
+
+function migrateExistingData() {
+  // If project index already exists, migration is done
+  if (localStorage.getItem(PROJECT_INDEX_KEY)) return;
+  // Check for existing storyboard data
+  let raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) {
+    // Check for v1 data
+    const old = localStorage.getItem(LEGACY_KEY);
+    if (old) {
+      const od = JSON.parse(old);
+      if (od && od.v === '1') {
+        raw = JSON.stringify({
+          v: DATA_VERSION,
+          characters: od.characters||[], locations: od.locations||[], themes: od.themes||[], misc: od.misc||[],
+          scenes: (od.scenes||[]).map(sc => ({...sc, sectionId: null})),
+          nextId: od.nextId||1, andOr: od.andOr, theme: od.theme,
+          sections: [], nextSecId: 1,
+        });
+      }
+    }
+  }
+  if (raw) {
+    const d = JSON.parse(raw);
+    const id = genProjId();
+    localStorage.setItem(projKey(id), raw);
+    const now = new Date().toISOString();
+    saveProjectIndex([{
+      id, name: 'My Storyboard', createdAt: now, modifiedAt: now,
+      sceneCount: (d.scenes || []).length, theme: d.theme || 'ivory'
+    }]);
+    // Save theme as global pref
+    saveGlobalPrefs({ theme: d.theme || 'ivory' });
+  } else {
+    saveProjectIndex([]);
+  }
+}
+
+function timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return days + 'd ago';
+  return new Date(iso).toLocaleDateString();
+}
+
+function renderProjectGrid() {
+  const grid = document.getElementById('proj-grid');
+  const index = loadProjectIndex().sort((a, b) => new Date(b.modifiedAt) - new Date(a.modifiedAt));
+  grid.innerHTML = '';
+  if (!index.length) {
+    grid.innerHTML = `
+      <div class="pm-empty" style="grid-column:1/-1">
+        <div class="pm-empty-icon">🎬</div>
+        <div class="pm-empty-title">No projects yet</div>
+        <div class="pm-empty-sub">Create a new project to start building your visual storyboard, or import an existing one from a JSON file.</div>
+      </div>`;
+    return;
+  }
+  index.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'pm-card';
+    card.ondblclick = () => openProject(p.id);
+    card.innerHTML = `
+      <div class="pm-card-top">
+        <div class="pm-card-icon">🎬</div>
+        <div class="pm-card-info">
+          <div class="pm-card-name">${esc(p.name)}</div>
+          <div class="pm-card-meta">
+            <span>${p.sceneCount || 0} scene${(p.sceneCount||0) !== 1 ? 's' : ''}</span>
+            <span>Modified ${timeAgo(p.modifiedAt)}</span>
+          </div>
+        </div>
+      </div>
+      <div class="pm-card-actions">
+        <button class="pm-card-btn" onclick="event.stopPropagation();openProject('${p.id}')">Open</button>
+        <button class="pm-card-btn" onclick="event.stopPropagation();startProjRename('${p.id}')">Rename</button>
+        <button class="pm-card-btn" onclick="event.stopPropagation();duplicateProject('${p.id}')">Duplicate</button>
+        <button class="pm-card-btn" onclick="event.stopPropagation();exportProjectJSON('${p.id}')">Export</button>
+        <button class="pm-card-btn del" onclick="event.stopPropagation();startProjDel('${p.id}')">Delete</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function esc(s) {
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+}
+
+function showProjectManager() {
+  document.getElementById('proj-mgr').style.display = 'flex';
+  document.getElementById('app-storyboard').style.display = 'none';
+  renderProjectGrid();
+}
+
+function showStoryboard() {
+  document.getElementById('proj-mgr').style.display = 'none';
+  document.getElementById('app-storyboard').style.display = 'flex';
+}
+
+function resetState() {
+  S.characters = []; S.locations = []; S.themes = []; S.misc = [];
+  S.scenes = []; S.nextId = 1; S.andOr = 'OR';
+  S.sections = []; S.nextSecId = 1;
+  SECS.forEach(({ key }) => S.selections[key].clear());
+  S.selIds.clear(); S.editingId = null;
+  hist.past = []; hist.future = [];
+}
+
+function initStoryboard() {
+  syncAndOrUI();
+  buildLibPanel(); renderAllLib(); renderAllCk();
+  renderSecPanel(); renderSectionSelects();
+  renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  document.getElementById('board').classList.add('hide-details');
+  document.getElementById('det-toggle').checked = false;
+}
+
+function openProject(id) {
+  currentProjectId = id;
+  resetState();
+  loadState(projKey(id));
+  const index = loadProjectIndex();
+  const entry = index.find(p => p.id === id);
+  document.getElementById('proj-name').textContent = entry ? entry.name : '';
+  initStoryboard();
+  showStoryboard();
+}
+
+function createAndOpenProject() {
+  const id = genProjId();
+  const now = new Date().toISOString();
+  const index = loadProjectIndex();
+  index.push({ id, name: 'Untitled Project', createdAt: now, modifiedAt: now, sceneCount: 0, theme: document.documentElement.dataset.theme });
+  saveProjectIndex(index);
+  // Save empty project data
+  localStorage.setItem(projKey(id), JSON.stringify({
+    v: DATA_VERSION, characters:[], locations:[], themes:[], misc:[],
+    scenes:[], nextId:1, andOr:'OR', theme: document.documentElement.dataset.theme,
+    sections:[], nextSecId:1,
+  }));
+  openProject(id);
+  // Prompt rename immediately
+  startProjRename(id);
+}
+
+function backToProjects() {
+  if (currentProjectId) saveState();
+  currentProjectId = null;
+  showProjectManager();
+}
+
+// Rename
+let renamingProjId = null;
+function startProjRename(id) {
+  renamingProjId = id;
+  const index = loadProjectIndex();
+  const entry = index.find(p => p.id === id);
+  document.getElementById('proj-rename-input').value = entry ? entry.name : '';
+  document.getElementById('proj-rename-modal').classList.add('open');
+  setTimeout(() => {
+    const inp = document.getElementById('proj-rename-input');
+    inp.focus(); inp.select();
+  }, 100);
+}
+function closeProjRename() { document.getElementById('proj-rename-modal').classList.remove('open'); renamingProjId = null; }
+function confirmProjRename() {
+  if (!renamingProjId) return;
+  const name = document.getElementById('proj-rename-input').value.trim();
+  if (!name) return;
+  const index = loadProjectIndex();
+  const entry = index.find(p => p.id === renamingProjId);
+  if (entry) { entry.name = name; saveProjectIndex(index); }
+  // Update header if this is the currently open project
+  if (currentProjectId === renamingProjId) {
+    document.getElementById('proj-name').textContent = name;
+  }
+  closeProjRename();
+  renderProjectGrid();
+}
+
+// Delete
+let deletingProjId = null;
+function startProjDel(id) {
+  deletingProjId = id;
+  const index = loadProjectIndex();
+  const entry = index.find(p => p.id === id);
+  document.getElementById('proj-del-name').textContent = entry ? entry.name : 'this project';
+  document.getElementById('proj-del-modal').classList.add('open');
+}
+function closeProjDel() { document.getElementById('proj-del-modal').classList.remove('open'); deletingProjId = null; }
+function confirmProjDel() {
+  if (!deletingProjId) return;
+  localStorage.removeItem(projKey(deletingProjId));
+  const index = loadProjectIndex().filter(p => p.id !== deletingProjId);
+  saveProjectIndex(index);
+  closeProjDel();
+  renderProjectGrid();
+}
+
+// Duplicate
+function duplicateProject(id) {
+  const raw = localStorage.getItem(projKey(id));
+  if (!raw) return;
+  const index = loadProjectIndex();
+  const entry = index.find(p => p.id === id);
+  const newId = genProjId();
+  const now = new Date().toISOString();
+  localStorage.setItem(projKey(newId), raw);
+  index.push({
+    id: newId, name: (entry ? entry.name : 'Project') + ' (Copy)',
+    createdAt: now, modifiedAt: now,
+    sceneCount: entry ? entry.sceneCount : 0,
+    theme: entry ? entry.theme : 'ivory'
+  });
+  saveProjectIndex(index);
+  renderProjectGrid();
+}
+
+// Export JSON
+function exportProjectJSON(id) {
+  const raw = localStorage.getItem(projKey(id));
+  if (!raw) return;
+  const index = loadProjectIndex();
+  const entry = index.find(p => p.id === id);
+  const name = entry ? entry.name : 'project';
+  const data = JSON.parse(raw);
+  data.projectName = name;
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name.replace(/[^a-zA-Z0-9_\- ]/g, '') + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportCurrentProject() {
+  if (currentProjectId) {
+    saveState();
+    exportProjectJSON(currentProjectId);
+  }
+}
+
+// Import JSON
+function importProjectJSON(inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (!d || d.v !== DATA_VERSION) {
+        alert('Invalid or incompatible project file.');
+        return;
+      }
+      const id = genProjId();
+      const now = new Date().toISOString();
+      const name = d.projectName || file.name.replace(/\.json$/i, '') || 'Imported Project';
+      delete d.projectName;
+      localStorage.setItem(projKey(id), JSON.stringify(d));
+      const index = loadProjectIndex();
+      index.push({ id, name, createdAt: now, modifiedAt: now, sceneCount: (d.scenes||[]).length, theme: d.theme || 'ivory' });
+      saveProjectIndex(index);
+      renderProjectGrid();
+    } catch(err) {
+      alert('Could not read project file. Make sure it is a valid SceneSetter JSON export.');
+    }
+  };
+  reader.readAsText(file);
+  inputEl.value = '';
+}
+
+// Backdrop click to close project modals
+onBackdropClick('proj-rename-modal', closeProjRename);
+onBackdropClick('proj-del-modal', closeProjDel);
+// Enter key in rename input
+document.getElementById('proj-rename-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); confirmProjRename(); }
+});
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
-loadState();
-syncAndOrUI();
-buildLibPanel();
-renderAllLib();
-renderAllCk();
-renderSecPanel();
-renderSectionSelects();
-renderBoard();
-updateLibClearBtn();
-updateUndoRedo();
-// Default: hide card details (user can toggle on)
-document.getElementById('board').classList.add('hide-details');
+// Apply global theme
+const gPrefs = loadGlobalPrefs();
+const gTheme = ['ivory','slate','studio','ocean','sunset'].includes(gPrefs.theme) ? gPrefs.theme : 'ivory';
+document.documentElement.dataset.theme = gTheme;
+document.getElementById('pm-theme-sel').value = gTheme;
+document.getElementById('theme-sel').value = gTheme;
+
+// Migrate any existing data to project format
+migrateExistingData();
+
+// Show project manager
+showProjectManager();
 </script>
 </body>
 </html>
