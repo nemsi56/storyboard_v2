@@ -1927,7 +1927,22 @@ function renderProjectGrid() {
   const grid = document.getElementById('proj-grid');
   const index = loadProjectIndex().sort((a, b) => new Date(b.modifiedAt) - new Date(a.modifiedAt));
   grid.innerHTML = '';
-  if (!index.length) {
+
+  // Sample projects
+  const sampleProjects = [
+    { name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' },
+    { name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' }
+  ];
+
+  const projectsToShow = [];
+
+  // Add regular projects
+  index.forEach(p => projectsToShow.push({ ...p, isRegular: true }));
+
+  // Add sample projects
+  sampleProjects.forEach(s => projectsToShow.push({ ...s, isSample: true }));
+
+  if (!projectsToShow.length) {
     grid.innerHTML = `
       <div class="pm-empty" style="grid-column:1/-1">
         <div class="pm-empty-icon">📝</div>
@@ -1936,28 +1951,48 @@ function renderProjectGrid() {
       </div>`;
     return;
   }
-  index.forEach(p => {
+
+  projectsToShow.forEach(p => {
     const card = document.createElement('div');
-    card.className = 'pm-card';
-    card.ondblclick = () => openProject(p.id);
+    card.className = 'pm-card' + (p.isSample ? ' pm-card-sample' : '');
+
+    if (p.isSample) {
+      card.onclick = () => importSampleProject(p.file);
+    } else {
+      card.ondblclick = () => openProject(p.id);
+    }
+
+    const sampleBadge = p.isSample ? '<div class="pm-card-badge">SAMPLE PROJECT</div>' : '';
+    const sceneCountStr = p.isSample ? '' : `<span>${p.sceneCount || 0} scene${(p.sceneCount||0) !== 1 ? 's' : ''}</span>`;
+    const modifiedStr = p.isSample ? '' : `<span>Modified ${timeAgo(p.modifiedAt)}</span>`;
+
+    let actionsHTML = '';
+    if (p.isSample) {
+      actionsHTML = `<div class="pm-card-actions"><button class="pm-card-btn" onclick="event.stopPropagation();importSampleProject('${p.file}')">Open Sample</button></div>`;
+    } else {
+      actionsHTML = `
+        <div class="pm-card-actions">
+          <button class="pm-card-btn" onclick="event.stopPropagation();openProject('${p.id}')">Open</button>
+          <button class="pm-card-btn" onclick="event.stopPropagation();startProjRename('${p.id}')">Rename</button>
+          <button class="pm-card-btn" onclick="event.stopPropagation();duplicateProject('${p.id}')">Duplicate</button>
+          <button class="pm-card-btn" onclick="event.stopPropagation();exportProjectJSON('${p.id}')">Export</button>
+          <button class="pm-card-btn del" onclick="event.stopPropagation();startProjDel('${p.id}')">Delete</button>
+        </div>`;
+    }
+
     card.innerHTML = `
+      ${sampleBadge}
       <div class="pm-card-top">
         <div class="pm-card-icon">📝</div>
         <div class="pm-card-info">
           <div class="pm-card-name">${esc(p.name)}</div>
           <div class="pm-card-meta">
-            <span>${p.sceneCount || 0} scene${(p.sceneCount||0) !== 1 ? 's' : ''}</span>
-            <span>Modified ${timeAgo(p.modifiedAt)}</span>
+            ${sceneCountStr}
+            ${modifiedStr}
           </div>
         </div>
       </div>
-      <div class="pm-card-actions">
-        <button class="pm-card-btn" onclick="event.stopPropagation();openProject('${p.id}')">Open</button>
-        <button class="pm-card-btn" onclick="event.stopPropagation();startProjRename('${p.id}')">Rename</button>
-        <button class="pm-card-btn" onclick="event.stopPropagation();duplicateProject('${p.id}')">Duplicate</button>
-        <button class="pm-card-btn" onclick="event.stopPropagation();exportProjectJSON('${p.id}')">Export</button>
-        <button class="pm-card-btn del" onclick="event.stopPropagation();startProjDel('${p.id}')">Delete</button>
-      </div>`;
+      ${actionsHTML}`;
     grid.appendChild(card);
   });
 }
@@ -2240,6 +2275,43 @@ function importProjectJSON(inputEl) {
   };
   reader.readAsText(file);
   inputEl.value = '';
+}
+
+// Import sample project from JSON file
+function importSampleProject(filename) {
+  fetch(filename)
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to load sample project');
+      return response.json();
+    })
+    .then(d => {
+      // Validate like regular imports
+      if (!d || d.v !== DATA_VERSION) {
+        alert('Invalid project file version.');
+        return;
+      }
+      const requiredFields = ['characters', 'locations', 'themes', 'misc', 'scenes', 'sections'];
+      const missingFields = requiredFields.filter(f => !Array.isArray(d[f]));
+      if (missingFields.length > 0) {
+        alert('Invalid project structure. Missing required arrays: ' + missingFields.join(', '));
+        return;
+      }
+
+      const id = genProjId();
+      const now = new Date().toISOString();
+      const name = d.projectName || filename.replace(/\.json$/i, '') || 'Sample Project';
+      delete d.projectName;
+      localStorage.setItem(projKey(id), JSON.stringify(d));
+      const index = loadProjectIndex();
+      index.push({ id, name, createdAt: now, modifiedAt: now, sceneCount: (d.scenes||[]).length, theme: d.theme || 'ivory' });
+      saveProjectIndex(index);
+      gtag('event', 'sample_project_imported');
+      renderProjectGrid();
+      alert('Sample project loaded: ' + name + ' (' + d.scenes.length + ' scenes)');
+    })
+    .catch(err => {
+      alert('Could not load sample project. Please try again.\n\nError: ' + err.message);
+    });
 }
 
 // Backdrop click to close project modals (only on pages with these elements)
