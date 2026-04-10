@@ -1928,21 +1928,7 @@ function renderProjectGrid() {
   const index = loadProjectIndex().sort((a, b) => new Date(b.modifiedAt) - new Date(a.modifiedAt));
   grid.innerHTML = '';
 
-  // Sample projects
-  const sampleProjects = [
-    { name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' },
-    { name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' }
-  ];
-
-  const projectsToShow = [];
-
-  // Add regular projects
-  index.forEach(p => projectsToShow.push({ ...p, isRegular: true }));
-
-  // Add sample projects
-  sampleProjects.forEach(s => projectsToShow.push({ ...s, isSample: true }));
-
-  if (!projectsToShow.length) {
+  if (!index.length) {
     grid.innerHTML = `
       <div class="pm-empty" style="grid-column:1/-1">
         <div class="pm-empty-icon">📝</div>
@@ -1952,33 +1938,12 @@ function renderProjectGrid() {
     return;
   }
 
-  projectsToShow.forEach(p => {
+  index.forEach(p => {
     const card = document.createElement('div');
     card.className = 'pm-card' + (p.isSample ? ' pm-card-sample' : '');
+    card.ondblclick = () => openProject(p.id);
 
-    if (p.isSample) {
-      card.onclick = () => importSampleProject(p.file);
-    } else {
-      card.ondblclick = () => openProject(p.id);
-    }
-
-    const sampleBadge = p.isSample ? '<div class="pm-card-badge">SAMPLE PROJECT</div>' : '';
-    const sceneCountStr = p.isSample ? '' : `<span>${p.sceneCount || 0} scene${(p.sceneCount||0) !== 1 ? 's' : ''}</span>`;
-    const modifiedStr = p.isSample ? '' : `<span>Modified ${timeAgo(p.modifiedAt)}</span>`;
-
-    let actionsHTML = '';
-    if (p.isSample) {
-      actionsHTML = `<div class="pm-card-actions"><button class="pm-card-btn" onclick="event.stopPropagation();importSampleProject('${p.file}')">Open Sample</button></div>`;
-    } else {
-      actionsHTML = `
-        <div class="pm-card-actions">
-          <button class="pm-card-btn" onclick="event.stopPropagation();openProject('${p.id}')">Open</button>
-          <button class="pm-card-btn" onclick="event.stopPropagation();startProjRename('${p.id}')">Rename</button>
-          <button class="pm-card-btn" onclick="event.stopPropagation();duplicateProject('${p.id}')">Duplicate</button>
-          <button class="pm-card-btn" onclick="event.stopPropagation();exportProjectJSON('${p.id}')">Export</button>
-          <button class="pm-card-btn del" onclick="event.stopPropagation();startProjDel('${p.id}')">Delete</button>
-        </div>`;
-    }
+    const sampleBadge = p.isSample ? '<div class="pm-card-badge">SAMPLE</div>' : '';
 
     card.innerHTML = `
       ${sampleBadge}
@@ -1987,12 +1952,18 @@ function renderProjectGrid() {
         <div class="pm-card-info">
           <div class="pm-card-name">${esc(p.name)}</div>
           <div class="pm-card-meta">
-            ${sceneCountStr}
-            ${modifiedStr}
+            <span>${p.sceneCount || 0} scene${(p.sceneCount||0) !== 1 ? 's' : ''}</span>
+            <span>Modified ${timeAgo(p.modifiedAt)}</span>
           </div>
         </div>
       </div>
-      ${actionsHTML}`;
+      <div class="pm-card-actions">
+        <button class="pm-card-btn" onclick="event.stopPropagation();openProject('${p.id}')">Open</button>
+        <button class="pm-card-btn" onclick="event.stopPropagation();startProjRename('${p.id}')">Rename</button>
+        <button class="pm-card-btn" onclick="event.stopPropagation();duplicateProject('${p.id}')">Duplicate</button>
+        <button class="pm-card-btn" onclick="event.stopPropagation();exportProjectJSON('${p.id}')">Export</button>
+        <button class="pm-card-btn del" onclick="event.stopPropagation();startProjDel('${p.id}')">Delete</button>
+      </div>`;
     grid.appendChild(card);
   });
 }
@@ -2277,41 +2248,45 @@ function importProjectJSON(inputEl) {
   inputEl.value = '';
 }
 
-// Import sample project from JSON file
-function importSampleProject(filename) {
-  fetch(filename)
-    .then(response => {
-      if (!response.ok) throw new Error('Failed to load sample project');
-      return response.json();
-    })
-    .then(d => {
-      // Validate like regular imports
-      if (!d || d.v !== DATA_VERSION) {
-        alert('Invalid project file version.');
-        return;
-      }
-      const requiredFields = ['characters', 'locations', 'themes', 'misc', 'scenes', 'sections'];
-      const missingFields = requiredFields.filter(f => !Array.isArray(d[f]));
-      if (missingFields.length > 0) {
-        alert('Invalid project structure. Missing required arrays: ' + missingFields.join(', '));
-        return;
-      }
+// Auto-load sample projects on first visit
+function ensureSampleProjects() {
+  const index = loadProjectIndex();
+  const sampleNames = ['Pride and Prejudice', 'The Count of Monte Cristo'];
+  const samplesToLoad = [];
 
-      const id = genProjId();
-      const now = new Date().toISOString();
-      const name = d.projectName || filename.replace(/\.json$/i, '') || 'Sample Project';
-      delete d.projectName;
-      localStorage.setItem(projKey(id), JSON.stringify(d));
-      const index = loadProjectIndex();
-      index.push({ id, name, createdAt: now, modifiedAt: now, sceneCount: (d.scenes||[]).length, theme: d.theme || 'ivory' });
-      saveProjectIndex(index);
-      gtag('event', 'sample_project_imported');
-      renderProjectGrid();
-      alert('Sample project loaded: ' + name + ' (' + d.scenes.length + ' scenes)');
-    })
-    .catch(err => {
-      alert('Could not load sample project. Please try again.\n\nError: ' + err.message);
-    });
+  // Check which samples are missing
+  if (!index.some(p => p.name === 'Pride and Prejudice')) {
+    samplesToLoad.push({ name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' });
+  }
+  if (!index.some(p => p.name === 'The Count of Monte Cristo')) {
+    samplesToLoad.push({ name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' });
+  }
+
+  if (samplesToLoad.length === 0) return; // All samples already loaded
+
+  // Load missing samples
+  samplesToLoad.forEach(sample => {
+    fetch(sample.file)
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to load sample project');
+        return response.json();
+      })
+      .then(d => {
+        if (!d || d.v !== DATA_VERSION) return;
+        const id = genProjId();
+        const now = new Date().toISOString();
+        delete d.projectName;
+        localStorage.setItem(projKey(id), JSON.stringify(d));
+        const index = loadProjectIndex();
+        index.push({
+          id, name: sample.name, createdAt: now, modifiedAt: now,
+          sceneCount: (d.scenes||[]).length, theme: d.theme || 'ivory', isSample: true
+        });
+        saveProjectIndex(index);
+        gtag('event', 'sample_project_auto_loaded');
+      })
+      .catch(err => console.log('Could not auto-load sample project: ' + sample.name));
+  });
 }
 
 // Backdrop click to close project modals (only on pages with these elements)
@@ -2340,8 +2315,9 @@ migrateExistingData();
 
 // ── PAGE-SPECIFIC INIT ───────────────────────────────────────────────────────
 if (_page === 'projects') {
-  // Projects page: render project grid
-  renderProjectGrid();
+  // Projects page: ensure sample projects are loaded, then render grid
+  ensureSampleProjects();
+  setTimeout(renderProjectGrid, 100); // Delay to allow samples to load
 } else if (_page === 'index') {
   // Check for pending project from projects.html navigation
   const pendingId = sessionStorage.getItem('ss_open_project');

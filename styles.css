@@ -450,8 +450,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .pm-card-btn{background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;transition:background .12s,color .12s;white-space:nowrap}
 .pm-card-btn:hover{background:var(--s1);color:var(--tx)}
 .pm-card-btn.del:hover{background:color-mix(in srgb,var(--rd) 14%,transparent);color:var(--rd);border-color:color-mix(in srgb,var(--rd) 30%,transparent)}
-.pm-card-badge{position:absolute;top:12px;right:12px;background:var(--rd);color:#fff;font-size:9px;font-weight:700;padding:4px 8px;border-radius:4px;letter-spacing:0.5px;text-transform:uppercase}
-.pm-card-sample .pm-card-meta{display:none}
+.pm-card-badge{position:absolute;top:12px;left:12px;background:var(--rd);color:#fff;font-size:8px;font-weight:700;padding:3px 6px;border-radius:3px;letter-spacing:0.4px;text-transform:uppercase}
 .pm-empty{text-align:center;padding:80px 20px;color:var(--sub)}
 .pm-empty-icon{font-size:48px;margin-bottom:16px;opacity:.6}
 .pm-empty-title{font-size:18px;font-weight:700;color:var(--tx);margin-bottom:8px}
