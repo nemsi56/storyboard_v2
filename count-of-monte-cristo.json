@@ -480,11 +480,11 @@
     }
   ],
   "sections": [
-    { "id": 1, "title": "Betrayal and Imprisonment", "color": "#d4844a" },
-    { "id": 2, "title": "Escape and Discovery", "color": "#4aadb5" },
-    { "id": 3, "title": "Preparation and Infiltration", "color": "#9b7cc4" },
-    { "id": 4, "title": "Revenge Unfolds", "color": "#c47a8a" },
-    { "id": 5, "title": "Resolution and Redemption", "color": "#6aaa80" }
+    { "id": 1, "name": "Betrayal and Imprisonment", "color": "#d4844a" },
+    { "id": 2, "name": "Escape and Discovery", "color": "#4aadb5" },
+    { "id": 3, "name": "Preparation and Infiltration", "color": "#9b7cc4" },
+    { "id": 4, "name": "Revenge Unfolds", "color": "#c47a8a" },
+    { "id": 5, "name": "Resolution and Redemption", "color": "#6aaa80" }
   ],
   "nextId": 40,
   "nextSecId": 6,
