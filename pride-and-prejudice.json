@@ -1,0 +1,276 @@
+{
+  "v": "2",
+  "projectName": "Pride and Prejudice",
+  "characters": [
+    { "name": "Elizabeth Bennet", "notes": "Protagonist. Spirited, intelligent, witty. Refuses to marry without love." },
+    { "name": "Mr. Fitzwilliam Darcy", "notes": "Proud gentleman. Initially seems arrogant, but kind and honorable beneath the surface." },
+    { "name": "Jane Bennet", "notes": "Elizabeth's eldest sister. Sweet, gentle, in love with Mr. Bingley." },
+    { "name": "Mr. Charles Bingley", "notes": "Darcy's friend. Charming, good-natured, wealthy. Falls for Jane." },
+    { "name": "Mr. Wickham", "notes": "Charming but deceitful. Has history with Darcy. Pursues Elizabeth, then Lydia." },
+    { "name": "Lydia Bennet", "notes": "Youngest Bennet. Frivolous, wild, elopes with Wickham." },
+    { "name": "Mary Bennet", "notes": "Middle sister. Serious, pedantic, interested in books and morality." },
+    { "name": "Kitty Bennet", "notes": "Fourth Bennet sister. Easily influenced by Lydia." },
+    { "name": "Mr. Bennet", "notes": "Elizabeth's father. Witty but detached from family matters." },
+    { "name": "Mrs. Bennet", "notes": "Elizabeth's mother. Obsessed with marrying off her daughters." },
+    { "name": "Lady Catherine de Bourgh", "notes": "Darcy's aunt. Domineering, snobbish, opposes Elizabeth and Darcy's union." },
+    { "name": "Anne de Bourgh", "notes": "Lady Catherine's sickly daughter. Expected to marry Darcy." },
+    { "name": "Charlotte Lucas", "notes": "Elizabeth's best friend. Pragmatic, marries Mr. Collins for security." },
+    { "name": "Mr. Collins", "notes": "Obsequious clergyman. Marries Charlotte, fawns over Lady Catherine." }
+  ],
+  "locations": [
+    { "name": "Longbourn", "notes": "Bennet family estate in Meryton. Elizabeth's home." },
+    { "name": "Netherfield Park", "notes": "Bingley's rented estate. Where Jane and Bingley's romance begins." },
+    { "name": "Pemberley", "notes": "Darcy's grand estate in Derbyshire. Symbol of his wealth and character." },
+    { "name": "Rosings Park", "notes": "Lady Catherine's estate in Kent. Where Darcy proposes to Elizabeth." },
+    { "name": "Brighton", "notes": "Seaside town. Where militia is stationed, where Lydia elopes." },
+    { "name": "Meryton", "notes": "Market town near Longbourn. Social hub for the Bennet family." },
+    { "name": "London", "notes": "Where Wickham and Lydia elope to. Where Darcy and Bingley reside." },
+    { "name": "Hunsford", "notes": "Village where Mr. Collins's parsonage is located, near Rosings." }
+  ],
+  "themes": [
+    { "name": "Pride and Prejudice", "notes": "Darcy's pride, Elizabeth's prejudice. Both must overcome their flaws." },
+    { "name": "Marriage and Social Status", "notes": "Central theme. Women's limited options, economic necessity, love vs. security." },
+    { "name": "First Impressions", "notes": "Misjudgments based on appearance and initial behavior." },
+    { "name": "Family Reputation", "notes": "Lydia's elopement threatens the entire family's social standing." },
+    { "name": "Love vs. Practicality", "notes": "Charlotte's practical marriage vs. Elizabeth's romantic ideals." },
+    { "name": "Self-Awareness", "notes": "Character growth through recognizing one's own flaws." },
+    { "name": "Class and Social Hierarchy", "notes": "Darcy's arrogance about rank. Lady Catherine's snobbery." }
+  ],
+  "misc": [
+    { "name": "The Letter", "notes": "Darcy's letter explaining his actions. Changes Elizabeth's mind." },
+    { "name": "The Ball at Netherfield", "notes": "Turning point. Darcy's first proposal, Bingley and Jane's connection." },
+    { "name": "Lydia's Elopement", "notes": "Crisis point. Threatens family honor. Darcy secretly pays for their marriage." },
+    { "name": "The Tour of Pemberley", "notes": "Elizabeth's visit changes her perception of Darcy." }
+  ],
+  "scenes": [
+    {
+      "id": 1,
+      "title": "The Bennet Family Receives News of Bingley's Arrival",
+      "summary": "Mrs. Bennet learns that Mr. Bingley has rented Netherfield Park. She is determined to marry one of her daughters to him.",
+      "sectionId": 1,
+      "characters": ["Mrs. Bennet", "Mr. Bennet", "Elizabeth Bennet", "Jane Bennet"],
+      "locations": ["Longbourn"],
+      "themes": ["Marriage and Social Status"],
+      "misc": [],
+      "notes": "Establishes the stakes: the Bennet family needs advantageous marriages."
+    },
+    {
+      "id": 2,
+      "title": "First Meeting at Meryton",
+      "summary": "The Bennet sisters encounter Mr. Bingley and Mr. Darcy in Meryton. Bingley is charming; Darcy appears proud and dismissive.",
+      "sectionId": 1,
+      "characters": ["Mr. Charles Bingley", "Mr. Fitzwilliam Darcy", "Elizabeth Bennet", "Jane Bennet", "Mr. Wickham"],
+      "locations": ["Meryton"],
+      "themes": ["First Impressions", "Pride and Prejudice"],
+      "misc": [],
+      "notes": "Elizabeth forms negative first impression of Darcy. Meets Wickham."
+    },
+    {
+      "id": 3,
+      "title": "The Ball at Netherfield",
+      "summary": "A grand ball at Netherfield. Bingley dances with Jane. Darcy insults Elizabeth but then asks her to dance.",
+      "sectionId": 2,
+      "characters": ["Mr. Charles Bingley", "Jane Bennet", "Mr. Fitzwilliam Darcy", "Elizabeth Bennet"],
+      "locations": ["Netherfield Park"],
+      "themes": ["Pride and Prejudice", "First Impressions"],
+      "misc": ["The Ball at Netherfield"],
+      "notes": "Tension between Darcy and Elizabeth intensifies."
+    },
+    {
+      "id": 4,
+      "title": "Elizabeth Visits Sick Jane",
+      "summary": "Jane catches cold and stays at Netherfield. Elizabeth walks through muddy fields to visit her. Darcy observes Elizabeth's devotion.",
+      "sectionId": 2,
+      "characters": ["Elizabeth Bennet", "Jane Bennet", "Mr. Fitzwilliam Darcy"],
+      "locations": ["Netherfield Park", "Longbourn"],
+      "themes": ["Pride and Prejudice"],
+      "misc": [],
+      "notes": "Darcy begins to see Elizabeth's good character despite her lower social status."
+    },
+    {
+      "id": 5,
+      "title": "Mr. Collins Arrives",
+      "summary": "The ridiculous Mr. Collins, the Bennet family's cousin and clergyman, arrives to stay. He is obsequious and dull.",
+      "sectionId": 2,
+      "characters": ["Mr. Collins", "Elizabeth Bennet", "Charlotte Lucas", "Mrs. Bennet"],
+      "locations": ["Longbourn"],
+      "themes": ["Marriage and Social Status"],
+      "misc": [],
+      "notes": "Comic relief. Establishes the family's weak social position."
+    },
+    {
+      "id": 6,
+      "title": "Wickham's Story",
+      "summary": "Wickham tells Elizabeth a tale of being wronged by Darcy, ingratiating himself with her. Elizabeth believes him.",
+      "sectionId": 2,
+      "characters": ["Mr. Wickham", "Elizabeth Bennet"],
+      "locations": ["Meryton"],
+      "themes": ["First Impressions", "Pride and Prejudice"],
+      "misc": [],
+      "notes": "Elizabeth's prejudice against Darcy is reinforced. (Later revealed to be false.)"
+    },
+    {
+      "id": 7,
+      "title": "Charlotte Accepts Mr. Collins",
+      "summary": "Charlotte Lucas pragmatically agrees to marry Mr. Collins for security and status, shocking Elizabeth.",
+      "sectionId": 2,
+      "characters": ["Charlotte Lucas", "Mr. Collins", "Elizabeth Bennet"],
+      "locations": ["Longbourn", "Hunsford"],
+      "themes": ["Marriage and Social Status", "Love vs. Practicality"],
+      "misc": [],
+      "notes": "Contrasts Elizabeth's romantic ideals with Charlotte's practical concerns."
+    },
+    {
+      "id": 8,
+      "title": "Bingley's Departure",
+      "summary": "Bingley abruptly leaves Netherfield, breaking Jane's heart. Darcy's involvement is suspected but unclear.",
+      "sectionId": 2,
+      "characters": ["Mr. Charles Bingley", "Jane Bennet", "Mr. Fitzwilliam Darcy"],
+      "locations": ["Netherfield Park", "Longbourn"],
+      "themes": ["Pride and Prejudice"],
+      "misc": [],
+      "notes": "Jane suffers. Elizabeth blames Darcy."
+    },
+    {
+      "id": 9,
+      "title": "Elizabeth Visits Rosings with Charlotte",
+      "summary": "Elizabeth stays with Charlotte and Mr. Collins at the parsonage near Rosings. She meets Lady Catherine de Bourgh.",
+      "sectionId": 3,
+      "characters": ["Elizabeth Bennet", "Charlotte Lucas", "Mr. Collins", "Lady Catherine de Bourgh"],
+      "locations": ["Hunsford", "Rosings Park"],
+      "themes": ["Marriage and Social Status", "Class and Social Hierarchy"],
+      "misc": [],
+      "notes": "Lady Catherine is imperious and snobbish. Hints at her expectation that Darcy will marry Anne."
+    },
+    {
+      "id": 10,
+      "title": "Darcy's First Proposal",
+      "summary": "Darcy, tortured by his feelings, proposes to Elizabeth in an insulting manner. Elizabeth furiously refuses him.",
+      "sectionId": 3,
+      "characters": ["Mr. Fitzwilliam Darcy", "Elizabeth Bennet"],
+      "locations": ["Rosings Park"],
+      "themes": ["Pride and Prejudice", "Marriage and Social Status"],
+      "misc": [],
+      "notes": "Turning point. Darcy lists reasons why marrying Elizabeth is beneath him."
+    },
+    {
+      "id": 11,
+      "title": "Darcy's Letter",
+      "summary": "Darcy gives Elizabeth a letter explaining his actions regarding Bingley and Wickham. Elizabeth's prejudice begins to crack.",
+      "sectionId": 3,
+      "characters": ["Mr. Fitzwilliam Darcy", "Elizabeth Bennet"],
+      "locations": ["Hunsford", "Rosings Park"],
+      "themes": ["First Impressions", "Self-Awareness"],
+      "misc": ["The Letter"],
+      "notes": "Elizabeth learns that Wickham is a fortune-hunter and seducer. Darcy separated Bingley from Jane to protect him."
+    },
+    {
+      "id": 12,
+      "title": "Elizabeth Tours Pemberley",
+      "summary": "Elizabeth tours Darcy's magnificent estate, Pemberley, while he is away. Her respect for him grows. Then Darcy returns unexpectedly.",
+      "sectionId": 4,
+      "characters": ["Elizabeth Bennet", "Mr. Fitzwilliam Darcy"],
+      "locations": ["Pemberley"],
+      "themes": ["Self-Awareness", "Pride and Prejudice"],
+      "misc": ["The Tour of Pemberley"],
+      "notes": "Darcy is gracious and kind, contradicting Elizabeth's prejudice."
+    },
+    {
+      "id": 13,
+      "title": "Lydia Elopes with Wickham",
+      "summary": "Lydia runs away to London with the unprincipled Wickham. The Bennet family's reputation is in grave danger.",
+      "sectionId": 4,
+      "characters": ["Lydia Bennet", "Mr. Wickham", "Mr. Bennet", "Mrs. Bennet"],
+      "locations": ["Longbourn", "London", "Brighton"],
+      "themes": ["Family Reputation"],
+      "misc": ["Lydia's Elopement"],
+      "notes": "Crisis. A single woman eloping ruins the family's prospects for good marriages."
+    },
+    {
+      "id": 14,
+      "title": "Darcy Secretly Pays for Lydia's Marriage",
+      "summary": "Darcy, unknown to Elizabeth, pays Wickham to marry Lydia, saving the Bennet family's reputation.",
+      "sectionId": 4,
+      "characters": ["Mr. Fitzwilliam Darcy", "Mr. Wickham", "Lydia Bennet"],
+      "locations": ["London"],
+      "themes": ["Pride and Prejudice", "Self-Awareness"],
+      "misc": ["Lydia's Elopement"],
+      "notes": "Darcy's true character is revealed. He acts honorably without seeking recognition."
+    },
+    {
+      "id": 15,
+      "title": "Bingley Returns and Proposes to Jane",
+      "summary": "Bingley returns to Netherfield and proposes to Jane. She accepts happily.",
+      "sectionId": 4,
+      "characters": ["Mr. Charles Bingley", "Jane Bennet"],
+      "locations": ["Netherfield Park"],
+      "themes": ["Marriage and Social Status", "Love vs. Practicality"],
+      "misc": [],
+      "notes": "Jane's happiness is secured."
+    },
+    {
+      "id": 16,
+      "title": "Lady Catherine Opposes Darcy and Elizabeth",
+      "summary": "Lady Catherine learns of the possibility of Darcy marrying Elizabeth and vehemently opposes it, commanding Elizabeth to refuse him.",
+      "sectionId": 4,
+      "characters": ["Lady Catherine de Bourgh", "Elizabeth Bennet"],
+      "locations": ["Longbourn", "Rosings Park"],
+      "themes": ["Class and Social Hierarchy", "Pride and Prejudice"],
+      "misc": [],
+      "notes": "Elizabeth refuses to be intimidated by Lady Catherine's arrogance."
+    },
+    {
+      "id": 17,
+      "title": "Darcy's Second Proposal",
+      "summary": "Darcy proposes again, this time humbly and respectfully. Elizabeth, having overcome her prejudice, accepts him joyfully.",
+      "sectionId": 5,
+      "characters": ["Mr. Fitzwilliam Darcy", "Elizabeth Bennet"],
+      "locations": ["Pemberley"],
+      "themes": ["Pride and Prejudice", "Self-Awareness", "Love vs. Practicality"],
+      "misc": [],
+      "notes": "Happy ending. Both characters have grown and overcome their flaws."
+    },
+    {
+      "id": 18,
+      "title": "Epilogue: Marriages and Happiness",
+      "summary": "The novel concludes with Elizabeth and Darcy's engagement, Jane and Bingley's happiness, and the promise of future contentment.",
+      "sectionId": 5,
+      "characters": ["Elizabeth Bennet", "Mr. Fitzwilliam Darcy", "Jane Bennet", "Mr. Charles Bingley"],
+      "locations": ["Pemberley", "Netherfield Park"],
+      "themes": ["Marriage and Social Status", "Love vs. Practicality"],
+      "misc": [],
+      "notes": "Resolution. The heroines have secured good marriages for love and security."
+    }
+  ],
+  "sections": [
+    {
+      "id": 1,
+      "name": "Act I: First Impressions",
+      "color": "#e879f9"
+    },
+    {
+      "id": 2,
+      "name": "Act II: Misunderstandings",
+      "color": "#f0883e"
+    },
+    {
+      "id": 3,
+      "name": "Act III: Revelations",
+      "color": "#058b8c"
+    },
+    {
+      "id": 4,
+      "name": "Act IV: Crisis and Growth",
+      "color": "#8b1a4a"
+    },
+    {
+      "id": 5,
+      "name": "Act V: Resolution",
+      "color": "#2d7a3a"
+    }
+  ],
+  "nextId": 19,
+  "nextSecId": 6,
+  "andOr": "OR",
+  "theme": "ivory"
+}

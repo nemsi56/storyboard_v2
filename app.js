@@ -2162,7 +2162,7 @@ function exportCurrentProject() {
   }
 }
 
-// Import JSON
+// Import JSON with validation
 function importProjectJSON(inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
@@ -2170,10 +2170,59 @@ function importProjectJSON(inputEl) {
   reader.onload = function(e) {
     try {
       const d = JSON.parse(e.target.result);
+
+      // Version check
       if (!d || d.v !== DATA_VERSION) {
-        alert('Invalid or incompatible project file.');
+        alert('Invalid project file version. Expected v: "' + DATA_VERSION + '"' + (d && d.v ? ' but found v: "' + d.v + '"' : '') + '.');
         return;
       }
+
+      // Validate required structure
+      const requiredFields = ['characters', 'locations', 'themes', 'misc', 'scenes', 'sections'];
+      const missingFields = requiredFields.filter(f => !Array.isArray(d[f]));
+      if (missingFields.length > 0) {
+        alert('Invalid project structure. Missing required arrays: ' + missingFields.join(', '));
+        return;
+      }
+
+      // Validate scene references (characters, locations, themes, misc)
+      const charNames = new Set(d.characters.map(c => typeof c === 'string' ? c : c.name));
+      const locNames = new Set(d.locations.map(l => typeof l === 'string' ? l : l.name));
+      const themeNames = new Set(d.themes.map(t => typeof t === 'string' ? t : t.name));
+      const miscNames = new Set(d.misc.map(m => typeof m === 'string' ? m : m.name));
+
+      const refIssues = [];
+      d.scenes.forEach((scene, idx) => {
+        const sceneNum = idx + 1;
+        if (Array.isArray(scene.characters)) {
+          scene.characters.forEach(char => {
+            if (!charNames.has(char)) refIssues.push(`Scene ${sceneNum}: Character "${char}" not found in character library`);
+          });
+        }
+        if (Array.isArray(scene.locations)) {
+          scene.locations.forEach(loc => {
+            if (!locNames.has(loc)) refIssues.push(`Scene ${sceneNum}: Location "${loc}" not found in location library`);
+          });
+        }
+        if (Array.isArray(scene.themes)) {
+          scene.themes.forEach(theme => {
+            if (!themeNames.has(theme)) refIssues.push(`Scene ${sceneNum}: Theme "${theme}" not found in theme library`);
+          });
+        }
+        if (Array.isArray(scene.misc)) {
+          scene.misc.forEach(item => {
+            if (!miscNames.has(item)) refIssues.push(`Scene ${sceneNum}: Misc item "${item}" not found in misc library`);
+          });
+        }
+      });
+
+      if (refIssues.length > 0) {
+        const summary = refIssues.slice(0, 5).join('\n');
+        const moreMsg = refIssues.length > 5 ? '\n... and ' + (refIssues.length - 5) + ' more issues' : '';
+        alert('Project has reference issues:\n\n' + summary + moreMsg + '\n\nPlease check that all scene references match library items.');
+        return;
+      }
+
       const id = genProjId();
       const now = new Date().toISOString();
       const name = d.projectName || file.name.replace(/\.json$/i, '') || 'Imported Project';
@@ -2184,8 +2233,9 @@ function importProjectJSON(inputEl) {
       saveProjectIndex(index);
       gtag('event', 'project_imported');
       renderProjectGrid();
+      alert('Project imported successfully: ' + name + ' (' + d.scenes.length + ' scenes)');
     } catch(err) {
-      alert('Could not read project file. Make sure it is a valid SceneSetter JSON export.');
+      alert('Could not read project file. Make sure it is a valid SceneSetter JSON export.\n\nError: ' + err.message);
     }
   };
   reader.readAsText(file);
