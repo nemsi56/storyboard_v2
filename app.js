@@ -2444,6 +2444,9 @@ if (document.getElementById('proj-rename-modal')) {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+// Initialize user tracking (call early, before any scenes are created)
+getUserId();
+
 // Apply global theme
 const gPrefs = loadGlobalPrefs();
 const gTheme = ['ivory','slate','studio','ocean','sunset'].includes(gPrefs.theme) ? gPrefs.theme : 'ivory';
