@@ -415,6 +415,21 @@
 
 </div><!-- /app-storyboard -->
 
+<!-- Email Signup Popup -->
+<div id="email-popup" class="email-popup" style="display:none;">
+  <div class="email-popup-overlay" onclick="closeEmailPopup()"></div>
+  <div class="email-popup-box">
+    <button class="email-popup-close" onclick="closeEmailPopup()">×</button>
+    <h3>Enjoying SceneSetter?</h3>
+    <p>Please provide your email to let us know whether it's worth maintaining/updating. Thanks!</p>
+    <input type="email" id="email-input" placeholder="your@email.com" maxlength="100">
+    <div class="email-popup-buttons">
+      <button class="email-popup-btn-cancel" onclick="closeEmailPopup()">Skip</button>
+      <button class="email-popup-btn-submit" onclick="submitEmail()">Submit</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>
