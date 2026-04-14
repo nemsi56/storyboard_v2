@@ -2409,11 +2409,11 @@ function ensureSampleProjects() {
     samplesToLoad.push({ name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' });
   }
 
-  if (samplesToLoad.length === 0) return; // All samples already loaded
+  if (samplesToLoad.length === 0) return Promise.resolve(); // All samples already loaded
 
-  // Load missing samples
-  samplesToLoad.forEach(sample => {
-    fetch(sample.file)
+  // Load missing samples and return a promise that resolves when all are done
+  const loadPromises = samplesToLoad.map(sample => {
+    return fetch(sample.file)
       .then(response => {
         if (!response.ok) throw new Error('Failed to load sample project');
         return response.json();
@@ -2434,6 +2434,8 @@ function ensureSampleProjects() {
       })
       .catch(err => console.log('Could not auto-load sample project: ' + sample.name));
   });
+
+  return Promise.all(loadPromises);
 }
 
 // Backdrop click to close project modals (only on pages with these elements)
@@ -2463,8 +2465,7 @@ migrateExistingData();
 // ── PAGE-SPECIFIC INIT ───────────────────────────────────────────────────────
 if (_page === 'projects') {
   // Projects page: ensure sample projects are loaded, then render grid
-  ensureSampleProjects();
-  setTimeout(renderProjectGrid, 100); // Delay to allow samples to load
+  ensureSampleProjects().then(renderProjectGrid);
 } else if (_page === 'index') {
   // Check for pending project from projects.html navigation
   const pendingId = sessionStorage.getItem('ss_open_project');
