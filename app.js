@@ -13,14 +13,29 @@ const SEC_COLORS = ['#5b8dd9','#6aaa80','#9b7cc4','#d4844a','#4aadb5','#c47a8a',
 // ── MILESTONE TRACKING ────────────────────────────────────────────────────────
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mbdqjbnp';
 const USER_ID_KEY = 'scenesetter_user_id';
+const SCENE_COUNT_AT_ID_CREATION_KEY = 'scenesetter_scene_count_at_creation';
+const SECTION_COUNT_AT_ID_CREATION_KEY = 'scenesetter_section_count_at_creation';
 
 function getUserId() {
   let userId = localStorage.getItem(USER_ID_KEY);
   if (!userId) {
     userId = 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     localStorage.setItem(USER_ID_KEY, userId);
+    // Store the current scene and section counts at ID creation time
+    localStorage.setItem(SCENE_COUNT_AT_ID_CREATION_KEY, String(S.scenes.length));
+    localStorage.setItem(SECTION_COUNT_AT_ID_CREATION_KEY, String(S.sections.length));
   }
   return userId;
+}
+
+function getScenesCreatedSinceIdCreation() {
+  const countAtCreation = parseInt(localStorage.getItem(SCENE_COUNT_AT_ID_CREATION_KEY) || '0');
+  return S.scenes.length - countAtCreation;
+}
+
+function getSectionsCreatedSinceIdCreation() {
+  const countAtCreation = parseInt(localStorage.getItem(SECTION_COUNT_AT_ID_CREATION_KEY) || '0');
+  return S.sections.length - countAtCreation;
 }
 
 function trackMilestone(milestone, metadata = {}) {
@@ -600,10 +615,11 @@ function addScene() {
   setNewSceneLive(false);
   renderBoard();
 
-  // Track milestones
-  if (S.scenes.length === 1) {
+  // Track milestones (based on scenes created since user ID was generated)
+  const scenesCreated = getScenesCreatedSinceIdCreation();
+  if (scenesCreated === 1) {
     trackMilestone('1st_scene_created');
-  } else if (S.scenes.length === 5) {
+  } else if (scenesCreated === 5) {
     trackMilestone('5th_scene_created');
     // Show email popup at 5th scene
     showEmailPopup();
@@ -1129,8 +1145,9 @@ function addSection() {
   const color = SEC_COLORS[S.sections.length % SEC_COLORS.length];
   S.sections.push({ id: S.nextSecId++, name, color });
 
-  // Track milestone: 2nd section created
-  if (S.sections.length === 2) {
+  // Track milestone: 2nd section created (based on sections created since user ID was generated)
+  const sectionsCreated = getSectionsCreatedSinceIdCreation();
+  if (sectionsCreated === 2) {
     trackMilestone('2nd_section_created');
   }
 
