@@ -2176,6 +2176,8 @@ function openProject(id) {
   currentProjectId = id;
   resetState();
   loadState(projKey(id));
+  // Initialize user tracking after project state is loaded
+  getUserId();
   const index = loadProjectIndex();
   const entry = index.find(p => p.id === id);
   document.getElementById('proj-name').textContent = entry ? entry.name : '';
@@ -2444,9 +2446,6 @@ if (document.getElementById('proj-rename-modal')) {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-// Initialize user tracking (call early, before any scenes are created)
-getUserId();
-
 // Apply global theme
 const gPrefs = loadGlobalPrefs();
 const gTheme = ['ivory','slate','studio','ocean','sunset'].includes(gPrefs.theme) ? gPrefs.theme : 'ivory';
