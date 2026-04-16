@@ -147,6 +147,10 @@ function saveGlobalPrefs(prefs) {
   try { localStorage.setItem(GLOBAL_PREFS_KEY, JSON.stringify(prefs)); } catch(e) {}
 }
 
+function recordDataEdit() {
+  S.lastDataEditAt = new Date().toISOString();
+}
+
 function saveState() {
   if (!currentProjectId) return;
   try {
@@ -156,6 +160,7 @@ function saveState() {
       scenes: S.scenes, nextId: S.nextId, andOr: S.andOr,
       theme: document.documentElement.dataset.theme,
       sections: S.sections, nextSecId: S.nextSecId,
+      lastDataEditAt: S.lastDataEditAt,
     }));
     // Update project index metadata
     const index = loadProjectIndex();
@@ -166,6 +171,7 @@ function saveState() {
       entry.theme = document.documentElement.dataset.theme;
       saveProjectIndex(index);
     }
+    updateProjectNameDisplay();
   } catch(e) { /* storage full or unavailable */ }
 }
 
@@ -214,6 +220,7 @@ function loadState(storageKey) {
     document.documentElement.dataset.theme = theme;
     const sel = document.getElementById('theme-sel');
     if (sel) sel.value = theme;
+    S.lastDataEditAt = d.lastDataEditAt || null;
     if (migrated) saveState();
     return true;
   } catch(e) { return false; }
@@ -229,6 +236,7 @@ const S = {
   selIds: new Set(),
   editingId: null,
   nextId: 1,
+  lastDataEditAt: null,
 };
 
 // ── HISTORY (undo / redo) ─────────────────────────────────────────────────────
@@ -281,6 +289,7 @@ function undo() {
   hist.future.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
   buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  recordDataEdit();
   saveState();
 }
 
@@ -290,6 +299,7 @@ function redo() {
   hist.past.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
   buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  recordDataEdit();
   saveState();
 }
 
@@ -363,6 +373,7 @@ function confirmAdd() {
   S[apSec].push({ name, notes });
   renderLibSec(apSec); renderCk(apSec); renderEditCk(apSec);
   closeAddPopup();
+  recordDataEdit();
   saveState();
 }
 if (document.getElementById('ap-input')) {
@@ -440,6 +451,7 @@ function removeItem(sec, name) {
   S.scenes.forEach(sc => { sc[sec] = (sc[sec] || []).filter(x => x !== name); });
   S.selections[sec].delete(name);
   renderLibSec(sec); renderCk(sec); renderEditCk(sec); renderBoard(); updateLibClearBtn();
+  recordDataEdit();
   saveState();
 }
 
@@ -502,6 +514,7 @@ function saveLibEdit() {
   }
   closeLibEditModal();
   renderLibSec(sec); renderCk(sec); renderEditCk(sec); renderBoard();
+  recordDataEdit();
   saveState();
 }
 
@@ -625,6 +638,7 @@ function addScene() {
     showEmailPopup();
   }
 
+  recordDataEdit();
   saveState();
 }
 
@@ -651,6 +665,7 @@ function deleteScene(id) {
   S.selIds.delete(id);
   if (S.editingId === id) cancelEdit();
   renderBoard();
+  recordDataEdit();
   saveState();
 }
 
@@ -712,6 +727,7 @@ function confirmSaveEdit() {
     if (insertIdx === -1) S.scenes.push(sc); else S.scenes.splice(insertIdx + 1, 0, sc);
   }
   closeSaveCfm(); cancelEdit(); renderSecPanel(); renderBoard();
+  recordDataEdit();
   saveState();
 }
 function closeSaveCfm() { document.getElementById('savecfm-modal').classList.remove('open'); }
@@ -1153,6 +1169,7 @@ function addSection() {
 
   inp.value = '';
   renderSecPanel(); renderSectionSelects(); renderBoard();
+  recordDataEdit();
   saveState();
 }
 
@@ -1175,6 +1192,7 @@ function confirmSecDel() {
   S.sections = S.sections.filter(s => s.id !== id);
   S.scenes.forEach(s => { if (s.sectionId === id) s.sectionId = null; });
   renderSecPanel(); renderSectionSelects(); renderBoard();
+  recordDataEdit();
   saveState();
 }
 
@@ -1186,12 +1204,14 @@ function renameSection(id, newName) {
   pushHistory('Rename section to "' + truncStr(newName, 22) + '"');
   sec.name = newName;
   renderSecPanel(); renderSectionSelects(); renderBoard();
+  recordDataEdit();
   saveState();
 }
 
 function colorSection(id, color) {
   const sec = S.sections.find(s => s.id === id); if (!sec) return;
   sec.color = color;
+  recordDataEdit();
   saveState();
 }
 
@@ -2165,6 +2185,26 @@ function initStoryboard() {
   document.getElementById('det-toggle').checked = false;
 }
 
+function formatEditDate(isoString) {
+  if (!isoString) return '';
+  const d = new Date(isoString);
+  const m = String(d.getMonth() + 1);
+  const day = String(d.getDate());
+  const y = String(d.getFullYear()).slice(-2);
+  return `${m}/${day}/${y}`;
+}
+
+function updateProjectNameDisplay() {
+  if (!currentProjectId) return;
+  const index = loadProjectIndex();
+  const entry = index.find(p => p.id === currentProjectId);
+  let projNameText = entry ? entry.name : '';
+  if (S.lastDataEditAt) {
+    projNameText += ` (Last update ${formatEditDate(S.lastDataEditAt)})`;
+  }
+  document.getElementById('proj-name').textContent = projNameText;
+}
+
 function openProject(id) {
   if (_page === 'projects') {
     // Store project ID and navigate to index.html (storyboard)
@@ -2178,9 +2218,7 @@ function openProject(id) {
   loadState(projKey(id));
   // Initialize user tracking after project state is loaded
   getUserId();
-  const index = loadProjectIndex();
-  const entry = index.find(p => p.id === id);
-  document.getElementById('proj-name').textContent = entry ? entry.name : '';
+  updateProjectNameDisplay();
   initStoryboard();
   showStoryboard();
 }
