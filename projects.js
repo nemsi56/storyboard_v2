@@ -199,14 +199,16 @@ function backToProjects() {
 
 let renamingProjId = null;
 function startProjRename(id) {
+  const modal = document.getElementById('proj-rename-modal');
+  const input = document.getElementById('proj-rename-input');
+  if (!modal || !input) return; // Only proceed if on projects page
   renamingProjId = id;
   const index = loadProjectIndex();
   const entry = index.find(p => p.id === id);
-  document.getElementById('proj-rename-input').value = entry ? entry.name : '';
-  document.getElementById('proj-rename-modal').classList.add('open');
+  input.value = entry ? entry.name : '';
+  modal.classList.add('open');
   setTimeout(() => {
-    const inp = document.getElementById('proj-rename-input');
-    inp.focus(); inp.select();
+    input.focus(); input.select();
   }, 100);
 }
 
