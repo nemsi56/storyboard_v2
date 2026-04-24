@@ -34,11 +34,18 @@ function trackMilestone(milestone, metadata = {}) {
     timestamp: new Date().toLocaleString(),
     ...metadata
   };
+  console.log('📊 Milestone triggered:', milestone, data);
   fetch(FORMSPREE_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
-  }).catch(err => console.log('Milestone tracking failed:', err));
+  })
+  .then(res => {
+    console.log('✅ Formspree response:', res.status);
+    return res.json();
+  })
+  .then(json => console.log('✅ Formspree success:', json))
+  .catch(err => console.log('❌ Milestone tracking failed:', err));
   if (typeof gtag !== 'undefined') {
     gtag('event', 'user_milestone', { milestone: milestone });
   }
