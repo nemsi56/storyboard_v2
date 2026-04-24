@@ -50,7 +50,13 @@ function saveState() {
       saveProjectIndex(index);
     }
     updateProjectNameDisplay();
-  } catch(e) { /* storage full or unavailable */ }
+  } catch(e) {
+    const isQuotaErr = e.name === 'QuotaExceededError';
+    console.warn('Storage error:', isQuotaErr ? 'quota exceeded' : e.message);
+    if (isQuotaErr && typeof window !== 'undefined') {
+      alert('Your browser storage is full. Please delete some old projects to continue.');
+    }
+  }
 }
 
 function loadState(storageKey) {

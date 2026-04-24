@@ -37,6 +37,7 @@ if (_page === 'projects') {
   if (pendingId) {
     // Open the project directly into storyboard
     openProject(pendingId);
+    // If created from projects page, open rename modal (startProjRename handles editor-only gracefully)
     if (pendingRename) startProjRename(pendingRename);
   } else {
     // No project specified — redirect to projects page
