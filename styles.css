@@ -536,15 +536,15 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .mi{position:relative}
 .mi-btn{height:30px;padding:0 12px;background:none;border:none;font-size:12px;font-family:inherit;color:var(--tx);cursor:pointer;white-space:nowrap;transition:background .1s}
 .mi-btn:hover,.mi.open .mi-btn{background:var(--s0)}
-.mi-drop{display:none;position:absolute;top:30px;left:0;min-width:210px;background:var(--bg1);border:1px solid var(--bdr);border-radius:0 4px 4px 4px;box-shadow:0 4px 14px rgba(0,0,0,.12);z-index:1000;padding:4px 0}
+.mi-drop{display:none;position:absolute;top:30px;left:0;min-width:210px;background:#fff;border:1px solid #d0d0d0;border-radius:0 4px 4px 4px;box-shadow:0 4px 14px rgba(0,0,0,.14);z-index:1000;padding:4px 0}
 .mi.open>.mi-drop{display:block}
-.di{display:flex;justify-content:space-between;align-items:center;width:100%;padding:6px 16px;background:none;border:none;font-size:12px;font-family:inherit;color:var(--tx);cursor:pointer;text-align:left;white-space:nowrap;transition:background .1s}
-.di:hover{background:var(--s0)}
+.di{display:flex;justify-content:space-between;align-items:center;width:100%;padding:6px 16px;background:none;border:none;font-size:12px;font-family:inherit;color:#1a1a1a;cursor:pointer;text-align:left;white-space:nowrap;transition:background .1s}
+.di:hover{background:#f0f0f0}
 .di.active{font-weight:600;color:var(--acc)}
-.di-sc{color:var(--o0);font-size:11px;margin-left:24px;flex-shrink:0}
-.di-sep{height:1px;background:var(--bdr);margin:4px 0}
+.di-sc{color:#888;font-size:11px;margin-left:24px;flex-shrink:0}
+.di-sep{height:1px;background:#e0e0e0;margin:4px 0}
 .has-sub{position:relative;cursor:default}
-.has-sub>.mi-sub{display:none;position:absolute;left:100%;top:-4px;min-width:130px;background:var(--bg1);border:1px solid var(--bdr);border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.12);padding:4px 0}
+.has-sub>.mi-sub{display:none;position:absolute;left:100%;top:-4px;min-width:130px;background:#fff;border:1px solid #d0d0d0;border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.14);padding:4px 0}
 .has-sub:hover>.mi-sub{display:block}
 
 /* ── HEADER: project name prominence ─────────────────────────────────────── */
