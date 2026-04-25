@@ -546,3 +546,14 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .has-sub{position:relative;cursor:default}
 .has-sub>.mi-sub{display:none;position:absolute;left:100%;top:-4px;min-width:130px;background:var(--bg1);border:1px solid var(--bdr);border-radius:4px;box-shadow:0 4px 14px rgba(0,0,0,.12);padding:4px 0}
 .has-sub:hover>.mi-sub{display:block}
+
+/* ── HEADER: project name prominence ─────────────────────────────────────── */
+#proj-name-wrap{display:flex;flex-direction:column;justify-content:center;flex:1;min-width:0;overflow:hidden}
+.pn-title{font-size:14px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.pn-time{font-size:10px;color:var(--o0);white-space:nowrap;line-height:1.2}
+
+/* ── MENU BAR: tip text ───────────────────────────────────────────────────── */
+#menu-tip{font-size:11px;color:var(--o0);padding:0 0 0 20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;align-self:center;flex:1;min-width:0;pointer-events:none}
+
+/* ── THEME SWATCHES ──────────────────────────────────────────────────────── */
+.theme-sw{display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid;margin-right:8px;flex-shrink:0;vertical-align:middle}

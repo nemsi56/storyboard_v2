@@ -90,6 +90,9 @@ function toggleMenu(name) {
 function closeAllMenus() {
   document.querySelectorAll('#menu-bar .mi.open').forEach(m => m.classList.remove('open'));
 }
+function hoverMenu(name) {
+  if (document.querySelector('#menu-bar .mi.open')) toggleMenu(name);
+}
 function updateThemeMenuState() {
   const current = document.documentElement.dataset.theme || 'ivory';
   document.querySelectorAll('#drop-view .theme-di').forEach(btn => {

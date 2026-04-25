@@ -143,11 +143,10 @@ function updateProjectNameDisplay() {
   if (!currentProjectId) return;
   const index = loadProjectIndex();
   const entry = index.find(p => p.id === currentProjectId);
-  let projNameText = entry ? entry.name : '';
-  if (S.lastDataEditAt) {
-    projNameText += ` (Last update ${formatEditDate(S.lastDataEditAt)})`;
-  }
-  document.getElementById('proj-name').textContent = projNameText;
+  const titleEl = document.getElementById('proj-name-title');
+  const timeEl  = document.getElementById('proj-name-time');
+  if (titleEl) titleEl.textContent = entry ? entry.name : '';
+  if (timeEl)  timeEl.textContent  = S.lastDataEditAt ? 'Last update ' + formatEditDate(S.lastDataEditAt) : '';
 }
 
 function openProject(id) {
@@ -222,7 +221,8 @@ function confirmProjRename() {
   const entry = index.find(p => p.id === renamingProjId);
   if (entry) { entry.name = name; saveProjectIndex(index); }
   if (currentProjectId === renamingProjId) {
-    document.getElementById('proj-name').textContent = name;
+    const titleEl = document.getElementById('proj-name-title');
+    if (titleEl) titleEl.textContent = name;
   }
   closeProjRename();
   renderProjectGrid();
