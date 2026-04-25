@@ -84,9 +84,7 @@ function setGlobalTheme(name) {
 
 // ── HELP OVERLAY ───────────────────────────────────────────────────────────────
 const HELP_ZONES = [
-  { sel: '#undo-btn',        tip: 'Undo — reverses the last change (up to 10 steps). Shortcut: Ctrl+Z / ⌘Z.' },
-  { sel: '#redo-btn',        tip: 'Redo — restores a previously undone change. Shortcut: Ctrl+Y / ⌘⇧Z.' },
-  { sel: '#theme-wrap',      tip: 'Theme — switch the app\'s color scheme between Ivory, Slate, Studio, Ocean, and Sunset.' },
+  { sel: '#menu-bar',        tip: 'Menu bar — File (save, export, import), Edit (undo/redo), View (theme, zoom), Scene (new scene, add library items, reports), Help (tutorial). Most items have keyboard shortcuts shown in each menu.' },
   { sel: '#lp .p-hdr',      tip: 'Library panel — stores characters, locations, themes, and misc items. Click + to add an item. Click any item to highlight matching scenes on the board. Hover an item to shuffle, edit (name & notes), or delete it. Use ◀ to hide the panel or drag the right edge to resize it.' },
   { sel: '#ao-global-wrap',  tip: 'Highlight mode — OR highlights scenes containing any selected item; AND highlights only scenes that contain all selected items simultaneously. A Clear Highlights option appears when any items are selected.' },
   { sel: '#sp .p-hdr',      tip: 'Sections panel — organize scenes into named sections such as acts, chapters, or sequences. Hover a section row and click → to jump to it on the board. Use ◀ or drag the panel edge to hide or resize.' },
@@ -98,7 +96,6 @@ const HELP_ZONES = [
   { sel: '#clrsel',          tip: 'Clear Selection — deselects all currently selected scene cards on the board.' },
   { sel: '#det-toggle',      tip: 'Show Card Details — toggle to show or hide library tags (characters, locations, themes, misc) printed on each card.' },
   { sel: '#sec-filter-wrap', tip: 'Section Filter — click to choose which sections are visible on the board. Useful for focusing on one part of your story.' },
-  { sel: '#rpt-btn',         tip: 'Report — generate a printable report: Scene List, Character, Location, Theme, Misc Items, or Cross-Reference Matrix. Reports can optionally include your library item notes.' },
   { sel: '#srch-wrap',       tip: 'Search — filter visible cards by title or summary text. Press × or Escape to clear the search.' },
   { sel: '.scalew',          tip: 'Card Size — drag the slider to make scene cards larger or smaller on the board.' },
   { sel: '#help-btn',        tip: 'Help — you\'re already here! Click ? to toggle this mode on/off. Hover highlighted areas to learn what each element does.' },

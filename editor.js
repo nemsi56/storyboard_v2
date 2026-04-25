@@ -78,6 +78,38 @@ if (document.getElementById('add-popup')) onBackdropClick('add-popup', closeAddP
 function togglePanel(id) { document.getElementById(id).classList.toggle('collapsed'); }
 function setScale(v) { document.getElementById('board').style.setProperty('--cs', v); if (S.sections.length) alignSecHeaders(); }
 
+// ── MENU BAR ───────────────────────────────────────────────────────────────────
+function toggleMenu(name) {
+  const isOpen = document.getElementById('mi-' + name).classList.contains('open');
+  closeAllMenus();
+  if (!isOpen) {
+    document.getElementById('mi-' + name).classList.add('open');
+    if (name === 'view') updateThemeMenuState();
+  }
+}
+function closeAllMenus() {
+  document.querySelectorAll('#menu-bar .mi.open').forEach(m => m.classList.remove('open'));
+}
+function updateThemeMenuState() {
+  const current = document.documentElement.dataset.theme || 'ivory';
+  document.querySelectorAll('#drop-view .theme-di').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === current);
+  });
+}
+function menuSave() { saveState(); closeAllMenus(); }
+function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
+function menuNewScene() {
+  closeAllMenus();
+  if (document.getElementById('cp').classList.contains('collapsed')) togglePanel('cp');
+  switchTab('new');
+  setNewSceneLive(false);
+  setTimeout(() => document.getElementById('sc-title').focus(), 40);
+}
+function zoomIn()    { const el = document.getElementById('scaler'); if (!el) return; const v = Math.min(1.65, Math.round((+el.value + 0.1) * 100) / 100); el.value = v; setScale(v); }
+function zoomOut()   { const el = document.getElementById('scaler'); if (!el) return; const v = Math.max(0.55, Math.round((+el.value - 0.1) * 100) / 100); el.value = v; setScale(v); }
+function zoomReset() { const el = document.getElementById('scaler'); if (!el) return; el.value = 1; setScale(1); }
+document.addEventListener('click', e => { if (!e.target.closest('#menu-bar')) closeAllMenus(); });
+
 // ── AND/OR (global) ────────────────────────────────────────────────────────────
 function setAndOr(mode) {
   S.andOr = mode;
@@ -1209,11 +1241,29 @@ if (document.getElementById('sc-title')) {
 }
 document.addEventListener('keydown', e => {
   const inInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
-  if ((e.ctrlKey || e.metaKey) && !inInput) {
+  // Ctrl / Cmd shortcuts
+  if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+    if (e.key === 's') { e.preventDefault(); saveState(); return; }
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (typeof undo === 'function') undo(); return; }
     if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); if (typeof redo === 'function') redo(); return; }
+    if (!inInput) {
+      if (e.key === 'E') { e.preventDefault(); exportCurrentProject(); return; }
+      if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); return; }
+      if (e.key === '-') { e.preventDefault(); zoomOut(); return; }
+      if (e.key === '0') { e.preventDefault(); zoomReset(); return; }
+    }
+  }
+  // Alt shortcuts (not in an input field)
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !inInput) {
+    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); menuNewScene(); return; }
+    if (e.key === 'c' || e.key === 'C') { e.preventDefault(); openAddPopup('characters'); return; }
+    if (e.key === 'l' || e.key === 'L') { e.preventDefault(); openAddPopup('locations'); return; }
+    if (e.key === 't' || e.key === 'T') { e.preventDefault(); openAddPopup('themes'); return; }
+    if (e.key === 'm' || e.key === 'M') { e.preventDefault(); openAddPopup('misc'); return; }
+    if (e.key === 'r' || e.key === 'R') { e.preventDefault(); openReportModal(); return; }
   }
   if (e.key === 'Escape') {
+    closeAllMenus();
     if (typeof clearAllSel === 'function') try { clearAllSel(); } catch(e){}
     if (typeof clearCardSel === 'function') try { clearCardSel(); } catch(e){}
     if (typeof cancelEdit === 'function') try { cancelEdit(); } catch(e){}

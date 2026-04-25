@@ -20,23 +20,70 @@
   <h1>📝 SceneSetter</h1>
   <span id="proj-name"></span>
   <span class="tip">Click library items to highlight · ✏️ to edit a scene · Drag cards to reorder</span>
-  <div id="ur-wrap">
-    <button id="undo-btn" class="ur-btn" onclick="undo()" disabled title="Undo (Ctrl+Z)">↩ Undo</button>
-    <button id="redo-btn" class="ur-btn" onclick="redo()" disabled title="Redo (Ctrl+Y)">↪ Redo</button>
-  </div>
-  <div id="theme-wrap">
-    <label for="theme-sel">Theme</label>
-    <select id="theme-sel" onchange="setTheme(this.value)">
-      <option value="ivory">Ivory</option>
-      <option value="slate">Slate</option>
-      <option value="studio">Studio</option>
-      <option value="ocean">Ocean</option>
-      <option value="sunset">Sunset</option>
-    </select>
-  </div>
-  <a href="tutorial.html" target="_blank" title="Open tutorial in a new tab" style="background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background .12s,color .12s;flex-shrink:0">Tutorial</a>
   <button id="help-btn" onclick="toggleHelp()" title="Help – hover over highlighted areas to learn what each element does">?</button>
 </div>
+
+<!-- MENU BAR -->
+<div id="menu-bar">
+  <!-- File -->
+  <div class="mi" id="mi-file">
+    <button class="mi-btn" onclick="toggleMenu('file')">File</button>
+    <div class="mi-drop" id="drop-file">
+      <button class="di" onclick="menuSave()">Save<span class="di-sc">Ctrl+S</span></button>
+      <div class="di-sep"></div>
+      <button class="di" onclick="exportCurrentProject();closeAllMenus()">Export as JSON<span class="di-sc">Ctrl+⇧E</span></button>
+      <button class="di" onclick="menuImport()">Import from JSON…</button>
+    </div>
+  </div>
+  <!-- Edit -->
+  <div class="mi" id="mi-edit">
+    <button class="mi-btn" onclick="toggleMenu('edit')">Edit</button>
+    <div class="mi-drop" id="drop-edit">
+      <button class="di" onclick="undo();closeAllMenus()">Undo<span class="di-sc">Ctrl+Z</span></button>
+      <button class="di" onclick="redo();closeAllMenus()">Redo<span class="di-sc">Ctrl+⇧Z</span></button>
+    </div>
+  </div>
+  <!-- View -->
+  <div class="mi" id="mi-view">
+    <button class="mi-btn" onclick="toggleMenu('view')">View</button>
+    <div class="mi-drop" id="drop-view">
+      <div class="di has-sub">Theme ▸<div class="mi-sub">
+        <button class="di theme-di" data-theme="ivory"  onclick="setTheme('ivory'); closeAllMenus()">Ivory</button>
+        <button class="di theme-di" data-theme="slate"  onclick="setTheme('slate'); closeAllMenus()">Slate</button>
+        <button class="di theme-di" data-theme="studio" onclick="setTheme('studio');closeAllMenus()">Studio</button>
+        <button class="di theme-di" data-theme="ocean"  onclick="setTheme('ocean'); closeAllMenus()">Ocean</button>
+        <button class="di theme-di" data-theme="sunset" onclick="setTheme('sunset');closeAllMenus()">Sunset</button>
+      </div></div>
+      <div class="di-sep"></div>
+      <button class="di" onclick="zoomIn(); closeAllMenus()">Zoom In<span class="di-sc">Ctrl+=</span></button>
+      <button class="di" onclick="zoomOut();closeAllMenus()">Zoom Out<span class="di-sc">Ctrl+−</span></button>
+      <button class="di" onclick="zoomReset();closeAllMenus()">Reset Zoom<span class="di-sc">Ctrl+0</span></button>
+    </div>
+  </div>
+  <!-- Scene -->
+  <div class="mi" id="mi-scene">
+    <button class="mi-btn" onclick="toggleMenu('scene')">Scene</button>
+    <div class="mi-drop" id="drop-scene">
+      <button class="di" onclick="menuNewScene()">New Scene…<span class="di-sc">Alt+N</span></button>
+      <div class="di-sep"></div>
+      <button class="di" onclick="openAddPopup('characters');closeAllMenus()">Add Character<span class="di-sc">Alt+C</span></button>
+      <button class="di" onclick="openAddPopup('locations'); closeAllMenus()">Add Location<span class="di-sc">Alt+L</span></button>
+      <button class="di" onclick="openAddPopup('themes');    closeAllMenus()">Add Theme<span class="di-sc">Alt+T</span></button>
+      <button class="di" onclick="openAddPopup('misc');      closeAllMenus()">Add Misc Item<span class="di-sc">Alt+M</span></button>
+      <div class="di-sep"></div>
+      <button class="di" onclick="openReportModal();closeAllMenus()">Generate Report<span class="di-sc">Alt+R</span></button>
+    </div>
+  </div>
+  <!-- Help -->
+  <div class="mi" id="mi-help">
+    <button class="mi-btn" onclick="toggleMenu('help')">Help</button>
+    <div class="mi-drop" id="drop-help">
+      <button class="di" onclick="window.open('tutorial.html','_blank');closeAllMenus()">Tutorial</button>
+    </div>
+  </div>
+</div>
+<!-- Hidden file input for JSON import -->
+<input type="file" id="menu-import-input" accept=".json" style="display:none" onchange="importProjectJSON(this)">
 
 <div class="main">
 
@@ -160,8 +207,6 @@
         <button id="sec-filter-btn" class="sec-filter-btn" onclick="toggleSecFilter()">All Sections ▾</button>
         <div id="sec-filter-drop" class="sec-filter-drop"></div>
       </div>
-      <button id="rpt-btn" onclick="openReportModal()" title="Generate a printable report">Report</button>
-      <button id="export-btn" onclick="exportCurrentProject()" title="Export project as JSON file" style="background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap">Export</button>
       <div id="srch-wrap">
         <input type="text" id="srch-inp" placeholder="🔍 Search…" oninput="onSearch()">
         <select id="srch-scope" onchange="onSearch()" title="Search in…">
