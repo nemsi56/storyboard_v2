@@ -84,7 +84,10 @@ function toggleMenu(name) {
   closeAllMenus();
   if (!isOpen) {
     document.getElementById('mi-' + name).classList.add('open');
-    if (name === 'view') updateThemeMenuState();
+    if (name === 'view') {
+      updateThemeMenuState();
+      updatePanelMenuStates();
+    }
   }
 }
 function closeAllMenus() {
@@ -98,6 +101,14 @@ function updateThemeMenuState() {
   document.querySelectorAll('#drop-view .theme-di').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === current);
   });
+}
+function updatePanelMenuStates() {
+  const lpCollapsed = document.getElementById('lp').classList.contains('collapsed');
+  const rpCollapsed = document.getElementById('rp').classList.contains('collapsed');
+  const cpCollapsed = document.getElementById('cp').classList.contains('collapsed');
+  document.getElementById('menu-lib-text').textContent = lpCollapsed ? 'Show Library' : 'Hide Library';
+  document.getElementById('menu-sec-text').textContent = rpCollapsed ? 'Show Sections' : 'Hide Sections';
+  document.getElementById('menu-scn-text').textContent = cpCollapsed ? 'Show Scene' : 'Hide Scene';
 }
 function menuSave() { saveState(); closeAllMenus(); }
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }

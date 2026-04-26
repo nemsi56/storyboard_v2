@@ -76,6 +76,10 @@
       <button class="di" onclick="zoomIn(); closeAllMenus()">Zoom In<span class="di-sc">Ctrl+=</span></button>
       <button class="di" onclick="zoomOut();closeAllMenus()">Zoom Out<span class="di-sc">Ctrl+−</span></button>
       <button class="di" onclick="zoomReset();closeAllMenus()">Reset Zoom<span class="di-sc">Ctrl+0</span></button>
+      <div class="di-sep"></div>
+      <button class="di" id="menu-show-library" onclick="togglePanel('lp');updatePanelMenuStates();closeAllMenus()"><span id="menu-lib-text">Hide Library</span></button>
+      <button class="di" id="menu-show-sections" onclick="togglePanel('rp');updatePanelMenuStates();closeAllMenus()"><span id="menu-sec-text">Hide Sections</span></button>
+      <button class="di" id="menu-show-scene" onclick="togglePanel('cp');updatePanelMenuStates();closeAllMenus()"><span id="menu-scn-text">Hide Scene</span></button>
     </div>
   </div>
   <!-- Help -->
