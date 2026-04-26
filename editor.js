@@ -103,12 +103,18 @@ function updateThemeMenuState() {
   });
 }
 function updatePanelMenuStates() {
-  const lpCollapsed = document.getElementById('lp').classList.contains('collapsed');
-  const rpCollapsed = document.getElementById('rp').classList.contains('collapsed');
-  const cpCollapsed = document.getElementById('cp').classList.contains('collapsed');
-  document.getElementById('menu-lib-text').textContent = lpCollapsed ? 'Show Library Panel' : 'Hide Library Panel';
-  document.getElementById('menu-sec-text').textContent = rpCollapsed ? 'Show Sections Panel' : 'Hide Sections Panel';
-  document.getElementById('menu-scn-text').textContent = cpCollapsed ? 'Show Scene Panel' : 'Hide Scene Panel';
+  const lp = document.getElementById('lp');
+  const sp = document.getElementById('sp');
+  const cp = document.getElementById('cp');
+  const lpCollapsed = lp && lp.classList.contains('collapsed');
+  const spCollapsed = sp && sp.classList.contains('collapsed');
+  const cpCollapsed = cp && cp.classList.contains('collapsed');
+  const libEl = document.getElementById('menu-lib-text');
+  const secEl = document.getElementById('menu-sec-text');
+  const scnEl = document.getElementById('menu-scn-text');
+  if (libEl) libEl.textContent = lpCollapsed ? 'Show Library Panel' : 'Hide Library Panel';
+  if (secEl) secEl.textContent = spCollapsed ? 'Show Sections Panel' : 'Hide Sections Panel';
+  if (scnEl) scnEl.textContent = cpCollapsed ? 'Show Scene Panel' : 'Hide Scene Panel';
 }
 function menuSave() { saveState(); closeAllMenus(); }
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
