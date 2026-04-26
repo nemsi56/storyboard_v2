@@ -106,9 +106,9 @@ function updatePanelMenuStates() {
   const lpCollapsed = document.getElementById('lp').classList.contains('collapsed');
   const rpCollapsed = document.getElementById('rp').classList.contains('collapsed');
   const cpCollapsed = document.getElementById('cp').classList.contains('collapsed');
-  document.getElementById('menu-lib-text').textContent = lpCollapsed ? 'Show Library' : 'Hide Library';
-  document.getElementById('menu-sec-text').textContent = rpCollapsed ? 'Show Sections' : 'Hide Sections';
-  document.getElementById('menu-scn-text').textContent = cpCollapsed ? 'Show Scene' : 'Hide Scene';
+  document.getElementById('menu-lib-text').textContent = lpCollapsed ? 'Show Library Panel' : 'Hide Library Panel';
+  document.getElementById('menu-sec-text').textContent = rpCollapsed ? 'Show Sections Panel' : 'Hide Sections Panel';
+  document.getElementById('menu-scn-text').textContent = cpCollapsed ? 'Show Scene Panel' : 'Hide Scene Panel';
 }
 function menuSave() { saveState(); closeAllMenus(); }
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
