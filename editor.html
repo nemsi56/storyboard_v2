@@ -16,13 +16,13 @@
 
 <!-- HEADER -->
 <div id="hdr">
-  <button class="proj-back" onclick="backToProjects()" title="Back to project list">◂ Projects</button>
   <h1>📝 SceneSetter</h1>
   <div id="proj-name-wrap">
     <span id="proj-name-title" class="pn-title"></span>
     <span id="proj-name-time"  class="pn-time"></span>
   </div>
   <button id="help-btn" onclick="toggleHelp()" title="Help – hover over highlighted areas to learn what each element does">?</button>
+  <button class="proj-back" onclick="backToProjects()" title="Back to project list">◂ Projects</button>
 </div>
 
 <!-- MENU BAR -->
@@ -64,11 +64,11 @@
     <button class="mi-btn" onclick="toggleMenu('view')" onmouseenter="hoverMenu('view')">View</button>
     <div class="mi-drop" id="drop-view">
       <div class="di has-sub">Theme ▸<div class="mi-sub">
-        <button class="di theme-di" data-theme="ivory"  onclick="setTheme('ivory'); closeAllMenus()"><span class="theme-sw" style="background:#f0ece6;border-color:#9b4a1a"></span>Ivory</button>
-        <button class="di theme-di" data-theme="slate"  onclick="setTheme('slate'); closeAllMenus()"><span class="theme-sw" style="background:#161b22;border-color:#b07ef8"></span>Slate</button>
-        <button class="di theme-di" data-theme="studio" onclick="setTheme('studio');closeAllMenus()"><span class="theme-sw" style="background:#ffffff;border-color:#7c3aed"></span>Studio</button>
-        <button class="di theme-di" data-theme="ocean"  onclick="setTheme('ocean'); closeAllMenus()"><span class="theme-sw" style="background:#072030;border-color:#06b6d4"></span>Ocean</button>
-        <button class="di theme-di" data-theme="sunset" onclick="setTheme('sunset');closeAllMenus()"><span class="theme-sw" style="background:#fff0e0;border-color:#ea580c"></span>Sunset</button>
+        <button class="di theme-di theme-di-ivory" data-theme="ivory" onclick="setTheme('ivory'); closeAllMenus()">Ivory</button>
+        <button class="di theme-di theme-di-slate" data-theme="slate" onclick="setTheme('slate'); closeAllMenus()">Slate</button>
+        <button class="di theme-di theme-di-studio" data-theme="studio" onclick="setTheme('studio');closeAllMenus()">Studio</button>
+        <button class="di theme-di theme-di-ocean" data-theme="ocean" onclick="setTheme('ocean'); closeAllMenus()">Ocean</button>
+        <button class="di theme-di theme-di-sunset" data-theme="sunset" onclick="setTheme('sunset');closeAllMenus()">Sunset</button>
       </div></div>
       <div class="di-sep"></div>
       <button class="di" onclick="zoomIn(); closeAllMenus()">Zoom In<span class="di-sc">Ctrl+=</span></button>
@@ -85,8 +85,6 @@
       <button class="di" onclick="toggleHelp();closeAllMenus()">Feature Descriptions</button>
     </div>
   </div>
-  <!-- Tip text -->
-  <span id="menu-tip">Click library items to highlight · ✏️ to edit a scene · Drag cards to reorder</span>
 </div>
 <!-- Hidden file input for JSON import -->
 <input type="file" id="menu-import-input" accept=".json" style="display:none" onchange="importProjectJSON(this)">

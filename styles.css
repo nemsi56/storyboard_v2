@@ -12,8 +12,8 @@
 body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);color:var(--tx);height:100vh;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased;font-size:13px}
 
 /* ══ HEADER ═════════════════════════════════════════════════════════════════ */
-#hdr{background:var(--bg1);border-bottom:1px solid var(--bdr);height:50px;padding:0 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:20}
-#hdr h1{font-size:15px;font-weight:700;color:var(--acc);white-space:nowrap;flex-shrink:0}
+#hdr{background:var(--bg1);border-bottom:1px solid var(--bdr);height:50px;padding:0 16px;display:flex;align-items:center;gap:16px;flex-shrink:0;z-index:20}
+#hdr h1{font-size:15px;font-weight:700;color:var(--acc);white-space:nowrap;flex-shrink:0;margin:0}
 #hdr .tip{font-size:11px;color:var(--o0);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Undo / Redo */
 #ur-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0}
@@ -471,7 +471,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .pm-modal-del-msg{font-size:13px;color:var(--sub);line-height:1.6;margin-bottom:16px}
 .pm-modal-del-name{font-weight:700;color:var(--tx)}
 /* Back to projects button in storyboard header */
-.proj-back{background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;transition:background .12s,color .12s;white-space:nowrap;flex-shrink:0}
+.proj-back{background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:6px 12px;font-size:12px;font-family:inherit;cursor:pointer;transition:background .12s,color .12s;white-space:nowrap;flex-shrink:0;margin-left:auto;display:flex;align-items:center;gap:6px;line-height:1}
 .proj-back:hover{background:var(--s1);color:var(--tx)}
 #proj-name{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;flex-shrink:1}
 
@@ -552,8 +552,10 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .pn-title{font-size:14px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
 .pn-time{font-size:10px;color:var(--o0);white-space:nowrap;line-height:1.2}
 
-/* ── MENU BAR: tip text ───────────────────────────────────────────────────── */
-#menu-tip{font-size:11px;color:var(--o0);padding:0 0 0 20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;align-self:center;flex:1;min-width:0;pointer-events:none}
-
-/* ── THEME SWATCHES ──────────────────────────────────────────────────────── */
-.theme-sw{display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid;margin-right:8px;flex-shrink:0;vertical-align:middle}
+/* ── THEME SUBMENU BUTTONS ───────────────────────────────────────────────── */
+.theme-di{padding:8px 16px!important;color:#1a1a1a!important}
+.theme-di-ivory{background:#f0ece6!important}
+.theme-di-slate{background:#161b22!important;color:#e6edf3!important}
+.theme-di-studio{background:#ffffff!important}
+.theme-di-ocean{background:#072030!important;color:#c8e8f0!important}
+.theme-di-sunset{background:#fff0e0!important}
