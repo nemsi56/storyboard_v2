@@ -559,12 +559,12 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .theme-di.active{font-weight:600}
 .theme-di.active::after{content:"✓";position:absolute;right:16px;font-weight:700;font-size:14px}
 .theme-di-ivory{background:#f0ece6;color:#2c2416;font-weight:500}
-.theme-di-ivory.active{background:#e4dfd8;color:#2c2416}
+.theme-di-ivory.active{color:#9b4a1a}
 .theme-di-slate{background:#1e2d3d;color:#e6edf3;font-weight:500}
-.theme-di-slate.active{background:#1e2d3d;color:#b07ef8}
+.theme-di-slate.active{color:#b07ef8}
 .theme-di-studio{background:#ffffff;color:#1a1a2e;font-weight:500;border:1px solid #d8dadd}
-.theme-di-studio.active{background:#f0f2f5;color:#7c3aed;border-color:#7c3aed}
+.theme-di-studio.active{color:#7c3aed}
 .theme-di-ocean{background:#0a3a47;color:#fde68a;font-weight:500}
-.theme-di-ocean.active{background:#051820;color:#06b6d4}
+.theme-di-ocean.active{color:#06b6d4}
 .theme-di-sunset{background:#fff0e0;color:#2a1a08;font-weight:500}
-.theme-di-sunset.active{background:#f0dfc8;color:#2a1a08}
+.theme-di-sunset.active{color:#ea580c}
