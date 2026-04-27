@@ -167,15 +167,11 @@ function applySnapshot(snap) {
 }
 
 function updateUndoRedo() {
-  const ub = document.getElementById('undo-btn');
-  const rb = document.getElementById('redo-btn');
-  if (!ub || !rb) return;
   const canU = hist.past.length > 0, canR = hist.future.length > 0;
-  ub.disabled = !canU; rb.disabled = !canR;
-  ub.textContent = canU ? '↩ ' + truncStr(hist.past[hist.past.length-1].desc, 20) : '↩ Undo';
-  rb.textContent = canR ? '↪ ' + truncStr(hist.future[hist.future.length-1].desc, 20) : '↪ Redo';
-  ub.title = canU ? '↩ ' + hist.past[hist.past.length-1].desc + ' (Ctrl+Z)' : 'Undo (Ctrl+Z)';
-  rb.title = canR ? '↪ ' + hist.future[hist.future.length-1].desc + ' (Ctrl+Y)' : 'Redo (Ctrl+Y)';
+  const ul = document.getElementById('mdi-undo-lbl');
+  const rl = document.getElementById('mdi-redo-lbl');
+  if (ul) ul.textContent = canU ? 'Undo ' + truncStr(hist.past[hist.past.length-1].desc, 22) : 'Undo';
+  if (rl) rl.textContent = canR ? 'Redo ' + truncStr(hist.future[hist.future.length-1].desc, 22) : 'Redo';
 }
 
 function undo() {

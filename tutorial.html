@@ -271,13 +271,8 @@
 <body>
 
 <!-- Navigation -->
-<div style="background:var(--bg1,#f0ece6);border-bottom:1px solid var(--bdr,#d4cfc8);padding:8px 24px;display:flex;align-items:center;justify-content:space-between;font-family:'Inter','Segoe UI',system-ui,sans-serif">
+<div style="background:var(--bg1,#f0ece6);border-bottom:1px solid var(--bdr,#d4cfc8);padding:8px 24px;display:flex;align-items:center;font-family:'Inter','Segoe UI',system-ui,sans-serif">
   <a href="index.html" style="font-size:15px;font-weight:700;color:var(--acc,#9b4a1a);text-decoration:none">📝 SceneSetter</a>
-  <nav style="display:flex;gap:16px;align-items:center">
-    <a href="index.html" style="font-size:12px;color:var(--sub,#5c5044);text-decoration:none">Home</a>
-    <a href="overview.html" style="font-size:12px;color:var(--sub,#5c5044);text-decoration:none">Overview</a>
-    <a href="projects.html" style="font-size:12px;color:var(--acc,#9b4a1a);text-decoration:none;font-weight:600">Get Started</a>
-  </nav>
 </div>
 
 <div class="hero">
@@ -306,7 +301,7 @@
       <div class="step-num">+</div>
       <div class="step-body">
         <h4>Create a Project</h4>
-        <p>Click <strong>+ New Project</strong> to create a new, empty storyboard. You'll be prompted to give it a name straight away. Your new project opens immediately and you can start building.</p>
+        <p>Click <strong>+ New Project</strong> to create a new, empty storyboard. You'll be prompted to give it a name right away. Your new project opens immediately and you can start building.</p>
       </div>
     </div>
     <div class="step">
@@ -327,18 +322,18 @@
       <div class="step-num">◂</div>
       <div class="step-body">
         <h4>Switching Projects</h4>
-        <p>While inside a project, click the <strong>◂ Projects</strong> button in the top-left of the header to return to the project manager. Your work is saved automatically before you leave.</p>
+        <p>While inside a project, click the <strong>Projects</strong> button in the top-right of the header to return to the project manager. Your work is saved automatically before you leave.</p>
       </div>
     </div>
   </div>
 
   <div class="tip-box">
-    <strong>Tip:</strong> Projects are stored in your browser's local storage. Use <strong>Export</strong> regularly as a backup, and to move projects between devices or browsers.
+    <strong>Tip:</strong> Projects are stored in your browser's local storage. Use <strong>Export</strong> regularly as a backup, and to move projects between devices or browsers. Just make sure you don't overwrite a newer version of a project with an older version when you move projects.
   </div>
 
   <!-- ── INTERFACE ── -->
   <h2>The Interface</h2>
-  <p style="color:var(--sub); margin-bottom:16px;">Once inside a project, the screen is divided into three panels — each collapsible and resizable — and a scene board.</p>
+  <p style="color:var(--sub); margin-bottom:16px;">Once inside a project, a menu bar at the top provides quick access to File, Edit, Create, View, and Help options. Below that, the screen is divided into three panels — each collapsible and resizable — and a scene board.</p>
 
   <div class="panels-grid">
     <div class="panel-card blue">
@@ -468,8 +463,8 @@
     </div>
     <div class="feature-card">
       <div class="feature-icon">↔</div>
-      <h4>Card Size</h4>
-      <p>Use the <em>Size</em> slider in the board header to scale cards larger or smaller.</p>
+      <h4>Zoom</h4>
+      <p>Use the <em>Zoom</em> slider in the board header to scale cards larger or smaller.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">↩</div>
@@ -479,12 +474,12 @@
     <div class="feature-card">
       <div class="feature-icon">🎨</div>
       <h4>Themes</h4>
-      <p>Choose from five color schemes: Ivory, Slate, Studio, Ocean, and Sunset. Your choice applies across all projects.</p>
+      <p>Choose from five color schemes: Cream, Slate, Studio, Ocean, and Sunset. Your choice applies across all projects.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">↓</div>
       <h4>Export</h4>
-      <p>Click <strong>Export</strong> in the board header to download the current project as a <code>.json</code> file — a full backup you can restore or share at any time.</p>
+      <p>Use <strong>File > Export as JSON</strong> to download the current project as a <code>.json</code> file — a full backup you can restore or share at any time.</p>
     </div>
     <div class="feature-card">
       <div class="feature-icon">❓</div>
@@ -495,7 +490,7 @@
 
   <!-- ── REPORTS ── -->
   <h2>Reports</h2>
-  <p style="color:var(--sub); margin-bottom:16px;">Click <strong>Report</strong> in the board header to open the report dialog. Choose a type, select which sections and options to include, and click <strong>Generate Report</strong> — a print-ready page opens in a new tab. Character, Location, Theme, and Misc Items reports can optionally include the notes you've added to each library item.</p>
+  <p style="color:var(--sub); margin-bottom:16px;">Use <strong>Create > Generate Report</strong> to open the report dialog. Choose a type, select which sections and options to include, and click <strong>Generate Report</strong> — a print-ready page opens in a new tab. Character, Location, Theme, and Misc Items reports can optionally include the notes you've added to each library item.</p>
 
   <table class="rpt-table">
     <thead>
