@@ -59,6 +59,8 @@
       <button class="di" onclick="openAddPopup('misc');      closeAllMenus()">Add Misc Item<span class="di-sc">Alt+M</span></button>
       <div class="di-sep"></div>
       <button class="di" onclick="openReportModal();closeAllMenus()">Generate Report<span class="di-sc">Alt+R</span></button>
+      <div class="di-sep"></div>
+      <button class="di" onclick="openAnalysisConfirm();closeAllMenus()">Analyze Story…<span class="di-sc">Alt+A</span></button>
     </div>
   </div>
   <!-- View -->
@@ -433,6 +435,38 @@
 
 </div><!-- /app-storyboard -->
 
+<!-- AI Analysis Drawer -->
+<div id="ai-drawer">
+  <div id="ai-drawer-tab" onclick="toggleAnalysisDrawer()" title="Story Analysis">Analysis</div>
+  <div id="ai-drawer-panel">
+    <div id="ai-drawer-hdr">
+      <span class="ai-drawer-hdr-title">Story Analysis</span>
+      <span id="ai-last-run" class="ai-last-run"></span>
+    </div>
+    <div id="ai-drawer-body"></div>
+    <div id="ai-drawer-footer">
+      <button class="ai-footer-btn" onclick="dismissAllFindings()">Dismiss all</button>
+      <button class="ai-footer-btn" onclick="exportAnalysis()">Export</button>
+      <button class="ai-footer-btn" onclick="runAnalysis()">Re-analyze</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI Analysis Confirmation Modal -->
+<div id="ai-confirm-modal" class="cfm-modal">
+  <div class="cfm-box">
+    <div class="cfm-msg">
+      <strong style="display:block;margin-bottom:10px;font-size:14px">Analyze Story with AI</strong>
+      <p style="margin-bottom:8px">This will send your project data to Claude for analysis. No data is stored or used for training.</p>
+      <p>Scene titles, summaries, notes, character/location/theme names, and section names will be sent.</p>
+    </div>
+    <div class="ap-btns">
+      <button onclick="closeAnalysisConfirm()">Cancel</button>
+      <button onclick="runAnalysis()">Analyze</button>
+    </div>
+  </div>
+</div>
+
 <!-- Email Signup Popup -->
 <div id="email-popup" class="email-popup" style="display:none;">
   <div class="email-popup-overlay" onclick="closeEmailPopup()"></div>
@@ -455,6 +489,7 @@
 <script src="ui.js"></script>
 <script src="editor.js"></script>
 <script src="projects.js"></script>
+<script src="ai.js"></script>
 <script src="main.js"></script>
 <script src="app.js"></script>
 </body>

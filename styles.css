@@ -563,3 +563,48 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 .theme-di-studio{background:#ffffff;color:#7c3aed;font-weight:500;border:1px solid #d8dadd}
 .theme-di-ocean{background:#0a3a47;color:#06b6d4;font-weight:500}
 .theme-di-sunset{background:#fff0e0;color:#ea580c;font-weight:500}
+
+/* ── AI ANALYSIS DRAWER ───────────────────────────────────────────────────── */
+#ai-drawer{position:fixed;top:80px;right:0;height:calc(100vh - 80px);display:flex;z-index:400;pointer-events:none}
+#ai-drawer-tab{width:24px;flex-shrink:0;background:var(--acc);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;font-weight:700;font-family:'Arial',sans-serif;letter-spacing:0.1em;text-transform:uppercase;border-radius:0 6px 6px 0;pointer-events:all;user-select:none;padding:14px 0;transition:background .15s}
+#ai-drawer-tab:hover{background:var(--acc2)}
+#ai-drawer.open #ai-drawer-tab{background:var(--acc2)}
+#ai-drawer-panel{width:0;overflow:hidden;transition:width .25s ease;background:var(--bg1);border-left:1px solid var(--bdr);display:flex;flex-direction:column;pointer-events:all;box-shadow:-3px 0 12px rgba(0,0,0,.08)}
+#ai-drawer.open #ai-drawer-panel{width:320px}
+#ai-drawer-hdr{padding:12px 14px 10px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--bg)}
+.ai-drawer-hdr-title{font-size:13px;font-weight:700;font-family:'Arial',sans-serif;color:var(--tx);flex:1}
+.ai-last-run{font-size:11px;color:var(--o0);white-space:nowrap}
+#ai-drawer-body{flex:1;overflow-y:auto;padding:6px 0}
+#ai-drawer-footer{padding:10px 14px;border-top:1px solid var(--bdr);display:flex;gap:6px;flex-shrink:0;background:var(--bg)}
+.ai-footer-btn{flex:1;font-size:11px;padding:5px 6px;background:var(--bg1);border:1px solid var(--bdr);border-radius:4px;cursor:pointer;color:var(--sub);font-family:inherit;transition:background .12s}
+.ai-footer-btn:hover{background:var(--bdr)}
+
+/* Sections */
+.ai-section{margin-bottom:4px}
+.ai-sec-hdr{display:flex;justify-content:space-between;align-items:center;padding:8px 14px 4px;font-size:10px;font-weight:700;font-family:'Arial',sans-serif;letter-spacing:0.1em;color:var(--sub)}
+.ai-sec-cnt{background:var(--bdr);color:var(--sub);border-radius:10px;padding:1px 7px;font-size:10px}
+
+/* Findings */
+.ai-finding{margin:3px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--bdr);overflow:hidden}
+.ai-finding-title-row{display:flex;align-items:flex-start;gap:6px;padding:9px 10px;cursor:pointer;user-select:none}
+.ai-finding-title-row:hover{background:var(--bg1)}
+.ai-caret{font-size:9px;color:var(--o0);flex-shrink:0;margin-top:3px}
+.ai-finding-title{flex:1;font-size:12px;color:var(--tx);line-height:1.4}
+.ai-dismiss{flex-shrink:0;background:none;border:none;color:var(--o0);cursor:pointer;font-size:15px;line-height:1;padding:0 2px;opacity:0;transition:opacity .12s,color .12s}
+.ai-finding-title-row:hover .ai-dismiss{opacity:1}
+.ai-dismiss:hover{color:var(--tx) !important}
+.ai-finding-detail{display:none;padding:0 10px 10px 22px;border-top:1px solid var(--bdr)}
+.ai-finding.expanded .ai-finding-detail{display:block}
+.ai-finding-desc{font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:8px;padding-top:8px}
+.ai-scene-links{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:11px;color:var(--sub)}
+.ai-scene-btn{background:var(--acc);color:#fff;border:none;border-radius:10px;padding:2px 8px;font-size:11px;cursor:pointer;font-family:'Arial',sans-serif;font-weight:600;transition:background .12s}
+.ai-scene-btn:hover{background:var(--acc2)}
+
+/* AI highlight on scene cards */
+.sc.hl-ai{outline:2.5px solid var(--acc) !important;box-shadow:0 0 0 4px rgba(155,74,26,.18) !important}
+
+/* Loading */
+.ai-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:14px;font-size:13px;color:var(--sub)}
+.ai-spinner{width:26px;height:26px;border:3px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:ai-spin .8s linear infinite}
+@keyframes ai-spin{to{transform:rotate(360deg)}}
+.ai-empty{padding:28px 14px;font-size:12px;color:var(--o0);text-align:center;line-height:1.6}

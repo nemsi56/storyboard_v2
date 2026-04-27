@@ -1266,7 +1266,8 @@ document.addEventListener('mousedown', e => {
   const newLive    = tabNew.classList.contains('live');
   if (!editActive && !newLive) return;
   if (e.target.closest('#cp')) return;
-  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open')) return;
+  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open, #ai-confirm-modal.open')) return;
+  if (e.target.closest('#ai-drawer')) return;
   if (editActive) cancelEdit();
   if (newLive)    cancelNewScene();
 });
@@ -1303,6 +1304,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 't' || e.key === 'T') { e.preventDefault(); openAddPopup('themes'); return; }
     if (e.key === 'm' || e.key === 'M') { e.preventDefault(); openAddPopup('misc'); return; }
     if (e.key === 'r' || e.key === 'R') { e.preventDefault(); openReportModal(); return; }
+    if (e.key === 'a' || e.key === 'A') { e.preventDefault(); openAnalysisConfirm(); return; }
   }
   if (e.key === 'Escape') {
     closeAllMenus();
@@ -1319,6 +1321,7 @@ document.addEventListener('keydown', e => {
     if (typeof closeReportModal === 'function') try { closeReportModal(); } catch(e){}
     if (typeof closeLibEditModal === 'function') try { closeLibEditModal(); } catch(e){}
     if (typeof closeHelp === 'function') try { closeHelp(); } catch(e){}
+    if (typeof closeAnalysisConfirm === 'function') try { closeAnalysisConfirm(); } catch(e){}
   }
 });
 // Close filter dropdown on click outside
