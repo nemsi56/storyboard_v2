@@ -112,9 +112,31 @@ function updatePanelMenuStates() {
   const libEl = document.getElementById('menu-lib-text');
   const secEl = document.getElementById('menu-sec-text');
   const scnEl = document.getElementById('menu-scn-text');
+  const allEl = document.getElementById('menu-all-text');
   if (libEl) libEl.textContent = lpCollapsed ? 'Show Library Panel' : 'Hide Library Panel';
   if (secEl) secEl.textContent = spCollapsed ? 'Show Sections Panel' : 'Hide Sections Panel';
   if (scnEl) scnEl.textContent = cpCollapsed ? 'Show Scene Panel' : 'Hide Scene Panel';
+  const allCollapsed = lpCollapsed && spCollapsed && cpCollapsed;
+  const anyCollapsed = lpCollapsed || spCollapsed || cpCollapsed;
+  if (allEl) allEl.textContent = allCollapsed ? 'Show All Panels' : 'Hide All Panels';
+}
+function toggleAllPanels() {
+  const lp = document.getElementById('lp');
+  const sp = document.getElementById('sp');
+  const cp = document.getElementById('cp');
+  const lpCollapsed = lp && lp.classList.contains('collapsed');
+  const spCollapsed = sp && sp.classList.contains('collapsed');
+  const cpCollapsed = cp && cp.classList.contains('collapsed');
+  const allCollapsed = lpCollapsed && spCollapsed && cpCollapsed;
+  if (allCollapsed) {
+    if (lp && lpCollapsed) togglePanel('lp');
+    if (sp && spCollapsed) togglePanel('sp');
+    if (cp && cpCollapsed) togglePanel('cp');
+  } else {
+    if (lp && !lpCollapsed) togglePanel('lp');
+    if (sp && !spCollapsed) togglePanel('sp');
+    if (cp && !cpCollapsed) togglePanel('cp');
+  }
 }
 function menuSave() { saveState(); closeAllMenus(); }
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
