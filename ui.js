@@ -84,7 +84,7 @@ function setGlobalTheme(name) {
 
 // ── HELP OVERLAY ───────────────────────────────────────────────────────────────
 const HELP_ZONES = [
-  { sel: '#menu-bar',        tip: 'Menu bar — File (save, export, import), Edit (undo/redo), View (theme, zoom), Scene (new scene, add library items, reports), Help (tutorial). Most items have keyboard shortcuts shown in each menu.' },
+  { sel: '#menu-bar',        tip: 'Menu bar — Most items have keyboard shortcuts shown in each menu.' },
   { sel: '#lp .p-hdr',      tip: 'Library panel — stores characters, locations, themes, and misc items. Click + to add an item. Click any item to highlight matching scenes on the board. Hover an item to shuffle, edit (name & notes), or delete it. Use ◀ to hide the panel or drag the right edge to resize it.' },
   { sel: '#ao-global-wrap',  tip: 'Highlight mode — OR highlights scenes containing any selected item; AND highlights only scenes that contain all selected items simultaneously. A Clear Highlights option appears when any items are selected.' },
   { sel: '#sp .p-hdr',      tip: 'Sections panel — organize scenes into named sections such as acts, chapters, or sequences. Hover a section row and click → to jump to it on the board. Use ◀ or drag the panel edge to hide or resize.' },
