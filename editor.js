@@ -119,6 +119,10 @@ function updatePanelMenuStates() {
   const allCollapsed = lpCollapsed && spCollapsed && cpCollapsed;
   const anyCollapsed = lpCollapsed || spCollapsed || cpCollapsed;
   if (allEl) allEl.textContent = allCollapsed ? 'Show All Panels' : 'Hide All Panels';
+  const ap = document.getElementById('ap');
+  const apVisible = ap && ap.style.display !== 'none' && ap.style.display !== '';
+  const apEl = document.getElementById('menu-ap-text');
+  if (apEl) apEl.textContent = apVisible ? 'Hide Analysis Panel' : 'Show Analysis Panel';
 }
 function toggleAllPanels() {
   const lp = document.getElementById('lp');
@@ -1267,7 +1271,7 @@ document.addEventListener('mousedown', e => {
   if (!editActive && !newLive) return;
   if (e.target.closest('#cp')) return;
   if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open, #ai-confirm-modal.open')) return;
-  if (e.target.closest('#ai-drawer')) return;
+  if (e.target.closest('#ap')) return;
   if (editActive) cancelEdit();
   if (newLive)    cancelNewScene();
 });

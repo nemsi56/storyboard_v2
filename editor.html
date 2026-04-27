@@ -84,6 +84,8 @@
       <button class="di" id="menu-show-scene" onclick="togglePanel('cp');setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-scn-text">Hide Scene Panel</span></button>
       <div class="di-sep"></div>
       <button class="di" id="menu-show-all-panels" onclick="toggleAllPanels();setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-all-text">Hide All Panels</span></button>
+      <div class="di-sep"></div>
+      <button class="di" id="menu-show-analysis" onclick="toggleAnalysisPanel();setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-ap-text">Show Analysis Panel</span></button>
     </div>
   </div>
   <!-- Help -->
@@ -204,6 +206,25 @@
     </div>
   </div>
   <div id="cp-resize" title="Drag to resize Scene panel"></div>
+
+  <!-- ANALYSIS PANEL -->
+  <div class="panel" id="ap" style="display:none">
+    <div class="p-content">
+      <div class="p-hdr">Story Analysis
+        <div class="p-hdr-btns">
+          <span id="ap-last-run" class="ap-last-run"></span>
+          <button class="cbtn" onclick="closeAnalysisPanel()" title="Close">×</button>
+        </div>
+      </div>
+      <div class="p-body" id="ap-body"></div>
+      <div id="ap-footer">
+        <button class="ai-footer-btn" onclick="dismissAllFindings()">Dismiss all</button>
+        <button class="ai-footer-btn" onclick="exportAnalysis()">Export</button>
+        <button class="ai-footer-btn" onclick="runAnalysis()">Re-analyze</button>
+      </div>
+    </div>
+  </div>
+  <div id="ap-resize" title="Drag to resize Analysis panel"></div>
 
   <!-- SCENE BOARD PANEL -->
   <div id="sbp">
@@ -434,23 +455,6 @@
 </div>
 
 </div><!-- /app-storyboard -->
-
-<!-- AI Analysis Drawer -->
-<div id="ai-drawer">
-  <div id="ai-drawer-tab" onclick="toggleAnalysisDrawer()" title="Story Analysis">Analysis</div>
-  <div id="ai-drawer-panel">
-    <div id="ai-drawer-hdr">
-      <span class="ai-drawer-hdr-title">Story Analysis</span>
-      <span id="ai-last-run" class="ai-last-run"></span>
-    </div>
-    <div id="ai-drawer-body"></div>
-    <div id="ai-drawer-footer">
-      <button class="ai-footer-btn" onclick="dismissAllFindings()">Dismiss all</button>
-      <button class="ai-footer-btn" onclick="exportAnalysis()">Export</button>
-      <button class="ai-footer-btn" onclick="runAnalysis()">Re-analyze</button>
-    </div>
-  </div>
-</div>
 
 <!-- AI Analysis Confirmation Modal -->
 <div id="ai-confirm-modal" class="cfm-modal">

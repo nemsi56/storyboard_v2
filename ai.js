@@ -81,40 +81,56 @@ function closeAnalysisConfirm() {
 function runAnalysis() {
   closeAnalysisConfirm();
   _loadAiDismissed();
-  const body = document.getElementById('ai-drawer-body');
+  const body = document.getElementById('ap-body');
   body.innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div>Analyzing your story…</div>';
-  document.getElementById('ai-last-run').textContent = '';
-  openAnalysisDrawer();
+  const ts = document.getElementById('ap-last-run');
+  if (ts) ts.textContent = '';
+  openAnalysisPanel();
 
-  // TODO Phase 2: replace setTimeout with real API call to backend
+  // TODO Phase 2: replace setTimeout with real fetch() to backend
   setTimeout(() => {
     _aiAnalysis = MOCK_ANALYSIS;
-    _renderAnalysisDrawer();
+    _renderAnalysisPanel();
   }, 1500);
 }
 
-// ── DRAWER ────────────────────────────────────────────────────────────────────
+// ── PANEL OPEN / CLOSE ────────────────────────────────────────────────────────
 
-function openAnalysisDrawer() {
-  document.getElementById('ai-drawer').classList.add('open');
+function openAnalysisPanel() {
+  // Collapse the three left panels to give the board maximum space
+  ['lp', 'sp', 'cp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.classList.contains('collapsed')) togglePanel(id);
+  });
+  document.getElementById('ap').style.display = 'flex';
+  updatePanelMenuStates();
 }
 
-function closeAnalysisDrawer() {
-  document.getElementById('ai-drawer').classList.remove('open');
+function closeAnalysisPanel() {
+  document.getElementById('ap').style.display = 'none';
   _clearAnalysisHighlights();
+  updatePanelMenuStates();
 }
 
-function toggleAnalysisDrawer() {
-  const drawer = document.getElementById('ai-drawer');
-  if (drawer.classList.contains('open')) closeAnalysisDrawer();
-  else openAnalysisDrawer();
+function toggleAnalysisPanel() {
+  const ap = document.getElementById('ap');
+  if (!ap) return;
+  if (ap.style.display === 'none' || ap.style.display === '') {
+    if (_aiAnalysis) {
+      openAnalysisPanel();
+    } else {
+      openAnalysisConfirm();
+    }
+  } else {
+    closeAnalysisPanel();
+  }
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
 
-function _renderAnalysisDrawer() {
+function _renderAnalysisPanel() {
   if (!_aiAnalysis) return;
-  const body = document.getElementById('ai-drawer-body');
+  const body = document.getElementById('ap-body');
   body.innerHTML = '';
 
   const CATS = [
@@ -162,7 +178,7 @@ function _renderAnalysisDrawer() {
         e.stopPropagation();
         _aiDismissed.add(cat.key + ':' + finding.title);
         _saveAiDismissed();
-        _renderAnalysisDrawer();
+        _renderAnalysisPanel();
       });
 
       titleRow.appendChild(caret);
@@ -210,7 +226,8 @@ function _renderAnalysisDrawer() {
     body.innerHTML = '<div class="ai-empty">All findings dismissed.<br>Click Re-analyze to refresh.</div>';
   }
 
-  document.getElementById('ai-last-run').textContent = 'Just now';
+  const ts = document.getElementById('ap-last-run');
+  if (ts) ts.textContent = 'Just now';
 }
 
 // ── SCENE HIGHLIGHTING ────────────────────────────────────────────────────────
@@ -243,7 +260,7 @@ function dismissAllFindings() {
     (_aiAnalysis[cat] || []).forEach(f => _aiDismissed.add(cat + ':' + f.title));
   });
   _saveAiDismissed();
-  _renderAnalysisDrawer();
+  _renderAnalysisPanel();
 }
 
 // ── EXPORT ────────────────────────────────────────────────────────────────────
