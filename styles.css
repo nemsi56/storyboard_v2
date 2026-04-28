@@ -101,6 +101,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 #cp.collapsed + #cp-resize{display:none}
 #sp.collapsed + #sp-resize{display:none}
 #lp.collapsed + #lp-resize{display:none}
+#aip.collapsed + #aip-resize{display:none}
 /* Grip indicator */
 #cp-resize::after,#sp-resize::after,#lp-resize::after{content:'⠿';position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:var(--o1);opacity:.75;pointer-events:none;transition:opacity .15s,color .15s;line-height:1}
 #cp-resize:hover::after,#cp-resize.dragging::after,#sp-resize:hover::after,#sp-resize.dragging::after,#lp-resize:hover::after,#lp-resize.dragging::after{opacity:1;color:var(--ontx)}

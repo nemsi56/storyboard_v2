@@ -133,6 +133,7 @@ function toggleAnalysisPanel() {
 function _renderAnalysisPanel() {
   if (!_aiAnalysis) return;
   const body = document.getElementById('ap-body');
+  if (!body) return; // ap-body not found, skip rendering
   body.innerHTML = '';
 
   const CATS = [
