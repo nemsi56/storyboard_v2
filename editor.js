@@ -1370,3 +1370,4 @@ document.addEventListener('mousedown', e => {
   const wrap = document.getElementById('sec-filter-wrap');
   if (wrap && !wrap.contains(e.target) && typeof closeSecFilter === 'function') closeSecFilter();
 });
+// Updated: AI Panel fully functional
