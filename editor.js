@@ -123,7 +123,7 @@ function updatePanelMenuStates() {
   const anyCollapsed = lpCollapsed || spCollapsed || cpCollapsed;
   if (allEl) allEl.textContent = allCollapsed ? 'Show All Panels' : 'Hide All Panels';
   const aip = document.getElementById('aip');
-  const aipVisible = aip && aip.style.display !== 'none' && aip.style.display !== '';
+  const aipVisible = aip && !aip.classList.contains('collapsed');
   const aipEl = document.getElementById('menu-ai-text');
   if (aipEl) aipEl.textContent = aipVisible ? 'Hide AI Panel' : 'Show AI Panel';
 }
