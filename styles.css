@@ -607,7 +607,7 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 #aip{width:340px;flex-shrink:0}
 #aip .tabs{padding:0;background:var(--bg1)}
 
-.ai-tab{display:none;height:100%;flex-direction:column}
+.ai-tab{display:none;flex:1;flex-direction:column}
 .ai-tab.active{display:flex}
 
 /* Chat Messages */
