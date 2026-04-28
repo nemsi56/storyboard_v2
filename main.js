@@ -43,4 +43,6 @@ if (_page === 'projects') {
     // No project specified — redirect to projects page
     window.location.href = 'projects.html';
   }
+
+  initChatPanel();
 }
