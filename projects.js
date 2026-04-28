@@ -428,3 +428,4 @@ if (document.getElementById('proj-rename-modal')) {
     if (e.key === 'Enter') { e.preventDefault(); confirmProjRename(); }
   });
 }
+

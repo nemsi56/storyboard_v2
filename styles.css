@@ -626,3 +626,4 @@ body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg0);c
 #chat-input::placeholder{color:var(--o0)}
 #chat-send{width:100%;padding:8px;margin-top:4px;background:var(--acc);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:600;font-size:12px;font-family:inherit;transition:opacity .15s;flex-shrink:0}
 #chat-send:hover{opacity:0.88}
+

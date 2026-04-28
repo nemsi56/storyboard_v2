@@ -295,3 +295,4 @@ function exportAnalysis() {
   a.download = 'story-analysis.txt';
   a.click();
 }
+
