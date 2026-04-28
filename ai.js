@@ -82,16 +82,15 @@ function runAnalysis() {
   closeAnalysisConfirm();
   _loadAiDismissed();
   const body = document.getElementById('ap-body');
-  body.innerHTML = '<div class="ai-loading"><div class="ai-spinner"></div>Analyzing your story…</div>';
   const ts = document.getElementById('ap-last-run');
   if (ts) ts.textContent = '';
   openAnalysisPanel();
 
-  // TODO Phase 2: replace setTimeout with real fetch() to backend
-  setTimeout(() => {
-    _aiAnalysis = MOCK_ANALYSIS;
-    _renderAnalysisPanel();
-  }, 1500);
+  // Phase 1: Mock response (complete immediately for better UX)
+  _aiAnalysis = MOCK_ANALYSIS;
+  _renderAnalysisPanel();
+
+  // TODO Phase 2: replace with real fetch() to backend with loading state
 }
 
 // ── PANEL OPEN / CLOSE ────────────────────────────────────────────────────────
@@ -102,20 +101,23 @@ function openAnalysisPanel() {
     const el = document.getElementById(id);
     if (el && !el.classList.contains('collapsed')) togglePanel(id);
   });
-  document.getElementById('ap').style.display = 'flex';
-  updatePanelMenuStates();
+  const aip = document.getElementById('aip');
+  if (aip) aip.classList.remove('collapsed');
+  if (typeof updateAIMenuState === 'function') updateAIMenuState();
 }
 
 function closeAnalysisPanel() {
-  document.getElementById('ap').style.display = 'none';
+  const aip = document.getElementById('aip');
+  if (aip) aip.classList.add('collapsed');
   _clearAnalysisHighlights();
-  updatePanelMenuStates();
+  if (typeof updateAIMenuState === 'function') updateAIMenuState();
 }
 
 function toggleAnalysisPanel() {
-  const ap = document.getElementById('ap');
-  if (!ap) return;
-  if (ap.style.display === 'none' || ap.style.display === '') {
+  // This is now controlled via the View menu using togglePanel('aip')
+  const aip = document.getElementById('aip');
+  if (!aip) return;
+  if (aip.classList.contains('collapsed')) {
     if (_aiAnalysis) {
       openAnalysisPanel();
     } else {

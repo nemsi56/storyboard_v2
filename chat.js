@@ -164,3 +164,12 @@ function removeChatLoader(el) {
 function recordChatError(msg) {
   addChatMessage('⚠️ Error: ' + msg, 'assistant');
 }
+
+function clearChatHistory() {
+  if (!confirm('Clear all chat messages? This cannot be undone.')) return;
+  S.chatMessages = [];
+  S.nextChatId = 1;
+  renderChatUI();
+  recordDataEdit();
+  saveState();
+}
