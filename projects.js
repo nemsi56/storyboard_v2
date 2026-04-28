@@ -415,8 +415,15 @@ function ensureSampleProjects() {
 }
 
 if (document.getElementById('proj-rename-modal')) {
-  onBackdropClick('proj-rename-modal', closeProjRename);
-  onBackdropClick('proj-del-modal', closeProjDel);
+  // Setup backdrop clicks for modals
+  const setupBackdropClick = (id, closeFn) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', e => { if (e.target === el) closeFn(); });
+  };
+
+  setupBackdropClick('proj-rename-modal', closeProjRename);
+  setupBackdropClick('proj-del-modal', closeProjDel);
   document.getElementById('proj-rename-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); confirmProjRename(); }
   });
