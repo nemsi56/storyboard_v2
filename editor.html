@@ -210,14 +210,12 @@
   <!-- AI PANEL: Analysis & Chat tabs -->
   <div class="panel" id="aip" class="collapsed">
     <div class="p-content">
-      <div class="p-hdr">AI Assistant
-        <div class="tab-group">
-          <button class="tab-btn active" id="tab-analysis" onclick="switchAITab('analysis')">Analysis</button>
-          <button class="tab-btn" id="tab-chat" onclick="switchAITab('chat')">Chat</button>
-        </div>
-        <div class="p-hdr-btns">
-          <button class="cbtn" onclick="closeAnalysisPanel()" title="Close">×</button>
-        </div>
+      <div class="tabs">
+        <button class="tab on" id="tab-analysis" onclick="switchAITab('analysis')">Analysis</button>
+        <button class="tab" id="tab-chat" onclick="switchAITab('chat')">Chat</button>
+        <div style="flex:1"></div>
+        <span style="padding:9px 14px 10px; font-size:12px; font-weight:600; color:var(--tx);">AI Assistant</span>
+        <button class="cbtn tab-cbtn" onclick="closeAnalysisPanel()" title="Close">×</button>
       </div>
 
       <!-- Analysis Tab -->

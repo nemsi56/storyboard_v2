@@ -75,7 +75,10 @@ function onBackdropClick(id, closeFn) {
 if (document.getElementById('add-popup')) onBackdropClick('add-popup', closeAddPopup);
 
 // ── PANEL / SCALE ─────────────────────────────────────────────────────────────
-function togglePanel(id) { document.getElementById(id).classList.toggle('collapsed'); }
+function togglePanel(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+  if (id === 'aip') updateAIMenuState();
+}
 function setScale(v) { document.getElementById('board').style.setProperty('--cs', v); if (S.sections.length) alignSecHeaders(); }
 
 // ── MENU BAR ───────────────────────────────────────────────────────────────────
@@ -153,16 +156,16 @@ function switchAITab(tabName) {
 
   if (analysisTab) analysisTab.classList.remove('active');
   if (chatTab) chatTab.classList.remove('active');
-  if (analysisBtn) analysisBtn.classList.remove('active');
-  if (chatBtn) chatBtn.classList.remove('active');
+  if (analysisBtn) analysisBtn.classList.remove('on');
+  if (chatBtn) chatBtn.classList.remove('on');
 
   // Show selected tab and activate button
   if (tabName === 'analysis') {
     if (analysisTab) analysisTab.classList.add('active');
-    if (analysisBtn) analysisBtn.classList.add('active');
+    if (analysisBtn) analysisBtn.classList.add('on');
   } else {
     if (chatTab) chatTab.classList.add('active');
-    if (chatBtn) chatBtn.classList.add('active');
+    if (chatBtn) chatBtn.classList.add('on');
     // Focus input when switching to chat
     setTimeout(() => document.getElementById('chat-input')?.focus(), 100);
   }
@@ -170,7 +173,7 @@ function switchAITab(tabName) {
 
 function updateAIMenuState() {
   const aip = document.getElementById('aip');
-  const aiVisible = aip && aip.style.display !== 'none' && aip.style.display !== '';
+  const aiVisible = aip && !aip.classList.contains('collapsed');
   const text = document.getElementById('menu-ai-text');
   if (text) text.textContent = aiVisible ? 'Hide AI Panel' : 'Show AI Panel';
 }

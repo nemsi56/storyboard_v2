@@ -131,6 +131,9 @@ function initStoryboard() {
   if (typeof initChatPanel === 'function') {
     initChatPanel();
   }
+  if (typeof updateAIMenuState === 'function') {
+    updateAIMenuState();
+  }
 }
 
 function formatEditDate(isoString) {
