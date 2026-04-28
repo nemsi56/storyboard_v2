@@ -40,6 +40,7 @@ function saveState() {
       theme: document.documentElement.dataset.theme,
       sections: S.sections, nextSecId: S.nextSecId,
       lastDataEditAt: S.lastDataEditAt,
+      chatMessages: S.chatMessages, nextChatId: S.nextChatId,
     }));
     const index = loadProjectIndex();
     const entry = index.find(p => p.id === currentProjectId);
@@ -103,6 +104,8 @@ function loadState(storageKey) {
     const sel = document.getElementById('theme-sel');
     if (sel) sel.value = theme;
     S.lastDataEditAt = d.lastDataEditAt || null;
+    S.chatMessages = d.chatMessages || [];
+    S.nextChatId = d.nextChatId || 1;
     if (migrated) saveState();
     return true;
   } catch(e) { return false; }
@@ -119,6 +122,8 @@ const S = {
   editingId: null,
   nextId: 1,
   lastDataEditAt: null,
+  chatMessages: [],
+  nextChatId: 1,
 };
 
 // ── HISTORY (undo / redo) ─────────────────────────────────────────────────────

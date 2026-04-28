@@ -128,6 +128,9 @@ function initStoryboard() {
   renderBoard(); updateLibClearBtn(); updateUndoRedo();
   document.getElementById('board').classList.add('hide-details');
   document.getElementById('det-toggle').checked = false;
+  if (typeof initChatPanel === 'function') {
+    initChatPanel();
+  }
 }
 
 function formatEditDate(isoString) {

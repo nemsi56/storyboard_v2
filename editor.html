@@ -85,7 +85,7 @@
       <div class="di-sep"></div>
       <button class="di" id="menu-show-all-panels" onclick="toggleAllPanels();setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-all-text">Hide All Panels</span></button>
       <div class="di-sep"></div>
-      <button class="di" id="menu-show-analysis" onclick="toggleAnalysisPanel();setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-ap-text">Show Analysis Panel</span></button>
+      <button class="di" id="menu-show-ai" onclick="togglePanel('aip');setTimeout(updateAIMenuState,50);closeAllMenus()"><span id="menu-ai-text">Show AI Panel</span></button>
     </div>
   </div>
   <!-- Help -->
@@ -207,24 +207,42 @@
   </div>
   <div id="cp-resize" title="Drag to resize Scene panel"></div>
 
-  <!-- ANALYSIS PANEL -->
-  <div class="panel" id="ap" style="display:none">
+  <!-- AI PANEL: Analysis & Chat tabs -->
+  <div class="panel" id="aip" style="display:none">
     <div class="p-content">
-      <div class="p-hdr">Story Analysis
+      <div class="p-hdr">AI Assistant
+        <div class="tab-group">
+          <button class="tab-btn active" id="tab-analysis" onclick="switchAITab('analysis')">Analysis</button>
+          <button class="tab-btn" id="tab-chat" onclick="switchAITab('chat')">Chat</button>
+        </div>
         <div class="p-hdr-btns">
-          <span id="ap-last-run" class="ap-last-run"></span>
           <button class="cbtn" onclick="closeAnalysisPanel()" title="Close">×</button>
         </div>
       </div>
-      <div class="p-body" id="ap-body"></div>
-      <div id="ap-footer">
-        <button class="ai-footer-btn" onclick="dismissAllFindings()">Dismiss all</button>
-        <button class="ai-footer-btn" onclick="exportAnalysis()">Export</button>
-        <button class="ai-footer-btn" onclick="runAnalysis()">Re-analyze</button>
+
+      <!-- Analysis Tab -->
+      <div id="ai-analysis-tab" class="ai-tab active">
+        <div class="p-body" id="ap-body"></div>
+        <div id="ap-footer">
+          <button class="ai-footer-btn" onclick="dismissAllFindings()">Dismiss all</button>
+          <button class="ai-footer-btn" onclick="exportAnalysis()">Export</button>
+          <button class="ai-footer-btn" onclick="runAnalysis()">Re-analyze</button>
+        </div>
+      </div>
+
+      <!-- Chat Tab -->
+      <div id="ai-chat-tab" class="ai-tab">
+        <div class="p-body" id="chp-body">
+          <div id="chat-messages"></div>
+          <div style="padding:8px; background:var(--bg0); border-top:1px solid var(--bdr); flex-shrink:0;">
+            <textarea id="chat-input" placeholder="Ask about your story..." style="width:100%; height:60px; padding:8px; border:1px solid var(--bdr); border-radius:4px; font-size:12px; resize:none; box-sizing:border-box;"></textarea>
+            <button id="chat-send" onclick="sendChatMessage()" style="width:100%; padding:8px; margin-top:4px; background:var(--acc); color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:12px;">Send</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <div id="ap-resize" title="Drag to resize Analysis panel"></div>
+  <div id="aip-resize" title="Drag to resize AI Panel"></div>
 
   <!-- SCENE BOARD PANEL -->
   <div id="sbp">
@@ -494,6 +512,7 @@
 <script src="editor.js"></script>
 <script src="projects.js"></script>
 <script src="ai.js"></script>
+<script src="chat.js"></script>
 <script src="main.js"></script>
 <script src="app.js"></script>
 </body>

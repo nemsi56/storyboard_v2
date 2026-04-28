@@ -119,10 +119,10 @@ function updatePanelMenuStates() {
   const allCollapsed = lpCollapsed && spCollapsed && cpCollapsed;
   const anyCollapsed = lpCollapsed || spCollapsed || cpCollapsed;
   if (allEl) allEl.textContent = allCollapsed ? 'Show All Panels' : 'Hide All Panels';
-  const ap = document.getElementById('ap');
-  const apVisible = ap && ap.style.display !== 'none' && ap.style.display !== '';
-  const apEl = document.getElementById('menu-ap-text');
-  if (apEl) apEl.textContent = apVisible ? 'Hide Analysis Panel' : 'Show Analysis Panel';
+  const aip = document.getElementById('aip');
+  const aipVisible = aip && aip.style.display !== 'none' && aip.style.display !== '';
+  const aipEl = document.getElementById('menu-ai-text');
+  if (aipEl) aipEl.textContent = aipVisible ? 'Hide AI Panel' : 'Show AI Panel';
 }
 function toggleAllPanels() {
   const lp = document.getElementById('lp');
@@ -142,6 +142,39 @@ function toggleAllPanels() {
     if (cp && !cpCollapsed) togglePanel('cp');
   }
 }
+
+// AI Panel tab switching
+function switchAITab(tabName) {
+  // Hide all tabs
+  const analysisTab = document.getElementById('ai-analysis-tab');
+  const chatTab = document.getElementById('ai-chat-tab');
+  const analysisBtn = document.getElementById('tab-analysis');
+  const chatBtn = document.getElementById('tab-chat');
+
+  if (analysisTab) analysisTab.classList.remove('active');
+  if (chatTab) chatTab.classList.remove('active');
+  if (analysisBtn) analysisBtn.classList.remove('active');
+  if (chatBtn) chatBtn.classList.remove('active');
+
+  // Show selected tab and activate button
+  if (tabName === 'analysis') {
+    if (analysisTab) analysisTab.classList.add('active');
+    if (analysisBtn) analysisBtn.classList.add('active');
+  } else {
+    if (chatTab) chatTab.classList.add('active');
+    if (chatBtn) chatBtn.classList.add('active');
+    // Focus input when switching to chat
+    setTimeout(() => document.getElementById('chat-input')?.focus(), 100);
+  }
+}
+
+function updateAIMenuState() {
+  const aip = document.getElementById('aip');
+  const aiVisible = aip && aip.style.display !== 'none' && aip.style.display !== '';
+  const text = document.getElementById('menu-ai-text');
+  if (text) text.textContent = aiVisible ? 'Hide AI Panel' : 'Show AI Panel';
+}
+
 function menuSave() { saveState(); closeAllMenus(); }
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
 function menuNewScene() {
@@ -1223,11 +1256,12 @@ function initPanelResize(panelId, handleId, min, max) {
   });
   return dr;
 }
-let lpDr = {on:false}, cpDr = {on:false}, spDr = {on:false};
+let lpDr = {on:false}, cpDr = {on:false}, spDr = {on:false}, aipDr = {on:false};
 if (document.getElementById('lp-resize')) {
   lpDr = initPanelResize('lp', 'lp-resize', 140, 480);
   cpDr = initPanelResize('cp', 'cp-resize', 180, 520);
   spDr = initPanelResize('sp', 'sp-resize', 150, 400);
+  aipDr = initPanelResize('aip', 'aip-resize', 200, 600);
 }
 
 // ── GLOBAL MOUSE ──────────────────────────────────────────────────────────────
