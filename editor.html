@@ -24,7 +24,7 @@
   </div>
   <div id="hdr-spacer"></div>
   <button class="proj-back" onclick="backToProjects()" title="Back to project list">Projects</button>
-  <button id="help-btn" onclick="toggleHelp()" title="Help – hover over highlighted areas to learn what each element does">?</button>
+  <button id="help-btn" onclick="toggleHelp()" title="Help – hover over highlighted areas to learn what each element does" aria-label="Help">?</button>
 </div>
 
 <!-- MENU BAR -->
@@ -105,13 +105,13 @@
 
   <!-- LEFT PANEL -->
   <div class="panel" id="lp">
-    <div class="p-strip" onclick="togglePanel('lp')">
-      <span class="sl">Library</span><span>▶</span>
-    </div>
+    <button class="p-strip" onclick="togglePanel('lp')" aria-label="Expand Library panel">
+      <span class="sl" aria-hidden="true">Library</span><span aria-hidden="true">▶</span>
+    </button>
     <div class="p-content">
       <div class="p-hdr">Library
         <div class="p-hdr-btns">
-          <button class="cbtn" onclick="togglePanel('lp')" title="Collapse">◀</button>
+          <button class="cbtn" onclick="togglePanel('lp')" title="Collapse" aria-label="Collapse Library panel">◀</button>
         </div>
       </div>
       <div class="p-body" id="lp-body">
@@ -134,13 +134,13 @@
   <!-- CENTER PANEL -->
   <!-- SECTIONS PANEL -->
   <div class="panel" id="sp">
-    <div class="p-strip" onclick="togglePanel('sp')">
-      <span class="sl">Sections</span><span>▶</span>
-    </div>
+    <button class="p-strip" onclick="togglePanel('sp')" aria-label="Expand Sections panel">
+      <span class="sl" aria-hidden="true">Sections</span><span aria-hidden="true">▶</span>
+    </button>
     <div class="p-content">
       <div class="p-hdr">Sections
         <div class="p-hdr-btns">
-          <button class="cbtn" onclick="togglePanel('sp')" title="Collapse">◀</button>
+          <button class="cbtn" onclick="togglePanel('sp')" title="Collapse" aria-label="Collapse Sections panel">◀</button>
         </div>
       </div>
       <div class="p-body">
@@ -165,14 +165,14 @@
   <div id="sp-resize" title="Drag to resize Sections panel"></div>
 
   <div class="panel" id="cp">
-    <div class="p-strip" onclick="togglePanel('cp')">
-      <span class="sl">Scene</span><span>▶</span>
-    </div>
+    <button class="p-strip" onclick="togglePanel('cp')" aria-label="Expand Scene panel">
+      <span class="sl" aria-hidden="true">Scene</span><span aria-hidden="true">▶</span>
+    </button>
     <div class="p-content">
       <div class="tabs">
         <button class="tab on"  id="tab-new"  onclick="switchTab('new')">New Scene</button>
         <button class="tab dim" id="tab-edit" onclick="switchTab('edit')" disabled>Edit Scene</button>
-        <button class="cbtn tab-cbtn" onclick="togglePanel('cp')" title="Collapse">◀</button>
+        <button class="cbtn tab-cbtn" onclick="togglePanel('cp')" title="Collapse" aria-label="Collapse Scene panel">◀</button>
       </div>
       <!-- New Scene form -->
       <div id="form-new" class="p-body">
@@ -215,7 +215,7 @@
         <button class="tab" id="tab-chat" onclick="switchAITab('chat')">Chat</button>
         <div style="flex:1"></div>
         <span style="padding:9px 14px 10px; font-size:12px; font-weight:600; color:var(--tx);">AI Assistant</span>
-        <button class="cbtn tab-cbtn" onclick="closeAnalysisPanel()" title="Close">×</button>
+        <button class="cbtn tab-cbtn" onclick="closeAnalysisPanel()" title="Close" aria-label="Close AI panel">×</button>
       </div>
 
       <!-- Analysis Tab -->
@@ -268,7 +268,7 @@
           <option value="title">Title only</option>
           <option value="summary">Summary only</option>
         </select>
-        <button id="srch-clr" onclick="clearSearch()" title="Clear search">×</button>
+        <button id="srch-clr" onclick="clearSearch()" title="Clear search" aria-label="Clear search">×</button>
       </div>
       <div class="scalew">
         <span class="scalelbl">Zoom</span>
@@ -290,7 +290,7 @@
 <div id="help-tip"></div>
 
 <!-- Add-item popup -->
-<div id="add-popup">
+<div id="add-popup" role="dialog" aria-modal="true" aria-labelledby="ap-title">
   <div id="ap-box">
     <div id="ap-title">Add Item</div>
     <input id="ap-input" type="text" placeholder="Enter name…" maxlength="50">
@@ -304,7 +304,7 @@
 </div>
 
 <!-- Library Item Edit Modal -->
-<div id="lib-edit-modal">
+<div id="lib-edit-modal" role="dialog" aria-modal="true" aria-labelledby="lib-edit-hdr">
   <div id="lib-edit-box">
     <div id="lib-edit-hdr">Edit Item</div>
     <label class="lib-edit-lbl">Name</label>
@@ -319,7 +319,7 @@
 </div>
 
 <!-- Section Delete Confirm Modal -->
-<div id="secdel-modal" class="cfm-modal">
+<div id="secdel-modal" class="cfm-modal" role="dialog" aria-modal="true" aria-labelledby="secdel-msg">
   <div class="cfm-box">
     <div id="secdel-msg" class="cfm-msg"></div>
     <div class="ap-btns">
@@ -330,7 +330,7 @@
 </div>
 
 <!-- Library Delete Confirm Modal -->
-<div id="libdel-modal" class="cfm-modal">
+<div id="libdel-modal" class="cfm-modal" role="dialog" aria-modal="true" aria-labelledby="libdel-msg">
   <div class="cfm-box">
     <div id="libdel-msg" class="cfm-msg"></div>
     <div class="ap-btns">
@@ -341,7 +341,7 @@
 </div>
 
 <!-- Save Edit Confirm Modal -->
-<div id="savecfm-modal" class="cfm-modal">
+<div id="savecfm-modal" class="cfm-modal" role="dialog" aria-modal="true" aria-labelledby="savecfm-msg">
   <div class="cfm-box">
     <div id="savecfm-msg" class="cfm-msg"></div>
     <div class="ap-btns">
@@ -352,9 +352,9 @@
 </div>
 
 <!-- Summary modal -->
-<div id="modal">
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="mtit">
   <div id="mbox">
-    <button id="mclose" onclick="closeModal()">×</button>
+    <button id="mclose" onclick="closeModal()" aria-label="Close">×</button>
     <div id="mnum"></div><div id="mtit"></div>
     <div id="msum-section"><div class="m-sec-hdr">Summary</div><div id="msum"></div></div>
     <div id="mnotes-section"><div class="m-sec-hdr">Notes</div><div id="mnotes"></div></div>
@@ -362,9 +362,9 @@
 </div>
 
 <!-- Report Modal -->
-<div id="rpt-modal">
+<div id="rpt-modal" role="dialog" aria-modal="true" aria-labelledby="rpt-hdr">
   <div id="rpt-box">
-    <button id="rpt-close" onclick="closeReportModal()">×</button>
+    <button id="rpt-close" onclick="closeReportModal()" aria-label="Close report">×</button>
     <div id="rpt-hdr">Generate Report</div>
 
     <div class="rpt-blk">
@@ -476,7 +476,7 @@
 </div><!-- /app-storyboard -->
 
 <!-- AI Analysis Confirmation Modal -->
-<div id="ai-confirm-modal" class="cfm-modal">
+<div id="ai-confirm-modal" class="cfm-modal" role="dialog" aria-modal="true">
   <div class="cfm-box">
     <div class="cfm-msg">
       <strong style="display:block;margin-bottom:10px;font-size:14px">Analyze Story with AI</strong>
@@ -491,11 +491,11 @@
 </div>
 
 <!-- Email Signup Popup -->
-<div id="email-popup" class="email-popup" style="display:none;">
+<div id="email-popup" class="email-popup" role="dialog" aria-modal="true" aria-labelledby="email-popup-title" style="display:none;">
   <div class="email-popup-overlay" onclick="closeEmailPopup()"></div>
   <div class="email-popup-box">
     <button class="email-popup-close" onclick="closeEmailPopup()">×</button>
-    <h3>Enjoying SceneSetter?</h3>
+    <h3 id="email-popup-title">Enjoying SceneSetter?</h3>
     <p>Please provide your email to let us know whether it's worth maintaining/updating. Thanks!</p>
     <input type="email" id="email-input" placeholder="your@email.com" maxlength="100">
     <div class="email-popup-buttons">

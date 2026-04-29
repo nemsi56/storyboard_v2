@@ -39,9 +39,9 @@
 </div>
 
 <!-- Project rename modal -->
-<div id="proj-rename-modal" class="pm-modal">
+<div id="proj-rename-modal" class="pm-modal" role="dialog" aria-modal="true" aria-labelledby="proj-rename-title">
   <div class="pm-modal-box">
-    <div class="pm-modal-title">Rename Project</div>
+    <div class="pm-modal-title" id="proj-rename-title">Rename Project</div>
     <input type="text" id="proj-rename-input" class="pm-modal-input" placeholder="Project name" maxlength="80">
     <div class="pm-modal-btns">
       <button class="pm-btn pm-btn-secondary" onclick="closeProjRename()">Cancel</button>
@@ -51,9 +51,9 @@
 </div>
 
 <!-- Project delete modal -->
-<div id="proj-del-modal" class="pm-modal">
+<div id="proj-del-modal" class="pm-modal" role="dialog" aria-modal="true" aria-labelledby="proj-del-title">
   <div class="pm-modal-box">
-    <div class="pm-modal-title">Delete Project</div>
+    <div class="pm-modal-title" id="proj-del-title">Delete Project</div>
     <div class="pm-modal-del-msg">Are you sure you want to delete <span id="proj-del-name" class="pm-modal-del-name"></span>? This cannot be undone.</div>
     <div class="pm-modal-btns">
       <button class="pm-btn pm-btn-secondary" onclick="closeProjDel()">Cancel</button>

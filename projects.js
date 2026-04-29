@@ -8,28 +8,32 @@ function migrateExistingData() {
   if (!raw) {
     const old = localStorage.getItem(LEGACY_KEY);
     if (old) {
-      const od = JSON.parse(old);
-      if (od && od.v === '1') {
-        raw = JSON.stringify({
-          v: DATA_VERSION,
-          characters: od.characters||[], locations: od.locations||[], themes: od.themes||[], misc: od.misc||[],
-          scenes: (od.scenes||[]).map(sc => ({...sc, sectionId: null})),
-          nextId: od.nextId||1, andOr: od.andOr, theme: od.theme,
-          sections: [], nextSecId: 1,
-        });
-      }
+      try {
+        const od = JSON.parse(old);
+        if (od && od.v === '1') {
+          raw = JSON.stringify({
+            v: DATA_VERSION,
+            characters: od.characters||[], locations: od.locations||[], themes: od.themes||[], misc: od.misc||[],
+            scenes: (od.scenes||[]).map(sc => ({...sc, sectionId: null})),
+            nextId: od.nextId||1, andOr: od.andOr, theme: od.theme,
+            sections: [], nextSecId: 1,
+          });
+        }
+      } catch(e) { console.warn('Could not migrate legacy data:', e.message); }
     }
   }
   if (raw) {
-    const d = JSON.parse(raw);
-    const id = genProjId();
-    localStorage.setItem(projKey(id), raw);
-    const now = new Date().toISOString();
-    saveProjectIndex([{
-      id, name: 'My Storyboard', createdAt: now, modifiedAt: now,
-      sceneCount: (d.scenes || []).length, theme: d.theme || 'ivory'
-    }]);
-    saveGlobalPrefs({ theme: d.theme || 'ivory' });
+    try {
+      const d = JSON.parse(raw);
+      const id = genProjId();
+      localStorage.setItem(projKey(id), raw);
+      const now = new Date().toISOString();
+      saveProjectIndex([{
+        id, name: 'My Storyboard', createdAt: now, modifiedAt: now,
+        sceneCount: (d.scenes || []).length, theme: d.theme || 'ivory'
+      }]);
+      saveGlobalPrefs({ theme: d.theme || 'ivory' });
+    } catch(e) { console.warn('Could not migrate data:', e.message); }
   } else {
     saveProjectIndex([]);
   }
@@ -278,17 +282,22 @@ function exportProjectJSON(id) {
   trackProjectExported();
   const raw = localStorage.getItem(projKey(id));
   if (!raw) return;
-  const index = loadProjectIndex();
-  const entry = index.find(p => p.id === id);
-  const name = entry ? entry.name : 'project';
-  const data = JSON.parse(raw);
-  data.projectName = name;
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name.replace(/[^a-zA-Z0-9_\- ]/g, '') + '.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
+  try {
+    const index = loadProjectIndex();
+    const entry = index.find(p => p.id === id);
+    const name = entry ? entry.name : 'project';
+    const data = JSON.parse(raw);
+    data.projectName = name;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name.replace(/[^a-zA-Z0-9_\- ]/g, '') + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch(e) {
+    alert('Could not export project. Please try again.');
+    console.warn('Export failed:', e.message);
+  }
 }
 
 function exportCurrentProject() {
@@ -369,6 +378,9 @@ function importProjectJSON(inputEl) {
     } catch(err) {
       alert('Could not read project file. Make sure it is a valid SceneSetter JSON export.\n\nError: ' + err.message);
     }
+  };
+  reader.onerror = function() {
+    alert('Could not read file. Please try again.');
   };
   reader.readAsText(file);
   inputEl.value = '';
