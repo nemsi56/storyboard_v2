@@ -75,7 +75,9 @@ function onBackdropClick(id, closeFn) {
 if (document.getElementById('add-popup')) onBackdropClick('add-popup', closeAddPopup);
 
 // ── PANEL / SCALE ─────────────────────────────────────────────────────────────
-function togglePanel(id) { document.getElementById(id).classList.toggle('collapsed'); }
+function togglePanel(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
 function setScale(v) { document.getElementById('board').style.setProperty('--cs', v); if (S.sections.length) alignSecHeaders(); }
 
 // ── MENU BAR ───────────────────────────────────────────────────────────────────
@@ -117,7 +119,6 @@ function updatePanelMenuStates() {
   if (secEl) secEl.textContent = spCollapsed ? 'Show Sections Panel' : 'Hide Sections Panel';
   if (scnEl) scnEl.textContent = cpCollapsed ? 'Show Scene Panel' : 'Hide Scene Panel';
   const allCollapsed = lpCollapsed && spCollapsed && cpCollapsed;
-  const anyCollapsed = lpCollapsed || spCollapsed || cpCollapsed;
   if (allEl) allEl.textContent = allCollapsed ? 'Show All Panels' : 'Hide All Panels';
 }
 function toggleAllPanels() {
@@ -138,6 +139,7 @@ function toggleAllPanels() {
     if (cp && !cpCollapsed) togglePanel('cp');
   }
 }
+
 function menuSave() { saveState(); closeAllMenus(); }
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
 function menuNewScene() {

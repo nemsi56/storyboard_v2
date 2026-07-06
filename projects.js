@@ -8,28 +8,32 @@ function migrateExistingData() {
   if (!raw) {
     const old = localStorage.getItem(LEGACY_KEY);
     if (old) {
-      const od = JSON.parse(old);
-      if (od && od.v === '1') {
-        raw = JSON.stringify({
-          v: DATA_VERSION,
-          characters: od.characters||[], locations: od.locations||[], themes: od.themes||[], misc: od.misc||[],
-          scenes: (od.scenes||[]).map(sc => ({...sc, sectionId: null})),
-          nextId: od.nextId||1, andOr: od.andOr, theme: od.theme,
-          sections: [], nextSecId: 1,
-        });
-      }
+      try {
+        const od = JSON.parse(old);
+        if (od && od.v === '1') {
+          raw = JSON.stringify({
+            v: DATA_VERSION,
+            characters: od.characters||[], locations: od.locations||[], themes: od.themes||[], misc: od.misc||[],
+            scenes: (od.scenes||[]).map(sc => ({...sc, sectionId: null})),
+            nextId: od.nextId||1, andOr: od.andOr, theme: od.theme,
+            sections: [], nextSecId: 1,
+          });
+        }
+      } catch(e) { console.warn('Could not migrate legacy data:', e.message); }
     }
   }
   if (raw) {
-    const d = JSON.parse(raw);
-    const id = genProjId();
-    localStorage.setItem(projKey(id), raw);
-    const now = new Date().toISOString();
-    saveProjectIndex([{
-      id, name: 'My Storyboard', createdAt: now, modifiedAt: now,
-      sceneCount: (d.scenes || []).length, theme: d.theme || 'ivory'
-    }]);
-    saveGlobalPrefs({ theme: d.theme || 'ivory' });
+    try {
+      const d = JSON.parse(raw);
+      const id = genProjId();
+      localStorage.setItem(projKey(id), raw);
+      const now = new Date().toISOString();
+      saveProjectIndex([{
+        id, name: 'My Storyboard', createdAt: now, modifiedAt: now,
+        sceneCount: (d.scenes || []).length, theme: d.theme || 'ivory'
+      }]);
+      saveGlobalPrefs({ theme: d.theme || 'ivory' });
+    } catch(e) { console.warn('Could not migrate data:', e.message); }
   } else {
     saveProjectIndex([]);
   }
@@ -53,6 +57,7 @@ function esc(s) {
 
 function renderProjectGrid() {
   const grid = document.getElementById('proj-grid');
+  if (!grid) return; // not on the projects page (e.g. import from the editor's File menu)
   const index = loadProjectIndex().sort((a, b) => new Date(b.modifiedAt) - new Date(a.modifiedAt));
   grid.innerHTML = '';
 
@@ -118,6 +123,7 @@ function resetState() {
   S.sections = []; S.nextSecId = 1;
   SECS.forEach(({ key }) => S.selections[key].clear());
   S.selIds.clear(); S.editingId = null;
+  S.projectUid = null; S.revision = 0;
   hist.past = []; hist.future = [];
 }
 
@@ -179,6 +185,7 @@ function createAndOpenProject() {
     v: DATA_VERSION, characters:[], locations:[], themes:[], misc:[],
     scenes:[], nextId:1, andOr:'OR', theme: document.documentElement.dataset.theme,
     sections:[], nextSecId:1,
+    projectUid: genProjUid(), revision: 0,
   }));
   if (_page === 'projects') {
     sessionStorage.setItem('ss_open_project', id);
@@ -251,8 +258,15 @@ function confirmProjDel() {
 
 function duplicateProject(id) {
   trackProjectDuplicated();
-  const raw = localStorage.getItem(projKey(id));
+  let raw = localStorage.getItem(projKey(id));
   if (!raw) return;
+  // A duplicate is its own lineage — give it a fresh uid so it never
+  // false-matches its original during import conflict checks.
+  try {
+    const d = JSON.parse(raw);
+    d.projectUid = genProjUid();
+    raw = JSON.stringify(d);
+  } catch(e) {}
   const index = loadProjectIndex();
   const entry = index.find(p => p.id === id);
   const newId = genProjId();
@@ -272,17 +286,30 @@ function exportProjectJSON(id) {
   trackProjectExported();
   const raw = localStorage.getItem(projKey(id));
   if (!raw) return;
-  const index = loadProjectIndex();
-  const entry = index.find(p => p.id === id);
-  const name = entry ? entry.name : 'project';
-  const data = JSON.parse(raw);
-  data.projectName = name;
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name.replace(/[^a-zA-Z0-9_\- ]/g, '') + '.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
+  try {
+    const index = loadProjectIndex();
+    const entry = index.find(p => p.id === id);
+    const name = entry ? entry.name : 'project';
+    const data = JSON.parse(raw);
+    // Assign a lineage uid to projects saved before uid support existed, and
+    // write it back so the local copy matches its own export from now on.
+    if (!data.projectUid) {
+      data.projectUid = genProjUid();
+      data.revision = data.revision || 0;
+      localStorage.setItem(projKey(id), JSON.stringify(data));
+    }
+    data.projectName = name;
+    data.exportedAt = new Date().toISOString();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name.replace(/[^a-zA-Z0-9_\- ]/g, '') + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch(e) {
+    alert('Could not export project. Please try again.');
+    console.warn('Export failed:', e.message);
+  }
 }
 
 function exportCurrentProject() {
@@ -290,6 +317,44 @@ function exportCurrentProject() {
     saveState();
     exportProjectJSON(currentProjectId);
   }
+}
+
+// Find the local project (index entry + stored data) sharing a lineage uid, if any.
+function findProjectByUid(uid) {
+  if (!uid) return null;
+  const index = loadProjectIndex();
+  for (const p of index) {
+    try {
+      const raw = localStorage.getItem(projKey(p.id));
+      if (!raw) continue;
+      const d = JSON.parse(raw);
+      if (d.projectUid === uid) return { entry: p, data: d };
+    } catch(e) {}
+  }
+  return null;
+}
+
+// Small dynamic modal for import conflict choices (works on both pages).
+// buttons: [{ label, primary, onClick }] — every button closes the dialog.
+function showImportChoiceDialog(title, msg, buttons) {
+  const overlay = document.createElement('div');
+  overlay.className = 'pm-modal open';
+  overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-modal', 'true');
+  const box = document.createElement('div'); box.className = 'pm-modal-box';
+  const t = document.createElement('div'); t.className = 'pm-modal-title'; t.textContent = title;
+  const m = document.createElement('div'); m.className = 'pm-modal-del-msg'; m.textContent = msg;
+  m.style.whiteSpace = 'pre-wrap';
+  const btns = document.createElement('div'); btns.className = 'pm-modal-btns';
+  buttons.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'pm-btn ' + (b.primary ? 'pm-btn-primary' : 'pm-btn-secondary');
+    btn.textContent = b.label;
+    btn.addEventListener('click', () => { overlay.remove(); if (b.onClick) b.onClick(); });
+    btns.appendChild(btn);
+  });
+  box.appendChild(t); box.appendChild(m); box.appendChild(btns);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
 }
 
 function importProjectJSON(inputEl) {
@@ -309,6 +374,36 @@ function importProjectJSON(inputEl) {
       const missingFields = requiredFields.filter(f => !Array.isArray(d[f]));
       if (missingFields.length > 0) {
         alert('Invalid project structure. Missing required arrays: ' + missingFields.join(', '));
+        return;
+      }
+
+      const isStr = v => typeof v === 'string';
+      const badLib = ['characters', 'locations', 'themes', 'misc']
+        .find(f => !d[f].every(x => isStr(x) || (x && typeof x === 'object' && isStr(x.name))));
+      if (badLib) {
+        alert('Invalid project structure. Every entry in "' + badLib + '" must be a name or an object with a "name" string.');
+        return;
+      }
+
+      const badSceneIdx = d.scenes.findIndex(sc =>
+        !sc || typeof sc !== 'object' || typeof sc.id !== 'number' || !isStr(sc.title) ||
+        (sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes)));
+      if (badSceneIdx !== -1) {
+        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", and string "summary"/"notes" if present.');
+        return;
+      }
+      if (new Set(d.scenes.map(sc => sc.id)).size !== d.scenes.length) {
+        alert('Invalid project structure. Scene "id" values must be unique.');
+        return;
+      }
+
+      const badSecIdx = d.sections.findIndex(sec => !sec || typeof sec !== 'object' || typeof sec.id !== 'number' || !isStr(sec.name));
+      if (badSecIdx !== -1) {
+        alert('Invalid project structure. Section ' + (badSecIdx + 1) + ' needs a numeric "id" and a string "name".');
+        return;
+      }
+      if ((d.projectUid != null && !isStr(d.projectUid)) || (d.revision != null && typeof d.revision !== 'number')) {
+        alert('Invalid project structure. "projectUid" must be a string and "revision" a number when present.');
         return;
       }
 
@@ -349,20 +444,87 @@ function importProjectJSON(inputEl) {
         return;
       }
 
-      const id = genProjId();
-      const now = new Date().toISOString();
       const name = d.projectName || file.name.replace(/\.json$/i, '') || 'Imported Project';
       delete d.projectName;
-      localStorage.setItem(projKey(id), JSON.stringify(d));
-      const index = loadProjectIndex();
-      index.push({ id, name, createdAt: now, modifiedAt: now, sceneCount: (d.scenes||[]).length, theme: d.theme || 'ivory' });
-      saveProjectIndex(index);
-      trackProjectImported();
-      renderProjectGrid();
-      alert('Project imported successfully: ' + name + ' (' + d.scenes.length + ' scenes)');
+      delete d.exportedAt;
+
+      // Import as a new local project. newLineage=true assigns a fresh uid
+      // (used for deliberate "Keep Both" forks so the copies stop matching).
+      const finishAsNew = (newLineage) => {
+        if (newLineage) d.projectUid = genProjUid();
+        if (!d.projectUid) d.projectUid = genProjUid(); // legacy files without a uid
+        d.revision = d.revision || 0;
+        const id = genProjId();
+        const now = new Date().toISOString();
+        localStorage.setItem(projKey(id), JSON.stringify(d));
+        const index = loadProjectIndex();
+        index.push({ id, name, createdAt: now, modifiedAt: now, sceneCount: d.scenes.length, theme: d.theme || 'ivory' });
+        saveProjectIndex(index);
+        trackProjectImported();
+        renderProjectGrid();
+        alert('Project imported successfully: ' + name + ' (' + d.scenes.length + ' scenes)');
+      };
+
+      // Overwrite the matching local project with the file's contents.
+      const replaceExisting = (existing) => {
+        localStorage.setItem(projKey(existing.entry.id), JSON.stringify(d));
+        const index = loadProjectIndex();
+        const entry = index.find(p => p.id === existing.entry.id);
+        if (entry) {
+          entry.name = name;
+          entry.modifiedAt = new Date().toISOString();
+          entry.sceneCount = d.scenes.length;
+          entry.theme = d.theme || entry.theme;
+          saveProjectIndex(index);
+        }
+        trackProjectImported();
+        renderProjectGrid();
+        // If that project is open in the editor right now, reload it so the
+        // next autosave doesn't clobber the file we just imported.
+        if (_page === 'editor' && currentProjectId === existing.entry.id) {
+          openProject(existing.entry.id);
+        }
+        alert('Local copy of "' + name + '" updated from file (rev ' + (d.revision || 0) + ').');
+      };
+
+      const existing = findProjectByUid(d.projectUid);
+      if (!existing) { finishAsNew(false); return; }
+
+      const localName = existing.entry.name;
+      const localRev  = existing.data.revision || 0;
+      const fileRev   = d.revision || 0;
+
+      if (fileRev > localRev) {
+        showImportChoiceDialog('Imported File Is Newer',
+          'The file you\'re importing is a newer version of "' + localName + '" (file revision ' + fileRev + ', your local copy revision ' + localRev + ').\n\nUpdate your local copy to match the file?',
+          [
+            { label: 'Update Local Copy', primary: true, onClick: () => replaceExisting(existing) },
+            { label: 'Keep Both', onClick: () => finishAsNew(true) },
+            { label: 'Cancel' },
+          ]);
+      } else if (fileRev < localRev) {
+        showImportChoiceDialog('Imported File Is Older',
+          'The file you\'re importing is an OLDER version of "' + localName + '" (file revision ' + fileRev + ', your local copy revision ' + localRev + ').\n\nImporting it would fork your data. If you meant to bring in changes from another device, export a fresh file from that device first.',
+          [
+            { label: 'Cancel', primary: true },
+            { label: 'Keep Both Anyway', onClick: () => finishAsNew(true) },
+          ]);
+      } else if ((existing.data.lastDataEditAt || null) === (d.lastDataEditAt || null)) {
+        alert('"' + localName + '" is already up to date (revision ' + localRev + '). Nothing imported.');
+      } else {
+        showImportChoiceDialog('Copies Have Diverged',
+          'The file you\'re importing and your local copy of "' + localName + '" are both at revision ' + localRev + ' but contain different edits — they were changed separately, likely on two devices.\n\nKeep both copies and reconcile them manually.',
+          [
+            { label: 'Keep Both', primary: true, onClick: () => finishAsNew(true) },
+            { label: 'Cancel' },
+          ]);
+      }
     } catch(err) {
       alert('Could not read project file. Make sure it is a valid SceneSetter JSON export.\n\nError: ' + err.message);
     }
+  };
+  reader.onerror = function() {
+    alert('Could not read file. Please try again.');
   };
   reader.readAsText(file);
   inputEl.value = '';
@@ -393,6 +555,8 @@ function ensureSampleProjects() {
         const id = genProjId();
         const now = new Date().toISOString();
         delete d.projectName;
+        d.projectUid = genProjUid();
+        d.revision = d.revision || 0;
         localStorage.setItem(projKey(id), JSON.stringify(d));
         const index = loadProjectIndex();
         index.push({
@@ -409,9 +573,17 @@ function ensureSampleProjects() {
 }
 
 if (document.getElementById('proj-rename-modal')) {
-  onBackdropClick('proj-rename-modal', closeProjRename);
-  onBackdropClick('proj-del-modal', closeProjDel);
+  // Setup backdrop clicks for modals
+  const setupBackdropClick = (id, closeFn) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', e => { if (e.target === el) closeFn(); });
+  };
+
+  setupBackdropClick('proj-rename-modal', closeProjRename);
+  setupBackdropClick('proj-del-modal', closeProjDel);
   document.getElementById('proj-rename-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); confirmProjRename(); }
   });
 }
+

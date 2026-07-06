@@ -23,6 +23,13 @@ if (themeSel) themeSel.value = gTheme;
 // Migrate any existing data to project format
 migrateExistingData();
 
+// Remove keys left behind by the retired AI analysis feature
+try {
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('ai_dismissed_'))
+    .forEach(k => localStorage.removeItem(k));
+} catch(e) {}
+
 // ── PAGE-SPECIFIC INIT ───────────────────────────────────────────────────────
 if (_page === 'projects') {
   // Projects page: ensure sample projects are loaded, then render grid

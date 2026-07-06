@@ -1,1 +1,4 @@
 .DS_Store
+storyboard_v2.md
+node_modules/
+dist/
