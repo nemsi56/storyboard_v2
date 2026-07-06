@@ -10,6 +10,9 @@ let currentProjectId = null;
 
 function projKey(id) { return 'scriptease_proj_' + id; }
 function genProjId() { return 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
+// Permanent project lineage id — unlike the storage id above, this survives
+// export/import so copies of the same project can be recognized across devices.
+function genProjUid() { return 'puid_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10); }
 
 function loadProjectIndex() {
   try { return JSON.parse(localStorage.getItem(PROJECT_INDEX_KEY)) || []; }
@@ -33,6 +36,8 @@ function recordDataEdit() {
 function saveState() {
   if (!currentProjectId) return;
   try {
+    if (!S.projectUid) S.projectUid = genProjUid();
+    S.revision = (S.revision || 0) + 1;
     localStorage.setItem(projKey(currentProjectId), JSON.stringify({
       v: DATA_VERSION,
       characters: S.characters, locations: S.locations, themes: S.themes, misc: S.misc,
@@ -40,7 +45,7 @@ function saveState() {
       theme: document.documentElement.dataset.theme,
       sections: S.sections, nextSecId: S.nextSecId,
       lastDataEditAt: S.lastDataEditAt,
-      chatMessages: S.chatMessages, nextChatId: S.nextChatId,
+      projectUid: S.projectUid, revision: S.revision,
     }));
     const index = loadProjectIndex();
     const entry = index.find(p => p.id === currentProjectId);
@@ -104,8 +109,8 @@ function loadState(storageKey) {
     const sel = document.getElementById('theme-sel');
     if (sel) sel.value = theme;
     S.lastDataEditAt = d.lastDataEditAt || null;
-    S.chatMessages = d.chatMessages || [];
-    S.nextChatId = d.nextChatId || 1;
+    S.projectUid = d.projectUid || null;
+    S.revision   = d.revision || 0;
     if (migrated) saveState();
     return true;
   } catch(e) { return false; }
@@ -122,8 +127,8 @@ const S = {
   editingId: null,
   nextId: 1,
   lastDataEditAt: null,
-  chatMessages: [],
-  nextChatId: 1,
+  projectUid: null,
+  revision: 0,
 };
 
 // ── HISTORY (undo / redo) ─────────────────────────────────────────────────────

@@ -77,7 +77,6 @@ if (document.getElementById('add-popup')) onBackdropClick('add-popup', closeAddP
 // ── PANEL / SCALE ─────────────────────────────────────────────────────────────
 function togglePanel(id) {
   document.getElementById(id).classList.toggle('collapsed');
-  if (id === 'aip') updateAIMenuState();
 }
 function setScale(v) { document.getElementById('board').style.setProperty('--cs', v); if (S.sections.length) alignSecHeaders(); }
 
@@ -120,12 +119,7 @@ function updatePanelMenuStates() {
   if (secEl) secEl.textContent = spCollapsed ? 'Show Sections Panel' : 'Hide Sections Panel';
   if (scnEl) scnEl.textContent = cpCollapsed ? 'Show Scene Panel' : 'Hide Scene Panel';
   const allCollapsed = lpCollapsed && spCollapsed && cpCollapsed;
-  const anyCollapsed = lpCollapsed || spCollapsed || cpCollapsed;
   if (allEl) allEl.textContent = allCollapsed ? 'Show All Panels' : 'Hide All Panels';
-  const aip = document.getElementById('aip');
-  const aipVisible = aip && !aip.classList.contains('collapsed');
-  const aipEl = document.getElementById('menu-ai-text');
-  if (aipEl) aipEl.textContent = aipVisible ? 'Hide AI Panel' : 'Show AI Panel';
 }
 function toggleAllPanels() {
   const lp = document.getElementById('lp');
@@ -144,38 +138,6 @@ function toggleAllPanels() {
     if (sp && !spCollapsed) togglePanel('sp');
     if (cp && !cpCollapsed) togglePanel('cp');
   }
-}
-
-// AI Panel tab switching
-function switchAITab(tabName) {
-  // Hide all tabs
-  const analysisTab = document.getElementById('ai-analysis-tab');
-  const chatTab = document.getElementById('ai-chat-tab');
-  const analysisBtn = document.getElementById('tab-analysis');
-  const chatBtn = document.getElementById('tab-chat');
-
-  if (analysisTab) analysisTab.classList.remove('active');
-  if (chatTab) chatTab.classList.remove('active');
-  if (analysisBtn) analysisBtn.classList.remove('on');
-  if (chatBtn) chatBtn.classList.remove('on');
-
-  // Show selected tab and activate button
-  if (tabName === 'analysis') {
-    if (analysisTab) analysisTab.classList.add('active');
-    if (analysisBtn) analysisBtn.classList.add('on');
-  } else {
-    if (chatTab) chatTab.classList.add('active');
-    if (chatBtn) chatBtn.classList.add('on');
-    // Focus input when switching to chat
-    setTimeout(() => document.getElementById('chat-input')?.focus(), 100);
-  }
-}
-
-function updateAIMenuState() {
-  const aip = document.getElementById('aip');
-  const aiVisible = aip && !aip.classList.contains('collapsed');
-  const text = document.getElementById('menu-ai-text');
-  if (text) text.textContent = aiVisible ? 'Hide AI Panel' : 'Show AI Panel';
 }
 
 function menuSave() { saveState(); closeAllMenus(); }
@@ -1259,12 +1221,11 @@ function initPanelResize(panelId, handleId, min, max) {
   });
   return dr;
 }
-let lpDr = {on:false}, cpDr = {on:false}, spDr = {on:false}, aipDr = {on:false};
+let lpDr = {on:false}, cpDr = {on:false}, spDr = {on:false};
 if (document.getElementById('lp-resize')) {
   lpDr = initPanelResize('lp', 'lp-resize', 140, 480);
   cpDr = initPanelResize('cp', 'cp-resize', 180, 520);
   spDr = initPanelResize('sp', 'sp-resize', 150, 400);
-  aipDr = initPanelResize('aip', 'aip-resize', 200, 600);
 }
 
 // ── GLOBAL MOUSE ──────────────────────────────────────────────────────────────
@@ -1307,8 +1268,7 @@ document.addEventListener('mousedown', e => {
   const newLive    = tabNew.classList.contains('live');
   if (!editActive && !newLive) return;
   if (e.target.closest('#cp')) return;
-  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open, #ai-confirm-modal.open')) return;
-  if (e.target.closest('#ap')) return;
+  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open')) return;
   if (editActive) cancelEdit();
   if (newLive)    cancelNewScene();
 });
@@ -1345,7 +1305,6 @@ document.addEventListener('keydown', e => {
     if (e.key === 't' || e.key === 'T') { e.preventDefault(); openAddPopup('themes'); return; }
     if (e.key === 'm' || e.key === 'M') { e.preventDefault(); openAddPopup('misc'); return; }
     if (e.key === 'r' || e.key === 'R') { e.preventDefault(); openReportModal(); return; }
-    if (e.key === 'a' || e.key === 'A') { e.preventDefault(); openAnalysisConfirm(); return; }
   }
   if (e.key === 'Escape') {
     closeAllMenus();
@@ -1362,7 +1321,6 @@ document.addEventListener('keydown', e => {
     if (typeof closeReportModal === 'function') try { closeReportModal(); } catch(e){}
     if (typeof closeLibEditModal === 'function') try { closeLibEditModal(); } catch(e){}
     if (typeof closeHelp === 'function') try { closeHelp(); } catch(e){}
-    if (typeof closeAnalysisConfirm === 'function') try { closeAnalysisConfirm(); } catch(e){}
   }
 });
 // Close filter dropdown on click outside
@@ -1370,4 +1328,3 @@ document.addEventListener('mousedown', e => {
   const wrap = document.getElementById('sec-filter-wrap');
   if (wrap && !wrap.contains(e.target) && typeof closeSecFilter === 'function') closeSecFilter();
 });
-// Updated: AI Panel fully functional

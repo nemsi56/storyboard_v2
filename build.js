@@ -12,7 +12,7 @@ if (!fs.existsSync('dist')) fs.mkdirSync('dist');
 // JS load order must match HTML script tags
 const JS_FILES = [
   'config.js', 'tracking.js', 'state.js', 'reports.js',
-  'ui.js', 'editor.js', 'projects.js', 'ai.js', 'chat.js',
+  'ui.js', 'editor.js', 'projects.js',
   'main.js', 'app.js',
 ];
 
