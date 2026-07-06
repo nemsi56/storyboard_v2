@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SceneSetter — Scene Editor</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; connect-src 'self' https://formspree.io https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NNVHKFSNPG"></script>
 <script src="ga.js"></script>
@@ -59,8 +60,6 @@
       <button class="di" onclick="openAddPopup('misc');      closeAllMenus()">Add Misc Item<span class="di-sc">Alt+M</span></button>
       <div class="di-sep"></div>
       <button class="di" onclick="openReportModal();closeAllMenus()">Generate Report<span class="di-sc">Alt+R</span></button>
-      <div class="di-sep"></div>
-      <button class="di" onclick="openAnalysisConfirm();closeAllMenus()">Analyze Story…<span class="di-sc">Alt+A</span></button>
     </div>
   </div>
   <!-- View -->
@@ -84,8 +83,6 @@
       <button class="di" id="menu-show-scene" onclick="togglePanel('cp');setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-scn-text">Hide Scene Panel</span></button>
       <div class="di-sep"></div>
       <button class="di" id="menu-show-all-panels" onclick="toggleAllPanels();setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-all-text">Hide All Panels</span></button>
-      <div class="di-sep"></div>
-      <button class="di" id="menu-show-ai" onclick="togglePanel('aip');setTimeout(updateAIMenuState,50);closeAllMenus()"><span id="menu-ai-text">Show AI Panel</span></button>
     </div>
   </div>
   <!-- Help -->
@@ -206,44 +203,6 @@
     </div>
   </div>
   <div id="cp-resize" title="Drag to resize Scene panel"></div>
-
-  <!-- AI PANEL: Analysis & Chat tabs -->
-  <div class="panel collapsed" id="aip">
-    <div class="p-content">
-      <div class="tabs">
-        <button class="tab on" id="tab-analysis" onclick="switchAITab('analysis')">Analysis</button>
-        <button class="tab" id="tab-chat" onclick="switchAITab('chat')">Chat</button>
-        <div style="flex:1"></div>
-        <span style="padding:9px 14px 10px; font-size:12px; font-weight:600; color:var(--tx);">AI Assistant</span>
-        <button class="cbtn tab-cbtn" onclick="closeAnalysisPanel()" title="Close" aria-label="Close AI panel">×</button>
-      </div>
-
-      <!-- Analysis Tab -->
-      <div id="ai-analysis-tab" class="ai-tab active">
-        <div class="p-body" id="ap-body"></div>
-        <div id="ap-footer">
-          <button class="ai-footer-btn" onclick="dismissAllFindings()">Dismiss all</button>
-          <button class="ai-footer-btn" onclick="exportAnalysis()">Export</button>
-          <button class="ai-footer-btn" onclick="runAnalysis()">Re-analyze</button>
-        </div>
-      </div>
-
-      <!-- Chat Tab -->
-      <div id="ai-chat-tab" class="ai-tab">
-        <div class="p-body" id="chp-body">
-          <div id="chat-messages"></div>
-          <div style="padding:8px; background:var(--bg0); border-top:1px solid var(--bdr); flex-shrink:0;">
-            <textarea id="chat-input" placeholder="Ask about your story..." style="width:100%; height:60px; padding:8px; border:1px solid var(--bdr); border-radius:4px; font-size:12px; resize:none; box-sizing:border-box;"></textarea>
-            <div style="display:flex; gap:4px; margin-top:4px;">
-              <button id="chat-send" onclick="sendChatMessage()" style="flex:1; padding:8px; background:var(--acc); color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:12px;">Send</button>
-              <button onclick="clearChatHistory()" style="padding:8px 10px; background:var(--bg1); color:var(--o1); border:1px solid var(--bdr); border-radius:4px; cursor:pointer; font-size:11px;" title="Clear chat history">Clear</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div id="aip-resize" title="Drag to resize AI Panel"></div>
 
   <!-- SCENE BOARD PANEL -->
   <div id="sbp">
@@ -475,21 +434,6 @@
 
 </div><!-- /app-storyboard -->
 
-<!-- AI Analysis Confirmation Modal -->
-<div id="ai-confirm-modal" class="cfm-modal" role="dialog" aria-modal="true">
-  <div class="cfm-box">
-    <div class="cfm-msg">
-      <strong style="display:block;margin-bottom:10px;font-size:14px">Analyze Story with AI</strong>
-      <p style="margin-bottom:8px">This will send your project data to Claude for analysis. No data is stored or used for training.</p>
-      <p>Scene titles, summaries, notes, character/location/theme names, and section names will be sent.</p>
-    </div>
-    <div class="ap-btns">
-      <button onclick="closeAnalysisConfirm()">Cancel</button>
-      <button onclick="runAnalysis()">Analyze</button>
-    </div>
-  </div>
-</div>
-
 <!-- Email Signup Popup -->
 <div id="email-popup" class="email-popup" role="dialog" aria-modal="true" aria-labelledby="email-popup-title" style="display:none;">
   <div class="email-popup-overlay" onclick="closeEmailPopup()"></div>
@@ -512,8 +456,6 @@
 <script src="ui.js"></script>
 <script src="editor.js"></script>
 <script src="projects.js"></script>
-<script src="ai.js"></script>
-<script src="chat.js"></script>
 <script src="main.js"></script>
 <script src="app.js"></script>
 </body>
