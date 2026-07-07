@@ -12,3 +12,5 @@ release branch currently serves up the main_beforeAI branch (basically has all f
 main currently includes all changes up to feature/AI_v3 branch
 
 Going forward, experiment with new features in branches, push to main when ready to merge (and tag that version of main), and only push to release branch when I want it to be the published version at scenesetterapp.com (it will automatically be served there because Pages reads from release branch)
+
+feature/flow_visual branch: added a Scene Flow Chart view (Alt+V / View menu) that renders the Scene Board as a snake or circle ribbon, colored via the existing library/search highlight logic, with hover tooltips, click-to-select-on-board, and print support (charts.js).
