@@ -91,6 +91,7 @@ function renderChart() {
   hideChartTip();
   const scenes = orderedScenes();
   updateChartStatus(scenes);
+  updateChartLegend();
   if (!S.scenes.length) { renderChartEmpty(canvas); return; }
   if (chartType === 'circle') buildCircleChart(canvas, scenes);
   else buildSnakeChart(canvas, scenes);
@@ -119,6 +120,16 @@ function updateChartStatus(scenes) {
     txt += ` · ${matching} matching`;
   }
   el.textContent = txt;
+}
+
+function updateChartLegend() {
+  const el = document.getElementById('chart-legend'); if (!el) return;
+  el.innerHTML = '';
+  S.sections.forEach((sec, i) => {
+    if (i > 0) { const sep = document.createElement('span'); sep.className = 'chart-legend-sep'; sep.textContent = '·'; el.appendChild(sep); }
+    const item = document.createElement('span'); item.className = 'chart-legend-item'; item.textContent = sec.name;
+    el.appendChild(item);
+  });
 }
 
 // ── SEGMENT / NUMBER / TICK PRIMITIVES (shared snake + circle) ────────────────
@@ -241,36 +252,13 @@ function addSnakeSectionMarkers(svg, centerline, scenes, total) {
   if (!S.sections.length) return;
   const N = scenes.length, segLen = total / N;
   const validSecIds = new Set(S.sections.map(s => s.id));
-  let lastSec, lastLabelPt = null;
+  let lastSec;
   scenes.forEach((scene, i) => {
     const secId = validSecIds.has(scene.sectionId) ? scene.sectionId : null;
     if (secId === lastSec) return;
     if (i > 0) drawTick(svg, centerline, total, i * segLen);
-    const sec = secId !== null ? S.sections.find(s => s.id === secId) : null;
-    if (sec) {
-      const p = centerline.getPointAtLength(i * segLen);
-      if (!lastLabelPt || Math.hypot(p.x - lastLabelPt.x, p.y - lastLabelPt.y) > 60) {
-        drawSnakeSectionLabel(svg, centerline, total, i * segLen, sec.name);
-        lastLabelPt = p;
-      }
-    }
     lastSec = secId;
   });
-}
-function drawSnakeSectionLabel(svg, centerline, total, len, name) {
-  const p0 = centerline.getPointAtLength(Math.max(0, len - 0.5));
-  const p1 = centerline.getPointAtLength(Math.min(total, len + 0.5));
-  const dx = p1.x - p0.x, dy = p1.y - p0.y, dist = Math.hypot(dx, dy) || 1;
-  const nx = -dy / dist, ny = dx / dist;
-  const p = centerline.getPointAtLength(len);
-  const txt = document.createElementNS(SVGNS, 'text');
-  txt.setAttribute('x', p.x + nx * 24); txt.setAttribute('y', p.y + ny * 24);
-  txt.setAttribute('text-anchor', 'middle');
-  txt.setAttribute('font-size', '11');
-  txt.setAttribute('fill', 'var(--sub)');
-  txt.classList.add('chart-sec-label');
-  txt.textContent = name;
-  svg.appendChild(txt);
 }
 
 // ── CIRCLE ─────────────────────────────────────────────────────────────────────
@@ -297,7 +285,7 @@ function buildCircleChart(canvas, scenes) {
   const total = centerline.getTotalLength();
   addSegments(g, centerline, scenes, total, 30);
   addCircleNumbers(svg, scenes, cx, cy, R);
-  addCircleSectionMarkers(g, svg, centerline, scenes, total, cx, cy, R);
+  addCircleSectionMarkers(g, centerline, scenes, total);
   drawCircleCenter(svg, cx, cy, scenes);
   drawCircleStartLabel(svg, cx, cy, R);
 }
@@ -323,42 +311,17 @@ function addCircleNumbers(svg, scenes, cx, cy, R) {
   });
 }
 
-function angularDist(a, b) {
-  const d = Math.abs(a - b) % 360;
-  return d > 180 ? 360 - d : d;
-}
-function addCircleSectionMarkers(g, svg, centerline, scenes, total, cx, cy, R) {
+function addCircleSectionMarkers(g, centerline, scenes, total) {
   if (!S.sections.length) return;
   const N = scenes.length, segLen = total / N;
   const validSecIds = new Set(S.sections.map(s => s.id));
-  let lastSec, lastLabelAngle = null;
+  let lastSec;
   scenes.forEach((scene, i) => {
     const secId = validSecIds.has(scene.sectionId) ? scene.sectionId : null;
     if (secId === lastSec) return;
     if (i > 0) drawTick(g, centerline, total, i * segLen);
-    const sec = secId !== null ? S.sections.find(s => s.id === secId) : null;
-    if (sec) {
-      const angleDeg = -90 + i * 360 / N;
-      if (lastLabelAngle === null || angularDist(angleDeg, lastLabelAngle) > 18) {
-        drawCircleSectionLabel(svg, cx, cy, R, angleDeg, sec.name);
-        lastLabelAngle = angleDeg;
-      }
-    }
     lastSec = secId;
   });
-}
-function drawCircleSectionLabel(svg, cx, cy, R, angleDeg, name) {
-  const rad = angleDeg * Math.PI / 180, offset = R + 24;
-  const x = cx + offset * Math.cos(rad), y = cy + offset * Math.sin(rad);
-  const txt = document.createElementNS(SVGNS, 'text');
-  txt.setAttribute('x', x); txt.setAttribute('y', y);
-  txt.setAttribute('text-anchor', 'middle');
-  txt.setAttribute('dominant-baseline', 'central');
-  txt.setAttribute('font-size', '11');
-  txt.setAttribute('fill', 'var(--sub)');
-  txt.classList.add('chart-sec-label');
-  txt.textContent = name;
-  svg.appendChild(txt);
 }
 function drawCircleCenter(svg, cx, cy, scenes) {
   const t1 = document.createElementNS(SVGNS, 'text');
