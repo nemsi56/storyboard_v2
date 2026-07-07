@@ -88,3 +88,6 @@ Claude Code browser preview tool.
 - No entry point from other pages (projects.html etc.) — chart view only exists inside
   `editor.html`, which is correct per spec (it's a Scene Board view mode, not a global
   feature), just noting it so it's not mistaken for an oversight.
+main currently includes strip_AI branch and that was pushed to the release branch
+
+Going forward, experiment with new features in branches, push to main when ready to merge, and only push to release branch (and tag) when I want it to be the published version at scenesetterapp.com (it will automatically be served there because Pages reads from release branch)
