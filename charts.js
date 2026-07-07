@@ -122,14 +122,30 @@ function updateChartStatus(scenes) {
   el.textContent = txt;
 }
 
+function sectionLetter(idx) {
+  return idx < 26 ? String.fromCharCode(65 + idx) : String(idx + 1);
+}
+
 function updateChartLegend() {
   const el = document.getElementById('chart-legend'); if (!el) return;
   el.innerHTML = '';
   S.sections.forEach((sec, i) => {
     if (i > 0) { const sep = document.createElement('span'); sep.className = 'chart-legend-sep'; sep.textContent = '·'; el.appendChild(sep); }
-    const item = document.createElement('span'); item.className = 'chart-legend-item'; item.textContent = sec.name;
+    const item = document.createElement('span'); item.className = 'chart-legend-item'; item.dataset.secId = sec.id;
+    const letterEl = document.createElement('span'); letterEl.className = 'chart-legend-letter'; letterEl.textContent = sectionLetter(i);
+    const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = sec.name;
+    item.appendChild(letterEl); item.appendChild(nameEl);
+    item.addEventListener('mouseenter', () => highlightSecMarker(sec.id, true));
+    item.addEventListener('mouseleave', () => highlightSecMarker(sec.id, false));
     el.appendChild(item);
   });
+}
+function highlightSecMarker(sectionId, on) {
+  document.querySelectorAll('.chart-sec-marker[data-sec-id="' + sectionId + '"]').forEach(m => m.classList.toggle('chart-sec-marker-hl', on));
+}
+function highlightLegendItem(sectionId, on) {
+  const el = document.querySelector('.chart-legend-item[data-sec-id="' + sectionId + '"]');
+  if (el) el.classList.toggle('chart-legend-hl', on);
 }
 
 // ── SEGMENT / NUMBER / TICK PRIMITIVES (shared snake + circle) ────────────────
@@ -164,24 +180,43 @@ function addSegments(container, centerline, scenes, total, thickness) {
   });
 }
 
-function drawTick(container, centerline, total, len) {
-  const p0 = centerline.getPointAtLength(Math.max(0, len - 0.5));
-  const p1 = centerline.getPointAtLength(Math.min(total, len + 0.5));
-  const dx = p1.x - p0.x, dy = p1.y - p0.y, dist = Math.hypot(dx, dy) || 1;
-  const nx = -dy / dist, ny = dx / dist;
-  const p = centerline.getPointAtLength(len), half = 5;
-  const line = document.createElementNS(SVGNS, 'line');
-  line.setAttribute('x1', p.x - nx * half); line.setAttribute('y1', p.y - ny * half);
-  line.setAttribute('x2', p.x + nx * half); line.setAttribute('y2', p.y + ny * half);
-  line.setAttribute('stroke', 'var(--o0)');
-  line.setAttribute('stroke-width', '2');
-  line.classList.add('chart-tick');
-  container.appendChild(line);
+function drawSectionMarkerAt(container, x, y, sectionId, idx) {
+  const g = document.createElementNS(SVGNS, 'g');
+  g.classList.add('chart-sec-marker');
+  g.dataset.secId = sectionId;
+  const circle = document.createElementNS(SVGNS, 'circle');
+  circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', 9);
+  circle.setAttribute('fill', 'var(--bg1)');
+  circle.setAttribute('stroke', 'var(--o0)');
+  circle.setAttribute('stroke-width', '1.5');
+  const txt = document.createElementNS(SVGNS, 'text');
+  txt.setAttribute('x', x); txt.setAttribute('y', y);
+  txt.setAttribute('text-anchor', 'middle');
+  txt.setAttribute('dominant-baseline', 'central');
+  txt.setAttribute('font-size', '10');
+  txt.setAttribute('font-weight', '700');
+  txt.setAttribute('fill', 'var(--sub)');
+  txt.textContent = sectionLetter(idx);
+  g.appendChild(circle); g.appendChild(txt);
+  g.addEventListener('mouseenter', e => { showSectionTip(e, sectionId); highlightLegendItem(sectionId, true); });
+  g.addEventListener('mousemove', moveChartTip);
+  g.addEventListener('mouseleave', () => { hideChartTip(); highlightLegendItem(sectionId, false); });
+  container.appendChild(g);
+}
+function showSectionTip(e, sectionId) {
+  const sec = S.sections.find(s => s.id === sectionId);
+  const tip = document.getElementById('chart-tip');
+  tip.innerHTML = '';
+  const t1 = document.createElement('div'); t1.className = 'chart-tip-title';
+  t1.textContent = sec ? sec.name : '';
+  tip.appendChild(t1);
+  tip.style.display = 'block';
+  positionChartTip(e);
 }
 
 // ── SNAKE ──────────────────────────────────────────────────────────────────────
 function computeSnakeLayout(N, W) {
-  const M = 50, r = 45, A = Math.PI * r, T = 110;
+  const r = 45, M = r + 25, A = Math.PI * r, T = 110;
   const runLen = Math.max(2 * r + 20, W - 2 * M);
   const L = N * T;
   let R = Math.max(1, Math.ceil((L - runLen) / (runLen + A)) + 1);
@@ -227,7 +262,7 @@ function buildSnakeChart(canvas, scenes) {
   const total = centerline.getTotalLength();
   addSegments(svg, centerline, scenes, total, 34);
   addSnakeNumbers(svg, centerline, scenes, total);
-  addSnakeSectionMarkers(svg, centerline, scenes, total);
+  addSnakeSectionMarkers(svg, centerline, scenes, total, W);
 }
 
 function addSnakeNumbers(svg, centerline, scenes, total) {
@@ -248,15 +283,27 @@ function addSnakeNumbers(svg, centerline, scenes, total) {
   });
 }
 
-function addSnakeSectionMarkers(svg, centerline, scenes, total) {
+function addSnakeSectionMarkers(svg, centerline, scenes, total, W) {
   if (!S.sections.length) return;
   const N = scenes.length, segLen = total / N;
   const validSecIds = new Set(S.sections.map(s => s.id));
+  const secIndexById = new Map(S.sections.map((s, i) => [s.id, i]));
+  const pad = 14;
   let lastSec;
   scenes.forEach((scene, i) => {
     const secId = validSecIds.has(scene.sectionId) ? scene.sectionId : null;
-    if (secId === lastSec) return;
-    if (i > 0) drawTick(svg, centerline, total, i * segLen);
+    if (secId === lastSec) { lastSec = secId; return; }
+    if (i > 0 && secId !== null) {
+      const len = i * segLen;
+      const p0 = centerline.getPointAtLength(Math.max(0, len - 0.5));
+      const p1 = centerline.getPointAtLength(Math.min(total, len + 0.5));
+      const dx = p1.x - p0.x, dy = p1.y - p0.y, dist = Math.hypot(dx, dy) || 1;
+      const nx = -dy / dist, ny = dx / dist;
+      const p = centerline.getPointAtLength(len);
+      const mx = Math.min(W - pad, Math.max(pad, p.x + nx * 16));
+      const my = p.y + ny * 16;
+      drawSectionMarkerAt(svg, mx, my, secId, secIndexById.get(secId));
+    }
     lastSec = secId;
   });
 }
@@ -285,7 +332,7 @@ function buildCircleChart(canvas, scenes) {
   const total = centerline.getTotalLength();
   addSegments(g, centerline, scenes, total, 30);
   addCircleNumbers(svg, scenes, cx, cy, R);
-  addCircleSectionMarkers(g, centerline, scenes, total);
+  addCircleSectionMarkers(svg, scenes, cx, cy, R);
   drawCircleCenter(svg, cx, cy, scenes);
   drawCircleStartLabel(svg, cx, cy, R);
 }
@@ -311,15 +358,22 @@ function addCircleNumbers(svg, scenes, cx, cy, R) {
   });
 }
 
-function addCircleSectionMarkers(g, centerline, scenes, total) {
+function addCircleSectionMarkers(svg, scenes, cx, cy, R) {
   if (!S.sections.length) return;
-  const N = scenes.length, segLen = total / N;
+  const N = scenes.length;
   const validSecIds = new Set(S.sections.map(s => s.id));
+  const secIndexById = new Map(S.sections.map((s, i) => [s.id, i]));
   let lastSec;
   scenes.forEach((scene, i) => {
     const secId = validSecIds.has(scene.sectionId) ? scene.sectionId : null;
-    if (secId === lastSec) return;
-    if (i > 0) drawTick(g, centerline, total, i * segLen);
+    if (secId === lastSec) { lastSec = secId; return; }
+    if (i > 0 && secId !== null) {
+      const angleDeg = -90 + i * 360 / N;
+      const rad = angleDeg * Math.PI / 180;
+      const offset = R + 16;
+      const mx = cx + offset * Math.cos(rad), my = cy + offset * Math.sin(rad);
+      drawSectionMarkerAt(svg, mx, my, secId, secIndexById.get(secId));
+    }
     lastSec = secId;
   });
 }
@@ -371,14 +425,12 @@ function positionChartTip(e) {
   let x = e.clientX - hr.left + 14;
   let y = e.clientY - hr.top + 14;
   tip.style.left = x + 'px'; tip.style.top = y + 'px';
-  requestAnimationFrame(() => {
-    if (tip.style.display === 'none') return;
-    const tr = tip.getBoundingClientRect();
-    let nx = x, ny = y;
-    if (hr.left + x + tr.width > hr.right) nx = Math.max(8, hr.width - tr.width - 8);
-    if (hr.top + y + tr.height > hr.bottom) ny = Math.max(8, hr.height - tr.height - 8);
-    tip.style.left = nx + 'px'; tip.style.top = ny + 'px';
-  });
+  const tr = tip.getBoundingClientRect(); // synchronous layout — tooltip is tiny, cost is negligible
+  let nx = x, ny = y;
+  if (hr.left + x + tr.width > hr.right) nx = Math.max(8, hr.width - tr.width - 8);
+  if (hr.top + y + tr.height > hr.bottom) ny = Math.max(8, hr.height - tr.height - 8);
+  if (nx !== x) tip.style.left = nx + 'px';
+  if (ny !== y) tip.style.top = ny + 'px';
 }
 function hideChartTip() {
   const tip = document.getElementById('chart-tip');

@@ -570,7 +570,9 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #chart-toolbar{height:46px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
 #chart-legend{flex-shrink:0;display:flex;align-items:center;gap:0;padding:5px 12px;background:var(--bg1);border-bottom:1px solid var(--bdr);font-size:11px;color:var(--sub);white-space:nowrap;overflow-x:auto}
 #chart-legend:empty{display:none}
-.chart-legend-item{flex-shrink:0}
+.chart-legend-item{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:1px 4px}
+.chart-legend-item.chart-legend-hl{background:var(--s0);color:var(--tx)}
+.chart-legend-letter{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:15px;height:15px;border-radius:50%;background:var(--bg1);border:1px solid var(--o0);color:var(--sub);font-weight:700;font-size:9px}
 .chart-legend-sep{flex-shrink:0;margin:0 8px;opacity:.5}
 .chart-type-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:5px 12px;cursor:pointer;transition:background .12s,border-color .12s}
 .chart-type-btn:hover{border-color:var(--acc)}
@@ -593,5 +595,9 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-seg.chart-seg-match:hover{filter:brightness(1.06);cursor:pointer}
 .chart-seg.chart-seg-dim{opacity:.45}
 .chart-num{font-family:inherit;user-select:none}
+.chart-sec-marker{cursor:pointer}
+.chart-sec-marker circle{transition:stroke .12s,fill .12s}
+.chart-sec-marker text{font-family:inherit;user-select:none;pointer-events:none}
+.chart-sec-marker:hover circle,.chart-sec-marker.chart-sec-marker-hl circle{stroke:var(--acc);fill:var(--s0)}
 
 
