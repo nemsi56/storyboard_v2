@@ -601,7 +601,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-sec-marker text{font-family:inherit;user-select:none;pointer-events:none;transition:fill .12s}
 .chart-sec-marker:hover circle,.chart-sec-marker.chart-sec-marker-hl circle{fill:var(--acc)}
 .chart-sec-marker:hover text,.chart-sec-marker.chart-sec-marker-hl text{fill:var(--ontx)}
-.chart-pie-wedge{transition:filter .12s;cursor:pointer}
-.chart-pie-wedge:hover{filter:brightness(1.08)}
+.chart-pie-wedge{transition:fill .12s;cursor:pointer}
+.chart-pie-wedge:hover{fill:var(--s1)}
 
 

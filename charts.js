@@ -332,9 +332,7 @@ function buildCircleChart(canvas, scenes) {
   const total = centerline.getTotalLength();
   addSegments(g, centerline, scenes, total, 30);
   addCircleNumbers(svg, scenes, cx, cy, R);
-  const hubR = Math.min(55, R - 24);
-  drawCirclePie(svg, scenes, cx, cy, R, hubR);
-  drawCircleCenter(svg, cx, cy, scenes);
+  drawCirclePie(svg, scenes, cx, cy, R);
 }
 
 function addCircleNumbers(svg, scenes, cx, cy, R) {
@@ -369,17 +367,14 @@ function truncateForWidth(name, maxWidth, charWidth) {
   if (maxChars <= 1) return '';
   return name.slice(0, maxChars - 1) + '…';
 }
-function drawPieWedge(svg, cx, cy, innerR, outerR, startDeg, endDeg, sec, altShade) {
-  const p1 = circlePoint(cx, cy, innerR, startDeg);
+function drawPieWedge(svg, cx, cy, outerR, startDeg, endDeg, sec) {
   const p2 = circlePoint(cx, cy, outerR, startDeg);
   const p3 = circlePoint(cx, cy, outerR, endDeg);
-  const p4 = circlePoint(cx, cy, innerR, endDeg);
   const largeArc = (endDeg - startDeg) > 180 ? 1 : 0;
-  const d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} A ${outerR} ${outerR} 0 ${largeArc} 1 ${p3.x} ${p3.y} `
-    + `L ${p4.x} ${p4.y} A ${innerR} ${innerR} 0 ${largeArc} 0 ${p1.x} ${p1.y} Z`;
+  const d = `M ${cx} ${cy} L ${p2.x} ${p2.y} A ${outerR} ${outerR} 0 ${largeArc} 1 ${p3.x} ${p3.y} Z`;
   const path = document.createElementNS(SVGNS, 'path');
   path.setAttribute('d', d);
-  path.setAttribute('fill', altShade ? 'var(--bg2)' : 'var(--s0)');
+  path.setAttribute('fill', 'var(--bg2)');
   path.setAttribute('stroke', 'var(--bdr)');
   path.setAttribute('stroke-width', '1');
   path.classList.add('chart-pie-wedge');
@@ -390,7 +385,7 @@ function drawPieWedge(svg, cx, cy, innerR, outerR, startDeg, endDeg, sec, altSha
   svg.appendChild(path);
 
   const midDeg = (startDeg + endDeg) / 2;
-  const midR = (innerR + outerR) / 2;
+  const midR = outerR * 0.6;
   const angleSpanRad = (endDeg - startDeg) * Math.PI / 180;
   const availWidth = midR * angleSpanRad - 8;
   const label = truncateForWidth(sec.name, availWidth);
@@ -407,7 +402,7 @@ function drawPieWedge(svg, cx, cy, innerR, outerR, startDeg, endDeg, sec, altSha
     svg.appendChild(txt);
   }
 }
-function drawCirclePie(svg, scenes, cx, cy, R, hubR) {
+function drawCirclePie(svg, scenes, cx, cy, R) {
   if (S.sections.length <= 1) return;
   const N = scenes.length;
   const validSecIds = new Set(S.sections.map(s => s.id));
@@ -419,33 +414,14 @@ function drawCirclePie(svg, scenes, cx, cy, R, hubR) {
     if (last && last.secId === secId) last.count++;
     else runs.push({ secId, start: i, count: 1 });
   });
-  let shadeIdx = 0;
   runs.forEach(run => {
     if (run.secId === null) return;
     const sec = S.sections.find(s => s.id === run.secId);
     if (!sec) return;
     const startDeg = -90 + run.start * 360 / N;
     const endDeg = -90 + (run.start + run.count) * 360 / N;
-    drawPieWedge(svg, cx, cy, hubR, outerR, startDeg, endDeg, sec, shadeIdx % 2 === 1);
-    shadeIdx++;
+    drawPieWedge(svg, cx, cy, outerR, startDeg, endDeg, sec);
   });
-}
-function drawCircleCenter(svg, cx, cy, scenes) {
-  const t1 = document.createElementNS(SVGNS, 'text');
-  t1.setAttribute('x', cx); t1.setAttribute('y', cy - 8);
-  t1.setAttribute('text-anchor', 'middle');
-  t1.setAttribute('font-size', '13');
-  t1.setAttribute('fill', 'var(--tx)');
-  t1.textContent = getChartProjectName();
-  svg.appendChild(t1);
-  const n = scenes.length, m = S.sections.length;
-  const t2 = document.createElementNS(SVGNS, 'text');
-  t2.setAttribute('x', cx); t2.setAttribute('y', cy + 12);
-  t2.setAttribute('text-anchor', 'middle');
-  t2.setAttribute('font-size', '12');
-  t2.setAttribute('fill', 'var(--sub)');
-  t2.textContent = `${n} scene${n !== 1 ? 's' : ''} · ${m} section${m !== 1 ? 's' : ''}`;
-  svg.appendChild(t2);
 }
 // ── TOOLTIP ────────────────────────────────────────────────────────────────────
 function showChartTip(e, scene) {
