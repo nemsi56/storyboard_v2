@@ -129,6 +129,7 @@ function sectionLetter(idx) {
 function updateChartLegend() {
   const el = document.getElementById('chart-legend'); if (!el) return;
   el.innerHTML = '';
+  if (chartType !== 'snake') return; // circle labels its sections directly on the pie
   S.sections.forEach((sec, i) => {
     if (i > 0) { const sep = document.createElement('span'); sep.className = 'chart-legend-sep'; sep.textContent = '·'; el.appendChild(sep); }
     const item = document.createElement('span'); item.className = 'chart-legend-item'; item.dataset.secId = sec.id;
@@ -186,16 +187,15 @@ function drawSectionMarkerAt(container, x, y, sectionId, idx) {
   g.dataset.secId = sectionId;
   const circle = document.createElementNS(SVGNS, 'circle');
   circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', 9);
-  circle.setAttribute('fill', 'var(--bg1)');
-  circle.setAttribute('stroke', 'var(--o0)');
-  circle.setAttribute('stroke-width', '1.5');
+  circle.setAttribute('fill', 'var(--tx)');
+  circle.setAttribute('stroke', 'none');
   const txt = document.createElementNS(SVGNS, 'text');
   txt.setAttribute('x', x); txt.setAttribute('y', y);
   txt.setAttribute('text-anchor', 'middle');
   txt.setAttribute('dominant-baseline', 'central');
   txt.setAttribute('font-size', '10');
   txt.setAttribute('font-weight', '700');
-  txt.setAttribute('fill', 'var(--sub)');
+  txt.setAttribute('fill', 'var(--bg1)');
   txt.textContent = sectionLetter(idx);
   g.appendChild(circle); g.appendChild(txt);
   g.addEventListener('mouseenter', e => { showSectionTip(e, sectionId); highlightLegendItem(sectionId, true); });
@@ -293,7 +293,7 @@ function addSnakeSectionMarkers(svg, centerline, scenes, total, W) {
   scenes.forEach((scene, i) => {
     const secId = validSecIds.has(scene.sectionId) ? scene.sectionId : null;
     if (secId === lastSec) { lastSec = secId; return; }
-    if (i > 0 && secId !== null) {
+    if (secId !== null) {
       const len = i * segLen;
       const p0 = centerline.getPointAtLength(Math.max(0, len - 0.5));
       const p1 = centerline.getPointAtLength(Math.min(total, len + 0.5));
@@ -332,9 +332,9 @@ function buildCircleChart(canvas, scenes) {
   const total = centerline.getTotalLength();
   addSegments(g, centerline, scenes, total, 30);
   addCircleNumbers(svg, scenes, cx, cy, R);
-  addCircleSectionMarkers(svg, scenes, cx, cy, R);
+  const hubR = Math.min(55, R - 24);
+  drawCirclePie(svg, scenes, cx, cy, R, hubR);
   drawCircleCenter(svg, cx, cy, scenes);
-  drawCircleStartLabel(svg, cx, cy, R);
 }
 
 function addCircleNumbers(svg, scenes, cx, cy, R) {
@@ -358,23 +358,76 @@ function addCircleNumbers(svg, scenes, cx, cy, R) {
   });
 }
 
-function addCircleSectionMarkers(svg, scenes, cx, cy, R) {
-  if (!S.sections.length) return;
+function circlePoint(cx, cy, r, angleDeg) {
+  const rad = angleDeg * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+function truncateForWidth(name, maxWidth, charWidth) {
+  charWidth = charWidth || 5.7;
+  const maxChars = Math.max(0, Math.floor(maxWidth / charWidth));
+  if (name.length <= maxChars) return name;
+  if (maxChars <= 1) return '';
+  return name.slice(0, maxChars - 1) + '…';
+}
+function drawPieWedge(svg, cx, cy, innerR, outerR, startDeg, endDeg, sec, altShade) {
+  const p1 = circlePoint(cx, cy, innerR, startDeg);
+  const p2 = circlePoint(cx, cy, outerR, startDeg);
+  const p3 = circlePoint(cx, cy, outerR, endDeg);
+  const p4 = circlePoint(cx, cy, innerR, endDeg);
+  const largeArc = (endDeg - startDeg) > 180 ? 1 : 0;
+  const d = `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y} A ${outerR} ${outerR} 0 ${largeArc} 1 ${p3.x} ${p3.y} `
+    + `L ${p4.x} ${p4.y} A ${innerR} ${innerR} 0 ${largeArc} 0 ${p1.x} ${p1.y} Z`;
+  const path = document.createElementNS(SVGNS, 'path');
+  path.setAttribute('d', d);
+  path.setAttribute('fill', altShade ? 'var(--bg2)' : 'var(--s0)');
+  path.setAttribute('stroke', 'var(--bdr)');
+  path.setAttribute('stroke-width', '1');
+  path.classList.add('chart-pie-wedge');
+  path.dataset.secId = sec.id;
+  path.addEventListener('mouseenter', e => showSectionTip(e, sec.id));
+  path.addEventListener('mousemove', moveChartTip);
+  path.addEventListener('mouseleave', hideChartTip);
+  svg.appendChild(path);
+
+  const midDeg = (startDeg + endDeg) / 2;
+  const midR = (innerR + outerR) / 2;
+  const angleSpanRad = (endDeg - startDeg) * Math.PI / 180;
+  const availWidth = midR * angleSpanRad - 8;
+  const label = truncateForWidth(sec.name, availWidth);
+  if (label) {
+    const p = circlePoint(cx, cy, midR, midDeg);
+    const txt = document.createElementNS(SVGNS, 'text');
+    txt.setAttribute('x', p.x); txt.setAttribute('y', p.y);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('dominant-baseline', 'central');
+    txt.setAttribute('font-size', '10');
+    txt.setAttribute('fill', 'var(--sub)');
+    txt.style.pointerEvents = 'none';
+    txt.textContent = label;
+    svg.appendChild(txt);
+  }
+}
+function drawCirclePie(svg, scenes, cx, cy, R, hubR) {
+  if (S.sections.length <= 1) return;
   const N = scenes.length;
   const validSecIds = new Set(S.sections.map(s => s.id));
-  const secIndexById = new Map(S.sections.map((s, i) => [s.id, i]));
-  let lastSec;
+  const outerR = R - 20;
+  const runs = [];
   scenes.forEach((scene, i) => {
     const secId = validSecIds.has(scene.sectionId) ? scene.sectionId : null;
-    if (secId === lastSec) { lastSec = secId; return; }
-    if (i > 0 && secId !== null) {
-      const angleDeg = -90 + i * 360 / N;
-      const rad = angleDeg * Math.PI / 180;
-      const offset = R + 16;
-      const mx = cx + offset * Math.cos(rad), my = cy + offset * Math.sin(rad);
-      drawSectionMarkerAt(svg, mx, my, secId, secIndexById.get(secId));
-    }
-    lastSec = secId;
+    const last = runs[runs.length - 1];
+    if (last && last.secId === secId) last.count++;
+    else runs.push({ secId, start: i, count: 1 });
+  });
+  let shadeIdx = 0;
+  runs.forEach(run => {
+    if (run.secId === null) return;
+    const sec = S.sections.find(s => s.id === run.secId);
+    if (!sec) return;
+    const startDeg = -90 + run.start * 360 / N;
+    const endDeg = -90 + (run.start + run.count) * 360 / N;
+    drawPieWedge(svg, cx, cy, hubR, outerR, startDeg, endDeg, sec, shadeIdx % 2 === 1);
+    shadeIdx++;
   });
 }
 function drawCircleCenter(svg, cx, cy, scenes) {
@@ -394,16 +447,6 @@ function drawCircleCenter(svg, cx, cy, scenes) {
   t2.textContent = `${n} scene${n !== 1 ? 's' : ''} · ${m} section${m !== 1 ? 's' : ''}`;
   svg.appendChild(t2);
 }
-function drawCircleStartLabel(svg, cx, cy, R) {
-  const t = document.createElementNS(SVGNS, 'text');
-  t.setAttribute('x', cx); t.setAttribute('y', cy - R - 14);
-  t.setAttribute('text-anchor', 'middle');
-  t.setAttribute('font-size', '11');
-  t.setAttribute('fill', 'var(--sub)');
-  t.textContent = 'start';
-  svg.appendChild(t);
-}
-
 // ── TOOLTIP ────────────────────────────────────────────────────────────────────
 function showChartTip(e, scene) {
   const tip = document.getElementById('chart-tip');
@@ -422,15 +465,19 @@ function positionChartTip(e) {
   const tip = document.getElementById('chart-tip');
   const host = document.getElementById('chart-host');
   const hr = host.getBoundingClientRect();
-  let x = e.clientX - hr.left + 14;
-  let y = e.clientY - hr.top + 14;
-  tip.style.left = x + 'px'; tip.style.top = y + 'px';
-  const tr = tip.getBoundingClientRect(); // synchronous layout — tooltip is tiny, cost is negligible
-  let nx = x, ny = y;
-  if (hr.left + x + tr.width > hr.right) nx = Math.max(8, hr.width - tr.width - 8);
-  if (hr.top + y + tr.height > hr.bottom) ny = Math.max(8, hr.height - tr.height - 8);
-  if (nx !== x) tip.style.left = nx + 'px';
-  if (ny !== y) tip.style.top = ny + 'px';
+  const margin = 8;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  // Clamp against the actual browser viewport (not just the host box) so callouts
+  // near the bottom/right of the window flip to the other side of the cursor
+  // instead of running off-screen.
+  let vx = e.clientX + 14;
+  if (vx + tw + margin > window.innerWidth) vx = e.clientX - 14 - tw;
+  vx = Math.max(margin, vx);
+  let vy = e.clientY + 14;
+  if (vy + th + margin > window.innerHeight) vy = e.clientY - 14 - th;
+  vy = Math.max(margin, vy);
+  tip.style.left = (vx - hr.left) + 'px';
+  tip.style.top = (vy - hr.top) + 'px';
 }
 function hideChartTip() {
   const tip = document.getElementById('chart-tip');
