@@ -566,7 +566,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .theme-di-sunset{background:#fff0e0;color:#ea580c;font-weight:500}
 
 /* ── SCENE FLOW CHART ────────────────────────────────────────────────────── */
-#chart-host{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;background:var(--sbg)}
+#chart-host{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;background:var(--sbg)}
 #chart-toolbar{height:46px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
 #chart-legend{flex-shrink:0;display:flex;align-items:center;gap:0;padding:5px 12px;background:var(--bg1);border-bottom:1px solid var(--bdr);font-size:11px;color:var(--sub);white-space:nowrap;overflow-x:auto}
 #chart-legend:empty{display:none}
@@ -581,7 +581,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #chart-status{flex:1;color:var(--sub);font-size:11px;margin-left:4px}
 #chart-print-btn,#chart-close-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:11px;font-family:inherit;padding:5px 10px;cursor:pointer;white-space:nowrap;transition:border-color .12s}
 #chart-print-btn:hover,#chart-close-btn:hover{border-color:var(--acc)}
-#chart-scroll{flex:1;overflow:auto;position:relative;background:var(--sbg)}
+#chart-scroll{flex:1;min-height:0;overflow:auto;position:relative;background:var(--sbg)}
 #chart-canvas{padding:20px;min-height:100%}
 #chart-canvas svg{display:block}
 .chart-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;pointer-events:none}
