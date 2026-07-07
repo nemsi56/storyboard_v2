@@ -5,6 +5,8 @@ const SVGNS = 'http://www.w3.org/2000/svg';
 let chartMode = false;          // is chart view active
 let chartType = 'snake';        // 'snake' | 'circle'
 let chartResizeTimer = null;
+let chartLastSize = '';         // last rendered chart-scroll size, "WxH"
+const CHART_PAD = 20;           // must match #chart-canvas padding in styles.css
 
 if (document.getElementById('chart-host')) {
 
@@ -15,11 +17,24 @@ if (document.getElementById('chart-host')) {
     document.getElementById('chart-type-circle').classList.toggle('on', chartType === 'circle');
   })();
 
-  window.addEventListener('resize', () => {
+  // Re-render on any chart-area size change. The ResizeObserver catches panel
+  // collapse/expand and panel-resize drags (which don't fire window resize);
+  // the window listener stays as a baseline since RO callbacks ride the
+  // rendering pipeline and can be throttled in background tabs.
+  const scheduleChartRerender = () => {
     if (!chartMode) return;
     clearTimeout(chartResizeTimer);
     chartResizeTimer = setTimeout(renderChart, 150);
-  });
+  };
+  const chartScrollEl = document.getElementById('chart-scroll');
+  if (typeof ResizeObserver !== 'undefined' && chartScrollEl) {
+    new ResizeObserver(entries => {
+      const r = entries[0].contentRect;
+      if (Math.round(r.width) + 'x' + Math.round(r.height) === chartLastSize) return;
+      scheduleChartRerender();
+    }).observe(chartScrollEl);
+  }
+  window.addEventListener('resize', scheduleChartRerender);
 }
 
 // ── VIEW TOGGLE ─────────────────────────────────────────────────────────────────
@@ -89,6 +104,8 @@ function renderChart() {
   if (!canvas) return;
   canvas.innerHTML = '';
   hideChartTip();
+  const scrollEl = document.getElementById('chart-scroll');
+  chartLastSize = scrollEl.clientWidth + 'x' + scrollEl.clientHeight;
   const scenes = orderedScenes();
   updateChartStatus(scenes);
   updateChartLegend();
@@ -161,7 +178,8 @@ function applySegColor(clone, scene) {
 }
 
 function addSegments(container, centerline, scenes, total, thickness) {
-  const N = scenes.length, segLen = total / N, GAP = 3;
+  const N = scenes.length, segLen = total / N;
+  const GAP = Math.min(3, segLen / 3); // keep the dash length positive when segments get tiny
   scenes.forEach((scene, i) => {
     const clone = centerline.cloneNode(false);
     clone.classList.add('chart-seg');
@@ -245,7 +263,7 @@ function buildSnakePath(N, W) {
 
 function buildSnakeChart(canvas, scenes) {
   const scrollEl = document.getElementById('chart-scroll');
-  const W = scrollEl.clientWidth || 800;
+  const W = Math.max(300, (scrollEl.clientWidth || 800) - 2 * CHART_PAD);
   const N = scenes.length;
   if (N === 0) { renderChartNoMatch(canvas); return; }
   const svg = document.createElementNS(SVGNS, 'svg');
@@ -311,8 +329,8 @@ function addSnakeSectionMarkers(svg, centerline, scenes, total, W) {
 // ── CIRCLE ─────────────────────────────────────────────────────────────────────
 function buildCircleChart(canvas, scenes) {
   const scrollEl = document.getElementById('chart-scroll');
-  const availW = scrollEl.clientWidth || 600;
-  const availH = scrollEl.clientHeight || 480;
+  const availW = Math.max(300, (scrollEl.clientWidth || 600) - 2 * CHART_PAD);
+  const availH = Math.max(300, (scrollEl.clientHeight || 480) - 2 * CHART_PAD);
   const N = scenes.length;
   if (N === 0) { renderChartNoMatch(canvas); return; }
   const R = Math.max(90, Math.min(availW, availH) / 2 - 70);
@@ -419,7 +437,9 @@ function drawCirclePie(svg, scenes, cx, cy, R) {
     const sec = S.sections.find(s => s.id === run.secId);
     if (!sec) return;
     const startDeg = -90 + run.start * 360 / N;
-    const endDeg = -90 + (run.start + run.count) * 360 / N;
+    // A full 360° wedge has coincident arc endpoints and renders as nothing —
+    // clamp just short so the path stays valid (hairline gap marks the start).
+    const endDeg = Math.min(-90 + (run.start + run.count) * 360 / N, startDeg + 359.9);
     drawPieWedge(svg, cx, cy, outerR, startDeg, endDeg, sec);
   });
 }
@@ -499,15 +519,26 @@ function printChart() {
   if (!svgEl) return;
   const clone = svgEl.cloneNode(true);
   resolveChartVars(clone);
+  // Dimming comes from a CSS class, which won't exist in the print window —
+  // inline it so an active filter prints the way it looks on screen.
+  clone.querySelectorAll('.chart-seg-dim').forEach(seg => seg.setAttribute('opacity', '0.45'));
   const xml = new XMLSerializer().serializeToString(clone);
   const projName = getChartProjectName();
   const title = (projName ? projName + ' — ' : '') + 'Scene Flow';
   const titleEsc = rptEsc(title);
+  let legendHtml = '';
+  if (S.sections.length) {
+    legendHtml = '<div style="font-size:11px;color:#555;margin-bottom:12px">'
+      + S.sections.map((sec, i) =>
+          (chartType === 'snake' ? '<b>' + sectionLetter(i) + '</b> — ' : '') + rptEsc(sec.name)
+        ).join(' &nbsp;·&nbsp; ')
+      + '</div>';
+  }
   const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + titleEsc + '</title>'
     + '<style>*{box-sizing:border-box;margin:0;padding:0}body{background:#fff;padding:24px;'
     + "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}"
-    + 'h1{font-size:16px;margin-bottom:14px;color:#111}svg{display:block;max-width:100%}'
+    + 'h1{font-size:16px;margin-bottom:6px;color:#111}svg{display:block;max-width:100%}'
     + '@media print{body{padding:10px}}</style></head><body>'
-    + '<h1>' + titleEsc + '</h1>' + xml + '</body></html>';
+    + '<h1>' + titleEsc + '</h1>' + legendHtml + xml + '</body></html>';
   openReportWindow(html);
 }
