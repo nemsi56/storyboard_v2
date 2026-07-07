@@ -565,4 +565,43 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .theme-di-ocean{background:#0a3a47;color:#06b6d4;font-weight:500}
 .theme-di-sunset{background:#fff0e0;color:#ea580c;font-weight:500}
 
+/* ── SCENE FLOW CHART ────────────────────────────────────────────────────── */
+#chart-host{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;background:var(--sbg)}
+#chart-toolbar{height:46px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
+#chart-legend{flex-shrink:0;display:flex;align-items:center;gap:0;padding:5px 12px;background:var(--bg1);border-bottom:1px solid var(--bdr);font-size:11px;color:var(--sub);white-space:nowrap;overflow-x:auto}
+#chart-legend:empty{display:none}
+.chart-legend-item{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:1px 4px}
+.chart-legend-item:hover,.chart-legend-item.chart-legend-hl{background:var(--s0);color:var(--tx)}
+.chart-legend-letter{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:15px;height:15px;border-radius:50%;background:var(--tx);color:var(--bg1);font-weight:700;font-size:9px;transition:background .12s,color .12s}
+.chart-legend-item:hover .chart-legend-letter,.chart-legend-item.chart-legend-hl .chart-legend-letter{background:var(--acc);color:var(--ontx)}
+.chart-legend-sep{flex-shrink:0;margin:0 8px;opacity:.5}
+.chart-type-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:5px 12px;cursor:pointer;transition:background .12s,border-color .12s}
+.chart-type-btn:hover{border-color:var(--acc)}
+.chart-type-btn.on{background:var(--acc);color:var(--ontx);border-color:var(--acc)}
+#chart-status{flex:1;color:var(--sub);font-size:11px;margin-left:4px}
+#chart-print-btn,#chart-close-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:11px;font-family:inherit;padding:5px 10px;cursor:pointer;white-space:nowrap;transition:border-color .12s}
+#chart-print-btn:hover,#chart-close-btn:hover{border-color:var(--acc)}
+#chart-scroll{flex:1;min-height:0;overflow:auto;position:relative;background:var(--sbg)}
+#chart-canvas{padding:20px;min-height:100%}
+#chart-canvas svg{display:block}
+.chart-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;pointer-events:none}
+.chart-empty .ei{font-size:44px;opacity:.22}
+.chart-empty p{font-size:13px;color:var(--o0)}
+#chart-tip{position:absolute;display:none;background:var(--bg1);border:1px solid var(--bdr);border-radius:6px;padding:8px 10px;font-size:12px;color:var(--tx);max-width:240px;pointer-events:none;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.chart-tip-title{font-weight:700;margin-bottom:2px}
+.chart-tip-sec{color:var(--sub);font-size:11px;margin-bottom:2px}
+.chart-tip-sum{color:var(--sub);font-size:11px;line-height:1.4}
+.chart-seg{transition:filter .1s}
+.chart-seg:not(.chart-seg-match):hover{stroke:var(--s0);filter:brightness(1.06);cursor:pointer}
+.chart-seg.chart-seg-match:hover{filter:brightness(1.06);cursor:pointer}
+.chart-seg.chart-seg-dim{opacity:.45}
+.chart-num{font-family:inherit;user-select:none}
+.chart-sec-marker{cursor:pointer}
+.chart-sec-marker circle{transition:fill .12s}
+.chart-sec-marker text{font-family:inherit;user-select:none;pointer-events:none;transition:fill .12s}
+.chart-sec-marker:hover circle,.chart-sec-marker.chart-sec-marker-hl circle{fill:var(--acc)}
+.chart-sec-marker:hover text,.chart-sec-marker.chart-sec-marker-hl text{fill:var(--ontx)}
+.chart-pie-wedge{transition:fill .12s;cursor:pointer}
+.chart-pie-wedge:hover{fill:var(--s1)}
+
 

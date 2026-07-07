@@ -83,6 +83,8 @@
       <button class="di" id="menu-show-scene" onclick="togglePanel('cp');setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-scn-text">Hide Scene Panel</span></button>
       <div class="di-sep"></div>
       <button class="di" id="menu-show-all-panels" onclick="toggleAllPanels();setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-all-text">Hide All Panels</span></button>
+      <div class="di-sep"></div>
+      <button class="di" id="menu-chart" onclick="toggleChartView();closeAllMenus()"><span id="menu-chart-text">Show Scene Flow Chart</span><span class="di-sc">Alt+V</span></button>
     </div>
   </div>
   <!-- Help -->
@@ -236,6 +238,18 @@
     </div>
     <div id="sbemp"><div class="ei">🎭</div><p>Create your first scene to get started</p></div>
     <div id="sbscrl"><div id="board"></div></div>
+    <div id="chart-host" style="display:none">
+      <div id="chart-toolbar">
+        <button id="chart-type-snake" class="chart-type-btn on" onclick="setChartType('snake')">Snake</button>
+        <button id="chart-type-circle" class="chart-type-btn" onclick="setChartType('circle')">Circle</button>
+        <span id="chart-status"></span>
+        <button id="chart-print-btn" onclick="printChart()">Print</button>
+        <button id="chart-close-btn" onclick="toggleChartView()" title="Back to board">Board view ✕</button>
+      </div>
+      <div id="chart-legend"></div>
+      <div id="chart-scroll"><div id="chart-canvas"></div></div>
+      <div id="chart-tip" role="tooltip"></div>
+    </div>
   </div>
 </div>
 
@@ -454,6 +468,7 @@
 <script src="state.js"></script>
 <script src="reports.js"></script>
 <script src="ui.js"></script>
+<script src="charts.js"></script>
 <script src="editor.js"></script>
 <script src="projects.js"></script>
 <script src="main.js"></script>

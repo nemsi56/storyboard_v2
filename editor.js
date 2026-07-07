@@ -649,6 +649,7 @@ function renderCard(container, scene, idx) {
 }
 
 function renderBoard() {
+  if (typeof chartMode !== 'undefined' && chartMode) { renderChart(); return; }
   const board = document.getElementById('board'), emp = document.getElementById('sbemp');
   board.innerHTML = '';
   document.querySelectorAll('.sec-pin').forEach(p => p.remove()); // clear body-level pins
@@ -1305,6 +1306,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 't' || e.key === 'T') { e.preventDefault(); openAddPopup('themes'); return; }
     if (e.key === 'm' || e.key === 'M') { e.preventDefault(); openAddPopup('misc'); return; }
     if (e.key === 'r' || e.key === 'R') { e.preventDefault(); openReportModal(); return; }
+    if (e.key === 'v' || e.key === 'V') { e.preventDefault(); toggleChartView(); return; }
   }
   if (e.key === 'Escape') {
     closeAllMenus();
@@ -1321,6 +1323,7 @@ document.addEventListener('keydown', e => {
     if (typeof closeReportModal === 'function') try { closeReportModal(); } catch(e){}
     if (typeof closeLibEditModal === 'function') try { closeLibEditModal(); } catch(e){}
     if (typeof closeHelp === 'function') try { closeHelp(); } catch(e){}
+    if (typeof closeChartView === 'function') try { closeChartView(); } catch(e){}
   }
 });
 // Close filter dropdown on click outside
