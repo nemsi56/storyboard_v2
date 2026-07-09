@@ -46,6 +46,9 @@ function openChartView() {
   document.getElementById('sbscrl').style.display = 'none';
   document.getElementById('sbemp').style.display = 'none';
   document.getElementById('chart-host').style.display = 'flex';
+  // Card-only controls: meaningless once cards aren't on screen.
+  document.getElementById('det-ck-wrap').style.display = 'none';
+  document.getElementById('scalew-wrap').style.display = 'none';
   setChartMenuLabel();
   renderChart();
 }
@@ -54,6 +57,8 @@ function closeChartView() {
   chartMode = false;
   document.getElementById('chart-host').style.display = 'none';
   document.getElementById('sbscrl').style.display = '';
+  document.getElementById('det-ck-wrap').style.display = '';
+  document.getElementById('scalew-wrap').style.display = '';
   setChartMenuLabel();
   renderBoard();
 }

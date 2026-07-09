@@ -223,7 +223,7 @@
         <span id="sbcnt">0 scenes</span>
         <button id="clrsel" onclick="clearCardSel()">Clear selection</button>
       </div>
-      <label class="det-ck" title="Show library elements on scene cards">
+      <label class="det-ck" id="det-ck-wrap" title="Show library elements on scene cards">
         <input type="checkbox" id="det-toggle" onchange="toggleDetails(this.checked)">
         Show Card Details
       </label>
@@ -240,7 +240,7 @@
         </select>
         <button id="srch-clr" onclick="clearSearch()" title="Clear search" aria-label="Clear search">×</button>
       </div>
-      <div class="scalew">
+      <div class="scalew" id="scalew-wrap">
         <span class="scalelbl">Zoom</span>
         <input type="range" id="scaler" min="0.55" max="1.65" step="0.05" value="1" oninput="setScale(this.value)">
       </div>

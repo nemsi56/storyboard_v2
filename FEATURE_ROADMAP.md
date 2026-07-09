@@ -3,8 +3,9 @@
 Tracks every feature, fix, and idea discussed so far, organized by area. This is a living
 document — update it as work lands or new ideas come up.
 
-**Legend:** `[x]` done and merged · `[x]*` done but only on a local/uncommitted branch ·
-`[~]` explicitly deferred (considered, decided against for now) · `[ ]` not started
+**Legend:** `[x]` done and merged to `main` · `[x]*` done, committed on a branch not yet
+merged to `main` · `[~]` explicitly deferred (considered, decided against for now) ·
+`[ ]` not started
 
 ---
 
@@ -58,8 +59,9 @@ document — update it as work lands or new ideas come up.
   explicitly optional, build-last item; skipped per direction to keep the resting state
   color-free until filtered.
 - `[ ]` Keyboard navigation between chart segments (currently mouse-only).
-- `[ ]` Disable or hide the Zoom slider and "Show Card Details" checkbox while chart view
-  is open — currently visible but inert, since they only affect the card view.
+- `[x]*` Hide the Zoom slider and "Show Card Details" checkbox while chart view is open —
+  they only affect the card view, so they now disappear entirely instead of sitting there
+  inert, and reappear (fully functional) when returning to board view.
 - `[ ]` Presence lanes chart — rows are selected library items, columns are scenes in
   order, a filled cell marks where an item appears; a subway-map view of the ensemble.
   Reuses the same data as the existing cross-reference matrix report. *(proposed, not
@@ -117,7 +119,7 @@ document — update it as work lands or new ideas come up.
 |---|---|
 | `strip_AI` | Merged to `main` (PR #4) |
 | `feature/flow_visual` | Merged to `main` (PR #7) |
-| `feature/updates_v1` | In progress, **uncommitted locally** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix |
+| `feature/updates_v1` | Committed locally, **not yet pushed to `origin`** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
-on the local `feature/updates_v1` working tree until committed and pushed.
+on `feature/updates_v1` until that branch is pushed and merged into `main`.
