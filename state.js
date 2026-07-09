@@ -48,6 +48,7 @@ function saveState() {
       lastDataEditAt: S.lastDataEditAt,
       lastExportedAt: S.lastExportedAt, editsSinceExport: S.editsSinceExport,
       projectUid: S.projectUid, revision: S.revision,
+      povCustomNames: S.povCustomNames,
     }));
     const index = loadProjectIndex();
     const entry = index.find(p => p.id === currentProjectId);
@@ -117,6 +118,15 @@ function loadState(storageKey) {
     S.editsSinceExport = d.editsSinceExport || 0;
     S.projectUid = d.projectUid || null;
     S.revision   = d.revision || 0;
+    S.povCustomNames = d.povCustomNames || [];
+    // Fold in any scene's pov value that predates this list (older exports,
+    // or a since-removed character) so it's immediately a normal, reusable
+    // dropdown option rather than only recognized once that scene is opened.
+    S.scenes.forEach(sc => {
+      if (sc.pov && !S.characters.some(c => c.name === sc.pov) && !S.povCustomNames.includes(sc.pov)) {
+        S.povCustomNames.push(sc.pov);
+      }
+    });
     if (migrated) saveState();
     return true;
   } catch(e) { return false; }
@@ -137,6 +147,7 @@ const S = {
   editsSinceExport: 0,
   projectUid: null,
   revision: 0,
+  povCustomNames: [],
 };
 
 // ── HISTORY (undo / redo) ─────────────────────────────────────────────────────
@@ -156,6 +167,7 @@ function snapshot() {
     nextId: S.nextId,
     sections: S.sections.map(s => ({...s})),
     nextSecId: S.nextSecId,
+    povCustomNames: [...S.povCustomNames],
   };
 }
 
@@ -177,6 +189,7 @@ function applySnapshot(snap) {
   S.nextId    = snap.nextId;
   S.sections  = (snap.sections || []).map(s => ({...s}));
   S.nextSecId = snap.nextSecId || 1;
+  S.povCustomNames = [...(snap.povCustomNames || [])];
   SECS.forEach(({ key }) => {
     S.selections[key] = new Set([...S.selections[key]].filter(v => S[key].includes(v)));
   });
@@ -197,7 +210,7 @@ function undo() {
   const entry = hist.past.pop();
   hist.future.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   recordDataEdit();
   saveState();
 }
@@ -207,7 +220,7 @@ function redo() {
   const entry = hist.future.pop();
   hist.past.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   recordDataEdit();
   saveState();
 }

@@ -118,10 +118,10 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #cp .p-body{padding:12px}
 .ff{margin-bottom:9px}
 .ff > label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--sub);margin-bottom:4px}
-.ff input[type=text],.ff textarea{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:7px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;transition:border-color .14s;resize:none}
-.ff input[type=text]:focus,.ff textarea:focus{border-color:var(--acc)}
-.ff input[type=text]::placeholder,.ff textarea::placeholder{color:var(--o0)}
-.ff input[type=text]{padding:9px 10px}
+.ff input[type=text],.ff input[type=number],.ff textarea{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:7px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;transition:border-color .14s;resize:none}
+.ff input[type=text]:focus,.ff input[type=number]:focus,.ff textarea:focus{border-color:var(--acc)}
+.ff input[type=text]::placeholder,.ff input[type=number]::placeholder,.ff textarea::placeholder{color:var(--o0)}
+.ff input[type=text],.ff input[type=number]{padding:9px 10px}
 .ff textarea{min-height:85px}
 .ff textarea.ta-title{min-height:0;height:auto;resize:none;line-height:1.5;padding:7px 10px}
 .ff textarea.ta-summary{min-height:95px;resize:vertical}
@@ -258,6 +258,16 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .ap-btns button{flex:1;padding:8px;border-radius:7px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border:none;transition:opacity .14s}
 #ap-ok{background:var(--acc);color:var(--ontx)}
 #ap-ok:hover{opacity:.86}
+/* Add POV Name modal */
+#pov-add-modal{position:fixed;inset:0;background:var(--mov);display:none;align-items:center;justify-content:center;z-index:10004}
+#pov-add-modal.open{display:flex}
+#pov-add-box{background:var(--mbg);border:1px solid var(--s1);border-radius:10px;padding:20px;width:300px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#pov-add-title{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:12px}
+#pov-add-input{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:8px 10px;color:var(--tx);font-size:13px;font-family:inherit;outline:none;transition:border-color .14s}
+#pov-add-input:focus{border-color:var(--acc)}
+#pov-add-input::placeholder{color:var(--o0)}
+#pov-add-ok{background:var(--acc);color:var(--ontx)}
+#pov-add-ok:hover{opacity:.86}
 #savecfm-ok{background:var(--acc);color:var(--ontx)}
 #savecfm-ok:hover{opacity:.86}
 #ap-cancel{background:var(--s0);color:var(--sub);border:1px solid var(--s1)!important}

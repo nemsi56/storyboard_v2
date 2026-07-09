@@ -121,6 +121,7 @@ function resetState() {
   S.characters = []; S.locations = []; S.themes = []; S.misc = [];
   S.scenes = []; S.nextId = 1; S.andOr = 'OR';
   S.sections = []; S.nextSecId = 1;
+  S.povCustomNames = [];
   SECS.forEach(({ key }) => S.selections[key].clear());
   S.selIds.clear(); S.editingId = null;
   S.projectUid = null; S.revision = 0;
@@ -130,7 +131,7 @@ function resetState() {
 function initStoryboard() {
   syncAndOrUI();
   buildLibPanel(); renderAllLib(); renderAllCk();
-  renderSecPanel(); renderSectionSelects();
+  renderSecPanel(); renderSectionSelects(); renderPovSelects();
   renderBoard(); updateLibClearBtn(); updateUndoRedo();
   document.getElementById('board').classList.add('hide-details');
   document.getElementById('det-toggle').checked = false;
@@ -429,9 +430,10 @@ function importProjectJSON(inputEl) {
 
       const badSceneIdx = d.scenes.findIndex(sc =>
         !sc || typeof sc !== 'object' || typeof sc.id !== 'number' || !isStr(sc.title) ||
-        (sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes)));
+        (sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes)) ||
+        (sc.wordCount != null && typeof sc.wordCount !== 'number') || (sc.pov != null && !isStr(sc.pov)));
       if (badSceneIdx !== -1) {
-        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", and string "summary"/"notes" if present.');
+        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", string "summary"/"notes" if present, a numeric "wordCount" if present, and a string "pov" if present.');
         return;
       }
       if (new Set(d.scenes.map(sc => sc.id)).size !== d.scenes.length) {
@@ -446,6 +448,10 @@ function importProjectJSON(inputEl) {
       }
       if ((d.projectUid != null && !isStr(d.projectUid)) || (d.revision != null && typeof d.revision !== 'number')) {
         alert('Invalid project structure. "projectUid" must be a string and "revision" a number when present.');
+        return;
+      }
+      if (d.povCustomNames != null && (!Array.isArray(d.povCustomNames) || !d.povCustomNames.every(isStr))) {
+        alert('Invalid project structure. "povCustomNames" must be an array of strings when present.');
         return;
       }
 
