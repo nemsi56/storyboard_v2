@@ -30,6 +30,10 @@ function sceneMatchesSearch(scene) {
 
 // ── ADD-ITEM POPUP ────────────────────────────────────────────────────────────
 let apSec = null;
+// Set when "+ Add…" is triggered from inside a scene form's checklist (rather
+// than the Library panel), so the newly-added item can be auto-checked there
+// instead of leaving the user to reopen the dropdown and find it themselves.
+let apReturnCk = null; // { prefix: 'sc'|'ed', sec }
 function openAddPopup(sec) {
   apSec = sec;
   const cfg = SECS.find(s => s.key === sec);
@@ -39,11 +43,23 @@ function openAddPopup(sec) {
   document.getElementById('add-popup').classList.add('open');
   setTimeout(() => inp.focus(), 60);
 }
+function openAddPopupFromCk(prefix, sec) {
+  apReturnCk = { prefix, sec };
+  openAddPopup(sec);
+}
 function closeAddPopup() {
   document.getElementById('add-popup').classList.remove('open');
   document.getElementById('ap-input').value = '';
   document.getElementById('ap-notes').value = '';
   apSec = null;
+  apReturnCk = null;
+}
+// Current checkbox selections in a scene form's checklist for one category —
+// read before a library mutation re-renders it, so that re-render can restore
+// exactly what was checked instead of resetting to nothing.
+function ckCurrentlyChecked(prefix, sec) {
+  const box = document.getElementById(prefix + '-' + sec);
+  return box ? [...box.querySelectorAll('input:checked')].map(c => c.value) : [];
 }
 function confirmAdd() {
   if (!apSec) return;
@@ -55,7 +71,13 @@ function confirmAdd() {
   pushHistory('Add ' + SINGULAR[apSec] + ' "' + name + '"');
   trackItemAdded(apSec);
   S[apSec].push({ name, notes });
-  renderLibSec(apSec); renderCk(apSec); renderEditCk(apSec);
+  const newCkChecked = ckCurrentlyChecked('ck', apSec);
+  const newEkChecked = ckCurrentlyChecked('ek', apSec);
+  if (apReturnCk && apReturnCk.sec === apSec) {
+    if (apReturnCk.prefix === 'ck') newCkChecked.push(name);
+    if (apReturnCk.prefix === 'ek') newEkChecked.push(name);
+  }
+  renderLibSec(apSec); renderCk(apSec, newCkChecked); renderEditCk(apSec, newEkChecked);
   if (apSec === 'characters') renderPovSelects();
   closeAddPopup();
   recordDataEdit();
@@ -191,7 +213,9 @@ function removeItem(sec, name) {
   // Deliberately NOT clearing sc.pov when the matching character is removed —
   // it degrades to a plain "Other" custom value instead of losing the data,
   // since a removed library character may still be the intended POV.
-  renderLibSec(sec); renderCk(sec); renderEditCk(sec); renderBoard(); updateLibClearBtn();
+  const newCkChecked = ckCurrentlyChecked('ck', sec).filter(v => v !== name);
+  const newEkChecked = ckCurrentlyChecked('ek', sec).filter(v => v !== name);
+  renderLibSec(sec); renderCk(sec, newCkChecked); renderEditCk(sec, newEkChecked); renderBoard(); updateLibClearBtn();
   if (sec === 'characters') renderPovSelects();
   recordDataEdit();
   saveState();
@@ -255,8 +279,11 @@ function saveLibEdit() {
       S.selections[sec].add(newName);
     }
   }
+  const renameInList = arr => arr.map(v => v === oldName ? newName : v);
+  const newCkChecked = renameInList(ckCurrentlyChecked('ck', sec));
+  const newEkChecked = renameInList(ckCurrentlyChecked('ek', sec));
   closeLibEditModal();
-  renderLibSec(sec); renderCk(sec); renderEditCk(sec); renderBoard();
+  renderLibSec(sec); renderCk(sec, newCkChecked); renderEditCk(sec, newEkChecked); renderBoard();
   if (sec === 'characters') renderPovSelects();
   recordDataEdit();
   saveState();
@@ -448,6 +475,68 @@ function cancelEdit() {
   document.getElementById('tab-edit').classList.add('dim');
   document.getElementById('ederr').textContent = '';
 }
+// Does the live Edit Scene form differ from the scene's last-saved values?
+// Mirrors exactly what confirmSaveEdit() reads/writes, field for field, so a
+// scene that's merely open for viewing (nothing changed) never triggers a
+// discard confirmation — only genuine unsaved edits do.
+function isEditFormDirty() {
+  const sc = S.scenes.find(s => s.id === S.editingId);
+  if (!sc) return false;
+  if (document.getElementById('ed-title').value.trim() !== sc.title.trim()) return true;
+  if (document.getElementById('ed-summary').value.trim() !== (sc.summary || '')) return true;
+  if (document.getElementById('ed-notes').value.trim() !== (sc.notes || '')) return true;
+  if ((parseInt(document.getElementById('ed-wordcount').value) || null) !== (sc.wordCount || null)) return true;
+  if (getPovValue('ed') !== (sc.pov || '')) return true;
+  if (S.sections.length) {
+    const sectionId = parseInt(document.getElementById('ed-section').value) || null;
+    if (sectionId !== (sc.sectionId ?? null)) return true;
+  }
+  for (const { key } of SECS) {
+    const checked  = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value).sort();
+    const original = [...(sc[key] || [])].sort();
+    if (JSON.stringify(checked) !== JSON.stringify(original)) return true;
+  }
+  return false;
+}
+// ── DISCARD CONFIRMATION (unsaved New/Edit scene) ─────────────────────────────
+let pendingDiscard = null; // { editActive, newLive } — what to discard if confirmed
+function openDiscardConfirm(editActive, newLive) {
+  pendingDiscard = { editActive, newLive };
+  const msgEl = document.getElementById('discard-cfm-msg');
+  if (editActive) {
+    const sc = S.scenes.find(s => s.id === S.editingId);
+    msgEl.textContent = sc
+      ? `Discard changes to Scene ${sceneDisplayNum(sc.id)} — "${sc.title}"? Your edits will be lost.`
+      : 'Discard your changes? They will be lost.';
+  } else {
+    msgEl.textContent = 'Discard this new scene? Your entries will be lost.';
+  }
+  document.getElementById('discard-cfm-modal').classList.add('open');
+}
+function closeDiscardConfirm() {
+  document.getElementById('discard-cfm-modal').classList.remove('open');
+  pendingDiscard = null;
+}
+function confirmDiscard() {
+  if (!pendingDiscard) return;
+  const { editActive, newLive } = pendingDiscard;
+  closeDiscardConfirm();
+  if (editActive) cancelEdit();
+  if (newLive) cancelNewScene();
+}
+// Escape-key path to cancelEdit(): skip the prompt entirely when nothing
+// would actually be lost, same rule as the outside-click handler below.
+function maybeCancelEditWithConfirm() {
+  // If the confirm is already showing, Escape dismisses IT (keeps editing)
+  // rather than re-opening it — this function runs inside the same handler
+  // that also fires many other one-shot "close if open" calls, so it must
+  // not both open and close the modal within a single keypress.
+  if (document.getElementById('discard-cfm-modal').classList.contains('open')) { closeDiscardConfirm(); return; }
+  if (S.editingId === null) return;
+  if (isEditFormDirty()) { openDiscardConfirm(true, false); return; }
+  cancelEdit();
+}
+if (document.getElementById('discard-cfm-modal')) onBackdropClick('discard-cfm-modal', closeDiscardConfirm);
 function saveEdit() {
   const sc = S.scenes.find(s => s.id === S.editingId); if (!sc) return;
   const titleEl = document.getElementById('ed-title'), errEl = document.getElementById('ederr');
@@ -588,8 +677,17 @@ function renderCkList(prefix, sec, checked=[]) {
   const btn  = wrap ? wrap.querySelector('.ck-drop-btn') : null;
   const lbl  = SECS.find(s => s.key === sec)?.label || sec;
   box.innerHTML = '';
+  // "+ Add" trigger, always first — lets the user add a missing library item
+  // without leaving/losing the in-progress scene form (see openAddPopupFromCk).
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button'; addBtn.className = 'ck-drop-add';
+  addBtn.textContent = '+ Add ' + SINGULAR[sec] + '…';
+  addBtn.addEventListener('click', e => { e.stopPropagation(); openAddPopupFromCk(prefix, sec); });
+  box.appendChild(addBtn);
   if (!S[sec].length) {
-    box.innerHTML = '<div class="ck-drop-empty">Add ' + lbl.toLowerCase() + ' to library first</div>';
+    const empty = document.createElement('div'); empty.className = 'ck-drop-empty';
+    empty.textContent = 'No ' + lbl.toLowerCase() + ' yet';
+    box.appendChild(empty);
     if (btn) btn.textContent = 'No ' + lbl.toLowerCase() + ' selected';
     return;
   }
@@ -603,7 +701,7 @@ function renderCkList(prefix, sec, checked=[]) {
   });
   if (wrap) updateCkDropLabel(wrap, lbl);
 }
-function renderCk(sec) { renderCkList('ck', sec); }
+function renderCk(sec, checked=[]) { renderCkList('ck', sec, checked); }
 function renderEditCk(sec, checked=[]) { renderCkList('ek', sec, checked); }
 
 // ── RENDER: BOARD ─────────────────────────────────────────────────────────────
@@ -1306,7 +1404,7 @@ function endLibDrag() {
     let ti = ld.dropIdx > ld.fromIdx ? ld.dropIdx - 1 : ld.dropIdx;
     if (!ld.before) ti++;
     arr.splice(ti, 0, item);
-    renderLibSec(ld.sec); renderCk(ld.sec); renderEditCk(ld.sec);
+    renderLibSec(ld.sec); renderCk(ld.sec, ckCurrentlyChecked('ck', ld.sec)); renderEditCk(ld.sec, ckCurrentlyChecked('ek', ld.sec));
     saveState();
   }
   ld.on = false; ld.sec = null; ld.fromIdx = null; ld.dropIdx = null;
@@ -1363,6 +1461,10 @@ document.addEventListener('mouseup', e => {
 });
 
 // ── CANCEL ON CLICK OUTSIDE SCENE PANEL ───────────────────────────────────────
+// A click outside the panel with genuinely unsaved content (a dirty edit, or
+// a New Scene form with something entered) confirms before discarding, since
+// this is easy to trigger by accident. An edit that's merely open but
+// unchanged has nothing to lose, so it's still dismissed silently.
 document.addEventListener('mousedown', e => {
   const tabNew = document.getElementById('tab-new');
   if (!tabNew) return;
@@ -1371,8 +1473,12 @@ document.addEventListener('mousedown', e => {
   if (!editActive && !newLive) return;
   if (e.target.closest('#cp')) return;
   if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open, #pov-add-modal.open')) return;
-  if (editActive) cancelEdit();
-  if (newLive)    cancelNewScene();
+  const editDirty = editActive && isEditFormDirty();
+  if (!editDirty && !newLive) {
+    if (editActive) cancelEdit();
+    return;
+  }
+  openDiscardConfirm(editDirty, newLive);
 });
 
 // ── KEYBOARD & STORYBOARD EVENT LISTENERS ────────────────────────────────────
@@ -1415,7 +1521,7 @@ document.addEventListener('keydown', e => {
     closeAllMenus();
     if (typeof clearAllSel === 'function') try { clearAllSel(); } catch(e){}
     if (typeof clearCardSel === 'function') try { clearCardSel(); } catch(e){}
-    if (typeof cancelEdit === 'function') try { cancelEdit(); } catch(e){}
+    if (typeof maybeCancelEditWithConfirm === 'function') try { maybeCancelEditWithConfirm(); } catch(e){}
     if (typeof closeModal === 'function') try { closeModal(); } catch(e){}
     if (typeof closeAddPopup === 'function') try { closeAddPopup(); } catch(e){}
     if (typeof clearSearch === 'function') try { clearSearch(); } catch(e){}

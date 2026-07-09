@@ -152,6 +152,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .ck-drop-item:hover{background:var(--s0)}
 .ck-drop-item input{cursor:pointer;accent-color:var(--acc)}
 .ck-drop-empty{font-size:11px;color:var(--sub);padding:6px 7px;font-style:italic}
+.ck-drop-add{display:block;width:100%;text-align:left;background:none;border:none;border-radius:5px;padding:6px 7px;margin-bottom:4px;font-size:12px;font-weight:600;font-family:inherit;color:var(--acc);cursor:pointer}
+.ck-drop-add:hover{background:var(--s0)}
 #msum-section,#mnotes-section{margin-top:12px}
 .m-sec-hdr{font-size:11px;font-weight:700;text-decoration:underline;text-transform:uppercase;color:var(--sub);margin-bottom:5px;letter-spacing:0.06em}
 #mnotes{font-size:13px;color:var(--sub);line-height:1.7;white-space:pre-wrap}
@@ -270,6 +272,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #pov-add-ok:hover{opacity:.86}
 #savecfm-ok{background:var(--acc);color:var(--ontx)}
 #savecfm-ok:hover{opacity:.86}
+#discard-cfm-ok{background:var(--rd);color:var(--ontx)}
+#discard-cfm-ok:hover{opacity:.86}
 #ap-cancel{background:var(--s0);color:var(--sub);border:1px solid var(--s1)!important}
 #ap-cancel:hover{background:var(--s1)}
 
