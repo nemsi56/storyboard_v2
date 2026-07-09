@@ -88,7 +88,45 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   change, so it never did anything). Ctrl+S is now a documented no-op instead of
   triggering the browser's own "Save Page As…" dialog.
 
-## 5. Backup & Data Safety
+## 5. Scene Editing (New/Edit Scene forms)
+
+- `[x]*` Word Count field — plain numeric input (0–999,999), placed just before Notes in
+  both the New Scene and Edit Scene forms.
+- `[x]*` POV field — a dropdown sourced from the Character library plus a separate,
+  growing list of custom POV names (`S.povCustomNames`), kept independent of the
+  Characters checklist since a scene's POV may not be tagged as a character in that scene,
+  or may not belong in the Character library at all.
+- `[x]*` Selecting "Other…" in the POV dropdown opens a small "Add POV Name" dialog rather
+  than a free-text field retyped per scene — once added, the name is a normal, permanent,
+  reusable option for every future scene, so the same name is never entered inconsistently
+  (e.g. "Bob" vs "Bab") across scenes.
+- `[x]*` Renaming a library character propagates into any scene's `pov`; deleting one
+  preserves the scene's `pov` value (falls back to a plain custom name) instead of erasing
+  it. Legacy/orphaned `pov` values from before this feature are folded into the custom
+  list automatically. Undo/redo, JSON import validation, and project reset all account for
+  the new field and list.
+- `[x]*` Every Characters/Locations/Themes/Misc checklist in both scene forms now has a
+  "+ Add [category]…" entry at the top, opening the existing Add Item dialog without
+  losing any in-progress scene form data. The new item is auto-checked in whichever
+  checklist triggered it. The same button replaces the old dead-end "add to library
+  first" message shown when a category is completely empty.
+- `[x]*` Fixed a pre-existing bug found while building the above: adding, renaming, or
+  drag-reordering any library item was silently wiping out whatever was already checked
+  in that category's checklist in the Edit Scene form. Checked state is now read from the
+  live DOM and restored across all of these re-renders; a rename correctly carries the
+  checkmark over to the item's new name.
+- `[x]*` Clicking outside the scene panel, or pressing Escape, while creating a New Scene
+  with content or editing a scene with genuine unsaved changes now opens a "Discard
+  changes?" confirmation instead of silently discarding the work. Viewing an unchanged
+  scene and clicking away still closes silently (`isEditFormDirty()` finds nothing at
+  risk, so there's no unnecessary nag). The explicit Cancel button remains instant and
+  unprompted, since that's already a deliberate action.
+- `[ ]` The explicit "Projects" button, tab close, and browser close still silently lose
+  an in-progress New/Edit scene's unsaved form content (a different risk than the backup
+  reminder in §6, which only covers scenes already committed to `S.scenes`). Noted during
+  the discard-confirmation work as a related, not-yet-built follow-up.
+
+## 6. Backup & Data Safety
 
 - `[x]*` Passive "Backed up N ago" status indicator in the editor header, color-coded
   (neutral / warning / overdue).
@@ -119,7 +157,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 |---|---|
 | `strip_AI` | Merged to `main` (PR #4) |
 | `feature/flow_visual` | Merged to `main` (PR #7) |
-| `feature/updates_v1` | Committed locally, **not yet pushed to `origin`** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding |
+| `feature/updates_v1` | Committed locally, **not yet pushed to `origin`** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/POV fields, "+ Add item" scene checklists, discard-confirmation dialog |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
 on `feature/updates_v1` until that branch is pushed and merged into `main`.
