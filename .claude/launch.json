@@ -3,9 +3,10 @@
   "configurations": [
     {
       "name": "Storyboard",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "5500"],
-      "port": 5500
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "python3 -m http.server ${PORT:-5500}"],
+      "port": 5500,
+      "autoPort": true
     }
   ]
 }

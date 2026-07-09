@@ -22,6 +22,7 @@
   <div id="proj-name-wrap">
     <span id="proj-name-title" class="pn-title"></span>
     <span id="proj-name-time"  class="pn-time"></span>
+    <span id="backup-status"   class="backup-status"></span>
   </div>
   <div id="hdr-spacer"></div>
   <button class="proj-back" onclick="backToProjects()" title="Back to project list">Projects</button>
@@ -34,8 +35,6 @@
   <div class="mi" id="mi-file">
     <button class="mi-btn" onclick="toggleMenu('file')" onmouseenter="hoverMenu('file')">File</button>
     <div class="mi-drop" id="drop-file">
-      <button class="di" onclick="menuSave()">Save<span class="di-sc">Ctrl+S</span></button>
-      <div class="di-sep"></div>
       <button class="di" onclick="exportCurrentProject();closeAllMenus()">Export as JSON<span class="di-sc">Ctrl+⇧E</span></button>
       <button class="di" onclick="menuImport()">Import from JSON…</button>
     </div>
@@ -99,6 +98,16 @@
 </div>
 <!-- Hidden file input for JSON import -->
 <input type="file" id="menu-import-input" accept=".json" style="display:none" onchange="importProjectJSON(this)">
+
+<!-- Backup reminder banner (shown once export is overdue) -->
+<div id="backup-banner" style="display:none">
+  <div id="backup-banner-text">
+    <span id="backup-banner-msg"></span>
+    <span id="backup-banner-note">(Backups can be found where your browser saves downloaded files.)</span>
+  </div>
+  <button class="backup-banner-btn" onclick="exportCurrentProject()">Export Now</button>
+  <button class="backup-banner-dismiss" onclick="dismissBackupBanner()" aria-label="Dismiss">×</button>
+</div>
 
 <div class="main">
 
@@ -466,6 +475,7 @@
 <script src="config.js"></script>
 <script src="tracking.js"></script>
 <script src="state.js"></script>
+<script src="backup.js"></script>
 <script src="reports.js"></script>
 <script src="ui.js"></script>
 <script src="charts.js"></script>

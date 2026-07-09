@@ -30,11 +30,23 @@
         <p style="margin:0;color:#2c2416">Since all your content stays on your device, there is no cloud service for SceneSetter. To share work among separate devices, export the project (a JSON file) and import it on the other device. SceneSetter tracks each project's version: if you import a file that is older than, newer than, or in conflict with your local copy, it will detect that and ask what to do — so you won't accidentally overwrite new work with old. A simple routine: export when you finish on one device, and import that file before you continue on another.</p>
       </div>
       <div class="pm-toolbar">
-        <button class="pm-btn pm-btn-primary" onclick="createAndOpenProject()">+ New Project</button>
+        <button class="pm-btn pm-btn-primary" onclick="openNewProjectModal()">+ New Project</button>
         <button class="pm-btn pm-btn-secondary" onclick="document.getElementById('proj-import-input').click()">Import JSON</button>
         <input type="file" id="proj-import-input" accept=".json" style="display:none" onchange="importProjectJSON(this)">
       </div>
       <div id="proj-grid" class="pm-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- New project modal -->
+<div id="proj-new-modal" class="pm-modal" role="dialog" aria-modal="true" aria-labelledby="proj-new-title">
+  <div class="pm-modal-box">
+    <div class="pm-modal-title" id="proj-new-title">New Project</div>
+    <input type="text" id="proj-new-input" class="pm-modal-input" placeholder="Project name" maxlength="80">
+    <div class="pm-modal-btns">
+      <button class="pm-btn pm-btn-secondary" onclick="closeNewProject()">Cancel</button>
+      <button class="pm-btn pm-btn-primary" onclick="confirmNewProject()">Create</button>
     </div>
   </div>
 </div>

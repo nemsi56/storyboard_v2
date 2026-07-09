@@ -145,6 +145,18 @@ function formatEditDate(isoString) {
   return `${m}/${day}/${y}`;
 }
 
+// User-legible, filename-safe timestamp for backup exports, e.g. "2026-07-08 2-45PM".
+function formatFileTimestamp(d) {
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h24 = d.getHours();
+  const h12 = h24 % 12 || 12;
+  const ampm = h24 < 12 ? 'AM' : 'PM';
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${y}-${mo}-${day} ${h12}-${min}${ampm}`;
+}
+
 function updateProjectNameDisplay() {
   if (!currentProjectId) return;
   const index = loadProjectIndex();
@@ -153,6 +165,7 @@ function updateProjectNameDisplay() {
   const timeEl  = document.getElementById('proj-name-time');
   if (titleEl) titleEl.textContent = entry ? entry.name : '';
   if (timeEl)  timeEl.textContent  = S.lastDataEditAt ? 'Last update ' + formatEditDate(S.lastDataEditAt) : '';
+  if (typeof refreshBackupStatus === 'function') refreshBackupStatus();
 }
 
 function openProject(id) {
@@ -170,12 +183,32 @@ function openProject(id) {
   showStoryboard();
 }
 
-function createAndOpenProject() {
+function openNewProjectModal() {
+  const modal = document.getElementById('proj-new-modal');
+  const input = document.getElementById('proj-new-input');
+  if (!modal || !input) { createAndOpenProject(); return; }
+  input.value = 'Untitled Project';
+  modal.classList.add('open');
+  setTimeout(() => {
+    input.focus(); input.select();
+  }, 100);
+}
+
+function closeNewProject() { document.getElementById('proj-new-modal').classList.remove('open'); }
+
+function confirmNewProject() {
+  const name = document.getElementById('proj-new-input').value.trim();
+  closeNewProject();
+  createAndOpenProject(name);
+}
+
+function createAndOpenProject(name) {
+  name = (name || '').trim() || 'Untitled Project';
   trackProjectCreated();
   const id = genProjId();
   const now = new Date().toISOString();
   const index = loadProjectIndex();
-  index.push({ id, name: 'Untitled Project', createdAt: now, modifiedAt: now, sceneCount: 0, theme: document.documentElement.dataset.theme });
+  index.push({ id, name, createdAt: now, modifiedAt: now, sceneCount: 0, theme: document.documentElement.dataset.theme });
   saveProjectIndex(index);
 
   if (index.length === 2) {
@@ -189,17 +222,18 @@ function createAndOpenProject() {
   }));
   if (_page === 'projects') {
     sessionStorage.setItem('ss_open_project', id);
-    sessionStorage.setItem('ss_rename_project', id);
     window.location.href = 'editor.html';
     return;
   }
   openProject(id);
-  startProjRename(id);
 }
 
 function backToProjects() {
+  // Don't clear currentProjectId here: if beforeunload's confirmation dialog
+  // (from unexported changes) is shown and the user chooses to stay, the page
+  // never unloads and autosave would silently stop working. A real navigation
+  // discards all JS state anyway, so nulling it first serves no purpose.
   if (currentProjectId) saveState();
-  currentProjectId = null;
   window.location.href = 'projects.html';
 }
 
@@ -296,14 +330,22 @@ function exportProjectJSON(id) {
     if (!data.projectUid) {
       data.projectUid = genProjUid();
       data.revision = data.revision || 0;
-      localStorage.setItem(projKey(id), JSON.stringify(data));
+    }
+    const exportedAt = new Date().toISOString();
+    data.lastExportedAt = exportedAt;
+    data.editsSinceExport = 0;
+    localStorage.setItem(projKey(id), JSON.stringify(data));
+    if (id === currentProjectId) {
+      S.lastExportedAt = exportedAt;
+      S.editsSinceExport = 0;
+      if (typeof refreshBackupStatus === 'function') refreshBackupStatus();
     }
     data.projectName = name;
-    data.exportedAt = new Date().toISOString();
+    data.exportedAt = exportedAt;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = name.replace(/[^a-zA-Z0-9_\- ]/g, '') + '.json';
+    a.download = name.replace(/[^a-zA-Z0-9_\- ]/g, '') + ' ' + formatFileTimestamp(new Date(exportedAt)) + '.json';
     a.click();
     URL.revokeObjectURL(a.href);
   } catch(e) {
@@ -582,8 +624,13 @@ if (document.getElementById('proj-rename-modal')) {
 
   setupBackdropClick('proj-rename-modal', closeProjRename);
   setupBackdropClick('proj-del-modal', closeProjDel);
+  setupBackdropClick('proj-new-modal', closeNewProject);
   document.getElementById('proj-rename-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); confirmProjRename(); }
+  });
+  document.getElementById('proj-new-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); confirmNewProject(); }
+    if (e.key === 'Escape') { closeNewProject(); }
   });
 }
 

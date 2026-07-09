@@ -31,6 +31,7 @@ function saveGlobalPrefs(prefs) {
 
 function recordDataEdit() {
   S.lastDataEditAt = new Date().toISOString();
+  S.editsSinceExport = (S.editsSinceExport || 0) + 1;
 }
 
 function saveState() {
@@ -45,6 +46,7 @@ function saveState() {
       theme: document.documentElement.dataset.theme,
       sections: S.sections, nextSecId: S.nextSecId,
       lastDataEditAt: S.lastDataEditAt,
+      lastExportedAt: S.lastExportedAt, editsSinceExport: S.editsSinceExport,
       projectUid: S.projectUid, revision: S.revision,
     }));
     const index = loadProjectIndex();
@@ -109,6 +111,10 @@ function loadState(storageKey) {
     const sel = document.getElementById('theme-sel');
     if (sel) sel.value = theme;
     S.lastDataEditAt = d.lastDataEditAt || null;
+    // Legacy projects saved before backup tracking existed: treat them as not
+    // overdue yet rather than retroactively flagging them as stale on load.
+    S.lastExportedAt = d.lastExportedAt || d.lastDataEditAt || new Date().toISOString();
+    S.editsSinceExport = d.editsSinceExport || 0;
     S.projectUid = d.projectUid || null;
     S.revision   = d.revision || 0;
     if (migrated) saveState();
@@ -127,6 +133,8 @@ const S = {
   editingId: null,
   nextId: 1,
   lastDataEditAt: null,
+  lastExportedAt: null,
+  editsSinceExport: 0,
   projectUid: null,
   revision: 0,
 };

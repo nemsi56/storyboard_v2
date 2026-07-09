@@ -140,7 +140,6 @@ function toggleAllPanels() {
   }
 }
 
-function menuSave() { saveState(); closeAllMenus(); }
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
 function menuNewScene() {
   closeAllMenus();
@@ -1288,7 +1287,9 @@ document.addEventListener('keydown', e => {
   const inInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
   // Ctrl / Cmd shortcuts
   if ((e.ctrlKey || e.metaKey) && !e.altKey) {
-    if (e.key === 's') { e.preventDefault(); saveState(); return; }
+    // The app autosaves on every change; swallow Ctrl+S so the browser's
+    // Save Page dialog doesn't appear on muscle-memory presses.
+    if (e.key === 's') { e.preventDefault(); return; }
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (typeof undo === 'function') undo(); return; }
     if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); if (typeof redo === 'function') redo(); return; }
     if (!inInput) {
