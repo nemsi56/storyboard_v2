@@ -55,6 +55,22 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 - `[x]` Print support (serializes the chart into the existing report-print window).
 - `[x]` View menu entry ("Show/Hide Scene Flow Chart") + Alt+V shortcut.
   *(`feature/flow_visual` branch, merged to `main`)*
+- `[x]*` Fixed POV highlighting not working in either chart — `chartFilterActive()`/
+  `sceneMatchesChart()` only checked the four SECS categories (Characters/Locations/
+  Themes/Misc) for an active selection, so selecting a POV with nothing else selected
+  never triggered highlighting, even though `sceneMatchesLib()` already handled POV
+  correctly for the Scene Board itself.
+- `[x]*` "Unassigned" section indicator in both charts — a lettered marker on the snake
+  and a wedge on the circle, shown only when at least one scene has no section. Because
+  `orderedScenes()` always places unassigned scenes first (ahead of every real section),
+  Unassigned leads the letter sequence (letter A, with real sections shifted down) rather
+  than trailing after them, so the letters stay in sync with the chart's actual left-to-
+  right / clockwise order.
+- `[x]*` Fixed Alt+N/C/L/T/M/R/V shortcuts not firing on Mac — the handler matched
+  `e.key`, but macOS remaps that under Option to a composed character (e.g. Option+V →
+  "√", Option+N → a dead key), so every Alt shortcut silently failed on Mac. Switched to
+  `e.code` ("KeyV", etc.), the physical key, which is unaffected by what the modifier
+  composes.
 - `[~]` Optional "Section colors" toggle for the neutral resting state — spec'd as an
   explicitly optional, build-last item; skipped per direction to keep the resting state
   color-free until filtered.
@@ -124,6 +140,11 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   logic needed — e.g. selecting two POV names in AND mode correctly finds scenes where
   both are POV, a query that wasn't meaningful back when POV was single-select. Added a
   `--pv` theme color (distinct per theme) for its highlight dot.
+- `[x]*` POV shown on Scene Board cards as its own row, after Characters/Locations/
+  Themes/Misc Items, whenever a scene has one or more POVs assigned. Reuses the existing
+  "Show Card Details" toggle and its underlying CSS (`#board.hide-details .cmeta`) — no
+  separate control needed. Styled with a new `.tp` tag class matching the `--pv` color
+  used elsewhere for POV.
 - `[x]*` Every Characters/Locations/Themes/Misc checklist in both scene forms now has a
   "+ Add [category]…" entry at the top, opening the existing Add Item dialog without
   losing any in-progress scene form data. The new item is auto-checked in whichever
@@ -180,7 +201,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 |---|---|
 | `strip_AI` | Merged to `main` (PR #4) |
 | `feature/flow_visual` | Merged to `main` (PR #7) |
-| `feature/updates_v1` | Committed locally, **not yet pushed to `origin`** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting |
+| `feature/updates_v1` | Committed locally, **not yet pushed to `origin`** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting, POV chart-highlighting fix, Unassigned chart indicator, Mac Alt-shortcut fix, POV scene-card row |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
 on `feature/updates_v1` until that branch is pushed and merged into `main`.
