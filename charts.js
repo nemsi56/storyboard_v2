@@ -414,8 +414,12 @@ function drawPieWedge(svg, cx, cy, outerR, startDeg, endDeg, sec) {
   const path = document.createElementNS(SVGNS, 'path');
   path.setAttribute('d', d);
   path.setAttribute('fill', 'var(--bg2)');
-  path.setAttribute('stroke', 'var(--bdr)');
-  path.setAttribute('stroke-width', '1');
+  // --bdr is deliberately subtle (barely-there chrome dividers), which reads as
+  // nearly invisible on dark themes once it's the only thing separating two large
+  // wedges. --sub is tuned per theme to stay legible as body text against --bg2,
+  // so it holds up as a divider color across both light and dark themes.
+  path.setAttribute('stroke', 'var(--sub)');
+  path.setAttribute('stroke-width', '1.25');
   path.classList.add('chart-pie-wedge');
   path.dataset.secId = sec.id;
   path.addEventListener('mouseenter', e => showSectionTip(e, sec.id));
