@@ -179,6 +179,16 @@ function openProject(id) {
   resetState();
   loadState(projKey(id));
   getUserId();
+  // Reset board view state left over from whatever was open before. Usually
+  // a no-op (a normal "Open" from the Projects page is a full page
+  // navigation, which already starts clean) — but openProject() can also run
+  // on an already-loaded editor page, e.g. reconciling an "Update Local
+  // Copy" import while the conflicting project is open, or File > New
+  // Project. Without this, a stale section filter or search query can make
+  // the freshly loaded project appear empty for no visible reason.
+  if (typeof secFilterIds !== 'undefined') secFilterIds.clear();
+  if (typeof clearSearch === 'function') clearSearch();
+  if (typeof closeChartView === 'function') closeChartView();
   updateProjectNameDisplay();
   initStoryboard();
   showStoryboard();

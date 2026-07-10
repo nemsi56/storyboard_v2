@@ -67,11 +67,11 @@ items off as they land.
   `validSecIds` check), but `renderSecPanel` ([editor.js:1250](editor.js#L1250)) counts only
   `!s.sectionId`. An orphaned `sectionId` (possible via import) shows the scene on the board
   under Unassigned but doesn't count it in the Sections panel.
-- `[ ]` **Reload after "Update Local Copy" import doesn't reset view state.**
+- `[x]` **Reload after "Update Local Copy" import doesn't reset view state.**
   [projects.js:535](projects.js#L535): stale `secFilterIds`, `searchQ`, or chart mode can
   survive the in-page reload, making the freshly-imported project appear empty or filtered
   for no visible reason.
-- `[ ]` **`submitEmail` treats any fetch resolution as success.**
+- `[x]` **`submitEmail` treats any fetch resolution as success.**
   [ui.js:50](ui.js#L50): doesn't check `response.ok`, so a 4xx/5xx from Formspree still
   closes the popup and logs "submitted successfully."
 - `[ ]` **`resetState()` doesn't reset backup-tracking fields.**
