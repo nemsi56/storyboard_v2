@@ -457,7 +457,11 @@ function drawCirclePie(svg, scenes, cx, cy, R) {
     if (last && last.secId === secId) last.count++;
     else runs.push({ secId, start: i, count: 1 });
   });
-  if (runs.length <= 1) return; // a single run spans the whole circle — nothing to divide
+  // Skip only when there's fundamentally nothing to ever distinguish (one section,
+  // no unassigned scenes anywhere). Don't key this off `runs.length` — a section
+  // filter narrowing the *visible* scenes down to a single section is a normal case
+  // that should still label that lone wedge, not disappear it.
+  if (S.sections.length === 1 && !hasUnassignedScenes()) return;
   runs.forEach(run => {
     const sec = run.secId === null
       ? { id: UNASSIGNED_SEC_ID, name: 'Unassigned' }
