@@ -74,6 +74,12 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   not built)*
 - `[ ]` Density encoding — segment size or a small badge reflecting how many library tags
   a scene carries, to surface over-crowded scenes. *(proposed, not built)*
+- `[ ]` "Color by POV" toggle — since POV is now assigned per scene (possibly several),
+  color each segment by its POV name(s) with a legend, showing at a glance who's carrying
+  the story where. A scene with 2+ POVs needs a split-fill or small multi-dot marker
+  rather than one solid color. Distinct from the section-colors toggle skipped above —
+  POV coloring is well-suited to this precisely because it's assigned per scene, unlike
+  sections. *(proposed, not built)*
 
 ## 4. Project Management
 
@@ -92,19 +98,32 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 
 - `[x]*` Word Count field — plain numeric input (0–999,999), placed just before Notes in
   both the New Scene and Edit Scene forms.
-- `[x]*` POV field — a dropdown sourced from the Character library plus a separate,
-  growing list of custom POV names (`S.povCustomNames`), kept independent of the
-  Characters checklist since a scene's POV may not be tagged as a character in that scene,
-  or may not belong in the Character library at all.
-- `[x]*` Selecting "Other…" in the POV dropdown opens a small "Add POV Name" dialog rather
-  than a free-text field retyped per scene — once added, the name is a normal, permanent,
+- `[x]*` POV field — a multi-select checklist, exactly like Characters/Locations/Themes/
+  Misc, sourced from the Character library plus a separate, growing list of custom POV
+  names (`S.povCustomNames`), kept independent of the Characters checklist since a scene's
+  POV may not be tagged as a character in that scene, or may not belong in the Character
+  library at all. Multi-select rather than single-select because a "scene" here often
+  corresponds to a full chapter, and multi-POV chapters are a normal structure, not an
+  edge case — modeling it as single-select would have been wrong for how this app is
+  actually used.
+- `[x]*` The checklist's "+ Add POV Name…" trigger opens a small dialog rather than a
+  free-text field retyped per scene — once added, the name is a normal, permanent,
   reusable option for every future scene, so the same name is never entered inconsistently
   (e.g. "Bob" vs "Bab") across scenes.
-- `[x]*` Renaming a library character propagates into any scene's `pov`; deleting one
-  preserves the scene's `pov` value (falls back to a plain custom name) instead of erasing
-  it. Legacy/orphaned `pov` values from before this feature are folded into the custom
-  list automatically. Undo/redo, JSON import validation, and project reset all account for
-  the new field and list.
+- `[x]*` Renaming a library character propagates into every scene's `povs`; deleting one
+  preserves those assignments (falls back to a plain custom name) instead of erasing them.
+  Legacy single-value `pov` data (string) from before multi-select migrates automatically
+  to the new `povs` array shape on load, with the old key dropped; JSON import accepts
+  both shapes. Undo/redo, JSON import validation, and project reset all account for the
+  new field and list.
+- `[x]*` Read-only "POV" section in the Library panel, alongside Characters/Locations/
+  Themes/Misc, for highlighting scenes by POV on the board — no add/edit/delete controls
+  (POV names are managed from the scene form), and it lists only names actually assigned
+  to a scene, not every Character in the library. Because POV is array-valued like the
+  other categories, it plugs into the existing AND/OR highlight engine with no special
+  logic needed — e.g. selecting two POV names in AND mode correctly finds scenes where
+  both are POV, a query that wasn't meaningful back when POV was single-select. Added a
+  `--pv` theme color (distinct per theme) for its highlight dot.
 - `[x]*` Every Characters/Locations/Themes/Misc checklist in both scene forms now has a
   "+ Add [category]…" entry at the top, opening the existing Add Item dialog without
   losing any in-progress scene form data. The new item is auto-checked in whichever
@@ -125,6 +144,10 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   an in-progress New/Edit scene's unsaved form content (a different risk than the backup
   reminder in §6, which only covers scenes already committed to `S.scenes`). Noted during
   the discard-confirmation work as a related, not-yet-built follow-up.
+- `[ ]` A "POV Report" (6th report type) mirroring the existing per-item reports —
+  for each POV name, list the scenes it narrates, with a word-count total per POV
+  (e.g. "Elizabeth Bennet — 4 scenes, 9,200 words") to show page-time balance across
+  an ensemble. *(proposed, not built)*
 
 ## 6. Backup & Data Safety
 
@@ -157,7 +180,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 |---|---|
 | `strip_AI` | Merged to `main` (PR #4) |
 | `feature/flow_visual` | Merged to `main` (PR #7) |
-| `feature/updates_v1` | Committed locally, **not yet pushed to `origin`** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/POV fields, "+ Add item" scene checklists, discard-confirmation dialog |
+| `feature/updates_v1` | Committed locally, **not yet pushed to `origin`** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
 on `feature/updates_v1` until that branch is pushed and merged into `main`.
