@@ -524,7 +524,16 @@ function getChartProjectName() {
   } catch (e) { return ''; }
 }
 function resolveChartVars(root) {
-  const cs = getComputedStyle(document.documentElement);
+  // The print page is always a plain white sheet, regardless of the on-screen theme —
+  // so colors must resolve against a fixed light palette ("ivory"), not the live theme.
+  // Resolving against the live theme meant a dark theme's near-black wedge fills and
+  // subtle (dark-on-dark) borders got baked in verbatim, making section dividers and
+  // labels nearly invisible once isolated on white paper.
+  const probe = document.createElement('div');
+  probe.setAttribute('data-theme', 'ivory');
+  probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none';
+  document.body.appendChild(probe);
+  const cs = getComputedStyle(probe);
   const resolve = val => val.replace(/var\((--[a-z0-9-]+)\)/gi, (m, name) => cs.getPropertyValue(name).trim() || m);
   const walk = el => {
     ['stroke', 'fill'].forEach(attr => {
@@ -536,6 +545,7 @@ function resolveChartVars(root) {
     Array.from(el.children || []).forEach(walk);
   };
   walk(root);
+  document.body.removeChild(probe);
 }
 function printChart() {
   const svgEl = document.querySelector('#chart-canvas svg');
