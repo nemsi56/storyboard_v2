@@ -95,12 +95,21 @@ function loadState(storageKey) {
     S.locations  = toObj(d.locations);
     S.themes     = toObj(d.themes);
     S.misc       = toObj(d.misc);
-    S.scenes = (d.scenes || []).map(sc => ({
-      ...sc,
-      characters: sc.characters || [], locations: sc.locations || [],
-      themes: sc.themes || [],         misc: sc.misc || [],
-      sectionId: sc.sectionId ?? null,
-    }));
+    S.scenes = (d.scenes || []).map(sc => {
+      // POV was a single string before multi-POV support; migrate old data
+      // into the new array shape and drop the legacy key.
+      const povs = Array.isArray(sc.povs)
+        ? sc.povs.filter(v => typeof v === 'string')
+        : (typeof sc.pov === 'string' && sc.pov ? [sc.pov] : []);
+      const { pov, ...rest } = sc;
+      return {
+        ...rest,
+        characters: sc.characters || [], locations: sc.locations || [],
+        themes: sc.themes || [],         misc: sc.misc || [],
+        sectionId: sc.sectionId ?? null,
+        povs,
+      };
+    });
     S.nextId    = d.nextId    || 1;
     S.andOr     = d.andOr === 'AND' ? 'AND' : 'OR';
     S.sections  = d.sections  || [];
@@ -119,13 +128,15 @@ function loadState(storageKey) {
     S.projectUid = d.projectUid || null;
     S.revision   = d.revision || 0;
     S.povCustomNames = d.povCustomNames || [];
-    // Fold in any scene's pov value that predates this list (older exports,
+    // Fold in any scene's POV name that predates this list (older exports,
     // or a since-removed character) so it's immediately a normal, reusable
-    // dropdown option rather than only recognized once that scene is opened.
+    // checklist option rather than only recognized once that scene is opened.
     S.scenes.forEach(sc => {
-      if (sc.pov && !S.characters.some(c => c.name === sc.pov) && !S.povCustomNames.includes(sc.pov)) {
-        S.povCustomNames.push(sc.pov);
-      }
+      (sc.povs || []).forEach(name => {
+        if (!S.characters.some(c => c.name === name) && !S.povCustomNames.includes(name)) {
+          S.povCustomNames.push(name);
+        }
+      });
     });
     if (migrated) saveState();
     return true;
@@ -137,7 +148,7 @@ const S = {
   characters:[], locations:[], themes:[], misc:[],
   scenes:[],
   sections:[], nextSecId:1,
-  selections:{ characters:new Set(), locations:new Set(), themes:new Set(), misc:new Set() },
+  selections:{ characters:new Set(), locations:new Set(), themes:new Set(), misc:new Set(), povs:new Set() },
   andOr: 'OR',
   selIds: new Set(),
   editingId: null,
@@ -163,6 +174,7 @@ function snapshot() {
       ...s,
       characters:[...s.characters], locations:[...s.locations],
       themes:[...s.themes],         misc:[...s.misc],
+      povs:[...(s.povs||[])],
     })),
     nextId: S.nextId,
     sections: S.sections.map(s => ({...s})),
@@ -185,6 +197,7 @@ function applySnapshot(snap) {
     ...s,
     characters:[...s.characters], locations:[...s.locations],
     themes:[...s.themes],         misc:[...s.misc],
+    povs:[...(s.povs||[])],
   }));
   S.nextId    = snap.nextId;
   S.sections  = (snap.sections || []).map(s => ({...s}));
@@ -193,6 +206,8 @@ function applySnapshot(snap) {
   SECS.forEach(({ key }) => {
     S.selections[key] = new Set([...S.selections[key]].filter(v => S[key].includes(v)));
   });
+  const usedPovs = new Set(S.scenes.flatMap(s => s.povs || []));
+  S.selections.povs = new Set([...S.selections.povs].filter(v => usedPovs.has(v)));
   S.selIds = new Set([...S.selIds].filter(id => S.scenes.some(s => s.id === id)));
   if (S.editingId && !S.scenes.some(s => s.id === S.editingId)) cancelEdit();
 }
@@ -210,7 +225,7 @@ function undo() {
   const entry = hist.past.pop();
   hist.future.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovCk("sc", []); renderPovCk("ed", []); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   recordDataEdit();
   saveState();
 }
@@ -220,7 +235,7 @@ function redo() {
   const entry = hist.future.pop();
   hist.past.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovCk("sc", []); renderPovCk("ed", []); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   recordDataEdit();
   saveState();
 }

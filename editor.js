@@ -78,7 +78,10 @@ function confirmAdd() {
     if (apReturnCk.prefix === 'ek') newEkChecked.push(name);
   }
   renderLibSec(apSec); renderCk(apSec, newCkChecked); renderEditCk(apSec, newEkChecked);
-  if (apSec === 'characters') renderPovSelects();
+  if (apSec === 'characters') {
+    renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
+    renderPovCk('ed', ckCurrentlyChecked('ed', 'povs'));
+  }
   closeAddPopup();
   recordDataEdit();
   saveState();
@@ -196,11 +199,13 @@ function toggleLibItem(sec, name) {
 }
 function clearAllSel() {
   SECS.forEach(({ key }) => S.selections[key].clear());
+  S.selections.povs.clear();
   SECS.forEach(({ key }) => renderLibSec(key));
+  renderPovLibSec();
   renderBoard(); updateLibClearBtn();
 }
 function updateLibClearBtn() {
-  const any = SECS.some(({ key }) => S.selections[key].size > 0);
+  const any = SECS.some(({ key }) => S.selections[key].size > 0) || S.selections.povs.size > 0;
   document.getElementById('lib-clr-wrap').style.display = any ? 'block' : 'none';
 }
 
@@ -210,13 +215,21 @@ function removeItem(sec, name) {
   S[sec] = S[sec].filter(x => x.name !== name);
   S.scenes.forEach(sc => { sc[sec] = (sc[sec] || []).filter(x => x !== name); });
   S.selections[sec].delete(name);
-  // Deliberately NOT clearing sc.pov when the matching character is removed —
-  // it degrades to a plain "Other" custom value instead of losing the data,
-  // since a removed library character may still be the intended POV.
+  // Deliberately NOT clearing a scene's povs when the matching character is
+  // removed — keep it selectable as a plain custom POV name instead of
+  // losing the assignment, since a removed library character may still be
+  // the intended POV.
+  if (sec === 'characters' && S.scenes.some(sc => (sc.povs || []).includes(name)) && !S.povCustomNames.includes(name)) {
+    S.povCustomNames.push(name);
+  }
   const newCkChecked = ckCurrentlyChecked('ck', sec).filter(v => v !== name);
   const newEkChecked = ckCurrentlyChecked('ek', sec).filter(v => v !== name);
   renderLibSec(sec); renderCk(sec, newCkChecked); renderEditCk(sec, newEkChecked); renderBoard(); updateLibClearBtn();
-  if (sec === 'characters') renderPovSelects();
+  if (sec === 'characters') {
+    renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
+    renderPovCk('ed', ckCurrentlyChecked('ed', 'povs'));
+    renderPovLibSec();
+  }
   recordDataEdit();
   saveState();
 }
@@ -272,11 +285,18 @@ function saveLibEdit() {
     S.scenes.forEach(scene => {
       const i = (scene[sec] || []).indexOf(oldName);
       if (i !== -1) scene[sec][i] = newName;
-      if (sec === 'characters' && scene.pov === oldName) scene.pov = newName;
+      if (sec === 'characters' && Array.isArray(scene.povs)) {
+        const pi = scene.povs.indexOf(oldName);
+        if (pi !== -1) scene.povs[pi] = newName;
+      }
     });
     if (S.selections[sec].has(oldName)) {
       S.selections[sec].delete(oldName);
       S.selections[sec].add(newName);
+    }
+    if (sec === 'characters' && S.selections.povs.has(oldName)) {
+      S.selections.povs.delete(oldName);
+      S.selections.povs.add(newName);
     }
   }
   const renameInList = arr => arr.map(v => v === oldName ? newName : v);
@@ -284,7 +304,11 @@ function saveLibEdit() {
   const newEkChecked = renameInList(ckCurrentlyChecked('ek', sec));
   closeLibEditModal();
   renderLibSec(sec); renderCk(sec, newCkChecked); renderEditCk(sec, newEkChecked); renderBoard();
-  if (sec === 'characters') renderPovSelects();
+  if (sec === 'characters') {
+    renderPovCk('sc', renameInList(ckCurrentlyChecked('sc', 'povs')));
+    renderPovCk('ed', renameInList(ckCurrentlyChecked('ed', 'povs')));
+    renderPovLibSec();
+  }
   recordDataEdit();
   saveState();
 }
@@ -314,7 +338,8 @@ function toggleDetails(show) {
 
 // ── HIGHLIGHT LOGIC ───────────────────────────────────────────────────────────
 function sceneMatchesLib(scene) {
-  const allSel = SECS.flatMap(({ key }) => [...S.selections[key]].map(v => ({ key, v })));
+  const allSel = SECS.flatMap(({ key }) => [...S.selections[key]].map(v => ({ key, v })))
+    .concat([...S.selections.povs].map(v => ({ key: 'povs', v })));
   if (!allSel.length) return false;
   if (S.andOr === 'AND') return allSel.every(({ key, v }) => (scene[key] || []).includes(v));
   return allSel.some(({ key, v }) => (scene[key] || []).includes(v));
@@ -332,7 +357,7 @@ function resetAll() {
   hist.past = []; hist.future = [];
   clearSearch();
   syncAndOrUI();
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovCk('sc', []); renderPovCk('ed', []); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   if (currentProjectId) saveState();
   else localStorage.removeItem(STORAGE_KEY);
 }
@@ -371,10 +396,10 @@ function addScene() {
   SECS.forEach(({ key }) => { row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => c.value); });
   const sectionId = S.sections.length ? (parseInt(document.getElementById('sc-section').value) || null) : null;
   const wordCount = parseInt(document.getElementById('sc-wordcount').value) || null;
-  const pov = getPovValue('sc');
+  const povs = ckCurrentlyChecked('sc', 'povs');
   pushHistory('Add scene "' + truncStr(title, 22) + '"');
   trackSceneAdded();
-  const newScene = { id: S.nextId++, title, summary, notes, ...row, sectionId, wordCount, pov };
+  const newScene = { id: S.nextId++, title, summary, notes, ...row, sectionId, wordCount, povs };
   if (pendingInsert !== null) {
     const { afterId, sectionId: piSecId } = pendingInsert; pendingInsert = null;
     if (afterId !== null) {
@@ -397,11 +422,13 @@ function addScene() {
     S.scenes.push(newScene);
   }
   titleEl.value = ''; document.getElementById('sc-summary').value = ''; document.getElementById('sc-notes').value = '';
-  document.getElementById('sc-wordcount').value = ''; setPovField('sc', '');
+  document.getElementById('sc-wordcount').value = '';
   document.querySelectorAll('#form-new .ck-drop-list input').forEach(c => { c.checked = false; });
   SECS.forEach(({ key, label }) => { const w = document.getElementById('ck-' + key + '-wrap'); if (w) updateCkDropLabel(w, label); });
+  const scPovWrap = document.getElementById('sc-povs-wrap'); if (scPovWrap) updateCkDropLabel(scPovWrap, 'POV names');
   setNewSceneLive(false);
   renderBoard();
+  renderPovLibSec();
 
   // Track milestones (based on scenes created since user ID was generated)
   const scenesCreated = getScenesCreatedSinceIdCreation();
@@ -422,9 +449,10 @@ function cancelNewScene() {
   document.getElementById('sc-title').value = '';
   document.getElementById('sc-summary').value = '';
   document.getElementById('sc-notes').value = '';
-  document.getElementById('sc-wordcount').value = ''; setPovField('sc', '');
+  document.getElementById('sc-wordcount').value = '';
   document.querySelectorAll('#form-new .ck-drop-list input').forEach(c => { c.checked = false; });
   SECS.forEach(({ key, label }) => { const w = document.getElementById('ck-' + key + '-wrap'); if (w) updateCkDropLabel(w, label); });
+  const scPovWrap = document.getElementById('sc-povs-wrap'); if (scPovWrap) updateCkDropLabel(scPovWrap, 'POV names');
   document.querySelectorAll('.ck-drop-wrap.open').forEach(w => w.classList.remove('open'));
   const secSel = document.getElementById('sc-section');
   if (secSel) secSel.value = '';
@@ -441,6 +469,7 @@ function deleteScene(id) {
   S.selIds.delete(id);
   if (S.editingId === id) cancelEdit();
   renderBoard();
+  renderPovLibSec();
   recordDataEdit();
   saveState();
 }
@@ -459,7 +488,7 @@ function openEditMode(id) {
   document.getElementById('ed-summary').value = sc.summary || '';
   document.getElementById('ed-notes').value   = sc.notes || '';
   document.getElementById('ed-wordcount').value = sc.wordCount || '';
-  setPovField('ed', sc.pov || '');
+  renderPovCk('ed', sc.povs || []);
   document.getElementById('ederr').textContent = '';
   if (S.sections.length) {
     document.getElementById('ed-section').value = sc.sectionId || '';
@@ -486,7 +515,6 @@ function isEditFormDirty() {
   if (document.getElementById('ed-summary').value.trim() !== (sc.summary || '')) return true;
   if (document.getElementById('ed-notes').value.trim() !== (sc.notes || '')) return true;
   if ((parseInt(document.getElementById('ed-wordcount').value) || null) !== (sc.wordCount || null)) return true;
-  if (getPovValue('ed') !== (sc.pov || '')) return true;
   if (S.sections.length) {
     const sectionId = parseInt(document.getElementById('ed-section').value) || null;
     if (sectionId !== (sc.sectionId ?? null)) return true;
@@ -496,6 +524,9 @@ function isEditFormDirty() {
     const original = [...(sc[key] || [])].sort();
     if (JSON.stringify(checked) !== JSON.stringify(original)) return true;
   }
+  const checkedPovs  = ckCurrentlyChecked('ed', 'povs').sort();
+  const originalPovs = [...(sc.povs || [])].sort();
+  if (JSON.stringify(checkedPovs) !== JSON.stringify(originalPovs)) return true;
   return false;
 }
 // ── DISCARD CONFIRMATION (unsaved New/Edit scene) ─────────────────────────────
@@ -557,7 +588,7 @@ function confirmSaveEdit() {
   const oldSecId = sc.sectionId ?? null;
   sc.title = title; sc.summary = summary; sc.notes = document.getElementById('ed-notes').value.trim();
   sc.wordCount = parseInt(document.getElementById('ed-wordcount').value) || null;
-  sc.pov = getPovValue('ed');
+  sc.povs = ckCurrentlyChecked('ed', 'povs');
   if (S.sections.length) sc.sectionId = sectionId;
   SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value); });
   // If section changed, move scene to end of new section so numbering stays sequential
@@ -569,6 +600,7 @@ function confirmSaveEdit() {
     if (insertIdx === -1) S.scenes.push(sc); else S.scenes.splice(insertIdx + 1, 0, sc);
   }
   closeSaveCfm(); cancelEdit(); renderSecPanel(); renderBoard();
+  renderPovLibSec();
   recordDataEdit();
   saveState();
 }
@@ -582,7 +614,6 @@ function checkNewSceneLive() {
     document.getElementById('sc-summary').value.trim() ||
     document.getElementById('sc-notes').value.trim() ||
     document.getElementById('sc-wordcount').value.trim() ||
-    getPovValue('sc') ||
     document.querySelectorAll('#form-new .ck-drop-list input:checked').length
   );
   setNewSceneLive(hasContent);
@@ -619,7 +650,7 @@ if (document.getElementById('modal')) {
 }
 
 // ── RENDER ALL LIBRARY SECTIONS ───────────────────────────────────────────────
-function renderAllLib() { SECS.forEach(s => renderLibSec(s.key)); }
+function renderAllLib() { SECS.forEach(s => renderLibSec(s.key)); renderPovLibSec(); }
 
 // ── BUILD LIBRARY PANEL ───────────────────────────────────────────────────────
 function buildLibPanel() {
@@ -638,6 +669,17 @@ function buildLibPanel() {
     sec.appendChild(hdr); sec.appendChild(il);
     body.appendChild(sec);
   });
+  // POV section: read-only, highlight-only — POV names are assigned and
+  // added from the scene form's checklist, not managed here, so this section
+  // has no "+" button and only lists names currently in use by a scene.
+  const povSec = document.createElement('div'); povSec.className = 'lsec';
+  const povHdr = document.createElement('div'); povHdr.className = 'lsec-hdr';
+  const povH3 = document.createElement('h3'); povH3.textContent = 'POV';
+  povHdr.appendChild(povH3);
+  const povList = document.createElement('div'); povList.className = 'ilist'; povList.id = 'il-povs';
+  povList.innerHTML = '<div class="eh">None yet</div>';
+  povSec.appendChild(povHdr); povSec.appendChild(povList);
+  body.appendChild(povSec);
 }
 
 // ── RENDER: LIBRARY SECTION ───────────────────────────────────────────────────
@@ -944,58 +986,81 @@ function renderSectionSelects() {
 }
 
 // ── POV (Point of View) ────────────────────────────────────────────────────────
-// Stored as a plain string on the scene (sc.pov), not linked to the Characters
-// checklist — a scene's POV may be a character not tagged elsewhere. The
-// dropdown offers Character library names plus S.povCustomNames, a separate,
-// growing list of non-library names (plain strings; no notes needed) added
-// via the "Other…" dialog below — so the same custom name is always reused
-// consistently instead of being retyped (and potentially mistyped) per scene.
-let povPendingPrefix = null;             // which field ('sc'|'ed') opened the Add dialog
-const povPrevValue = { sc: '', ed: '' }; // each field's last real (non "__other__") value
-
-function renderPovSelects() {
-  ['sc-pov-sel', 'ed-pov-sel'].forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    const cur = sel.value;
-    sel.innerHTML = '<option value="">None</option>';
-    S.characters.forEach(c => {
-      const opt = document.createElement('option'); opt.value = c.name; opt.textContent = c.name;
-      sel.appendChild(opt);
-    });
-    S.povCustomNames.forEach(name => {
-      const opt = document.createElement('option'); opt.value = name; opt.textContent = name;
-      sel.appendChild(opt);
-    });
-    const other = document.createElement('option'); other.value = '__other__'; other.textContent = 'Other…';
-    sel.appendChild(other);
-    if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+// Multi-select checklist, exactly like Characters/Locations/etc, but sourced
+// from the Character library UNION S.povCustomNames (not S.characters alone)
+// — a scene's POV doesn't have to be tagged as a Character in that scene, or
+// exist in the Character library at all, since a scene (often a full
+// chapter here) can have several POV characters at once.
+function povNames() {
+  return [...S.characters.map(c => c.name), ...S.povCustomNames];
+}
+// Names actually assigned as POV on at least one scene — the Library panel's
+// read-only POV section shows only these, so every entry is meaningful to
+// click (a name with zero scenes would just highlight nothing).
+function usedPovNames() {
+  const used = new Set();
+  S.scenes.forEach(sc => (sc.povs || []).forEach(n => used.add(n)));
+  return povNames().filter(n => used.has(n));
+}
+function togglePovHighlight(name) {
+  const s = S.selections.povs;
+  if (s.has(name)) s.delete(name); else s.add(name);
+  renderPovLibSec(); renderBoard(); updateLibClearBtn();
+}
+function renderPovLibSec() {
+  const list = document.getElementById('il-povs'); if (!list) return;
+  list.innerHTML = '';
+  const names = usedPovNames();
+  if (!names.length) { list.innerHTML = '<div class="eh">None yet</div>'; return; }
+  names.forEach(name => {
+    const isOn = S.selections.povs.has(name);
+    const li = document.createElement('div');
+    li.className = 'li' + (isOn ? ' on sec-p' : '');
+    const dot = document.createElement('span'); dot.className = 'dot dp';
+    const nm  = document.createElement('span'); nm.className = 'iname'; nm.textContent = name;
+    li.appendChild(dot); li.appendChild(nm);
+    li.addEventListener('click', () => togglePovHighlight(name));
+    list.appendChild(li);
   });
 }
-// Reflects a scene's stored pov string into its select. A value that doesn't
-// match any current option — a character since removed from the library, or
-// a custom name saved before this feature existed — is folded into
-// S.povCustomNames on the spot rather than shown as a dead/lost selection, so
-// it becomes a normal, consistently-reusable option going forward.
-function setPovField(prefix, povValue) {
-  const sel = document.getElementById(prefix + '-pov-sel');
-  if (!sel) return;
-  if (povValue && !S.characters.some(c => c.name === povValue) && !S.povCustomNames.includes(povValue)) {
-    S.povCustomNames.push(povValue);
-    renderPovSelects();
+// Any name in `checked` that isn't currently a valid option (a character
+// since removed from the library, or a name saved before this feature
+// existed) is folded into S.povCustomNames on the spot, so it becomes a
+// normal, consistently-reusable option instead of a dead/lost selection.
+function renderPovCk(prefix, checked=[]) {
+  checked.forEach(name => {
+    if (!S.characters.some(c => c.name === name) && !S.povCustomNames.includes(name)) {
+      S.povCustomNames.push(name);
+    }
+  });
+  const wrap = document.getElementById(prefix + '-povs-wrap');
+  const box  = document.getElementById(prefix + '-povs'); if (!box) return;
+  box.innerHTML = '';
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button'; addBtn.className = 'ck-drop-add';
+  addBtn.textContent = '+ Add POV Name…';
+  addBtn.addEventListener('click', e => { e.stopPropagation(); openPovAddFromCk(prefix); });
+  box.appendChild(addBtn);
+  const names = povNames();
+  if (!names.length) {
+    const empty = document.createElement('div'); empty.className = 'ck-drop-empty';
+    empty.textContent = 'No POV names yet';
+    box.appendChild(empty);
+    if (wrap) updateCkDropLabel(wrap, 'POV names');
+    return;
   }
-  sel.value = povValue || '';
-  povPrevValue[prefix] = sel.value;
+  names.forEach(name => {
+    const item = document.createElement('label'); item.className = 'ck-drop-item';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = name; cb.checked = checked.includes(name);
+    cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, 'POV names'); });
+    const sp = document.createElement('span'); sp.textContent = name;
+    item.appendChild(cb); item.appendChild(sp); box.appendChild(item);
+  });
+  if (wrap) updateCkDropLabel(wrap, 'POV names');
 }
-function getPovValue(prefix) {
-  const sel = document.getElementById(prefix + '-pov-sel');
-  return sel ? sel.value : '';
-}
-function onPovSelectChange(prefix) {
-  const sel = document.getElementById(prefix + '-pov-sel');
-  if (sel.value !== '__other__') { povPrevValue[prefix] = sel.value; return; }
-  sel.value = povPrevValue[prefix]; // revert visually until the Add dialog resolves
-  povPendingPrefix = prefix;
+let povAddReturnPrefix = null; // which POV checklist ('sc'|'ed') to auto-check the new name in
+function openPovAddFromCk(prefix) {
+  povAddReturnPrefix = prefix;
   const inp = document.getElementById('pov-add-input');
   inp.value = '';
   document.getElementById('pov-add-modal').classList.add('open');
@@ -1003,18 +1068,20 @@ function onPovSelectChange(prefix) {
 }
 function closePovAddModal() {
   document.getElementById('pov-add-modal').classList.remove('open');
-  povPendingPrefix = null;
+  povAddReturnPrefix = null;
 }
 function confirmPovAdd() {
-  if (!povPendingPrefix) return;
   const inp = document.getElementById('pov-add-input');
   const name = inp.value.trim();
   if (!name) { inp.focus(); return; }
   if (S.characters.some(c => c.name === name) || S.povCustomNames.includes(name)) { inp.select(); return; }
   pushHistory('Add POV name "' + name + '"');
   S.povCustomNames.push(name);
-  renderPovSelects();
-  setPovField(povPendingPrefix, name);
+  const scChecked = ckCurrentlyChecked('sc', 'povs');
+  const edChecked = ckCurrentlyChecked('ed', 'povs');
+  if (povAddReturnPrefix === 'sc') scChecked.push(name);
+  if (povAddReturnPrefix === 'ed') edChecked.push(name);
+  renderPovCk('sc', scChecked); renderPovCk('ed', edChecked);
   closePovAddModal();
   recordDataEdit();
   saveState();

@@ -131,7 +131,7 @@ function resetState() {
 function initStoryboard() {
   syncAndOrUI();
   buildLibPanel(); renderAllLib(); renderAllCk();
-  renderSecPanel(); renderSectionSelects(); renderPovSelects();
+  renderSecPanel(); renderSectionSelects(); renderPovCk('sc', []); renderPovCk('ed', []);
   renderBoard(); updateLibClearBtn(); updateUndoRedo();
   document.getElementById('board').classList.add('hide-details');
   document.getElementById('det-toggle').checked = false;
@@ -431,9 +431,11 @@ function importProjectJSON(inputEl) {
       const badSceneIdx = d.scenes.findIndex(sc =>
         !sc || typeof sc !== 'object' || typeof sc.id !== 'number' || !isStr(sc.title) ||
         (sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes)) ||
-        (sc.wordCount != null && typeof sc.wordCount !== 'number') || (sc.pov != null && !isStr(sc.pov)));
+        (sc.wordCount != null && typeof sc.wordCount !== 'number') ||
+        (sc.pov != null && !isStr(sc.pov)) || // legacy single-value POV, still accepted on import
+        (sc.povs != null && (!Array.isArray(sc.povs) || !sc.povs.every(isStr))));
       if (badSceneIdx !== -1) {
-        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", string "summary"/"notes" if present, a numeric "wordCount" if present, and a string "pov" if present.');
+        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", string "summary"/"notes" if present, a numeric "wordCount" if present, a string "pov" if present, and an array of strings "povs" if present.');
         return;
       }
       if (new Set(d.scenes.map(sc => sc.id)).size !== d.scenes.length) {
