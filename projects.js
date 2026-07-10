@@ -581,18 +581,16 @@ function importProjectJSON(inputEl) {
 }
 
 function ensureSampleProjects() {
-  const index = loadProjectIndex();
-  const sampleNames = ['Pride and Prejudice', 'The Count of Monte Cristo'];
-  const samplesToLoad = [];
+  // Seed once ever, tracked by a flag rather than matching on project name —
+  // otherwise deleting or renaming a sample project (e.g. "Pride and
+  // Prejudice") makes it silently reappear on the next visit to this page.
+  const prefs = loadGlobalPrefs();
+  if (prefs.samplesSeeded) return Promise.resolve();
 
-  if (!index.some(p => p.name === 'Pride and Prejudice')) {
-    samplesToLoad.push({ name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' });
-  }
-  if (!index.some(p => p.name === 'The Count of Monte Cristo')) {
-    samplesToLoad.push({ name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' });
-  }
-
-  if (samplesToLoad.length === 0) return Promise.resolve();
+  const samplesToLoad = [
+    { name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' },
+    { name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' },
+  ];
 
   const loadPromises = samplesToLoad.map(sample => {
     return fetch(sample.file)
@@ -615,11 +613,18 @@ function ensureSampleProjects() {
         });
         saveProjectIndex(index);
         trackSampleProjectAutoLoaded();
+        return true;
       })
-      .catch(err => console.log('Could not auto-load sample project: ' + sample.name));
+      .catch(err => { console.log('Could not auto-load sample project: ' + sample.name); return false; });
   });
 
-  return Promise.all(loadPromises);
+  // Only mark seeded if every sample loaded — a transient fetch failure
+  // should still retry on the next visit rather than being marked done.
+  return Promise.all(loadPromises).then(results => {
+    if (results.every(Boolean)) {
+      const p = loadGlobalPrefs(); p.samplesSeeded = true; saveGlobalPrefs(p);
+    }
+  });
 }
 
 if (document.getElementById('proj-rename-modal')) {

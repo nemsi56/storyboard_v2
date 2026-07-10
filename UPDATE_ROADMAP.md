@@ -11,7 +11,7 @@ items off as they land.
 
 ## 1. Bugs
 
-- `[ ]` **Undo doesn't revert library-item edits.** `snapshot()` in
+- `[x]` **Undo doesn't revert library-item edits.** `snapshot()` in
   [state.js:169-183](state.js#L169) shallow-copies `S.characters`/etc. (`[...S.characters]`),
   so the snapshot holds references to the same `{name, notes}` objects rather than copies.
   `saveLibEdit()` ([editor.js:270](editor.js#L270)) then mutates `item.name`/`item.notes`
@@ -20,30 +20,30 @@ items off as they land.
   items in `snapshot()`/`applySnapshot()` (`.map(x => ({...x}))`), the way sections and
   `povCustomNames` already are. (Scene `povs` arrays are correctly deep-copied, so POV
   assignments are unaffected.)
-- `[ ]` **Undo/redo silently wipes library highlight selections.**
+- `[x]` **Undo/redo silently wipes library highlight selections.**
   [state.js:206-208](state.js#L206): `applySnapshot` filters selections with
   `S[key].includes(v)`, but `S[key]` holds `{name, notes}` objects while selections hold
   plain name strings — the check is always `false`, so every undo/redo clears the user's
   highlighted-items selection even when the items still exist. Should be
   `S[key].some(x => x.name === v)`. Telling contrast: the POV selection filter right below
   it ([state.js:209-210](state.js#L209)) does this correctly with a Set of used names.
-- `[ ]` **Self-referential sort comparator in reports.** [reports.js:60](reports.js#L60),
+- `[x]` **Self-referential sort comparator in reports.** [reports.js:60](reports.js#L60),
   `rptFilterScenes`: calls `filtered.indexOf(a)` *inside* the comparator of
   `filtered.sort(...)` — `indexOf` runs against the array while it's mid-reorder, so the
   "stable tiebreak" isn't reliable (and it's O(n²·log n)). Since ES2019 `sort` is stable,
   just `return oa - ob` and drop the tiebreak, or precompute an index `Map` beforehand.
-- `[ ]` **"5th scene" milestone / email popup can re-fire.**
+- `[x]` **"5th scene" milestone / email popup can re-fire.**
   [editor.js:434-441](editor.js#L434) + [tracking.js:20](tracking.js#L20): the count is
   `current scene count − count at ID creation`, so deleting scenes decrements it. A user
   hovering around 5 scenes (add/delete/add) can retrigger `=== 5` repeatedly, causing the
   email popup and duplicate Formspree/GA milestone events to fire more than once. Track a
   "milestone already fired" flag in localStorage instead of recomputing from a live count.
-- `[ ]` **Deleted sample projects resurrect themselves.**
+- `[x]` **Deleted sample projects resurrect themselves.**
   [projects.js:583-596](projects.js#L583), `ensureSampleProjects`: checks whether a sample
   exists by matching project *name*. If a user deletes or renames "Pride and Prejudice", the
   next visit to the projects page re-downloads and re-adds it. Persist a `samplesSeeded`
   flag in global prefs instead of matching on name.
-- `[ ]` **Drag reorders and Quick Setup skip `recordDataEdit()` — now also breaks backup
+- `[x]` **Drag reorders and Quick Setup skip `recordDataEdit()` — now also breaks backup
   tracking.** Card drag-drop (`endCardDrag`), section drag-drop (`endSecListDrag`), library
   drag (`endLibDrag`), and `quickSetup()` all call `saveState()` without `recordDataEdit()`
   first. Originally this only meant `lastDataEditAt` didn't advance (weakening the import

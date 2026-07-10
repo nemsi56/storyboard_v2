@@ -435,9 +435,10 @@ function addScene() {
   if (scenesCreated === 1) {
     trackMilestone('1st_scene_created');
   } else if (scenesCreated === 5) {
+    // Show email popup once, the first time the 5th-scene milestone fires
+    // (deleting back down to 5 and re-adding one must not re-show it).
+    if (!hasMilestoneFired('5th_scene_created')) showEmailPopup();
     trackMilestone('5th_scene_created');
-    // Show email popup at 5th scene
-    showEmailPopup();
   }
 
   recordDataEdit();
@@ -1240,6 +1241,7 @@ function quickSetup() {
     }
   }
   renderSecPanel(); renderSectionSelects(); renderBoard();
+  recordDataEdit();
   saveState();
 }
 
@@ -1345,6 +1347,7 @@ function endSecListDrag() {
     if (!sld.before) ti++;
     arr.splice(ti, 0, item);
     renderSecPanel(); renderSectionSelects(); renderBoard();
+    recordDataEdit();
     saveState();
   }
   sld.on = false; sld.fromIdx = null; sld.dropIdx = null;
@@ -1439,7 +1442,7 @@ function endCardDrag() {
   }
   drag.on = false; drag.ids = []; drag.dropId = null; drag.dropSecId = null;
   renderSecPanel(); renderBoard();
-  if (changed) saveState();
+  if (changed) { recordDataEdit(); saveState(); }
 }
 function toggleCardSel(id, e) {
   if (e && (e.target.classList.contains('cdel') || e.target.classList.contains('csum') || e.target.classList.contains('cedit'))) return;
@@ -1479,6 +1482,7 @@ function endLibDrag() {
     if (!ld.before) ti++;
     arr.splice(ti, 0, item);
     renderLibSec(ld.sec); renderCk(ld.sec, ckCurrentlyChecked('ck', ld.sec)); renderEditCk(ld.sec, ckCurrentlyChecked('ek', ld.sec));
+    recordDataEdit();
     saveState();
   }
   ld.on = false; ld.sec = null; ld.fromIdx = null; ld.dropIdx = null;

@@ -53,11 +53,12 @@ function rptFilterScenes(secSet) {
   });
   const validSecIds = S.sections.map(s => s.id);
   const secOrder = new Map(validSecIds.map((id, i) => [id, i + 1]));
+  // Array.prototype.sort is stable (ES2019+), so scenes within the same
+  // section keep their original relative order without an explicit tiebreak.
   return filtered.sort((a, b) => {
     const oa = secOrder.get(a.sectionId) ?? 0;
     const ob = secOrder.get(b.sectionId) ?? 0;
-    if (oa !== ob) return oa - ob;
-    return filtered.indexOf(a) - filtered.indexOf(b);
+    return oa - ob;
   });
 }
 function rptSecName(sectionId) {
