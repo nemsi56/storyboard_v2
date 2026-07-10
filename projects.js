@@ -125,6 +125,7 @@ function resetState() {
   SECS.forEach(({ key }) => S.selections[key].clear());
   S.selIds.clear(); S.editingId = null;
   S.projectUid = null; S.revision = 0;
+  S.lastExportedAt = null; S.editsSinceExport = 0;
   hist.past = []; hist.future = [];
 }
 

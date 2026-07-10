@@ -74,7 +74,7 @@ items off as they land.
 - `[x]` **`submitEmail` treats any fetch resolution as success.**
   [ui.js:50](ui.js#L50): doesn't check `response.ok`, so a 4xx/5xx from Formspree still
   closes the popup and logs "submitted successfully."
-- `[ ]` **`resetState()` doesn't reset backup-tracking fields.**
+- `[x]` **`resetState()` doesn't reset backup-tracking fields.**
   [projects.js:120-128](projects.js#L120): clears POV/scenes/sections but not
   `S.lastExportedAt` / `S.editsSinceExport`. Normally harmless because `loadState()`
   immediately overwrites both — but if `loadState` fails (corrupted project), the previous
