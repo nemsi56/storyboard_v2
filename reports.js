@@ -75,6 +75,7 @@ function generateReport() {
   if (rptType === 'location')  html = buildLocationReport(secSet);
   if (rptType === 'theme')     html = buildThemeReport(secSet);
   if (rptType === 'misc')      html = buildMiscReport(secSet);
+  if (rptType === 'pov')       html = buildPovReport(secSet);
   if (rptType === 'matrix')    html = buildMatrixReport(secSet);
 
   try {
@@ -108,6 +109,7 @@ function rptBaseCSS() {
     .tag-l{background:#d5eede;color:#1e6b3f}
     .tag-t{background:#e8dff7;color:#5a2f90}
     .tag-m{background:#fdecd5;color:#8f5520}
+    .tag-p{background:#d6f0ea;color:#0e7c6b}
     .scene-entry{margin:3px 0;padding:4px 8px;border-left:2px solid #ccc}
     .scene-entry-title{font-weight:600;color:#222;font-size:11px}
     .scene-entry-meta{color:#666;font-size:11px}
@@ -174,6 +176,7 @@ function buildSceneListReport(secSet) {
     locations:  document.getElementById('rpt-sl-locations').checked,
     themes:     document.getElementById('rpt-sl-themes').checked,
     misc:       document.getElementById('rpt-sl-misc').checked,
+    pov:        document.getElementById('rpt-sl-pov').checked,
   };
   const scenes = rptFilterScenes(secSet);
   let html = rptPageHeader('Scene List');
@@ -191,6 +194,7 @@ function buildSceneListReport(secSet) {
       if (inc.locations  && sc.locations?.length)  html += rptFieldRow('Locations',  rptTagsHtml(sc.locations,  'tag-l'));
       if (inc.themes     && sc.themes?.length)     html += rptFieldRow('Themes',      rptTagsHtml(sc.themes,     'tag-t'));
       if (inc.misc       && sc.misc?.length)       html += rptFieldRow('Misc Items',  rptTagsHtml(sc.misc,       'tag-m'));
+      if (inc.pov        && sc.povs?.length)       html += rptFieldRow('POV',         rptTagsHtml(sc.povs,       'tag-p'));
       html += `</div>`;
     });
   }
@@ -206,6 +210,12 @@ const LIB_RPT_CFG = {
                extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
   misc:      { key:'misc',       prefix:'rpt-mi', title:'Misc Items Report',emptyMsg:'No misc items in library.', emptyScene:'Not present in selected scenes',
                extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
+  // POV isn't a real library array (S.povs doesn't exist) — names come from the
+  // Character library plus S.povCustomNames, so `items` supplies the {name} list
+  // in place of S[key], and there's no per-item Notes field to show.
+  pov:       { key:'povs',       prefix:'rpt-pv', title:'POV Report',       emptyMsg:'No POV assigned to any scene.', emptyScene:'Not POV in selected scenes',
+               items: () => usedPovNames().map(name => ({ name })),
+               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
 };
 
 function buildLibItemReport(secSet, type) {
@@ -218,10 +228,11 @@ function buildLibItemReport(secSet, type) {
   });
   const scenes = rptFilterScenes(secSet);
   let html = rptPageHeader(cfg.title);
-  if (!S[cfg.key].length) {
+  const items = cfg.items ? cfg.items() : S[cfg.key];
+  if (!items.length) {
     html += `<p style="color:#aaa;margin-top:20px;font-style:italic">${cfg.emptyMsg}</p>`;
   } else {
-    S[cfg.key].forEach(item => {
+    items.forEach(item => {
       const appears = scenes.filter(sc => (sc[cfg.key] || []).includes(item.name));
       html += `<h2>${rptEsc(item.name)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
       if (inc.notes && item.notes) html += `<div class="scene-entry-summary" style="margin:-4px 0 8px">${rptEsc(item.notes)}</div>`;
@@ -248,6 +259,7 @@ function buildCharacterReport(secSet) { return buildLibItemReport(secSet, 'chara
 function buildLocationReport(secSet)  { return buildLibItemReport(secSet, 'location'); }
 function buildThemeReport(secSet)     { return buildLibItemReport(secSet, 'theme'); }
 function buildMiscReport(secSet)      { return buildLibItemReport(secSet, 'misc'); }
+function buildPovReport(secSet)       { return buildLibItemReport(secSet, 'pov'); }
 
 function updateMxNote() {
   const flip = document.getElementById('rpt-mx-flip').checked;
@@ -260,8 +272,10 @@ function buildMatrixReport(secSet) {
   const showSec   = document.getElementById('rpt-mx-section').checked;
   const flip      = document.getElementById('rpt-mx-flip').checked;
   const scenes    = rptFilterScenes(secSet);
-  const axisItems = S[axis] || [];
-  const axisLabel = SECS.find(s => s.key === axis)?.label || axis;
+  // POV isn't a real library array (S.povs doesn't exist) — build its axis items
+  // from the names actually assigned as POV, same as the POV item report above.
+  const axisItems = axis === 'povs' ? usedPovNames().map(name => ({ name })) : (S[axis] || []);
+  const axisLabel = axis === 'povs' ? 'POV' : (SECS.find(s => s.key === axis)?.label || axis);
   const title     = flip ? `Cross-Reference: Scenes × ${axisLabel}` : `Cross-Reference: ${axisLabel} × Scenes`;
   let html = rptPageHeader(title);
   if (!axisItems.length) {

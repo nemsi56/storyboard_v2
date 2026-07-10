@@ -384,6 +384,7 @@
         <button class="rpt-type-btn"    onclick="switchRptType('location',this)">Location</button>
         <button class="rpt-type-btn"    onclick="switchRptType('theme',this)">Theme</button>
         <button class="rpt-type-btn"    onclick="switchRptType('misc',this)">Misc Items</button>
+        <button class="rpt-type-btn"    onclick="switchRptType('pov',this)">POV</button>
         <button class="rpt-type-btn"    onclick="switchRptType('matrix',this)">Cross-Reference</button>
       </div>
     </div>
@@ -399,6 +400,7 @@
         <label class="rpt-ck"><input type="checkbox" id="rpt-sl-locations"  checked> Locations</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-sl-themes"     checked> Themes</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-sl-misc"       checked> Misc Items</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-sl-pov"        checked> POV</label>
       </div>
     </div>
 
@@ -446,6 +448,16 @@
       </div>
     </div>
 
+    <!-- POV options -->
+    <div class="rpt-opts-panel" id="rpt-opts-pov">
+      <div class="rpt-blk-hdr">Include</div>
+      <div class="rpt-ck-row">
+        <label class="rpt-ck"><input type="checkbox" id="rpt-pv-section"    checked> Section</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-pv-characters" checked> Characters</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-pv-summary"    checked> Summary</label>
+      </div>
+    </div>
+
     <!-- Matrix options -->
     <div class="rpt-opts-panel" id="rpt-opts-matrix">
       <div class="rpt-blk-hdr">Axis</div>
@@ -455,6 +467,7 @@
           <option value="locations">Locations</option>
           <option value="themes">Themes</option>
           <option value="misc">Misc Items</option>
+          <option value="povs">POV</option>
         </select>
         <span class="rpt-matrix-note" id="rpt-mx-note">as rows · Scenes as columns</span>
       </div>
