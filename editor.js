@@ -799,6 +799,13 @@ function renderCard(container, scene, idx) {
     scene[key].forEach(v => { const t = document.createElement('span'); t.className = 'tag ' + tag; t.textContent = v; tags.appendChild(t); });
     row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
   });
+  if (scene.povs && scene.povs.length) {
+    const row  = document.createElement('div'); row.className  = 'crow';
+    const lbl  = document.createElement('div'); lbl.className  = 'clbl'; lbl.textContent = 'POV';
+    const tags = document.createElement('div'); tags.className = 'ctags';
+    scene.povs.forEach(v => { const t = document.createElement('span'); t.className = 'tag tp'; t.textContent = v; tags.appendChild(t); });
+    row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
+  }
   card.appendChild(bar); card.appendChild(badge); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
   card.appendChild(num); card.appendChild(tit); card.appendChild(meta);
   card.addEventListener('mousedown', e => onCardDown(e, scene.id));
@@ -1574,15 +1581,18 @@ document.addEventListener('keydown', e => {
       if (e.key === '0') { e.preventDefault(); zoomReset(); return; }
     }
   }
-  // Alt shortcuts (not in an input field)
+  // Alt shortcuts (not in an input field). Keyed off e.code, not e.key — on Mac,
+  // Option+letter remaps e.key to an accented/symbol character (e.g. Option+V → "√",
+  // Option+N → a dead key), so matching on e.key silently breaks every one of these.
+  // e.code reports the physical key regardless of what the modifier composes.
   if (e.altKey && !e.ctrlKey && !e.metaKey && !inInput) {
-    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); menuNewScene(); return; }
-    if (e.key === 'c' || e.key === 'C') { e.preventDefault(); openAddPopup('characters'); return; }
-    if (e.key === 'l' || e.key === 'L') { e.preventDefault(); openAddPopup('locations'); return; }
-    if (e.key === 't' || e.key === 'T') { e.preventDefault(); openAddPopup('themes'); return; }
-    if (e.key === 'm' || e.key === 'M') { e.preventDefault(); openAddPopup('misc'); return; }
-    if (e.key === 'r' || e.key === 'R') { e.preventDefault(); openReportModal(); return; }
-    if (e.key === 'v' || e.key === 'V') { e.preventDefault(); toggleChartView(); return; }
+    if (e.code === 'KeyN') { e.preventDefault(); menuNewScene(); return; }
+    if (e.code === 'KeyC') { e.preventDefault(); openAddPopup('characters'); return; }
+    if (e.code === 'KeyL') { e.preventDefault(); openAddPopup('locations'); return; }
+    if (e.code === 'KeyT') { e.preventDefault(); openAddPopup('themes'); return; }
+    if (e.code === 'KeyM') { e.preventDefault(); openAddPopup('misc'); return; }
+    if (e.code === 'KeyR') { e.preventDefault(); openReportModal(); return; }
+    if (e.code === 'KeyV') { e.preventDefault(); toggleChartView(); return; }
   }
   if (e.key === 'Escape') {
     closeAllMenus();

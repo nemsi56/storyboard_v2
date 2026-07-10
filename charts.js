@@ -7,6 +7,7 @@ let chartType = 'snake';        // 'snake' | 'circle'
 let chartResizeTimer = null;
 let chartLastSize = '';         // last rendered chart-scroll size, "WxH"
 const CHART_PAD = 20;           // must match #chart-canvas padding in styles.css
+const UNASSIGNED_SEC_ID = 'unassigned';
 
 if (document.getElementById('chart-host')) {
 
@@ -90,11 +91,11 @@ function orderedScenes() {
 }
 
 function chartFilterActive() {
-  return !!searchQ || SECS.some(({ key }) => S.selections[key].size > 0);
+  return !!searchQ || SECS.some(({ key }) => S.selections[key].size > 0) || S.selections.povs.size > 0;
 }
 function sceneMatchesChart(scene) {
   if (searchQ) return sceneMatchesSearch(scene);
-  if (SECS.some(({ key }) => S.selections[key].size > 0)) return sceneMatchesLib(scene);
+  if (SECS.some(({ key }) => S.selections[key].size > 0) || S.selections.povs.size > 0) return sceneMatchesLib(scene);
   return false;
 }
 function sceneSectionName(scene) {
@@ -148,11 +149,25 @@ function sectionLetter(idx) {
   return idx < 26 ? String.fromCharCode(65 + idx) : String(idx + 1);
 }
 
+function hasUnassignedScenes() {
+  const validSecIds = new Set(S.sections.map(s => s.id));
+  return S.sections.length > 0 && S.scenes.some(s => !validSecIds.has(s.sectionId));
+}
+
+function chartLegendSections() {
+  // orderedScenes() always places unassigned scenes first, ahead of every real
+  // section — so its letter must lead the sequence too, or the letters and the
+  // chart's left-to-right / clockwise order fall out of sync.
+  const items = [...S.sections];
+  if (hasUnassignedScenes()) items.unshift({ id: UNASSIGNED_SEC_ID, name: 'Unassigned' });
+  return items;
+}
+
 function updateChartLegend() {
   const el = document.getElementById('chart-legend'); if (!el) return;
   el.innerHTML = '';
   if (chartType !== 'snake') return; // circle labels its sections directly on the pie
-  S.sections.forEach((sec, i) => {
+  chartLegendSections().forEach((sec, i) => {
     if (i > 0) { const sep = document.createElement('span'); sep.className = 'chart-legend-sep'; sep.textContent = '·'; el.appendChild(sep); }
     const item = document.createElement('span'); item.className = 'chart-legend-item'; item.dataset.secId = sec.id;
     const letterEl = document.createElement('span'); letterEl.className = 'chart-legend-letter'; letterEl.textContent = sectionLetter(i);
@@ -227,11 +242,11 @@ function drawSectionMarkerAt(container, x, y, sectionId, idx) {
   container.appendChild(g);
 }
 function showSectionTip(e, sectionId) {
-  const sec = S.sections.find(s => s.id === sectionId);
+  const name = sectionId === UNASSIGNED_SEC_ID ? 'Unassigned' : (S.sections.find(s => s.id === sectionId) || {}).name;
   const tip = document.getElementById('chart-tip');
   tip.innerHTML = '';
   const t1 = document.createElement('div'); t1.className = 'chart-tip-title';
-  t1.textContent = sec ? sec.name : '';
+  t1.textContent = name || '';
   tip.appendChild(t1);
   tip.style.display = 'block';
   positionChartTip(e);
@@ -310,23 +325,24 @@ function addSnakeSectionMarkers(svg, centerline, scenes, total, W) {
   if (!S.sections.length) return;
   const N = scenes.length, segLen = total / N;
   const validSecIds = new Set(S.sections.map(s => s.id));
-  const secIndexById = new Map(S.sections.map((s, i) => [s.id, i]));
+  const offset = hasUnassignedScenes() ? 1 : 0; // Unassigned (if present) takes letter A
+  const secIndexById = new Map(S.sections.map((s, i) => [s.id, i + offset]));
   const pad = 14;
   let lastSec;
   scenes.forEach((scene, i) => {
     const secId = validSecIds.has(scene.sectionId) ? scene.sectionId : null;
-    if (secId === lastSec) { lastSec = secId; return; }
-    if (secId !== null) {
-      const len = i * segLen;
-      const p0 = centerline.getPointAtLength(Math.max(0, len - 0.5));
-      const p1 = centerline.getPointAtLength(Math.min(total, len + 0.5));
-      const dx = p1.x - p0.x, dy = p1.y - p0.y, dist = Math.hypot(dx, dy) || 1;
-      const nx = -dy / dist, ny = dx / dist;
-      const p = centerline.getPointAtLength(len);
-      const mx = Math.min(W - pad, Math.max(pad, p.x + nx * 16));
-      const my = p.y + ny * 16;
-      drawSectionMarkerAt(svg, mx, my, secId, secIndexById.get(secId));
-    }
+    if (i > 0 && secId === lastSec) { lastSec = secId; return; }
+    const len = i * segLen;
+    const p0 = centerline.getPointAtLength(Math.max(0, len - 0.5));
+    const p1 = centerline.getPointAtLength(Math.min(total, len + 0.5));
+    const dx = p1.x - p0.x, dy = p1.y - p0.y, dist = Math.hypot(dx, dy) || 1;
+    const nx = -dy / dist, ny = dx / dist;
+    const p = centerline.getPointAtLength(len);
+    const mx = Math.min(W - pad, Math.max(pad, p.x + nx * 16));
+    const my = p.y + ny * 16;
+    const markerId = secId !== null ? secId : UNASSIGNED_SEC_ID;
+    const idx = secId !== null ? secIndexById.get(secId) : 0;
+    drawSectionMarkerAt(svg, mx, my, markerId, idx);
     lastSec = secId;
   });
 }
@@ -426,7 +442,7 @@ function drawPieWedge(svg, cx, cy, outerR, startDeg, endDeg, sec) {
   }
 }
 function drawCirclePie(svg, scenes, cx, cy, R) {
-  if (S.sections.length <= 1) return;
+  if (!S.sections.length) return;
   const N = scenes.length;
   const validSecIds = new Set(S.sections.map(s => s.id));
   const outerR = R - 20;
@@ -437,9 +453,11 @@ function drawCirclePie(svg, scenes, cx, cy, R) {
     if (last && last.secId === secId) last.count++;
     else runs.push({ secId, start: i, count: 1 });
   });
+  if (runs.length <= 1) return; // a single run spans the whole circle — nothing to divide
   runs.forEach(run => {
-    if (run.secId === null) return;
-    const sec = S.sections.find(s => s.id === run.secId);
+    const sec = run.secId === null
+      ? { id: UNASSIGNED_SEC_ID, name: 'Unassigned' }
+      : S.sections.find(s => s.id === run.secId);
     if (!sec) return;
     const startDeg = -90 + run.start * 360 / N;
     // A full 360° wedge has coincident arc endpoints and renders as nothing —
@@ -534,7 +552,7 @@ function printChart() {
   let legendHtml = '';
   if (S.sections.length) {
     legendHtml = '<div style="font-size:11px;color:#555;margin-bottom:12px">'
-      + S.sections.map((sec, i) =>
+      + chartLegendSections().map((sec, i) =>
           (chartType === 'snake' ? '<b>' + sectionLetter(i) + '</b> — ' : '') + rptEsc(sec.name)
         ).join(' &nbsp;·&nbsp; ')
       + '</div>';
