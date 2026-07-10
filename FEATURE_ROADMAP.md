@@ -178,6 +178,10 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   scenes, 9,200 words") to show page-time balance across an ensemble — deliberately left
   out of the parity pass above since no other library-item report shows a word-count
   rollup. *(proposed, not built)*
+- `[x]*` Updated the Overview and Tutorial pages to document all of the above POV work —
+  the Library panel's read-only POV section, the POV field on the scene form, POV
+  highlighting in the flow charts (including the new Unassigned indicator from §3), and
+  the POV report/matrix axis — none of which the marketing/help pages mentioned until now.
 
 ## 6. Backup & Data Safety
 
@@ -210,7 +214,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 |---|---|
 | `strip_AI` | Merged to `main` (PR #4) |
 | `feature/flow_visual` | Merged to `main` (PR #7) |
-| `feature/updates_v1` | Committed locally, **not yet pushed to `origin`** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting, POV chart-highlighting fix, Unassigned chart indicator, Mac Alt-shortcut fix, POV scene-card row, POV added to Reporting |
+| `feature/updates_v1` | Committed locally, **not yet pushed to `origin`** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting, POV chart-highlighting fix, Unassigned chart indicator, Mac Alt-shortcut fix, POV scene-card row, POV added to Reporting, Overview/Tutorial docs updated for POV |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
 on `feature/updates_v1` until that branch is pushed and merged into `main`.
