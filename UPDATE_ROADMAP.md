@@ -56,13 +56,13 @@ items off as they land.
 
 ## 2. Hardening / edge cases
 
-- `[ ]` **Import doesn't validate `nextId` / `nextSecId`.**
+- `[x]` **Import doesn't validate `nextId` / `nextSecId`.**
   [projects.js:403-500](projects.js#L403): a hand-edited or corrupted import file with
   `nextId` ≤ an existing scene id would produce duplicate scene ids on the next "add scene,"
   breaking find-by-id logic throughout the app. The rest of the import validation is
   thorough (and now covers `wordCount`, `pov`/`povs`, and `povCustomNames` too) — this is
   the one structural gap.
-- `[ ]` **Two different definitions of "unassigned."** `renderBoard`/chart code treats a
+- `[x]` **Two different definitions of "unassigned."** `renderBoard`/chart code treats a
   scene whose `sectionId` points to a section that no longer exists as Unassigned (via a
   `validSecIds` check), but `renderSecPanel` ([editor.js:1250](editor.js#L1250)) counts only
   `!s.sectionId`. An orphaned `sectionId` (possible via import) shows the scene on the board

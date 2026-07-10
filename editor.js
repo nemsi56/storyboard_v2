@@ -1249,7 +1249,11 @@ function renderSecPanel() {
   const list = document.getElementById('sec-list');
   if (!list) return;
   list.innerHTML = '';
-  const unassignedCnt = S.scenes.filter(s => !s.sectionId).length;
+  // Match renderBoard()'s definition of Unassigned: a scene whose sectionId
+  // doesn't resolve to a real section (not just a falsy sectionId) — an
+  // orphaned id (e.g. from an import) is possible and should count here too.
+  const validSecIds = new Set(S.sections.map(s => s.id));
+  const unassignedCnt = S.scenes.filter(s => !validSecIds.has(s.sectionId)).length;
   if (unassignedCnt > 0) {
     const li = document.createElement('div'); li.className = 'sec-li sec-li-unassigned';
     const nameEl = document.createElement('span'); nameEl.className = 'sec-li-name sec-li-name-dim'; nameEl.textContent = 'Unassigned';

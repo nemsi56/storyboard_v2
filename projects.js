@@ -448,6 +448,16 @@ function importProjectJSON(inputEl) {
         alert('Invalid project structure. Section ' + (badSecIdx + 1) + ' needs a numeric "id" and a string "name".');
         return;
       }
+
+      // Normalize (rather than reject) a missing or stale nextId/nextSecId —
+      // a hand-edited file, or one exported before a counter existed, could
+      // otherwise leave the counter at or below an id already in use, so the
+      // next "add scene"/"add section" in the app would mint a duplicate id
+      // and silently corrupt id-based lookups everywhere.
+      const maxSceneId = d.scenes.reduce((m, sc) => Math.max(m, sc.id), 0);
+      if (typeof d.nextId !== 'number' || d.nextId <= maxSceneId) d.nextId = maxSceneId + 1;
+      const maxSecId = d.sections.reduce((m, sec) => Math.max(m, sec.id), 0);
+      if (typeof d.nextSecId !== 'number' || d.nextSecId <= maxSecId) d.nextSecId = maxSecId + 1;
       if ((d.projectUid != null && !isStr(d.projectUid)) || (d.revision != null && typeof d.revision !== 'number')) {
         alert('Invalid project structure. "projectUid" must be a string and "revision" a number when present.');
         return;
