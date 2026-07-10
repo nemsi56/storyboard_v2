@@ -121,6 +121,7 @@ function resetState() {
   S.characters = []; S.locations = []; S.themes = []; S.misc = [];
   S.scenes = []; S.nextId = 1; S.andOr = 'OR';
   S.sections = []; S.nextSecId = 1;
+  S.povCustomNames = [];
   SECS.forEach(({ key }) => S.selections[key].clear());
   S.selIds.clear(); S.editingId = null;
   S.projectUid = null; S.revision = 0;
@@ -130,7 +131,7 @@ function resetState() {
 function initStoryboard() {
   syncAndOrUI();
   buildLibPanel(); renderAllLib(); renderAllCk();
-  renderSecPanel(); renderSectionSelects();
+  renderSecPanel(); renderSectionSelects(); renderPovCk('sc', []); renderPovCk('ed', []);
   renderBoard(); updateLibClearBtn(); updateUndoRedo();
   document.getElementById('board').classList.add('hide-details');
   document.getElementById('det-toggle').checked = false;
@@ -145,6 +146,18 @@ function formatEditDate(isoString) {
   return `${m}/${day}/${y}`;
 }
 
+// User-legible, filename-safe timestamp for backup exports, e.g. "2026-07-08 2-45PM".
+function formatFileTimestamp(d) {
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h24 = d.getHours();
+  const h12 = h24 % 12 || 12;
+  const ampm = h24 < 12 ? 'AM' : 'PM';
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${y}-${mo}-${day} ${h12}-${min}${ampm}`;
+}
+
 function updateProjectNameDisplay() {
   if (!currentProjectId) return;
   const index = loadProjectIndex();
@@ -153,6 +166,7 @@ function updateProjectNameDisplay() {
   const timeEl  = document.getElementById('proj-name-time');
   if (titleEl) titleEl.textContent = entry ? entry.name : '';
   if (timeEl)  timeEl.textContent  = S.lastDataEditAt ? 'Last update ' + formatEditDate(S.lastDataEditAt) : '';
+  if (typeof refreshBackupStatus === 'function') refreshBackupStatus();
 }
 
 function openProject(id) {
@@ -170,12 +184,32 @@ function openProject(id) {
   showStoryboard();
 }
 
-function createAndOpenProject() {
+function openNewProjectModal() {
+  const modal = document.getElementById('proj-new-modal');
+  const input = document.getElementById('proj-new-input');
+  if (!modal || !input) { createAndOpenProject(); return; }
+  input.value = 'Untitled Project';
+  modal.classList.add('open');
+  setTimeout(() => {
+    input.focus(); input.select();
+  }, 100);
+}
+
+function closeNewProject() { document.getElementById('proj-new-modal').classList.remove('open'); }
+
+function confirmNewProject() {
+  const name = document.getElementById('proj-new-input').value.trim();
+  closeNewProject();
+  createAndOpenProject(name);
+}
+
+function createAndOpenProject(name) {
+  name = (name || '').trim() || 'Untitled Project';
   trackProjectCreated();
   const id = genProjId();
   const now = new Date().toISOString();
   const index = loadProjectIndex();
-  index.push({ id, name: 'Untitled Project', createdAt: now, modifiedAt: now, sceneCount: 0, theme: document.documentElement.dataset.theme });
+  index.push({ id, name, createdAt: now, modifiedAt: now, sceneCount: 0, theme: document.documentElement.dataset.theme });
   saveProjectIndex(index);
 
   if (index.length === 2) {
@@ -189,17 +223,18 @@ function createAndOpenProject() {
   }));
   if (_page === 'projects') {
     sessionStorage.setItem('ss_open_project', id);
-    sessionStorage.setItem('ss_rename_project', id);
     window.location.href = 'editor.html';
     return;
   }
   openProject(id);
-  startProjRename(id);
 }
 
 function backToProjects() {
+  // Don't clear currentProjectId here: if beforeunload's confirmation dialog
+  // (from unexported changes) is shown and the user chooses to stay, the page
+  // never unloads and autosave would silently stop working. A real navigation
+  // discards all JS state anyway, so nulling it first serves no purpose.
   if (currentProjectId) saveState();
-  currentProjectId = null;
   window.location.href = 'projects.html';
 }
 
@@ -296,14 +331,22 @@ function exportProjectJSON(id) {
     if (!data.projectUid) {
       data.projectUid = genProjUid();
       data.revision = data.revision || 0;
-      localStorage.setItem(projKey(id), JSON.stringify(data));
+    }
+    const exportedAt = new Date().toISOString();
+    data.lastExportedAt = exportedAt;
+    data.editsSinceExport = 0;
+    localStorage.setItem(projKey(id), JSON.stringify(data));
+    if (id === currentProjectId) {
+      S.lastExportedAt = exportedAt;
+      S.editsSinceExport = 0;
+      if (typeof refreshBackupStatus === 'function') refreshBackupStatus();
     }
     data.projectName = name;
-    data.exportedAt = new Date().toISOString();
+    data.exportedAt = exportedAt;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = name.replace(/[^a-zA-Z0-9_\- ]/g, '') + '.json';
+    a.download = name.replace(/[^a-zA-Z0-9_\- ]/g, '') + ' ' + formatFileTimestamp(new Date(exportedAt)) + '.json';
     a.click();
     URL.revokeObjectURL(a.href);
   } catch(e) {
@@ -387,9 +430,12 @@ function importProjectJSON(inputEl) {
 
       const badSceneIdx = d.scenes.findIndex(sc =>
         !sc || typeof sc !== 'object' || typeof sc.id !== 'number' || !isStr(sc.title) ||
-        (sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes)));
+        (sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes)) ||
+        (sc.wordCount != null && typeof sc.wordCount !== 'number') ||
+        (sc.pov != null && !isStr(sc.pov)) || // legacy single-value POV, still accepted on import
+        (sc.povs != null && (!Array.isArray(sc.povs) || !sc.povs.every(isStr))));
       if (badSceneIdx !== -1) {
-        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", and string "summary"/"notes" if present.');
+        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", string "summary"/"notes" if present, a numeric "wordCount" if present, a string "pov" if present, and an array of strings "povs" if present.');
         return;
       }
       if (new Set(d.scenes.map(sc => sc.id)).size !== d.scenes.length) {
@@ -404,6 +450,10 @@ function importProjectJSON(inputEl) {
       }
       if ((d.projectUid != null && !isStr(d.projectUid)) || (d.revision != null && typeof d.revision !== 'number')) {
         alert('Invalid project structure. "projectUid" must be a string and "revision" a number when present.');
+        return;
+      }
+      if (d.povCustomNames != null && (!Array.isArray(d.povCustomNames) || !d.povCustomNames.every(isStr))) {
+        alert('Invalid project structure. "povCustomNames" must be an array of strings when present.');
         return;
       }
 
@@ -582,8 +632,13 @@ if (document.getElementById('proj-rename-modal')) {
 
   setupBackdropClick('proj-rename-modal', closeProjRename);
   setupBackdropClick('proj-del-modal', closeProjDel);
+  setupBackdropClick('proj-new-modal', closeNewProject);
   document.getElementById('proj-rename-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); confirmProjRename(); }
+  });
+  document.getElementById('proj-new-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); confirmNewProject(); }
+    if (e.key === 'Escape') { closeNewProject(); }
   });
 }
 

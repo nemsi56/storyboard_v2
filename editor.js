@@ -30,6 +30,10 @@ function sceneMatchesSearch(scene) {
 
 // ── ADD-ITEM POPUP ────────────────────────────────────────────────────────────
 let apSec = null;
+// Set when "+ Add…" is triggered from inside a scene form's checklist (rather
+// than the Library panel), so the newly-added item can be auto-checked there
+// instead of leaving the user to reopen the dropdown and find it themselves.
+let apReturnCk = null; // { prefix: 'sc'|'ed', sec }
 function openAddPopup(sec) {
   apSec = sec;
   const cfg = SECS.find(s => s.key === sec);
@@ -39,11 +43,23 @@ function openAddPopup(sec) {
   document.getElementById('add-popup').classList.add('open');
   setTimeout(() => inp.focus(), 60);
 }
+function openAddPopupFromCk(prefix, sec) {
+  apReturnCk = { prefix, sec };
+  openAddPopup(sec);
+}
 function closeAddPopup() {
   document.getElementById('add-popup').classList.remove('open');
   document.getElementById('ap-input').value = '';
   document.getElementById('ap-notes').value = '';
   apSec = null;
+  apReturnCk = null;
+}
+// Current checkbox selections in a scene form's checklist for one category —
+// read before a library mutation re-renders it, so that re-render can restore
+// exactly what was checked instead of resetting to nothing.
+function ckCurrentlyChecked(prefix, sec) {
+  const box = document.getElementById(prefix + '-' + sec);
+  return box ? [...box.querySelectorAll('input:checked')].map(c => c.value) : [];
 }
 function confirmAdd() {
   if (!apSec) return;
@@ -55,7 +71,17 @@ function confirmAdd() {
   pushHistory('Add ' + SINGULAR[apSec] + ' "' + name + '"');
   trackItemAdded(apSec);
   S[apSec].push({ name, notes });
-  renderLibSec(apSec); renderCk(apSec); renderEditCk(apSec);
+  const newCkChecked = ckCurrentlyChecked('ck', apSec);
+  const newEkChecked = ckCurrentlyChecked('ek', apSec);
+  if (apReturnCk && apReturnCk.sec === apSec) {
+    if (apReturnCk.prefix === 'ck') newCkChecked.push(name);
+    if (apReturnCk.prefix === 'ek') newEkChecked.push(name);
+  }
+  renderLibSec(apSec); renderCk(apSec, newCkChecked); renderEditCk(apSec, newEkChecked);
+  if (apSec === 'characters') {
+    renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
+    renderPovCk('ed', ckCurrentlyChecked('ed', 'povs'));
+  }
   closeAddPopup();
   recordDataEdit();
   saveState();
@@ -140,7 +166,6 @@ function toggleAllPanels() {
   }
 }
 
-function menuSave() { saveState(); closeAllMenus(); }
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
 function menuNewScene() {
   closeAllMenus();
@@ -174,11 +199,13 @@ function toggleLibItem(sec, name) {
 }
 function clearAllSel() {
   SECS.forEach(({ key }) => S.selections[key].clear());
+  S.selections.povs.clear();
   SECS.forEach(({ key }) => renderLibSec(key));
+  renderPovLibSec();
   renderBoard(); updateLibClearBtn();
 }
 function updateLibClearBtn() {
-  const any = SECS.some(({ key }) => S.selections[key].size > 0);
+  const any = SECS.some(({ key }) => S.selections[key].size > 0) || S.selections.povs.size > 0;
   document.getElementById('lib-clr-wrap').style.display = any ? 'block' : 'none';
 }
 
@@ -188,7 +215,21 @@ function removeItem(sec, name) {
   S[sec] = S[sec].filter(x => x.name !== name);
   S.scenes.forEach(sc => { sc[sec] = (sc[sec] || []).filter(x => x !== name); });
   S.selections[sec].delete(name);
-  renderLibSec(sec); renderCk(sec); renderEditCk(sec); renderBoard(); updateLibClearBtn();
+  // Deliberately NOT clearing a scene's povs when the matching character is
+  // removed — keep it selectable as a plain custom POV name instead of
+  // losing the assignment, since a removed library character may still be
+  // the intended POV.
+  if (sec === 'characters' && S.scenes.some(sc => (sc.povs || []).includes(name)) && !S.povCustomNames.includes(name)) {
+    S.povCustomNames.push(name);
+  }
+  const newCkChecked = ckCurrentlyChecked('ck', sec).filter(v => v !== name);
+  const newEkChecked = ckCurrentlyChecked('ek', sec).filter(v => v !== name);
+  renderLibSec(sec); renderCk(sec, newCkChecked); renderEditCk(sec, newEkChecked); renderBoard(); updateLibClearBtn();
+  if (sec === 'characters') {
+    renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
+    renderPovCk('ed', ckCurrentlyChecked('ed', 'povs'));
+    renderPovLibSec();
+  }
   recordDataEdit();
   saveState();
 }
@@ -244,14 +285,30 @@ function saveLibEdit() {
     S.scenes.forEach(scene => {
       const i = (scene[sec] || []).indexOf(oldName);
       if (i !== -1) scene[sec][i] = newName;
+      if (sec === 'characters' && Array.isArray(scene.povs)) {
+        const pi = scene.povs.indexOf(oldName);
+        if (pi !== -1) scene.povs[pi] = newName;
+      }
     });
     if (S.selections[sec].has(oldName)) {
       S.selections[sec].delete(oldName);
       S.selections[sec].add(newName);
     }
+    if (sec === 'characters' && S.selections.povs.has(oldName)) {
+      S.selections.povs.delete(oldName);
+      S.selections.povs.add(newName);
+    }
   }
+  const renameInList = arr => arr.map(v => v === oldName ? newName : v);
+  const newCkChecked = renameInList(ckCurrentlyChecked('ck', sec));
+  const newEkChecked = renameInList(ckCurrentlyChecked('ek', sec));
   closeLibEditModal();
-  renderLibSec(sec); renderCk(sec); renderEditCk(sec); renderBoard();
+  renderLibSec(sec); renderCk(sec, newCkChecked); renderEditCk(sec, newEkChecked); renderBoard();
+  if (sec === 'characters') {
+    renderPovCk('sc', renameInList(ckCurrentlyChecked('sc', 'povs')));
+    renderPovCk('ed', renameInList(ckCurrentlyChecked('ed', 'povs')));
+    renderPovLibSec();
+  }
   recordDataEdit();
   saveState();
 }
@@ -281,7 +338,8 @@ function toggleDetails(show) {
 
 // ── HIGHLIGHT LOGIC ───────────────────────────────────────────────────────────
 function sceneMatchesLib(scene) {
-  const allSel = SECS.flatMap(({ key }) => [...S.selections[key]].map(v => ({ key, v })));
+  const allSel = SECS.flatMap(({ key }) => [...S.selections[key]].map(v => ({ key, v })))
+    .concat([...S.selections.povs].map(v => ({ key: 'povs', v })));
   if (!allSel.length) return false;
   if (S.andOr === 'AND') return allSel.every(({ key, v }) => (scene[key] || []).includes(v));
   return allSel.some(({ key, v }) => (scene[key] || []).includes(v));
@@ -293,12 +351,13 @@ function resetAll() {
   S.characters = []; S.locations = []; S.themes = []; S.misc = [];
   S.scenes = []; S.nextId = 1; S.andOr = 'OR';
   S.sections = []; S.nextSecId = 1;
+  S.povCustomNames = [];
   SECS.forEach(({ key }) => S.selections[key].clear());
   S.selIds.clear(); S.editingId = null;
   hist.past = []; hist.future = [];
   clearSearch();
   syncAndOrUI();
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovCk('sc', []); renderPovCk('ed', []); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   if (currentProjectId) saveState();
   else localStorage.removeItem(STORAGE_KEY);
 }
@@ -336,9 +395,11 @@ function addScene() {
   const row = {};
   SECS.forEach(({ key }) => { row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => c.value); });
   const sectionId = S.sections.length ? (parseInt(document.getElementById('sc-section').value) || null) : null;
+  const wordCount = parseInt(document.getElementById('sc-wordcount').value) || null;
+  const povs = ckCurrentlyChecked('sc', 'povs');
   pushHistory('Add scene "' + truncStr(title, 22) + '"');
   trackSceneAdded();
-  const newScene = { id: S.nextId++, title, summary, notes, ...row, sectionId };
+  const newScene = { id: S.nextId++, title, summary, notes, ...row, sectionId, wordCount, povs };
   if (pendingInsert !== null) {
     const { afterId, sectionId: piSecId } = pendingInsert; pendingInsert = null;
     if (afterId !== null) {
@@ -361,10 +422,13 @@ function addScene() {
     S.scenes.push(newScene);
   }
   titleEl.value = ''; document.getElementById('sc-summary').value = ''; document.getElementById('sc-notes').value = '';
+  document.getElementById('sc-wordcount').value = '';
   document.querySelectorAll('#form-new .ck-drop-list input').forEach(c => { c.checked = false; });
   SECS.forEach(({ key, label }) => { const w = document.getElementById('ck-' + key + '-wrap'); if (w) updateCkDropLabel(w, label); });
+  const scPovWrap = document.getElementById('sc-povs-wrap'); if (scPovWrap) updateCkDropLabel(scPovWrap, 'POV names');
   setNewSceneLive(false);
   renderBoard();
+  renderPovLibSec();
 
   // Track milestones (based on scenes created since user ID was generated)
   const scenesCreated = getScenesCreatedSinceIdCreation();
@@ -385,8 +449,10 @@ function cancelNewScene() {
   document.getElementById('sc-title').value = '';
   document.getElementById('sc-summary').value = '';
   document.getElementById('sc-notes').value = '';
+  document.getElementById('sc-wordcount').value = '';
   document.querySelectorAll('#form-new .ck-drop-list input').forEach(c => { c.checked = false; });
   SECS.forEach(({ key, label }) => { const w = document.getElementById('ck-' + key + '-wrap'); if (w) updateCkDropLabel(w, label); });
+  const scPovWrap = document.getElementById('sc-povs-wrap'); if (scPovWrap) updateCkDropLabel(scPovWrap, 'POV names');
   document.querySelectorAll('.ck-drop-wrap.open').forEach(w => w.classList.remove('open'));
   const secSel = document.getElementById('sc-section');
   if (secSel) secSel.value = '';
@@ -403,6 +469,7 @@ function deleteScene(id) {
   S.selIds.delete(id);
   if (S.editingId === id) cancelEdit();
   renderBoard();
+  renderPovLibSec();
   recordDataEdit();
   saveState();
 }
@@ -420,6 +487,8 @@ function openEditMode(id) {
   document.getElementById('ed-title').value   = sc.title;
   document.getElementById('ed-summary').value = sc.summary || '';
   document.getElementById('ed-notes').value   = sc.notes || '';
+  document.getElementById('ed-wordcount').value = sc.wordCount || '';
+  renderPovCk('ed', sc.povs || []);
   document.getElementById('ederr').textContent = '';
   if (S.sections.length) {
     document.getElementById('ed-section').value = sc.sectionId || '';
@@ -435,6 +504,70 @@ function cancelEdit() {
   document.getElementById('tab-edit').classList.add('dim');
   document.getElementById('ederr').textContent = '';
 }
+// Does the live Edit Scene form differ from the scene's last-saved values?
+// Mirrors exactly what confirmSaveEdit() reads/writes, field for field, so a
+// scene that's merely open for viewing (nothing changed) never triggers a
+// discard confirmation — only genuine unsaved edits do.
+function isEditFormDirty() {
+  const sc = S.scenes.find(s => s.id === S.editingId);
+  if (!sc) return false;
+  if (document.getElementById('ed-title').value.trim() !== sc.title.trim()) return true;
+  if (document.getElementById('ed-summary').value.trim() !== (sc.summary || '')) return true;
+  if (document.getElementById('ed-notes').value.trim() !== (sc.notes || '')) return true;
+  if ((parseInt(document.getElementById('ed-wordcount').value) || null) !== (sc.wordCount || null)) return true;
+  if (S.sections.length) {
+    const sectionId = parseInt(document.getElementById('ed-section').value) || null;
+    if (sectionId !== (sc.sectionId ?? null)) return true;
+  }
+  for (const { key } of SECS) {
+    const checked  = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value).sort();
+    const original = [...(sc[key] || [])].sort();
+    if (JSON.stringify(checked) !== JSON.stringify(original)) return true;
+  }
+  const checkedPovs  = ckCurrentlyChecked('ed', 'povs').sort();
+  const originalPovs = [...(sc.povs || [])].sort();
+  if (JSON.stringify(checkedPovs) !== JSON.stringify(originalPovs)) return true;
+  return false;
+}
+// ── DISCARD CONFIRMATION (unsaved New/Edit scene) ─────────────────────────────
+let pendingDiscard = null; // { editActive, newLive } — what to discard if confirmed
+function openDiscardConfirm(editActive, newLive) {
+  pendingDiscard = { editActive, newLive };
+  const msgEl = document.getElementById('discard-cfm-msg');
+  if (editActive) {
+    const sc = S.scenes.find(s => s.id === S.editingId);
+    msgEl.textContent = sc
+      ? `Discard changes to Scene ${sceneDisplayNum(sc.id)} — "${sc.title}"? Your edits will be lost.`
+      : 'Discard your changes? They will be lost.';
+  } else {
+    msgEl.textContent = 'Discard this new scene? Your entries will be lost.';
+  }
+  document.getElementById('discard-cfm-modal').classList.add('open');
+}
+function closeDiscardConfirm() {
+  document.getElementById('discard-cfm-modal').classList.remove('open');
+  pendingDiscard = null;
+}
+function confirmDiscard() {
+  if (!pendingDiscard) return;
+  const { editActive, newLive } = pendingDiscard;
+  closeDiscardConfirm();
+  if (editActive) cancelEdit();
+  if (newLive) cancelNewScene();
+}
+// Escape-key path to cancelEdit(): skip the prompt entirely when nothing
+// would actually be lost, same rule as the outside-click handler below.
+function maybeCancelEditWithConfirm() {
+  // If the confirm is already showing, Escape dismisses IT (keeps editing)
+  // rather than re-opening it — this function runs inside the same handler
+  // that also fires many other one-shot "close if open" calls, so it must
+  // not both open and close the modal within a single keypress.
+  if (document.getElementById('discard-cfm-modal').classList.contains('open')) { closeDiscardConfirm(); return; }
+  if (S.editingId === null) return;
+  if (isEditFormDirty()) { openDiscardConfirm(true, false); return; }
+  cancelEdit();
+}
+if (document.getElementById('discard-cfm-modal')) onBackdropClick('discard-cfm-modal', closeDiscardConfirm);
 function saveEdit() {
   const sc = S.scenes.find(s => s.id === S.editingId); if (!sc) return;
   const titleEl = document.getElementById('ed-title'), errEl = document.getElementById('ederr');
@@ -454,6 +587,8 @@ function confirmSaveEdit() {
   pushHistory('Edit scene "' + truncStr(sc.title, 22) + '"');
   const oldSecId = sc.sectionId ?? null;
   sc.title = title; sc.summary = summary; sc.notes = document.getElementById('ed-notes').value.trim();
+  sc.wordCount = parseInt(document.getElementById('ed-wordcount').value) || null;
+  sc.povs = ckCurrentlyChecked('ed', 'povs');
   if (S.sections.length) sc.sectionId = sectionId;
   SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value); });
   // If section changed, move scene to end of new section so numbering stays sequential
@@ -465,6 +600,7 @@ function confirmSaveEdit() {
     if (insertIdx === -1) S.scenes.push(sc); else S.scenes.splice(insertIdx + 1, 0, sc);
   }
   closeSaveCfm(); cancelEdit(); renderSecPanel(); renderBoard();
+  renderPovLibSec();
   recordDataEdit();
   saveState();
 }
@@ -477,6 +613,7 @@ function checkNewSceneLive() {
     document.getElementById('sc-title').value.trim() ||
     document.getElementById('sc-summary').value.trim() ||
     document.getElementById('sc-notes').value.trim() ||
+    document.getElementById('sc-wordcount').value.trim() ||
     document.querySelectorAll('#form-new .ck-drop-list input:checked').length
   );
   setNewSceneLive(hasContent);
@@ -513,7 +650,7 @@ if (document.getElementById('modal')) {
 }
 
 // ── RENDER ALL LIBRARY SECTIONS ───────────────────────────────────────────────
-function renderAllLib() { SECS.forEach(s => renderLibSec(s.key)); }
+function renderAllLib() { SECS.forEach(s => renderLibSec(s.key)); renderPovLibSec(); }
 
 // ── BUILD LIBRARY PANEL ───────────────────────────────────────────────────────
 function buildLibPanel() {
@@ -532,6 +669,17 @@ function buildLibPanel() {
     sec.appendChild(hdr); sec.appendChild(il);
     body.appendChild(sec);
   });
+  // POV section: read-only, highlight-only — POV names are assigned and
+  // added from the scene form's checklist, not managed here, so this section
+  // has no "+" button and only lists names currently in use by a scene.
+  const povSec = document.createElement('div'); povSec.className = 'lsec';
+  const povHdr = document.createElement('div'); povHdr.className = 'lsec-hdr';
+  const povH3 = document.createElement('h3'); povH3.textContent = 'POV';
+  povHdr.appendChild(povH3);
+  const povList = document.createElement('div'); povList.className = 'ilist'; povList.id = 'il-povs';
+  povList.innerHTML = '<div class="eh">None yet</div>';
+  povSec.appendChild(povHdr); povSec.appendChild(povList);
+  body.appendChild(povSec);
 }
 
 // ── RENDER: LIBRARY SECTION ───────────────────────────────────────────────────
@@ -571,8 +719,17 @@ function renderCkList(prefix, sec, checked=[]) {
   const btn  = wrap ? wrap.querySelector('.ck-drop-btn') : null;
   const lbl  = SECS.find(s => s.key === sec)?.label || sec;
   box.innerHTML = '';
+  // "+ Add" trigger, always first — lets the user add a missing library item
+  // without leaving/losing the in-progress scene form (see openAddPopupFromCk).
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button'; addBtn.className = 'ck-drop-add';
+  addBtn.textContent = '+ Add ' + SINGULAR[sec] + '…';
+  addBtn.addEventListener('click', e => { e.stopPropagation(); openAddPopupFromCk(prefix, sec); });
+  box.appendChild(addBtn);
   if (!S[sec].length) {
-    box.innerHTML = '<div class="ck-drop-empty">Add ' + lbl.toLowerCase() + ' to library first</div>';
+    const empty = document.createElement('div'); empty.className = 'ck-drop-empty';
+    empty.textContent = 'No ' + lbl.toLowerCase() + ' yet';
+    box.appendChild(empty);
     if (btn) btn.textContent = 'No ' + lbl.toLowerCase() + ' selected';
     return;
   }
@@ -586,7 +743,7 @@ function renderCkList(prefix, sec, checked=[]) {
   });
   if (wrap) updateCkDropLabel(wrap, lbl);
 }
-function renderCk(sec) { renderCkList('ck', sec); }
+function renderCk(sec, checked=[]) { renderCkList('ck', sec, checked); }
 function renderEditCk(sec, checked=[]) { renderCkList('ek', sec, checked); }
 
 // ── RENDER: BOARD ─────────────────────────────────────────────────────────────
@@ -642,6 +799,13 @@ function renderCard(container, scene, idx) {
     scene[key].forEach(v => { const t = document.createElement('span'); t.className = 'tag ' + tag; t.textContent = v; tags.appendChild(t); });
     row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
   });
+  if (scene.povs && scene.povs.length) {
+    const row  = document.createElement('div'); row.className  = 'crow';
+    const lbl  = document.createElement('div'); lbl.className  = 'clbl'; lbl.textContent = 'POV';
+    const tags = document.createElement('div'); tags.className = 'ctags';
+    scene.povs.forEach(v => { const t = document.createElement('span'); t.className = 'tag tp'; t.textContent = v; tags.appendChild(t); });
+    row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
+  }
   card.appendChild(bar); card.appendChild(badge); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
   card.appendChild(num); card.appendChild(tit); card.appendChild(meta);
   card.addEventListener('mousedown', e => onCardDown(e, scene.id));
@@ -827,6 +991,115 @@ function renderSectionSelects() {
   // Filter checkbox dropdown
   renderFilterDrop();
 }
+
+// ── POV (Point of View) ────────────────────────────────────────────────────────
+// Multi-select checklist, exactly like Characters/Locations/etc, but sourced
+// from the Character library UNION S.povCustomNames (not S.characters alone)
+// — a scene's POV doesn't have to be tagged as a Character in that scene, or
+// exist in the Character library at all, since a scene (often a full
+// chapter here) can have several POV characters at once.
+function povNames() {
+  return [...S.characters.map(c => c.name), ...S.povCustomNames];
+}
+// Names actually assigned as POV on at least one scene — the Library panel's
+// read-only POV section shows only these, so every entry is meaningful to
+// click (a name with zero scenes would just highlight nothing).
+function usedPovNames() {
+  const used = new Set();
+  S.scenes.forEach(sc => (sc.povs || []).forEach(n => used.add(n)));
+  return povNames().filter(n => used.has(n));
+}
+function togglePovHighlight(name) {
+  const s = S.selections.povs;
+  if (s.has(name)) s.delete(name); else s.add(name);
+  renderPovLibSec(); renderBoard(); updateLibClearBtn();
+}
+function renderPovLibSec() {
+  const list = document.getElementById('il-povs'); if (!list) return;
+  list.innerHTML = '';
+  const names = usedPovNames();
+  if (!names.length) { list.innerHTML = '<div class="eh">None yet</div>'; return; }
+  names.forEach(name => {
+    const isOn = S.selections.povs.has(name);
+    const li = document.createElement('div');
+    li.className = 'li' + (isOn ? ' on sec-p' : '');
+    const dot = document.createElement('span'); dot.className = 'dot dp';
+    const nm  = document.createElement('span'); nm.className = 'iname'; nm.textContent = name;
+    li.appendChild(dot); li.appendChild(nm);
+    li.addEventListener('click', () => togglePovHighlight(name));
+    list.appendChild(li);
+  });
+}
+// Any name in `checked` that isn't currently a valid option (a character
+// since removed from the library, or a name saved before this feature
+// existed) is folded into S.povCustomNames on the spot, so it becomes a
+// normal, consistently-reusable option instead of a dead/lost selection.
+function renderPovCk(prefix, checked=[]) {
+  checked.forEach(name => {
+    if (!S.characters.some(c => c.name === name) && !S.povCustomNames.includes(name)) {
+      S.povCustomNames.push(name);
+    }
+  });
+  const wrap = document.getElementById(prefix + '-povs-wrap');
+  const box  = document.getElementById(prefix + '-povs'); if (!box) return;
+  box.innerHTML = '';
+  const addBtn = document.createElement('button');
+  addBtn.type = 'button'; addBtn.className = 'ck-drop-add';
+  addBtn.textContent = '+ Add POV Name…';
+  addBtn.addEventListener('click', e => { e.stopPropagation(); openPovAddFromCk(prefix); });
+  box.appendChild(addBtn);
+  const names = povNames();
+  if (!names.length) {
+    const empty = document.createElement('div'); empty.className = 'ck-drop-empty';
+    empty.textContent = 'No POV names yet';
+    box.appendChild(empty);
+    if (wrap) updateCkDropLabel(wrap, 'POV names');
+    return;
+  }
+  names.forEach(name => {
+    const item = document.createElement('label'); item.className = 'ck-drop-item';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = name; cb.checked = checked.includes(name);
+    cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, 'POV names'); });
+    const sp = document.createElement('span'); sp.textContent = name;
+    item.appendChild(cb); item.appendChild(sp); box.appendChild(item);
+  });
+  if (wrap) updateCkDropLabel(wrap, 'POV names');
+}
+let povAddReturnPrefix = null; // which POV checklist ('sc'|'ed') to auto-check the new name in
+function openPovAddFromCk(prefix) {
+  povAddReturnPrefix = prefix;
+  const inp = document.getElementById('pov-add-input');
+  inp.value = '';
+  document.getElementById('pov-add-modal').classList.add('open');
+  setTimeout(() => inp.focus(), 60);
+}
+function closePovAddModal() {
+  document.getElementById('pov-add-modal').classList.remove('open');
+  povAddReturnPrefix = null;
+}
+function confirmPovAdd() {
+  const inp = document.getElementById('pov-add-input');
+  const name = inp.value.trim();
+  if (!name) { inp.focus(); return; }
+  if (S.characters.some(c => c.name === name) || S.povCustomNames.includes(name)) { inp.select(); return; }
+  pushHistory('Add POV name "' + name + '"');
+  S.povCustomNames.push(name);
+  const scChecked = ckCurrentlyChecked('sc', 'povs');
+  const edChecked = ckCurrentlyChecked('ed', 'povs');
+  if (povAddReturnPrefix === 'sc') scChecked.push(name);
+  if (povAddReturnPrefix === 'ed') edChecked.push(name);
+  renderPovCk('sc', scChecked); renderPovCk('ed', edChecked);
+  closePovAddModal();
+  recordDataEdit();
+  saveState();
+}
+if (document.getElementById('pov-add-input')) {
+  document.getElementById('pov-add-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmPovAdd();
+    if (e.key === 'Escape') closePovAddModal();
+  });
+}
+if (document.getElementById('pov-add-modal')) onBackdropClick('pov-add-modal', closePovAddModal);
 
 // ── SECTION FILTER ────────────────────────────────────────────────────────────
 let secFilterIds = new Set(); // empty = show all sections
@@ -1205,7 +1478,7 @@ function endLibDrag() {
     let ti = ld.dropIdx > ld.fromIdx ? ld.dropIdx - 1 : ld.dropIdx;
     if (!ld.before) ti++;
     arr.splice(ti, 0, item);
-    renderLibSec(ld.sec); renderCk(ld.sec); renderEditCk(ld.sec);
+    renderLibSec(ld.sec); renderCk(ld.sec, ckCurrentlyChecked('ck', ld.sec)); renderEditCk(ld.sec, ckCurrentlyChecked('ek', ld.sec));
     saveState();
   }
   ld.on = false; ld.sec = null; ld.fromIdx = null; ld.dropIdx = null;
@@ -1262,6 +1535,10 @@ document.addEventListener('mouseup', e => {
 });
 
 // ── CANCEL ON CLICK OUTSIDE SCENE PANEL ───────────────────────────────────────
+// A click outside the panel with genuinely unsaved content (a dirty edit, or
+// a New Scene form with something entered) confirms before discarding, since
+// this is easy to trigger by accident. An edit that's merely open but
+// unchanged has nothing to lose, so it's still dismissed silently.
 document.addEventListener('mousedown', e => {
   const tabNew = document.getElementById('tab-new');
   if (!tabNew) return;
@@ -1269,9 +1546,13 @@ document.addEventListener('mousedown', e => {
   const newLive    = tabNew.classList.contains('live');
   if (!editActive && !newLive) return;
   if (e.target.closest('#cp')) return;
-  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open')) return;
-  if (editActive) cancelEdit();
-  if (newLive)    cancelNewScene();
+  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open, #pov-add-modal.open')) return;
+  const editDirty = editActive && isEditFormDirty();
+  if (!editDirty && !newLive) {
+    if (editActive) cancelEdit();
+    return;
+  }
+  openDiscardConfirm(editDirty, newLive);
 });
 
 // ── KEYBOARD & STORYBOARD EVENT LISTENERS ────────────────────────────────────
@@ -1288,7 +1569,9 @@ document.addEventListener('keydown', e => {
   const inInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
   // Ctrl / Cmd shortcuts
   if ((e.ctrlKey || e.metaKey) && !e.altKey) {
-    if (e.key === 's') { e.preventDefault(); saveState(); return; }
+    // The app autosaves on every change; swallow Ctrl+S so the browser's
+    // Save Page dialog doesn't appear on muscle-memory presses.
+    if (e.key === 's') { e.preventDefault(); return; }
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (typeof undo === 'function') undo(); return; }
     if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); if (typeof redo === 'function') redo(); return; }
     if (!inInput) {
@@ -1298,21 +1581,24 @@ document.addEventListener('keydown', e => {
       if (e.key === '0') { e.preventDefault(); zoomReset(); return; }
     }
   }
-  // Alt shortcuts (not in an input field)
+  // Alt shortcuts (not in an input field). Keyed off e.code, not e.key — on Mac,
+  // Option+letter remaps e.key to an accented/symbol character (e.g. Option+V → "√",
+  // Option+N → a dead key), so matching on e.key silently breaks every one of these.
+  // e.code reports the physical key regardless of what the modifier composes.
   if (e.altKey && !e.ctrlKey && !e.metaKey && !inInput) {
-    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); menuNewScene(); return; }
-    if (e.key === 'c' || e.key === 'C') { e.preventDefault(); openAddPopup('characters'); return; }
-    if (e.key === 'l' || e.key === 'L') { e.preventDefault(); openAddPopup('locations'); return; }
-    if (e.key === 't' || e.key === 'T') { e.preventDefault(); openAddPopup('themes'); return; }
-    if (e.key === 'm' || e.key === 'M') { e.preventDefault(); openAddPopup('misc'); return; }
-    if (e.key === 'r' || e.key === 'R') { e.preventDefault(); openReportModal(); return; }
-    if (e.key === 'v' || e.key === 'V') { e.preventDefault(); toggleChartView(); return; }
+    if (e.code === 'KeyN') { e.preventDefault(); menuNewScene(); return; }
+    if (e.code === 'KeyC') { e.preventDefault(); openAddPopup('characters'); return; }
+    if (e.code === 'KeyL') { e.preventDefault(); openAddPopup('locations'); return; }
+    if (e.code === 'KeyT') { e.preventDefault(); openAddPopup('themes'); return; }
+    if (e.code === 'KeyM') { e.preventDefault(); openAddPopup('misc'); return; }
+    if (e.code === 'KeyR') { e.preventDefault(); openReportModal(); return; }
+    if (e.code === 'KeyV') { e.preventDefault(); toggleChartView(); return; }
   }
   if (e.key === 'Escape') {
     closeAllMenus();
     if (typeof clearAllSel === 'function') try { clearAllSel(); } catch(e){}
     if (typeof clearCardSel === 'function') try { clearCardSel(); } catch(e){}
-    if (typeof cancelEdit === 'function') try { cancelEdit(); } catch(e){}
+    if (typeof maybeCancelEditWithConfirm === 'function') try { maybeCancelEditWithConfirm(); } catch(e){}
     if (typeof closeModal === 'function') try { closeModal(); } catch(e){}
     if (typeof closeAddPopup === 'function') try { closeAddPopup(); } catch(e){}
     if (typeof clearSearch === 'function') try { clearSearch(); } catch(e){}
@@ -1322,6 +1608,7 @@ document.addEventListener('keydown', e => {
     if (typeof closeSecFilter === 'function') try { closeSecFilter(); } catch(e){}
     if (typeof closeReportModal === 'function') try { closeReportModal(); } catch(e){}
     if (typeof closeLibEditModal === 'function') try { closeLibEditModal(); } catch(e){}
+    if (typeof closePovAddModal === 'function') try { closePovAddModal(); } catch(e){}
     if (typeof closeHelp === 'function') try { closeHelp(); } catch(e){}
     if (typeof closeChartView === 'function') try { closeChartView(); } catch(e){}
   }

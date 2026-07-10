@@ -94,7 +94,7 @@ const HELP_ZONES = [
   { sel: '#sbhdr .sbt',      tip: 'Scene Board — the main workspace. Scenes are arranged by section. Drag cards to reorder them. Click a card to select it; click multiple cards to select them together and move them as a group.' },
   { sel: '#sbcnt',           tip: 'Scene count — shows how many scenes are currently visible (may be fewer when a section filter is active).' },
   { sel: '#clrsel',          tip: 'Clear Selection — deselects all currently selected scene cards on the board.' },
-  { sel: '#det-toggle',      tip: 'Show Card Details — toggle to show or hide library tags (characters, locations, themes, misc) printed on each card.' },
+  { sel: '#det-toggle',      tip: 'Show Card Details — toggle to show or hide library tags (POV, characters, locations, themes, misc) printed on each card.' },
   { sel: '#sec-filter-wrap', tip: 'Section Filter — click to choose which sections are visible on the board. Useful for focusing on one part of your story.' },
   { sel: '#srch-wrap',       tip: 'Search — filter visible cards by title or summary text. Press × or Escape to clear the search.' },
   { sel: '.scalew',          tip: 'Card Size — drag the slider to make scene cards larger or smaller on the board.' },

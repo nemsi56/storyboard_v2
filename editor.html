@@ -22,6 +22,7 @@
   <div id="proj-name-wrap">
     <span id="proj-name-title" class="pn-title"></span>
     <span id="proj-name-time"  class="pn-time"></span>
+    <span id="backup-status"   class="backup-status"></span>
   </div>
   <div id="hdr-spacer"></div>
   <button class="proj-back" onclick="backToProjects()" title="Back to project list">Projects</button>
@@ -34,8 +35,6 @@
   <div class="mi" id="mi-file">
     <button class="mi-btn" onclick="toggleMenu('file')" onmouseenter="hoverMenu('file')">File</button>
     <div class="mi-drop" id="drop-file">
-      <button class="di" onclick="menuSave()">Save<span class="di-sc">Ctrl+S</span></button>
-      <div class="di-sep"></div>
       <button class="di" onclick="exportCurrentProject();closeAllMenus()">Export as JSON<span class="di-sc">Ctrl+⇧E</span></button>
       <button class="di" onclick="menuImport()">Import from JSON…</button>
     </div>
@@ -99,6 +98,16 @@
 </div>
 <!-- Hidden file input for JSON import -->
 <input type="file" id="menu-import-input" accept=".json" style="display:none" onchange="importProjectJSON(this)">
+
+<!-- Backup reminder banner (shown once export is overdue) -->
+<div id="backup-banner" style="display:none">
+  <div id="backup-banner-text">
+    <span id="backup-banner-msg"></span>
+    <span id="backup-banner-note">(Backups can be found where your browser saves downloaded files.)</span>
+  </div>
+  <button class="backup-banner-btn" onclick="exportCurrentProject()">Export Now</button>
+  <button class="backup-banner-dismiss" onclick="dismissBackupBanner()" aria-label="Dismiss">×</button>
+</div>
 
 <div class="main">
 
@@ -184,6 +193,8 @@
         <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ck-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ck-locations"></div></div></div>
         <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ck-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ck-themes"></div></div></div>
         <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ck-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ck-misc"></div></div></div>
+        <div class="ff"><label>Word Count</label><input type="number" id="sc-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
+        <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="sc-povs-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('sc-povs-wrap','povs')">No POV selected</button><div class="ck-drop-list" id="sc-povs"></div></div></div>
         <div class="ff"><label>Notes</label><textarea id="sc-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
       </div>
       <!-- Edit Scene form -->
@@ -200,6 +211,8 @@
         <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ek-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ek-locations"></div></div></div>
         <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ek-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ek-themes"></div></div></div>
         <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ek-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ek-misc"></div></div></div>
+        <div class="ff"><label>Word Count</label><input type="number" id="ed-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
+        <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="ed-povs-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ed-povs-wrap','povs')">No POV selected</button><div class="ck-drop-list" id="ed-povs"></div></div></div>
         <div class="ff"><label>Notes</label><textarea id="ed-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
       </div>
     </div>
@@ -214,7 +227,7 @@
         <span id="sbcnt">0 scenes</span>
         <button id="clrsel" onclick="clearCardSel()">Clear selection</button>
       </div>
-      <label class="det-ck" title="Show library elements on scene cards">
+      <label class="det-ck" id="det-ck-wrap" title="Show library elements on scene cards">
         <input type="checkbox" id="det-toggle" onchange="toggleDetails(this.checked)">
         Show Card Details
       </label>
@@ -231,7 +244,7 @@
         </select>
         <button id="srch-clr" onclick="clearSearch()" title="Clear search" aria-label="Clear search">×</button>
       </div>
-      <div class="scalew">
+      <div class="scalew" id="scalew-wrap">
         <span class="scalelbl">Zoom</span>
         <input type="range" id="scaler" min="0.55" max="1.65" step="0.05" value="1" oninput="setScale(this.value)">
       </div>
@@ -272,6 +285,18 @@
     <div class="ap-btns">
       <button id="ap-cancel" onclick="closeAddPopup()">Cancel</button>
       <button id="ap-ok"     onclick="confirmAdd()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add POV Name Modal -->
+<div id="pov-add-modal" role="dialog" aria-modal="true" aria-labelledby="pov-add-title">
+  <div id="pov-add-box">
+    <div id="pov-add-title">Add POV Name</div>
+    <input id="pov-add-input" type="text" placeholder="Enter name…" maxlength="80">
+    <div class="ap-btns">
+      <button onclick="closePovAddModal()">Cancel</button>
+      <button id="pov-add-ok" onclick="confirmPovAdd()">Add</button>
     </div>
   </div>
 </div>
@@ -324,6 +349,17 @@
   </div>
 </div>
 
+<!-- Discard Scene Confirm Modal -->
+<div id="discard-cfm-modal" class="cfm-modal" role="dialog" aria-modal="true" aria-labelledby="discard-cfm-msg">
+  <div class="cfm-box">
+    <div id="discard-cfm-msg" class="cfm-msg"></div>
+    <div class="ap-btns">
+      <button onclick="closeDiscardConfirm()">Keep Editing</button>
+      <button id="discard-cfm-ok" onclick="confirmDiscard()">Discard</button>
+    </div>
+  </div>
+</div>
+
 <!-- Summary modal -->
 <div id="modal" role="dialog" aria-modal="true" aria-labelledby="mtit">
   <div id="mbox">
@@ -348,6 +384,7 @@
         <button class="rpt-type-btn"    onclick="switchRptType('location',this)">Location</button>
         <button class="rpt-type-btn"    onclick="switchRptType('theme',this)">Theme</button>
         <button class="rpt-type-btn"    onclick="switchRptType('misc',this)">Misc Items</button>
+        <button class="rpt-type-btn"    onclick="switchRptType('pov',this)">POV</button>
         <button class="rpt-type-btn"    onclick="switchRptType('matrix',this)">Cross-Reference</button>
       </div>
     </div>
@@ -363,6 +400,7 @@
         <label class="rpt-ck"><input type="checkbox" id="rpt-sl-locations"  checked> Locations</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-sl-themes"     checked> Themes</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-sl-misc"       checked> Misc Items</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-sl-pov"        checked> POV</label>
       </div>
     </div>
 
@@ -410,6 +448,16 @@
       </div>
     </div>
 
+    <!-- POV options -->
+    <div class="rpt-opts-panel" id="rpt-opts-pov">
+      <div class="rpt-blk-hdr">Include</div>
+      <div class="rpt-ck-row">
+        <label class="rpt-ck"><input type="checkbox" id="rpt-pv-section"    checked> Section</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-pv-characters" checked> Characters</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-pv-summary"    checked> Summary</label>
+      </div>
+    </div>
+
     <!-- Matrix options -->
     <div class="rpt-opts-panel" id="rpt-opts-matrix">
       <div class="rpt-blk-hdr">Axis</div>
@@ -419,6 +467,7 @@
           <option value="locations">Locations</option>
           <option value="themes">Themes</option>
           <option value="misc">Misc Items</option>
+          <option value="povs">POV</option>
         </select>
         <span class="rpt-matrix-note" id="rpt-mx-note">as rows · Scenes as columns</span>
       </div>
@@ -466,6 +515,7 @@
 <script src="config.js"></script>
 <script src="tracking.js"></script>
 <script src="state.js"></script>
+<script src="backup.js"></script>
 <script src="reports.js"></script>
 <script src="ui.js"></script>
 <script src="charts.js"></script>

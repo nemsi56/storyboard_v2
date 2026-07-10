@@ -91,3 +91,69 @@ Claude Code browser preview tool.
 main currently includes strip_AI branch and that was pushed to the release branch
 
 Going forward, experiment with new features in branches, push to main when ready to merge, and only push to release branch (and tag) when I want it to be the published version at scenesetterapp.com (it will automatically be served there because Pages reads from release branch)
+
+## feature/updates_v1 branch — Backup reminder
+
+Adds a passive "Backed up N ago" status indicator (in the editor header) plus a
+dismissible/re-appearing banner nudging the user to export a backup once it's overdue —
+either **25 edits** or **15 minutes** since the last export, whichever comes first. Export
+itself is unchanged (still the existing manual JSON download); this only reminds the user
+to click it. Deliberately does NOT use the File System Access API (Chromium-only) so
+behavior is identical across all browsers.
+
+**New file:** `backup.js` (loads right after `state.js`, before `reports.js` — needs `S`/
+`currentProjectId` but nothing from other files at parse time; registered in `build.js`'s
+`JS_FILES` in that position).
+**Touched files:** `state.js` (new `lastExportedAt`/`editsSinceExport` fields on `S`,
+persisted in `saveState()`/`loadState()`; `recordDataEdit()` now also bumps
+`editsSinceExport`), `projects.js` (`exportProjectJSON()` resets both fields — in storage
+always, and on the live `S` object when exporting the currently-open project;
+`updateProjectNameDisplay()` calls `refreshBackupStatus()`), `editor.html` (`#backup-status`
+span in the header, `#backup-banner` above `.main`), `styles.css` (banner + indicator
+styles), `build.js`.
+
+### How it works
+- `S.editsSinceExport` increments in `recordDataEdit()` — the same funnel already used by
+  every real content edit (add/delete/edit scene, undo/redo, library edits). No new call
+  sites needed: `saveState()` → `updateProjectNameDisplay()` → `refreshBackupStatus()`
+  already fires after every one of those.
+- `S.lastExportedAt` is set (and `editsSinceExport` reset to 0) only in `exportProjectJSON()`,
+  which writes both fields back into the project's stored localStorage blob directly —
+  it works whether the project being exported is open in the editor or just a card on the
+  projects grid, since that function doesn't go through the live `S` object at all except
+  when `id === currentProjectId`.
+- `backupIsOverdue()` is the single source of truth for "should the banner show": true when
+  `editsSinceExport >= 25` OR `(now - lastExportedAt) >= 15min` (only once there's at least
+  one edit pending — an untouched project never nags regardless of elapsed time).
+- Dismissing the banner snoozes it for 5 minutes rather than hiding it for the rest of the
+  session — a 30s interval re-checks and re-shows it if still overdue once the snooze
+  expires (the "keeps coming back until you export" behavior the user asked for).
+- A `beforeunload` handler warns on tab close/navigate-away while overdue, using the same
+  `backupIsOverdue()` check — the browser's native "leave site?" prompt, not a custom one.
+- Legacy projects saved before this feature existed get `lastExportedAt` defaulted to their
+  existing `lastDataEditAt` (or now, if neither exists) on load, so old projects aren't
+  retroactively flagged as stale the moment this ships.
+
+### Known non-obvious details
+- `.backup-status` needs the same `overflow:hidden;text-overflow:ellipsis` as `.pn-time` —
+  the header is only ~50px tall and can show 3 stacked lines (title, last-update, backup
+  status) at once; missing this caused raw mid-word text clipping instead of an ellipsis
+  (caught and fixed during verification).
+- `refreshBackupStatus`/`exportCurrentProject` etc. are referenced across files via
+  `typeof x === 'function'` guards (matching the defensive pattern already used for
+  `chartMode`/`closeChartView` in `charts.js`/`editor.js`), since `backup.js` has no
+  reason to assume every page that loads it also has the banner DOM present.
+
+### Verification
+Manually tested in-browser: indicator shows correct relative time and color state (neutral/
+amber/red) at 0, mid-range, and overdue edit counts; banner appears at both the edit-count
+and time-elapsed thresholds independently; Export Now button resets state and hides the
+banner; dismiss snoozes and the banner reappears once the snooze window passes; verified in
+both a light (ivory) and dark (slate) theme; console clean throughout. Did not verify the
+`beforeunload` prompt itself (browser-native dialogs aren't automatable), but the underlying
+`backupIsOverdue()` condition it depends on was directly verified.
+
+### Not yet done
+- Not merged to `main` or pushed to `origin` — still local-only on `feature/updates_v1`.
+- No UI to adjust the 25-edit / 15-minute thresholds — hardcoded constants at the top of
+  `backup.js`, per the user's specified values.
