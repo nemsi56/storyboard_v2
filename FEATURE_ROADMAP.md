@@ -165,10 +165,19 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   an in-progress New/Edit scene's unsaved form content (a different risk than the backup
   reminder in §6, which only covers scenes already committed to `S.scenes`). Noted during
   the discard-confirmation work as a related, not-yet-built follow-up.
-- `[ ]` A "POV Report" (6th report type) mirroring the existing per-item reports —
-  for each POV name, list the scenes it narrates, with a word-count total per POV
-  (e.g. "Elizabeth Bennet — 4 scenes, 9,200 words") to show page-time balance across
-  an ensemble. *(proposed, not built)*
+- `[x]*` POV added to Reporting at parity with the other library categories: a "POV"
+  report type (6th type) mirroring the Character/Location/Theme/Misc per-item reports —
+  for each POV name, lists the scenes it narrates with section, characters-in-scene, and
+  summary, exactly like its siblings. Also added a POV checkbox to the Scene List report,
+  and a "POV" axis option on the Cross-Reference matrix report. Since POV isn't a real
+  library array (`S.povs` doesn't exist — names come from the Character library plus
+  `S.povCustomNames`), the per-item and matrix report builders now take an optional
+  `items()`/axis override in place of reading `S[key]` directly, sourced from
+  `usedPovNames()`.
+- `[ ]` Word-count total per POV name on the POV report (e.g. "Elizabeth Bennet — 4
+  scenes, 9,200 words") to show page-time balance across an ensemble — deliberately left
+  out of the parity pass above since no other library-item report shows a word-count
+  rollup. *(proposed, not built)*
 
 ## 6. Backup & Data Safety
 
@@ -201,7 +210,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 |---|---|
 | `strip_AI` | Merged to `main` (PR #4) |
 | `feature/flow_visual` | Merged to `main` (PR #7) |
-| `feature/updates_v1` | Committed locally, **not yet pushed to `origin`** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting, POV chart-highlighting fix, Unassigned chart indicator, Mac Alt-shortcut fix, POV scene-card row |
+| `feature/updates_v1` | Committed locally, **not yet pushed to `origin`** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting, POV chart-highlighting fix, Unassigned chart indicator, Mac Alt-shortcut fix, POV scene-card row, POV added to Reporting |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
 on `feature/updates_v1` until that branch is pushed and merged into `main`.
