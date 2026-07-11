@@ -88,11 +88,11 @@ items off as they land.
 
 ## 3. Efficiency (not urgent at current scale, worth knowing)
 
-- `[ ]` **`sceneDisplayNum()` recomputes the full ordered list on every call.** It's called
+- `[x]` **`sceneDisplayNum()` recomputes the full ordered list on every call.** It's called
   once per card per render, and again per chart segment/tooltip — each call rebuilds the
   unassigned+section-ordered array from scratch. Fine under ~100 scenes; compute an
   id→number `Map` once per `renderBoard()`/`renderChart()` pass and reuse it.
-- `[ ]` **Card drag re-renders the whole board on every pointer-move.** `moveCardDrag()`
+- `[x]` **Card drag re-renders the whole board on every pointer-move.** `moveCardDrag()`
   calls `renderBoard()` (full innerHTML wipe + rebuild) on every drop-target change during a
   drag. Toggling drop-indicator classes on existing DOM nodes instead would scale much
   better past a couple hundred cards.

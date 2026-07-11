@@ -306,6 +306,9 @@ function buildSnakeChart(canvas, scenes) {
 function addSnakeNumbers(svg, centerline, scenes, total) {
   const N = scenes.length, segLen = total / N;
   if (segLen < 26) return;
+  // Built once for this pass instead of each scene independently rebuilding
+  // the same ordered scene list via sceneDisplayNum().
+  const numMap = buildSceneNumMap();
   scenes.forEach((scene, i) => {
     const mid = centerline.getPointAtLength(i * segLen + segLen / 2);
     const txt = document.createElementNS(SVGNS, 'text');
@@ -316,7 +319,7 @@ function addSnakeNumbers(svg, centerline, scenes, total) {
     txt.setAttribute('fill', (chartFilterActive() && sceneMatchesChart(scene)) ? 'var(--ontx)' : 'var(--sub)');
     txt.classList.add('chart-num');
     txt.style.pointerEvents = 'none';
-    txt.textContent = String(sceneDisplayNum(scene.id));
+    txt.textContent = String(numMap.get(scene.id) ?? 1);
     svg.appendChild(txt);
   });
 }
@@ -378,6 +381,9 @@ function addCircleNumbers(svg, scenes, cx, cy, R) {
   const N = scenes.length;
   const segLen = (2 * Math.PI * R) / N;
   if (segLen < 26) return;
+  // Built once for this pass instead of each scene independently rebuilding
+  // the same ordered scene list via sceneDisplayNum().
+  const numMap = buildSceneNumMap();
   scenes.forEach((scene, i) => {
     const angleDeg = -90 + (i + 0.5) * 360 / N;
     const rad = angleDeg * Math.PI / 180;
@@ -390,7 +396,7 @@ function addCircleNumbers(svg, scenes, cx, cy, R) {
     txt.setAttribute('fill', (chartFilterActive() && sceneMatchesChart(scene)) ? 'var(--ontx)' : 'var(--sub)');
     txt.classList.add('chart-num');
     txt.style.pointerEvents = 'none';
-    txt.textContent = String(sceneDisplayNum(scene.id));
+    txt.textContent = String(numMap.get(scene.id) ?? 1);
     svg.appendChild(txt);
   });
 }

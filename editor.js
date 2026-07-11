@@ -748,25 +748,32 @@ function renderCk(sec, checked=[]) { renderCkList('ck', sec, checked); }
 function renderEditCk(sec, checked=[]) { renderCkList('ek', sec, checked); }
 
 // ── RENDER: BOARD ─────────────────────────────────────────────────────────────
-// Returns the 1-based display number for a scene based on visual board order:
-// unassigned scenes first (leftmost), then each section in S.sections order.
-// This ensures numbers run 1…N left-to-right across ALL sections regardless of
-// the underlying S.scenes array order.
-function sceneDisplayNum(sceneId) {
-  if (!S.sections.length) {
-    const idx = S.scenes.findIndex(s => s.id === sceneId);
-    return idx === -1 ? 1 : idx + 1;
+// Builds a scene id -> 1-based display number map in one pass, based on visual
+// board order: unassigned scenes first (leftmost), then each section in
+// S.sections order. This ensures numbers run 1…N left-to-right across ALL
+// sections regardless of the underlying S.scenes array order.
+// Callers that need every scene's number in the same pass (rendering all
+// cards, or all chart segments) should build this once and look up by id,
+// rather than each calling sceneDisplayNum() — which rebuilds this same
+// ordered list from scratch on every single call.
+function buildSceneNumMap() {
+  const map = new Map();
+  let ordered = S.scenes;
+  if (S.sections.length) {
+    const validSecIds = new Set(S.sections.map(s => s.id));
+    ordered = [
+      ...S.scenes.filter(s => !validSecIds.has(s.sectionId)),           // unassigned
+      ...S.sections.flatMap(sec => S.scenes.filter(s => s.sectionId === sec.id)), // each section in order
+    ];
   }
-  const validSecIds = new Set(S.sections.map(s => s.id));
-  const ordered = [
-    ...S.scenes.filter(s => !validSecIds.has(s.sectionId)),           // unassigned
-    ...S.sections.flatMap(sec => S.scenes.filter(s => s.sectionId === sec.id)), // each section in order
-  ];
-  const idx = ordered.findIndex(s => s.id === sceneId);
-  return idx === -1 ? 1 : idx + 1;
+  ordered.forEach((s, i) => map.set(s.id, i + 1));
+  return map;
+}
+function sceneDisplayNum(sceneId) {
+  return buildSceneNumMap().get(sceneId) ?? 1;
 }
 
-function renderCard(container, scene, idx) {
+function renderCard(container, scene, idx, numMap) {
   const isd = drag.on && drag.ids.includes(scene.id);
   const sel = S.selIds.has(scene.id);
   const dpb = drag.on && drag.dropId === scene.id && drag.before;
@@ -789,7 +796,7 @@ function renderCard(container, scene, idx) {
   sumbtn.addEventListener('click', e => { e.stopPropagation(); if (hasInfo) openModal(scene.id); });
   editbtn.addEventListener('mousedown', e => e.stopPropagation());
   editbtn.addEventListener('click', e => { e.stopPropagation(); openEditMode(scene.id); });
-  const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${sceneDisplayNum(scene.id)}`;
+  const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${numMap.get(scene.id) ?? 1}`;
   const tit  = document.createElement('div'); tit.className  = 'ctit'; tit.textContent = scene.title;
   const meta = document.createElement('div'); meta.className = 'cmeta';
   SECS.forEach(({ key, label, tag }) => {
@@ -824,9 +831,14 @@ function renderBoard() {
   if (!S.scenes.length) { emp.style.display='flex'; return; }
   emp.style.display = 'none';
 
+  // Built once per render pass and shared by every card below, instead of
+  // each card independently rebuilding the same ordered scene list just to
+  // look up its own number.
+  const numMap = buildSceneNumMap();
+
   if (!hasSecs) {
     // Original flat layout
-    S.scenes.forEach((scene, idx) => renderCard(board, scene, idx));
+    S.scenes.forEach((scene, idx) => renderCard(board, scene, idx, numMap));
   } else {
     // Section group layout
     const validSecIds = new Set(S.sections.map(s => s.id));
@@ -877,7 +889,7 @@ function renderBoard() {
       group.scenes.forEach(scene => {
         const wrap = document.createElement('div'); wrap.className = 'card-wrap';
         body.appendChild(wrap);
-        renderCard(wrap, scene, S.scenes.indexOf(scene));
+        renderCard(wrap, scene, S.scenes.indexOf(scene), numMap);
         addInsertZone(wrap, scene.id, group.id);
       });
       // For empty sections, show a single insert zone so the column is still usable
@@ -1403,7 +1415,19 @@ function moveCardDrag(e) {
     }
   }
   if (newId !== drag.dropId || newBef !== drag.before || newSecId !== drag.dropSecId) {
-    drag.dropId = newId; drag.before = newBef; drag.dropSecId = newSecId; renderBoard();
+    drag.dropId = newId; drag.before = newBef; drag.dropSecId = newSecId;
+    // Toggle just the drop-indicator classes on the existing DOM instead of a
+    // full renderBoard() (innerHTML wipe + rebuild) on every hover change —
+    // nothing else about the board changes while just hovering during a drag.
+    document.querySelectorAll('.sc.dpb, .sc.dpa').forEach(c => c.classList.remove('dpb', 'dpa'));
+    document.querySelectorAll('.sec-group.card-drag-over').forEach(grp => grp.classList.remove('card-drag-over'));
+    if (newId !== null) {
+      const tgt = document.querySelector(`.sc[data-id="${newId}"]`);
+      if (tgt) tgt.classList.add(newBef ? 'dpb' : 'dpa');
+    } else if (newSecId !== null) {
+      const grp = document.querySelector(`.sec-group[data-sec-id="${newSecId}"]`);
+      if (grp) grp.classList.add('card-drag-over');
+    }
   }
 }
 function endCardDrag() {
