@@ -209,3 +209,72 @@ code produced 2.
 
 ### Not yet done
 - Not merged to `main` — pushed to `origin/feature/updates_v2`, PR not yet opened.
+
+## feature/updates_v2 branch — Full-app audit fixes & CSP hardening
+
+A fresh ground-up audit of the whole app (not a follow-up to a specific bug report),
+covering every `.js` file plus the XSS/CSP/localStorage/external-endpoint surfaces across
+all HTML pages. See `UPDATE_ROADMAP.md` §6 for the full per-bug technical detail; this is
+the higher-level summary of what changed and how it was verified.
+
+### What the audit found and fixed
+Four real bugs (import validation gap that could crash the board on a corrupted file,
+reports silently dropping scenes with an orphaned `sectionId`, a filtered-then-deleted
+section blanking the whole board, section color changes having no undo entry), one
+perf issue (report generation rebuilding the full scene-number map once per scene instead
+of once per report — same anti-pattern already fixed elsewhere), and one data-safety gap
+(the "Update Local Copy" import dialog could overwrite unexported local edits with no
+warning, since `revision` counts saves rather than content edits).
+
+### CSP hardening
+The remaining item was removing `'unsafe-inline'` from every page's CSP `script-src`. This
+turned out to be a two-part job:
+1. Convert every inline event-handler attribute (`onclick=`, `onchange=`, `oninput=`,
+   `onmouseenter=`, etc. — ~140 call sites across `editor.html`, `projects.html`,
+   `overview.html`, `test.html`, and the projects-grid card template in `projects.js`) to
+   `addEventListener` wiring. All were static, literal calls with no interpolated data, so
+   this was a mechanical CSP-compliance transform, not an XSS fix in itself. Delegated to
+   two parallel subagents (editor.html being the bulk of it, everything else in the
+   second), then independently verified.
+2. Realized partway through that step 1 alone wasn't sufficient: a CSP without
+   `'unsafe-inline'` blocks inline `<script>` *blocks* just as much as inline attributes —
+   and the wiring from step 1, plus some pre-existing inline scripts (overview.html's
+   image-modal logic, test.html's whole test runner), were themselves inline blocks. Moved
+   all of it into four new files: `editor-init.js`, `projects-init.js`, `overview-init.js`,
+   `test-init.js`. Also added a CSP meta tag to `test.html`, which previously shipped with
+   none despite going to production alongside the app.
+
+### Known non-obvious things worth knowing about if you touch this code
+- This environment's browser-automation click tool does not reliably dispatch real click
+  events on some elements (confirmed unrelated to the code changes — direct function calls,
+  the native `.click()` DOM method, and a manually-dispatched full `pointerdown`/
+  `mousedown`/`pointerup`/`mouseup`/`click` event sequence at the identical coordinates all
+  triggered the listener correctly when the tool's own click did not). All interactive
+  verification for this round was done via the manually-dispatched event sequence instead.
+- A first attempt at extracting editor.html's inline script left duplicate content in the
+  file (a botched edit tried to insert `</body></html>` mid-file instead of replacing
+  through the end) — caught immediately via `wc -l`/`tail` before it was ever committed.
+- `test.html`'s inline test suite has never actually loaded any of the app's own JS files
+  (no `<script src="config.js">` etc., confirmed present in `git show HEAD:test.html` before
+  this round's changes too) — its "0 passed, 17 failed" result predates this work and is
+  unrelated to the CSP change; every failure is `<name> not defined` because the globals
+  it's testing for were never loaded on that page to begin with.
+
+### Verification
+On a fresh, uncached origin (a new port, to rule out the disk-cache issues encountered
+earlier in this project): zero remaining inline handlers or inline `<script>` blocks
+(grepped), zero console/CSP-violation errors across all 6 pages on load, and a full
+functional pass — menu bar (toggle + hover-to-switch), theme switching, panel collapse/
+expand, scene creation through the real form, chart view toggle + type switch, report modal
+open + type switch, the projects-grid card actions (Open/Rename/Duplicate/Export/Delete,
+including per-card closure correctness so each button acts on the right project id), the
+overview image-enlargement modal, and a re-verification that the section-filter-delete and
+section-color-undo fixes from earlier in this branch still work correctly after the
+markup restructuring.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v2`, PR not yet opened.
+- `build.js`'s `JS_FILES` list was not updated to include the four new `*-init.js` files —
+  left out deliberately, since (per `build.js`'s own comment) that bundle isn't actually
+  used in deployment, and the new files aren't written defensively enough to be safely
+  bundled alongside pages that lack their expected DOM elements.

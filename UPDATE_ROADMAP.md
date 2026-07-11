@@ -160,3 +160,78 @@ items off as they land.
   `openPovDelModal`/`removePovCustomName` — mirroring `openLibEditModal`/`saveLibEdit` and
   `openLibDelModal`/`removeItem` field-for-field, since `S.povCustomNames` is a plain string
   array (no notes) rather than one of the SECS-configured `{name, notes}` arrays.
+
+## 6. Fresh full-app audit (`feature/updates_v2`, post chart/seeding fixes)
+
+A ground-up re-review of the whole app (every `.js` file, all CSP/XSS/localStorage/external-
+endpoint surfaces) rather than a follow-up to a specific change. Overall verdict: solid — XSS
+posture is genuinely good (every render path escapes or uses `textContent`/`createElement`),
+no `eval`/`new Function`, every `JSON.parse` try/caught, storage-quota errors handled. These
+are the concrete bugs/gaps it turned up.
+
+- `[x]` **Import validation didn't type-check scene tag arrays — a hand-edited/corrupted
+  file could crash the board.** [projects.js:442-451](projects.js#L442) cross-checked
+  `scene.characters`/etc. against the library *if* each was an array, but never rejected a
+  scene where one of them wasn't an array at all (e.g. `"characters": "Bob"`). Such a scene
+  passed validation, survived `loadState()`'s falsy-only `sc.characters || []` check (a
+  string is truthy), and then crashed `renderBoard()` the first time
+  `scene.characters.forEach(...)` ran on a string. Fixed by requiring `characters`/
+  `locations`/`themes`/`misc` to each be `null`/absent or an array of strings, and hardened
+  `loadState()` (`state.js`) defensively with `Array.isArray(v) ? v : []` for the same four
+  fields regardless of import path.
+- `[x]` **Reports silently dropped scenes with an orphaned `sectionId`.**
+  [reports.js:49-53](reports.js#L49) and the report modal's Unassigned checkbox
+  ([reports.js:17](reports.js#L17)) both keyed off the scene's raw `sectionId` / a falsy
+  check, instead of "does this id resolve to a real section" — a scene pointing at a
+  deleted/nonexistent section (import never validated `sectionId` against `d.sections`) was
+  excluded from every report even with every checkbox selected, silently omitted from output
+  the user would treat as a complete export. The board/Sections-panel/charts already treat
+  orphans as Unassigned (§2's "two definitions of unassigned" fix); reports.js was the one
+  remaining holdout. Fixed both spots to check membership in `S.sections` instead.
+- `[x]` **Deleting a filtered-on section blanked the whole board.** `confirmSecDel()`
+  ([editor.js:1321](editor.js#L1321)) never removed the deleted section's id from the
+  module-level `secFilterIds` Set. Filtering to just that one section, then deleting it,
+  left a stale id in the filter that matched neither the surviving sections nor
+  `'unassigned'` — every scene (including the ones just reassigned to Unassigned) vanished
+  from the board, reading as data loss even though nothing was actually lost (switching back
+  to "All Sections" recovered it). Fixed by clearing the id from `secFilterIds` (and
+  refreshing the filter button label) as part of the delete.
+- `[x]` **Section color changes had no undo entry.** `colorSection()`
+  ([editor.js:1346](editor.js#L1346)) called `recordDataEdit()`/`saveState()` but never
+  `pushHistory()`, unlike every other section mutator. Fixing this was less trivial than a
+  missing call: the color `<input>`'s `input` handler already mutates `sec.color` live
+  (for real-time preview while dragging in the native picker) *before* `change` fires, so
+  snapshotting inside `colorSection()` (called on `change`) would have captured the
+  already-changed color, making undo a no-op. Fixed by snapshotting once, on the *first*
+  `input` event of each drag interaction, before that live-preview mutation starts — verified
+  by simulating a real drag (3 `input` events + 1 `change`) and confirming exactly one
+  history entry is pushed and undo restores the true pre-drag color, not an intermediate one.
+- `[x]` **`reports.js` called `sceneDisplayNum()` per scene (and per scene per item in the
+  library reports), each call rebuilding the full ordered scene list from scratch** — the
+  same anti-pattern `buildSceneNumMap()`'s own comment warns against, already fixed
+  everywhere else (`renderBoard()`, the chart renderers). Hoisted to one
+  `buildSceneNumMap()` call per report builder (`buildSceneListReport`, `buildLibItemReport`,
+  `buildMatrixReport`), verified against all 7 report types with 0 scene-number mismatches
+  across 39 scenes.
+- `[x]` **"Update Local Copy" import dialog could silently overwrite unexported local
+  edits with no warning.** [projects.js:570](projects.js#L570): `revision` counts *saves*,
+  not content edits (a theme change or simply leaving the editor bumps it), so "the file is
+  a newer revision" never implied "the local copy has nothing worth keeping." The dialog now
+  appends a warning naming the local copy's `editsSinceExport` count when it's nonzero.
+- `[x]` **CSP still needed `'unsafe-inline'` in `script-src`.** ~140 inline event-handler
+  attributes (`onclick=`, `onchange=`, `oninput=`, `onmouseenter=`, etc.) across
+  `editor.html`, `projects.html`, `overview.html`, `test.html`, and the projects-grid card
+  template in `projects.js` were converted to `addEventListener` wiring — all were static,
+  literal calls with no interpolated/untrusted data, so this was a mechanical CSP-compliance
+  transform, not itself an XSS fix. Removing only the attributes wasn't sufficient, though:
+  the resulting (and some pre-existing) inline `<script>` blocks would *still* violate a
+  stricter CSP, so those were extracted into four new files (`editor-init.js`,
+  `projects-init.js`, `overview-init.js`, `test-init.js`). `'unsafe-inline'` dropped from
+  `script-src` in every page's CSP meta tag (`style-src`'s is unchanged, out of scope); a CSP
+  meta tag was also added to `test.html`, which previously shipped with none. Verified on a
+  fresh, uncached origin: zero remaining inline handlers/scripts, zero console/CSP-violation
+  errors across all 6 pages, and a full functional pass (menus, themes, panels, scene CRUD,
+  chart view, reports, projects-grid actions, overview image modal) plus re-verification that
+  the section-filter and section-color-undo fixes above still work post-restructuring.
+
+*(All of §6 landed on `feature/updates_v2`, pushed, not yet merged.)*

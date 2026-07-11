@@ -38,6 +38,19 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   pages to describe the new automatic detection instead of the old "date your files
   yourself" advice.
   *(`strip_AI` branch, merged to `main`)*
+- `[x]*` Import validation now rejects a scene whose `characters`/`locations`/`themes`/
+  `misc` isn't an array of strings when present (only `povs` was checked before) — a
+  hand-edited or corrupted file with e.g. a bare string in one of those fields previously
+  passed validation and crashed the board on first render. `loadState()` also hardened
+  defensively for the same shape regardless of how the data arrived.
+- `[x]*` The "Imported File Is Newer" conflict dialog now warns when the local copy has
+  unexported changes before offering "Update Local Copy," since a newer file revision never
+  implied the local copy had nothing worth keeping (`revision` counts saves, not edits).
+- `[x]*` Removed `'unsafe-inline'` from `script-src` in every page's CSP — all inline event
+  handlers (~140 across the app) and inline `<script>` blocks were converted to
+  `addEventListener` wiring in external files. `test.html` also got a CSP meta tag for the
+  first time.
+  *(`feature/updates_v2` branch, pushed, not yet merged)*
 
 ## 3. Scene Flow Chart (visualization)
 
@@ -230,7 +243,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 | `strip_AI` | Merged to `main` (PR #4) |
 | `feature/flow_visual` | Merged to `main` (PR #7) |
 | `feature/updates_v1` | Merged to `main` (PR #9) — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting, POV chart-highlighting fix, Unassigned chart indicator, Mac Alt-shortcut fix, POV scene-card row, POV added to Reporting, Overview/Tutorial docs updated for POV |
-| `feature/updates_v2` | Pushed to `origin`, **not yet merged to `main`** — all of `UPDATE_ROADMAP.md`'s code-review fixes (§1-3), custom POV name edit/delete, chart segment hover polish, chart margin tightening, and (most recent) the snake chart width-utilization and curve-clipping fixes plus the sample-project seeding race fix |
+| `feature/updates_v2` | Pushed to `origin`, **not yet merged to `main`** — all of `UPDATE_ROADMAP.md`'s code-review fixes (§1-3), custom POV name edit/delete, chart segment hover polish, chart margin tightening, the snake chart width-utilization and curve-clipping fixes, the sample-project seeding race fix, and (most recent) a fresh full-app audit's fixes (§6: import validation gap, orphaned-section reports bug, filtered-section-delete bug, section-color undo bug, report-generation perf) plus the CSP `unsafe-inline` removal |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
 on `feature/updates_v2` until that branch is merged into `main`.
