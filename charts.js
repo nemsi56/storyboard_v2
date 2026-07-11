@@ -271,7 +271,11 @@ function computeSnakeLayout(N, W) {
   let run = (L - (R - 1) * A) / R;
   if (run > runLen) { R++; run = (L - (R - 1) * A) / R; }
   if (R > 1 && run < 180) { R--; run = (L - (R - 1) * A) / R; }
-  if (R === 1 && run < 180) run = L;
+  // The above only sizes `run` to hit ~110px/scene, which leaves it short of
+  // runLen (and thus dead space on the right of every row) whenever N*T
+  // doesn't divide evenly into R rows. Row count R is already settled above,
+  // so stretch to the full available width now.
+  run = runLen;
   return { R, run, M, r };
 }
 function buildSnakePath(N, W) {
