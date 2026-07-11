@@ -211,12 +211,22 @@ function addSegments(container, centerline, scenes, total, thickness) {
     clone.setAttribute('stroke-linecap', 'butt');
     clone.style.pointerEvents = 'stroke';
     applySegColor(clone, scene);
-    clone.addEventListener('mouseenter', e => showChartTip(e, scene));
+    clone.addEventListener('mouseenter', e => { showChartTip(e, scene); highlightSegNumber(scene.id, true); });
     clone.addEventListener('mousemove', moveChartTip);
-    clone.addEventListener('mouseleave', hideChartTip);
+    clone.addEventListener('mouseleave', () => { hideChartTip(); highlightSegNumber(scene.id, false); });
     clone.addEventListener('click', () => onSegClick(scene));
     container.appendChild(clone);
   });
+}
+// The hover darkening on a segment (see .chart-seg:hover in styles.css) can
+// swallow the resting --sub/--ontx number color it's drawn under, so swap the
+// matching chart-num to --ontx while hovered — the same "readable against a
+// dark/strong fill" color already used for filter-matched numbers, and it
+// reliably contrasts against --tx (the hover color) on every theme since
+// both variables sit at opposite ends of that theme's light/dark polarity.
+function highlightSegNumber(sceneId, on) {
+  const num = document.querySelector('.chart-num[data-scene-id="' + sceneId + '"]');
+  if (num) num.classList.toggle('chart-num-hl', on);
 }
 
 function drawSectionMarkerAt(container, x, y, sectionId, idx) {
@@ -318,6 +328,7 @@ function addSnakeNumbers(svg, centerline, scenes, total) {
     txt.setAttribute('font-size', '11');
     txt.setAttribute('fill', (chartFilterActive() && sceneMatchesChart(scene)) ? 'var(--ontx)' : 'var(--sub)');
     txt.classList.add('chart-num');
+    txt.dataset.sceneId = scene.id;
     txt.style.pointerEvents = 'none';
     txt.textContent = String(numMap.get(scene.id) ?? 1);
     svg.appendChild(txt);
@@ -395,6 +406,7 @@ function addCircleNumbers(svg, scenes, cx, cy, R) {
     txt.setAttribute('font-size', '11');
     txt.setAttribute('fill', (chartFilterActive() && sceneMatchesChart(scene)) ? 'var(--ontx)' : 'var(--sub)');
     txt.classList.add('chart-num');
+    txt.dataset.sceneId = scene.id;
     txt.style.pointerEvents = 'none';
     txt.textContent = String(numMap.get(scene.id) ?? 1);
     svg.appendChild(txt);

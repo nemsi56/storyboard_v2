@@ -651,7 +651,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-seg:not(.chart-seg-match):hover{stroke:var(--tx);opacity:1;filter:brightness(1.1);cursor:pointer}
 .chart-seg.chart-seg-match:hover{filter:brightness(1.3) saturate(1.25);cursor:pointer}
 .chart-seg.chart-seg-dim{opacity:.45}
-.chart-num{font-family:inherit;user-select:none}
+.chart-num{font-family:inherit;user-select:none;transition:fill .12s}
+.chart-num.chart-num-hl{fill:var(--ontx)!important}
 .chart-sec-marker{cursor:pointer}
 .chart-sec-marker circle{transition:fill .12s}
 .chart-sec-marker text{font-family:inherit;user-select:none;pointer-events:none;transition:fill .12s}
