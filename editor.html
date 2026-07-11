@@ -73,10 +73,13 @@
         <button class="di theme-di theme-di-sunset" data-theme="sunset" onclick="setTheme('sunset');closeAllMenus()">Sunset</button>
       </div></div>
       <div class="di-sep"></div>
-      <button class="di" onclick="zoomIn(); closeAllMenus()">Zoom In<span class="di-sc">Ctrl+=</span></button>
-      <button class="di" onclick="zoomOut();closeAllMenus()">Zoom Out<span class="di-sc">Ctrl+−</span></button>
-      <button class="di" onclick="zoomReset();closeAllMenus()">Reset Zoom<span class="di-sc">Ctrl+0</span></button>
-      <div class="di-sep"></div>
+      <!-- Zoom only affects scene cards, which aren't on screen in chart view — hidden there by updateZoomMenuState(). -->
+      <div id="menu-zoom-group">
+        <button class="di" onclick="zoomIn(); closeAllMenus()">Zoom In<span class="di-sc">Ctrl+=</span></button>
+        <button class="di" onclick="zoomOut();closeAllMenus()">Zoom Out<span class="di-sc">Ctrl+−</span></button>
+        <button class="di" onclick="zoomReset();closeAllMenus()">Reset Zoom<span class="di-sc">Ctrl+0</span></button>
+        <div class="di-sep"></div>
+      </div>
       <button class="di" id="menu-show-library" onclick="togglePanel('lp');setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-lib-text">Hide Library Panel</span></button>
       <button class="di" id="menu-show-sections" onclick="togglePanel('sp');setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-sec-text">Hide Sections Panel</span></button>
       <button class="di" id="menu-show-scene" onclick="togglePanel('cp');setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-scn-text">Hide Scene Panel</span></button>
@@ -133,6 +136,7 @@
         <!-- Clear highlights button (shown when selections active) -->
         <div id="lib-clr-wrap"><button id="lib-clr" onclick="clearAllSel()">✕ Clear highlights</button></div>
         <!-- Library sections appended by buildLibPanel() -->
+        <div id="lp-scroll"></div>
       </div>
     </div>
   </div>
@@ -184,36 +188,44 @@
       </div>
       <!-- New Scene form -->
       <div id="form-new" class="p-body">
-        <div class="form-btns"><button id="new-cancel" onclick="cancelNewScene()">Cancel</button><button id="asb" onclick="addScene()">Save</button></div>
-        <div class="errmsg" id="scerr"></div>
-        <div class="ff"><label>Title</label><textarea id="sc-title" class="ta-title" rows="2" placeholder="Enter scene title…" maxlength="120"></textarea></div>
-        <div class="ff"><label>Summary</label><textarea id="sc-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
-        <div class="ff" id="sc-sec-wrap" style="display:none"><label>Section</label><select id="sc-section" class="ff-sel"><option value="">Unassigned</option></select></div>
-        <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ck-characters-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-characters-wrap','characters')">No characters selected</button><div class="ck-drop-list" id="ck-characters"></div></div></div>
-        <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ck-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ck-locations"></div></div></div>
-        <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ck-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ck-themes"></div></div></div>
-        <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ck-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ck-misc"></div></div></div>
-        <div class="ff"><label>Word Count</label><input type="number" id="sc-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
-        <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="sc-povs-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('sc-povs-wrap','povs')">No POV selected</button><div class="ck-drop-list" id="sc-povs"></div></div></div>
-        <div class="ff"><label>Notes</label><textarea id="sc-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+        <div class="cp-form-hdr">
+          <div class="form-btns"><button id="new-cancel" onclick="cancelNewScene()">Cancel</button><button id="asb" onclick="addScene()">Save</button></div>
+          <div class="errmsg" id="scerr"></div>
+        </div>
+        <div class="cp-form-fields">
+          <div class="ff"><label>Title</label><textarea id="sc-title" class="ta-title" rows="2" placeholder="Enter scene title…" maxlength="120"></textarea></div>
+          <div class="ff"><label>Summary</label><textarea id="sc-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+          <div class="ff" id="sc-sec-wrap" style="display:none"><label>Section</label><select id="sc-section" class="ff-sel"><option value="">Unassigned</option></select></div>
+          <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ck-characters-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-characters-wrap','characters')">No characters selected</button><div class="ck-drop-list" id="ck-characters"></div></div></div>
+          <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ck-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ck-locations"></div></div></div>
+          <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ck-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ck-themes"></div></div></div>
+          <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ck-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ck-misc"></div></div></div>
+          <div class="ff"><label>Word Count</label><input type="number" id="sc-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
+          <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="sc-povs-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('sc-povs-wrap','povs')">No POV selected</button><div class="ck-drop-list" id="sc-povs"></div></div></div>
+          <div class="ff"><label>Notes</label><textarea id="sc-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+        </div>
       </div>
       <!-- Edit Scene form -->
       <div id="form-edit" class="p-body" style="display:none">
-        <div class="form-btns">
-          <button id="canceledit" onclick="cancelEdit()">Cancel</button>
-          <button id="saveedit"   onclick="saveEdit()">Save Changes</button>
+        <div class="cp-form-hdr">
+          <div class="form-btns">
+            <button id="canceledit" onclick="cancelEdit()">Cancel</button>
+            <button id="saveedit"   onclick="saveEdit()">Save Changes</button>
+          </div>
+          <div class="errmsg" id="ederr"></div>
         </div>
-        <div class="errmsg" id="ederr"></div>
-        <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
-        <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
-        <div class="ff" id="ed-sec-wrap" style="display:none"><label>Section</label><select id="ed-section" class="ff-sel"><option value="">Unassigned</option></select></div>
-        <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ek-characters-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-characters-wrap','characters')">No characters selected</button><div class="ck-drop-list" id="ek-characters"></div></div></div>
-        <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ek-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ek-locations"></div></div></div>
-        <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ek-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ek-themes"></div></div></div>
-        <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ek-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ek-misc"></div></div></div>
-        <div class="ff"><label>Word Count</label><input type="number" id="ed-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
-        <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="ed-povs-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ed-povs-wrap','povs')">No POV selected</button><div class="ck-drop-list" id="ed-povs"></div></div></div>
-        <div class="ff"><label>Notes</label><textarea id="ed-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+        <div class="cp-form-fields">
+          <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
+          <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+          <div class="ff" id="ed-sec-wrap" style="display:none"><label>Section</label><select id="ed-section" class="ff-sel"><option value="">Unassigned</option></select></div>
+          <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ek-characters-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-characters-wrap','characters')">No characters selected</button><div class="ck-drop-list" id="ek-characters"></div></div></div>
+          <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ek-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ek-locations"></div></div></div>
+          <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ek-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ek-themes"></div></div></div>
+          <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ek-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ek-misc"></div></div></div>
+          <div class="ff"><label>Word Count</label><input type="number" id="ed-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
+          <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="ed-povs-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ed-povs-wrap','povs')">No POV selected</button><div class="ck-drop-list" id="ed-povs"></div></div></div>
+          <div class="ff"><label>Notes</label><textarea id="ed-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+        </div>
       </div>
     </div>
   </div>

@@ -115,6 +115,7 @@ function toggleMenu(name) {
     if (name === 'view') {
       updateThemeMenuState();
       updatePanelMenuStates();
+      updateZoomMenuState();
     }
   }
 }
@@ -129,6 +130,11 @@ function updateThemeMenuState() {
   document.querySelectorAll('#drop-view .theme-di').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === current);
   });
+}
+// Zoom only affects scene cards, which aren't on screen in chart view.
+function updateZoomMenuState() {
+  const group = document.getElementById('menu-zoom-group');
+  if (group) group.style.display = (typeof chartMode !== 'undefined' && chartMode) ? 'none' : '';
 }
 function updatePanelMenuStates() {
   const lp = document.getElementById('lp');
@@ -734,8 +740,11 @@ function renderAllLib() { SECS.forEach(s => renderLibSec(s.key)); renderPovLibSe
 
 // ── BUILD LIBRARY PANEL ───────────────────────────────────────────────────────
 function buildLibPanel() {
-  const body = document.getElementById('lp-body');
-  // Remove dynamically-built sections only; static elements (ao-global-wrap, lib-clr-wrap) stay
+  // Sections are appended into #lp-scroll, a dedicated inner scroll
+  // container — not #lp-body itself — so the hint text, AND/OR toggle, and
+  // Clear Highlights button stay fixed in place while only the item lists
+  // below them scroll.
+  const body = document.getElementById('lp-scroll');
   body.querySelectorAll('.lsec').forEach(el => el.remove());
   SECS.forEach(({ key, label }) => {
     const sec = document.createElement('div'); sec.className = 'lsec';
