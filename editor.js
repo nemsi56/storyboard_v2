@@ -1326,6 +1326,11 @@ function confirmSecDel() {
   pushHistory('Delete section "' + truncStr(sec.name, 22) + '"');
   S.sections = S.sections.filter(s => s.id !== id);
   S.scenes.forEach(s => { if (s.sectionId === id) s.sectionId = null; });
+  // Otherwise a stale id lingering in the section filter can match nothing
+  // (not the surviving sections, not 'unassigned'), silently emptying the
+  // board even though scenes still exist and "All Sections" isn't selected.
+  secFilterIds.delete(id);
+  updateSecFilterBtn();
   renderSecPanel(); renderSectionSelects(); renderBoard();
   recordDataEdit();
   saveState();
@@ -1397,11 +1402,22 @@ function renderSecPanel() {
     colorPick.type = 'color'; colorPick.className = 'sec-color-pick';
     colorPick.value = sec.color || '#5b8dd9'; colorPick.title = 'Section color';
     colorPick.addEventListener('mousedown', e => e.stopPropagation());
+    // The native picker fires 'input' continuously while dragging (for live
+    // preview) and 'change' once on commit. Snapshot before the FIRST 'input'
+    // of each interaction — not in the 'change' handler — since by the time
+    // 'change' fires, 'input' has already mutated sec.color to the new value;
+    // snapshotting there would capture the post-change color and make undo a
+    // no-op.
+    let colorHistPushed = false;
     colorPick.addEventListener('input', e => {
       const s = S.sections.find(x => x.id === sec.id); if (!s) return;
+      if (!colorHistPushed) { pushHistory('Change section color'); colorHistPushed = true; }
       s.color = e.target.value; renderBoard();
     });
-    colorPick.addEventListener('change', e => { colorSection(sec.id, e.target.value); renderBoard(); });
+    colorPick.addEventListener('change', e => {
+      colorHistPushed = false;
+      colorSection(sec.id, e.target.value); renderBoard();
+    });
     const nameEl = document.createElement('span'); nameEl.className = 'sec-li-name'; nameEl.textContent = sec.name;
     nameEl.addEventListener('click', () => startSecRename(li, sec.id));
     const cnt = S.scenes.filter(s => s.sectionId === sec.id).length;

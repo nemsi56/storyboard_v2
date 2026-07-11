@@ -439,14 +439,16 @@ function importProjectJSON(inputEl) {
         return;
       }
 
+      const isStrArr = v => v == null || (Array.isArray(v) && v.every(isStr));
       const badSceneIdx = d.scenes.findIndex(sc =>
         !sc || typeof sc !== 'object' || typeof sc.id !== 'number' || !isStr(sc.title) ||
         (sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes)) ||
         (sc.wordCount != null && typeof sc.wordCount !== 'number') ||
         (sc.pov != null && !isStr(sc.pov)) || // legacy single-value POV, still accepted on import
-        (sc.povs != null && (!Array.isArray(sc.povs) || !sc.povs.every(isStr))));
+        (sc.povs != null && (!Array.isArray(sc.povs) || !sc.povs.every(isStr))) ||
+        !isStrArr(sc.characters) || !isStrArr(sc.locations) || !isStrArr(sc.themes) || !isStrArr(sc.misc));
       if (badSceneIdx !== -1) {
-        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", string "summary"/"notes" if present, a numeric "wordCount" if present, a string "pov" if present, and an array of strings "povs" if present.');
+        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", string "summary"/"notes" if present, a numeric "wordCount" if present, a string "pov" if present, and arrays of strings for "povs"/"characters"/"locations"/"themes"/"misc" if present.');
         return;
       }
       if (new Set(d.scenes.map(sc => sc.id)).size !== d.scenes.length) {

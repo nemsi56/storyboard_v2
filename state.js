@@ -102,10 +102,11 @@ function loadState(storageKey) {
         ? sc.povs.filter(v => typeof v === 'string')
         : (typeof sc.pov === 'string' && sc.pov ? [sc.pov] : []);
       const { pov, ...rest } = sc;
+      const arr = v => Array.isArray(v) ? v : [];
       return {
         ...rest,
-        characters: sc.characters || [], locations: sc.locations || [],
-        themes: sc.themes || [],         misc: sc.misc || [],
+        characters: arr(sc.characters), locations: arr(sc.locations),
+        themes: arr(sc.themes),         misc: arr(sc.misc),
         sectionId: sc.sectionId ?? null,
         povs,
       };

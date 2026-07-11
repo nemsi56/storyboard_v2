@@ -14,7 +14,13 @@ function openReportModal() {
     const sp = document.createElement('span'); sp.textContent = sec.name;
     lbl.appendChild(cb); lbl.appendChild(sp); secList.appendChild(lbl);
   });
-  if (S.scenes.some(s => !s.sectionId)) {
+  // Match rptFilterScenes()'s definition of Unassigned: a scene whose
+  // sectionId doesn't resolve to a real section (not just a falsy sectionId)
+  // — an orphaned id (e.g. from an import, or a since-deleted section) is
+  // possible and should count here too, or its scenes silently vanish from
+  // every report even with every checkbox selected.
+  const validSecIds = new Set(S.sections.map(s => s.id));
+  if (S.scenes.some(s => !validSecIds.has(s.sectionId))) {
     const lbl = document.createElement('label'); lbl.className = 'rpt-ck';
     const cb  = document.createElement('input'); cb.type = 'checkbox'; cb.value = '__unassigned__'; cb.checked = true;
     cb.dataset.rptSec = '1';
@@ -47,12 +53,12 @@ function rptSelectedSecs() {
   return new Set([...document.querySelectorAll('[data-rpt-sec]:checked')].map(c => c.value));
 }
 function rptFilterScenes(secSet) {
+  const validSecIds = new Set(S.sections.map(s => s.id));
   const filtered = S.scenes.filter(sc => {
-    const sid = sc.sectionId != null ? String(sc.sectionId) : '__unassigned__';
+    const sid = validSecIds.has(sc.sectionId) ? String(sc.sectionId) : '__unassigned__';
     return secSet.has(sid);
   });
-  const validSecIds = S.sections.map(s => s.id);
-  const secOrder = new Map(validSecIds.map((id, i) => [id, i + 1]));
+  const secOrder = new Map([...validSecIds].map((id, i) => [id, i + 1]));
   // Array.prototype.sort is stable (ES2019+), so scenes within the same
   // section keep their original relative order without an explicit tiebreak.
   return filtered.sort((a, b) => {
@@ -180,13 +186,14 @@ function buildSceneListReport(secSet) {
     pov:        document.getElementById('rpt-sl-pov').checked,
   };
   const scenes = rptFilterScenes(secSet);
+  const numMap = buildSceneNumMap();
   let html = rptPageHeader('Scene List');
   if (!scenes.length) {
     html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No scenes match the selected sections.</p>';
   } else {
     scenes.forEach(sc => {
       html += `<div class="scene-block">`;
-      html += `<div class="scene-num">Scene ${sceneDisplayNum(sc.id)}</div>`;
+      html += `<div class="scene-num">Scene ${numMap.get(sc.id) ?? 1}</div>`;
       html += `<div class="scene-title">${rptEsc(sc.title || '(Untitled)')}</div>`;
       if (inc.section)                       html += rptFieldRow('Section',    rptEsc(rptSecName(sc.sectionId)));
       if (inc.summary    && sc.summary)      html += rptFieldRow('Summary',    rptEsc(sc.summary));
@@ -228,6 +235,7 @@ function buildLibItemReport(secSet, type) {
     inc[field] = el.checked;
   });
   const scenes = rptFilterScenes(secSet);
+  const numMap = buildSceneNumMap();
   let html = rptPageHeader(cfg.title);
   const items = cfg.items ? cfg.items() : S[cfg.key];
   if (!items.length) {
@@ -246,7 +254,7 @@ function buildLibItemReport(secSet, type) {
           const extra = cfg.extraMeta(inc, sc);
           if (extra) meta.push(extra);
           html += `<div class="scene-entry">`;
-          html += `<span class="scene-entry-title">Scene ${sceneDisplayNum(sc.id)} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
+          html += `<span class="scene-entry-title">Scene ${numMap.get(sc.id) ?? 1} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
           if (meta.length) html += ` <span class="scene-entry-meta">· ${meta.join(' · ')}</span>`;
           if (inc.summary && sc.summary) html += `<div class="scene-entry-summary">${rptEsc(sc.summary)}</div>`;
           html += `</div>`;
@@ -273,6 +281,7 @@ function buildMatrixReport(secSet) {
   const showSec   = document.getElementById('rpt-mx-section').checked;
   const flip      = document.getElementById('rpt-mx-flip').checked;
   const scenes    = rptFilterScenes(secSet);
+  const numMap    = buildSceneNumMap();
   // POV isn't a real library array (S.povs doesn't exist) — build its axis items
   // from the names actually assigned as POV, same as the POV item report above.
   const axisItems = axis === 'povs' ? usedPovNames().map(name => ({ name })) : (S[axis] || []);
@@ -295,7 +304,7 @@ function buildMatrixReport(secSet) {
     html += `</tr></thead><tbody>`;
     scenes.forEach(sc => {
       const secStr = showSec ? ` <span class="mx-scene-sec" style="font-weight:400">· ${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
-      html += `<tr><td class="mx-row-hdr" style="width:200px;max-width:200px"><div class="mx-row-wrap"><span class="mx-row-num">${sceneDisplayNum(sc.id)} —</span><span class="mx-row-title">${rptEsc(sc.title||'(Untitled)')}${secStr}</span></div></td>`;
+      html += `<tr><td class="mx-row-hdr" style="width:200px;max-width:200px"><div class="mx-row-wrap"><span class="mx-row-num">${numMap.get(sc.id) ?? 1} —</span><span class="mx-row-title">${rptEsc(sc.title||'(Untitled)')}${secStr}</span></div></td>`;
       axisItems.forEach(item => {
         html += (sc[axis] || []).includes(item.name) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
       });
@@ -307,7 +316,7 @@ function buildMatrixReport(secSet) {
     html += `<table id="mx-full"><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
     scenes.forEach(sc => {
       const secStr = showSec ? `<span class="mx-scene-sec" style="display:block;white-space:nowrap">${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
-      html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">Sc ${sceneDisplayNum(sc.id)}</span>${secStr}</th>`;
+      html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">Sc ${numMap.get(sc.id) ?? 1}</span>${secStr}</th>`;
     });
     html += `</tr></thead><tbody>`;
     axisItems.forEach(item => {
