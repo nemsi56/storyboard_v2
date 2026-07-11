@@ -89,14 +89,26 @@ function renderProjectGrid() {
             <span>Modified ${timeAgo(p.modifiedAt)}</span>
           </div>
         </div>
-      </div>
-      <div class="pm-card-actions">
-        <button class="pm-card-btn" onclick="event.stopPropagation();openProject('${p.id}')">Open</button>
-        <button class="pm-card-btn" onclick="event.stopPropagation();startProjRename('${p.id}')">Rename</button>
-        <button class="pm-card-btn" onclick="event.stopPropagation();duplicateProject('${p.id}')">Duplicate</button>
-        <button class="pm-card-btn" onclick="event.stopPropagation();exportProjectJSON('${p.id}')">Export</button>
-        <button class="pm-card-btn del" onclick="event.stopPropagation();startProjDel('${p.id}')">Delete</button>
       </div>`;
+
+    const actions = document.createElement('div');
+    actions.className = 'pm-card-actions';
+
+    const makeBtn = (label, fn, extraClass) => {
+      const btn = document.createElement('button');
+      btn.className = 'pm-card-btn' + (extraClass ? ' ' + extraClass : '');
+      btn.textContent = label;
+      btn.addEventListener('click', (event) => { event.stopPropagation(); fn(p.id); });
+      return btn;
+    };
+
+    actions.appendChild(makeBtn('Open', openProject));
+    actions.appendChild(makeBtn('Rename', startProjRename));
+    actions.appendChild(makeBtn('Duplicate', duplicateProject));
+    actions.appendChild(makeBtn('Export', exportProjectJSON));
+    actions.appendChild(makeBtn('Delete', startProjDel, 'del'));
+
+    card.appendChild(actions);
     grid.appendChild(card);
   });
 }
@@ -568,8 +580,16 @@ function importProjectJSON(inputEl) {
       const fileRev   = d.revision || 0;
 
       if (fileRev > localRev) {
+        // revision counts saves, not content edits (a theme change or leaving
+        // the editor bumps it too), so "file is newer" doesn't imply "local
+        // has nothing worth keeping" — editsSinceExport is what actually
+        // tracks unexported content changes, so warn on that instead.
+        const localEdits = existing.data.editsSinceExport || 0;
+        const editsWarning = localEdits > 0
+          ? '\n\nYour local copy has ' + localEdits + ' unexported change' + (localEdits !== 1 ? 's' : '') + ' — updating from this file will overwrite ' + (localEdits !== 1 ? 'them' : 'it') + '.'
+          : '';
         showImportChoiceDialog('Imported File Is Newer',
-          'The file you\'re importing is a newer version of "' + localName + '" (file revision ' + fileRev + ', your local copy revision ' + localRev + ').\n\nUpdate your local copy to match the file?',
+          'The file you\'re importing is a newer version of "' + localName + '" (file revision ' + fileRev + ', your local copy revision ' + localRev + ').' + editsWarning + '\n\nUpdate your local copy to match the file?',
           [
             { label: 'Update Local Copy', primary: true, onClick: () => replaceExisting(existing) },
             { label: 'Keep Both', onClick: () => finishAsNew(true) },
