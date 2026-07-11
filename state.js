@@ -162,7 +162,7 @@ const S = {
 };
 
 // ── HISTORY (undo / redo) ─────────────────────────────────────────────────────
-const hist = { past:[], future:[], MAX:10 };
+const hist = { past:[], future:[], MAX:50 };
 
 function truncStr(s, n) { return s.length > n ? s.slice(0, n) + '…' : s; }
 

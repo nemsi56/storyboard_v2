@@ -106,9 +106,8 @@ items off as they land.
   calls `renderBoard()` (full innerHTML wipe + rebuild) on every drop-target change during a
   drag. Toggling drop-indicator classes on existing DOM nodes instead would scale much
   better past a couple hundred cards.
-- `[~]` `hist.MAX = 10` ([state.js:165](state.js#L165)) — undo depth is shallow relative to
-  how cheap each snapshot is. Raising it to 50 costs little. Low priority, quality-of-life
-  only.
+- `[x]` `hist.MAX` raised from `10` to `50` ([state.js:165](state.js#L165)) — undo depth was
+  shallow relative to how cheap each snapshot is.
 
 ## 4. Repo state
 
