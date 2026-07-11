@@ -608,6 +608,19 @@ function ensureSampleProjects() {
   const prefs = loadGlobalPrefs();
   if (prefs.samplesSeeded) return Promise.resolve();
 
+  // samplesSeeded is only set after the fetches below resolve, so two page
+  // loads racing before that write lands (two tabs opened at once, a fast
+  // reload) would otherwise both pass the check above and each seed their
+  // own copy of both samples. Claim a short-lived lock synchronously before
+  // starting the async work so the second load backs off instead.
+  const SEEDING_LOCK_MS = 15000;
+  const now = Date.now();
+  if (prefs.samplesSeeding && now - prefs.samplesSeeding < SEEDING_LOCK_MS) {
+    return Promise.resolve();
+  }
+  prefs.samplesSeeding = now;
+  saveGlobalPrefs(prefs);
+
   const samplesToLoad = [
     { name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' },
     { name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' },
