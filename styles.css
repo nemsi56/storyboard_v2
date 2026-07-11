@@ -95,6 +95,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .li:hover .idel,.li:hover .iedit{opacity:1}
 .idel:hover{color:var(--rd)}
 .iedit:hover{color:var(--acc)}
+.li:hover .idel.disabled,.li:hover .iedit.disabled{opacity:.35;cursor:default}
+.idel.disabled:hover,.iedit.disabled:hover{color:var(--o0)}
 .eh{font-size:11px;color:var(--o0);font-style:italic;padding:2px 0}
 
 /* ══ PANEL RESIZE HANDLE ═══════════════════════════════════════════════════ */

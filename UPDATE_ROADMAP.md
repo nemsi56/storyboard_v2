@@ -135,8 +135,17 @@ items off as they land.
 - `[x]` **New-project modal, Ctrl+S swallow, `backToProjects` fix, export timestamping
   reviewed — clean.** Export now correctly resets `editsSinceExport` on both the stored
   copy and live state.
-- `[~]` **Custom POV names are permanent by design** — there's no UI to delete a typo'd
-  name from `S.povCustomNames`; it stays a checklist option forever (it only leaves the
-  Library panel, which lists used names only). Matches the documented "permanent, reusable"
-  intent in `FEATURE_ROADMAP.md` §5, but a typo path may eventually warrant a remove
-  affordance. Flagging as a product call, not a bug.
+- `[x]` **Custom POV names had no edit or delete UI.** Added both, matching the
+  ✎/× hover-icon pattern already used by Characters/Locations/Themes/Misc. Every POV row
+  now shows the icons — for a name sourced from the Character library, they're dimmed and
+  inert with a tooltip ("Edit/delete in Character list") explaining where to go instead of
+  silently doing nothing; for a genuinely custom name, they open the same edit/delete-confirm
+  modals the other library sections use, propagating a rename or removal into every scene's
+  `povs` array and the highlight selection. Character-sourced entries were deliberately
+  excluded from local edit/delete rather than unified with it — routing a rename through the
+  Character library from two different panels risked the two copies drifting out of sync,
+  and deleting a POV entry can't just mean "delete the character" (that has much bigger
+  consequences elsewhere). New functions: `openPovEditModal`/`savePovEdit`,
+  `openPovDelModal`/`removePovCustomName` — mirroring `openLibEditModal`/`saveLibEdit` and
+  `openLibDelModal`/`removeItem` field-for-field, since `S.povCustomNames` is a plain string
+  array (no notes) rather than one of the SECS-configured `{name, notes}` arrays.

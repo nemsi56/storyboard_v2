@@ -260,6 +260,19 @@ function openLibEditModal(sec, idx) {
   document.getElementById('lib-edit-hdr').textContent = 'Edit ' + (SINGULAR[sec] || 'Item');
   document.getElementById('lib-edit-name').value  = item.name;
   document.getElementById('lib-edit-notes').value = item.notes || '';
+  document.getElementById('lib-edit-notes-wrap').style.display = '';
+  document.getElementById('lib-edit-modal').classList.add('open');
+  setTimeout(() => document.getElementById('lib-edit-name').focus(), 60);
+}
+// POV custom names have no notes concept and aren't stored in S[sec], so they
+// get their own opener (sharing the same modal DOM) rather than overloading
+// openLibEditModal, which assumes a SECS-configured {name, notes} array.
+function openPovEditModal(idx) {
+  const name = S.povCustomNames[idx]; if (name === undefined) return;
+  libEditSec = 'povCustom'; libEditIdx = idx;
+  document.getElementById('lib-edit-hdr').textContent = 'Edit POV Name';
+  document.getElementById('lib-edit-name').value = name;
+  document.getElementById('lib-edit-notes-wrap').style.display = 'none';
   document.getElementById('lib-edit-modal').classList.add('open');
   setTimeout(() => document.getElementById('lib-edit-name').focus(), 60);
 }
@@ -268,6 +281,7 @@ function closeLibEditModal() {
   libEditSec = null; libEditIdx = null;
 }
 function saveLibEdit() {
+  if (libEditSec === 'povCustom') { savePovEdit(); return; }
   if (libEditSec === null || libEditIdx === null) return;
   const item = S[libEditSec][libEditIdx]; if (!item) return;
   const sec     = libEditSec;
@@ -312,6 +326,53 @@ function saveLibEdit() {
   recordDataEdit();
   saveState();
 }
+// Rename a custom POV name (mirrors the "characters" branch of saveLibEdit()
+// above field-for-field, since S.povCustomNames is a plain string array with
+// no notes and isn't one of the SECS-configured library arrays).
+function savePovEdit() {
+  const idx = libEditIdx;
+  const oldName = S.povCustomNames[idx]; if (oldName === undefined) return;
+  const newName = document.getElementById('lib-edit-name').value.trim();
+  if (!newName) { document.getElementById('lib-edit-name').focus(); return; }
+  const nameTaken = newName !== oldName && (
+    S.characters.some(c => c.name === newName) ||
+    S.povCustomNames.some((n, i) => i !== idx && n === newName)
+  );
+  if (nameTaken) { document.getElementById('lib-edit-name').select(); return; }
+  pushHistory('Edit POV name "' + oldName + '"');
+  S.povCustomNames[idx] = newName;
+  if (newName !== oldName) {
+    S.scenes.forEach(scene => {
+      if (!Array.isArray(scene.povs)) return;
+      const pi = scene.povs.indexOf(oldName);
+      if (pi !== -1) scene.povs[pi] = newName;
+    });
+    if (S.selections.povs.has(oldName)) {
+      S.selections.povs.delete(oldName);
+      S.selections.povs.add(newName);
+    }
+  }
+  const renameInList = arr => arr.map(v => v === oldName ? newName : v);
+  closeLibEditModal();
+  renderPovCk('sc', renameInList(ckCurrentlyChecked('sc', 'povs')));
+  renderPovCk('ed', renameInList(ckCurrentlyChecked('ed', 'povs')));
+  renderPovLibSec(); renderBoard();
+  recordDataEdit();
+  saveState();
+}
+// Delete a custom POV name — mirrors removeItem() above field-for-field,
+// scoped to S.povCustomNames/scene.povs instead of a SECS array.
+function removePovCustomName(name) {
+  pushHistory('Remove POV name "' + name + '"');
+  S.povCustomNames = S.povCustomNames.filter(n => n !== name);
+  S.scenes.forEach(sc => { sc.povs = (sc.povs || []).filter(v => v !== name); });
+  S.selections.povs.delete(name);
+  renderPovCk('sc', ckCurrentlyChecked('sc', 'povs').filter(v => v !== name));
+  renderPovCk('ed', ckCurrentlyChecked('ed', 'povs').filter(v => v !== name));
+  renderPovLibSec(); renderBoard(); updateLibClearBtn();
+  recordDataEdit();
+  saveState();
+}
 
 let libDelSec = null, libDelName = null;
 let secDelId = null;
@@ -322,11 +383,20 @@ function openLibDelModal(sec, name) {
   document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (${label}) from the entire file? This cannot be undone.`;
   document.getElementById('libdel-modal').classList.add('open');
 }
+// Shares the libdel-modal DOM with openLibDelModal above; kept separate
+// because 'povCustom' isn't a SECS key, so the cfg/label lookup above
+// doesn't apply.
+function openPovDelModal(name) {
+  libDelSec = 'povCustom'; libDelName = name;
+  document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (POV) from the entire file? This cannot be undone.`;
+  document.getElementById('libdel-modal').classList.add('open');
+}
 function closeLibDelModal() { document.getElementById('libdel-modal').classList.remove('open'); libDelSec = null; libDelName = null; }
 function confirmLibDel() {
   if (!libDelSec || !libDelName) return;
   const s = libDelSec, n = libDelName;
   closeLibDelModal();
+  if (s === 'povCustom') { removePovCustomName(n); return; }
   removeItem(s, n);
 }
 
@@ -1043,11 +1113,33 @@ function renderPovLibSec() {
   if (!names.length) { list.innerHTML = '<div class="eh">None yet</div>'; return; }
   names.forEach(name => {
     const isOn = S.selections.povs.has(name);
+    // A name is either a Character (edit/delete lives in the Characters
+    // panel — editing it here would create a second place to rename the
+    // same character, and deleting it can't just mean "delete the
+    // character") or a custom POV-only name (editable/deletable in place).
+    // povNames() guarantees these two sets never overlap.
+    const customIdx = S.povCustomNames.indexOf(name);
+    const isCustom = customIdx !== -1;
     const li = document.createElement('div');
     li.className = 'li' + (isOn ? ' on sec-p' : '');
     const dot = document.createElement('span'); dot.className = 'dot dp';
     const nm  = document.createElement('span'); nm.className = 'iname'; nm.textContent = name;
-    li.appendChild(dot); li.appendChild(nm);
+    const edit = document.createElement('button'); edit.className = 'iedit' + (isCustom ? '' : ' disabled'); edit.textContent = '✎';
+    const del  = document.createElement('button'); del.className  = 'idel'  + (isCustom ? '' : ' disabled'); del.textContent  = '×';
+    edit.title = isCustom ? 'Edit' : 'Edit/delete in Character list';
+    del.title  = isCustom ? 'Remove' : 'Edit/delete in Character list';
+    edit.addEventListener('mousedown', e => e.stopPropagation());
+    del.addEventListener('mousedown',  e => e.stopPropagation());
+    if (isCustom) {
+      edit.addEventListener('click', e => { e.stopPropagation(); openPovEditModal(customIdx); });
+      del.addEventListener('click',  e => { e.stopPropagation(); openPovDelModal(name); });
+    } else {
+      // Disabled: absorb the click (so it doesn't also toggle highlight via
+      // the li's own listener below) without opening anything.
+      edit.addEventListener('click', e => e.stopPropagation());
+      del.addEventListener('click',  e => e.stopPropagation());
+    }
+    li.appendChild(dot); li.appendChild(nm); li.appendChild(edit); li.appendChild(del);
     li.addEventListener('click', () => togglePovHighlight(name));
     list.appendChild(li);
   });

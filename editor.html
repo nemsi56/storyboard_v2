@@ -307,8 +307,10 @@
     <div id="lib-edit-hdr">Edit Item</div>
     <label class="lib-edit-lbl">Name</label>
     <input id="lib-edit-name" type="text" maxlength="50">
-    <label class="lib-edit-lbl" style="margin-top:12px">Notes</label>
-    <textarea id="lib-edit-notes" placeholder="Any details about this item…" rows="4"></textarea>
+    <div id="lib-edit-notes-wrap">
+      <label class="lib-edit-lbl" style="margin-top:12px">Notes</label>
+      <textarea id="lib-edit-notes" placeholder="Any details about this item…" rows="4"></textarea>
+    </div>
     <div class="ap-btns">
       <button onclick="closeLibEditModal()">Cancel</button>
       <button id="lib-edit-ok" onclick="saveLibEdit()">Save</button>
