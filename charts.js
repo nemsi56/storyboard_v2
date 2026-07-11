@@ -6,7 +6,7 @@ let chartMode = false;          // is chart view active
 let chartType = 'snake';        // 'snake' | 'circle'
 let chartResizeTimer = null;
 let chartLastSize = '';         // last rendered chart-scroll size, "WxH"
-const CHART_PAD = 20;           // must match #chart-canvas padding in styles.css
+const CHART_PAD = 12;           // must match #chart-canvas padding in styles.css
 const UNASSIGNED_SEC_ID = 'unassigned';
 
 if (document.getElementById('chart-host')) {
@@ -264,7 +264,7 @@ function showSectionTip(e, sectionId) {
 
 // ── SNAKE ──────────────────────────────────────────────────────────────────────
 function computeSnakeLayout(N, W) {
-  const r = 45, M = r + 25, A = Math.PI * r, T = 110;
+  const r = 45, M = r + 12, A = Math.PI * r, T = 110;
   const runLen = Math.max(2 * r + 20, W - 2 * M);
   const L = N * T;
   let R = Math.max(1, Math.ceil((L - runLen) / (runLen + A)) + 1);
@@ -276,7 +276,8 @@ function computeSnakeLayout(N, W) {
 }
 function buildSnakePath(N, W) {
   const { R, run, M, r } = computeSnakeLayout(N, W);
-  const y0 = 40 + r;
+  // +24 (not 0) so row 1 doesn't sit flush against the very top of the chart.
+  const y0 = 24 + r;
   let d = `M ${M} ${y0}`, y = y0;
   for (let row = 0; row < R; row++) {
     const leftToRight = row % 2 === 0;
@@ -288,7 +289,7 @@ function buildSnakePath(N, W) {
       y = newY;
     }
   }
-  return { d, height: y0 + (R - 1) * 90 + r + 40 };
+  return { d, height: y0 + (R - 1) * 90 + r + 24 };
 }
 
 function buildSnakeChart(canvas, scenes) {
@@ -368,7 +369,10 @@ function buildCircleChart(canvas, scenes) {
   const availH = Math.max(300, (scrollEl.clientHeight || 480) - 2 * CHART_PAD);
   const N = scenes.length;
   if (N === 0) { renderChartNoMatch(canvas); return; }
-  const R = Math.max(90, Math.min(availW, availH) / 2 - 70);
+  // -25 leaves just enough room for the ribbon's own stroke half-width (15)
+  // plus a little breathing room — nothing else is drawn outside R (the pie
+  // wedge and its labels sit inward, at outerR = R - 20 and less).
+  const R = Math.max(90, Math.min(availW, availH) / 2 - 25);
   const cx = availW / 2, cy = availH / 2;
   const svg = document.createElementNS(SVGNS, 'svg');
   canvas.appendChild(svg);
