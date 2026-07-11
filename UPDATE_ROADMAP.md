@@ -43,6 +43,17 @@ items off as they land.
   exists by matching project *name*. If a user deletes or renames "Pride and Prejudice", the
   next visit to the projects page re-downloads and re-adds it. Persist a `samplesSeeded`
   flag in global prefs instead of matching on name.
+- `[x]` **Sample-project seeding race condition could duplicate both samples.**
+  [projects.js:604](projects.js#L604), `ensureSampleProjects()`: the `samplesSeeded` flag
+  above is only persisted after the sample-file fetches resolve, so two `projects.html` loads
+  racing before that write landed (two tabs opened at once, a fast reload) would each read
+  the flag as unset and seed their own copy of both samples — a real user report showed
+  exactly this (2× "Pride and Prejudice", 2× "The Count of Monte Cristo"). Fixed by claiming
+  a short-lived, timestamped `samplesSeeding` lock synchronously before starting the async
+  fetches, so a concurrent load backs off instead of re-seeding; falls back to retrying on
+  the next visit if the lock goes stale (e.g. the first load crashed mid-seed). Verified by
+  racing two concurrent calls against a cleared localStorage: old code produced 4 project
+  entries, fixed code produced 2. *(`feature/updates_v2` branch, pushed, not yet merged.)*
 - `[x]` **Drag reorders and Quick Setup skip `recordDataEdit()` — now also breaks backup
   tracking.** Card drag-drop (`endCardDrag`), section drag-drop (`endSecListDrag`), library
   drag (`endLibDrag`), and `quickSetup()` all call `saveState()` without `recordDataEdit()`

@@ -154,6 +154,58 @@ both a light (ivory) and dark (slate) theme; console clean throughout. Did not v
 `backupIsOverdue()` condition it depends on was directly verified.
 
 ### Not yet done
-- Not merged to `main` or pushed to `origin` — still local-only on `feature/updates_v1`.
 - No UI to adjust the 25-edit / 15-minute thresholds — hardcoded constants at the top of
   `backup.js`, per the user's specified values.
+
+*(Update: `feature/updates_v1` has since been merged to `main` via PR #9.)*
+
+## feature/updates_v2 branch — Chart margin fixes & sample-seeding race fix
+
+Two follow-on bugs surfaced after a prior commit on this branch (`59a256d`, "Tighten flow
+chart margins so more of the window is used") tightened the snake/circle charts' padding —
+plus an unrelated data-integrity bug found while investigating a live report of duplicated
+projects.
+
+### Snake chart width utilization
+`computeSnakeLayout()` ([charts.js:267](charts.js#L267)) sizes each row's width (`run`) to
+hit a ~110px/scene target total path length, not to fill the container. Whenever that
+target didn't divide evenly across the chosen row count, `run` came out short of the actual
+available width (`runLen`) — dead space on the right of every row, while the fixed-width
+left margin stayed correctly tight. This asymmetry existed before the margin-tightening
+commit too, but the old, larger margins mostly hid it. Fix: once row count is settled, set
+`run = runLen` to fill the available width.
+
+### Snake chart curve clipping
+Separately, the horizontal margin (`M = r + 12`) only cleared the turn's centerline arc, not
+the ~34px-thick stroke `addSegments()` draws along it — that stroke's outer edge at the tip
+of each turn extends `stroke-width/2` (17px) further out than the centerline, which with
+only 12px of margin landed past the SVG's bounds and got clipped by its default
+`overflow:hidden`. Visible as both turn caps reading "cut off" on every row, independent of
+the width-utilization bug above (fixing one didn't fix the other — confirmed by a user
+report that persisted after the first fix shipped). Fix: introduced a named
+`SNAKE_SEG_THICKNESS` constant and size the margin as
+`r + CHART_PAD + SNAKE_SEG_THICKNESS / 2`, so it clears the stroke's actual painted extent.
+
+**Verification note:** `getBBox()`/`getBoundingClientRect()` do not reflect stroke width in
+the Claude Code browser preview tool used for verification — confirmed with a minimal
+repro (a straight line, `stroke-width: 40`, reported bbox width `0`). Both fixes were
+instead verified by rasterizing the rendered `<svg>` to a `<canvas>` and reading painted
+pixel boundaries directly: old margin left the curve's paint ~6px from the SVG edge (reads
+as "cut off"); the fix gives a symmetric ~23-24px on both sides at the same window width.
+The width-utilization fix was verified by asserting `computeSnakeLayout()`'s returned `run`
+equals the computed `runLen` across scene counts from 2 to 39 and several window widths.
+
+### Sample-project seeding race condition
+`ensureSampleProjects()` ([projects.js:604](projects.js#L604)) only persisted the
+`samplesSeeded` flag after its sample-file fetches resolved. Two `projects.html` loads
+racing before that write landed (two tabs opened at once, a fast reload) would each read the
+flag as unset and seed their own copy of both samples — a live user report showed exactly
+2× "Pride and Prejudice" and 2× "The Count of Monte Cristo". Fix: claim a short-lived,
+timestamped `samplesSeeding` lock synchronously before starting the async fetches, so a
+concurrent load backs off instead of re-seeding; falls back to retrying on the next visit if
+the lock goes stale. Verified by extracting the old and new function bodies and racing two
+concurrent calls against a cleared `localStorage`: old code produced 4 project entries, new
+code produced 2.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v2`, PR not yet opened.
