@@ -7,6 +7,7 @@ let chartType = 'snake';        // 'snake' | 'circle'
 let chartResizeTimer = null;
 let chartLastSize = '';         // last rendered chart-scroll size, "WxH"
 const CHART_PAD = 12;           // must match #chart-canvas padding in styles.css
+const SNAKE_SEG_THICKNESS = 34; // stroke width of the snake row "tube" (see addSegments call below)
 const UNASSIGNED_SEC_ID = 'unassigned';
 
 if (document.getElementById('chart-host')) {
@@ -264,7 +265,12 @@ function showSectionTip(e, sectionId) {
 
 // ── SNAKE ──────────────────────────────────────────────────────────────────────
 function computeSnakeLayout(N, W) {
-  const r = 45, M = r + 12, A = Math.PI * r, T = 110;
+  // The row/curve "tube" is a thick stroke centered on this arc: at the tip of
+  // each turn, its outer edge extends SNAKE_SEG_THICKNESS/2 past the
+  // centerline itself, so the margin needs that much extra clearance on top
+  // of the intended CHART_PAD, or the turn's outer edge clips against the
+  // SVG bounds.
+  const r = 45, M = r + CHART_PAD + SNAKE_SEG_THICKNESS / 2, A = Math.PI * r, T = 110;
   const runLen = Math.max(2 * r + 20, W - 2 * M);
   const L = N * T;
   let R = Math.max(1, Math.ceil((L - runLen) / (runLen + A)) + 1);
@@ -313,7 +319,7 @@ function buildSnakeChart(canvas, scenes) {
   centerline.setAttribute('fill', 'none');
   svg.appendChild(centerline);
   const total = centerline.getTotalLength();
-  addSegments(svg, centerline, scenes, total, 34);
+  addSegments(svg, centerline, scenes, total, SNAKE_SEG_THICKNESS);
   addSnakeNumbers(svg, centerline, scenes, total);
   addSnakeSectionMarkers(svg, centerline, scenes, total, W);
 }
