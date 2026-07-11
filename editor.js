@@ -556,17 +556,26 @@ function confirmDiscard() {
   if (editActive) cancelEdit();
   if (newLive) cancelNewScene();
 }
-// Escape-key path to cancelEdit(): skip the prompt entirely when nothing
-// would actually be lost, same rule as the outside-click handler below.
-function maybeCancelEditWithConfirm() {
-  // If the confirm is already showing, Escape dismisses IT (keeps editing)
-  // rather than re-opening it — this function runs inside the same handler
-  // that also fires many other one-shot "close if open" calls, so it must
-  // not both open and close the modal within a single keypress.
+// Escape-key path to cancelEdit()/cancelNewScene(): skip the prompt entirely
+// when nothing would actually be lost, same rule as the outside-click
+// handler below (mirrors its editActive/newLive/editDirty logic exactly).
+function maybeCancelSceneFormWithConfirm() {
+  // If the confirm is already showing, Escape dismisses IT (keeps
+  // editing/typing) rather than re-opening it — this runs inside
+  // ESCAPE_ACTIONS, whose modal tier already guarantees no *other* modal is
+  // open by the time this fires, but the confirm modal it itself can open
+  // needs this explicit re-entry check.
   if (document.getElementById('discard-cfm-modal').classList.contains('open')) { closeDiscardConfirm(); return; }
-  if (S.editingId === null) return;
-  if (isEditFormDirty()) { openDiscardConfirm(true, false); return; }
-  cancelEdit();
+  const tabNew = document.getElementById('tab-new');
+  const editActive = S.editingId !== null;
+  const newLive = !!tabNew && tabNew.classList.contains('live');
+  if (!editActive && !newLive) return;
+  const editDirty = editActive && isEditFormDirty();
+  if (!editDirty && !newLive) {
+    if (editActive) cancelEdit();
+    return;
+  }
+  openDiscardConfirm(editDirty, newLive);
 }
 if (document.getElementById('discard-cfm-modal')) onBackdropClick('discard-cfm-modal', closeDiscardConfirm);
 function saveEdit() {
@@ -1605,7 +1614,7 @@ const ESCAPE_ACTIONS = [
   { isOpen: () => document.getElementById('sec-filter-drop')?.classList.contains('open'), close: closeSecFilter },
   { isOpen: () => !!document.querySelector('#menu-bar .mi.open'), close: closeAllMenus },
   { isOpen: () => typeof chartMode !== 'undefined' && chartMode, close: closeChartView },
-  { isOpen: () => S.editingId !== null, close: maybeCancelEditWithConfirm },
+  { isOpen: () => S.editingId !== null || document.getElementById('tab-new')?.classList.contains('live'), close: maybeCancelSceneFormWithConfirm },
   { isOpen: () => !!searchQ, close: clearSearch },
   { isOpen: () => S.selIds.size > 0, close: clearCardSel },
   { isOpen: () => SECS.some(({ key }) => S.selections[key].size > 0) || S.selections.povs.size > 0, close: clearAllSel },

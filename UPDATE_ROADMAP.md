@@ -87,6 +87,14 @@ items off as they land.
   card selection, library highlights). Only the first matching tier fires per keypress, so
   dismissing one modal no longer also wipes selections/highlights/search in the same
   keystroke — each now takes its own successive Escape press.
+- `[x]` **Escape did nothing for an unsaved New Scene form.** Found while doing the fix
+  above: `maybeCancelEditWithConfirm()` (the function the old cascade called for edit mode)
+  only ever checked `S.editingId`, never the New Scene tab's `live` state — so unlike the
+  existing click-outside-the-panel handler (which already prompted correctly for both
+  cases), Escape silently did nothing to an in-progress, unsaved New Scene. Renamed to
+  `maybeCancelSceneFormWithConfirm()` and extended it to mirror the click-outside handler's
+  logic exactly (same editActive/newLive/editDirty branching), so Escape now opens the same
+  "Discard this new scene?" confirmation the click-outside handler already used.
 
 ## 3. Efficiency (not urgent at current scale, worth knowing)
 
