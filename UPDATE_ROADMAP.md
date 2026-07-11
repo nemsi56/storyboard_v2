@@ -79,12 +79,14 @@ items off as they land.
   `S.lastExportedAt` / `S.editsSinceExport`. Normally harmless because `loadState()`
   immediately overwrites both — but if `loadState` fails (corrupted project), the previous
   project's backup status leaks into the broken one. One-line fix while in the area.
-- `[~]` **Escape key cascades every close/clear handler at once.**
-  [editor.js:1592](editor.js#L1592): pressing Escape to close one modal also clears card
-  selections, library highlights, and search in the same keystroke. *Partially improved by
-  the merge:* the `cancelEdit` path now goes through `maybeCancelEditWithConfirm()`, so a
-  dirty edit is no longer silently discarded. The rest of the cascade remains a product
-  call, not necessarily a bug.
+- `[x]` **Escape key cascades every close/clear handler at once.** Replaced the
+  "run every handler unconditionally" list with a priority-ordered `ESCAPE_ACTIONS` array
+  ([editor.js:1590](editor.js#L1590)): modals first (most specific — the discard-confirm
+  dialog — down to the rest), then floating chrome (help overlay, section filter dropdown,
+  menu bar), then view modes (chart view), then board-content state (active edit, search,
+  card selection, library highlights). Only the first matching tier fires per keypress, so
+  dismissing one modal no longer also wipes selections/highlights/search in the same
+  keystroke — each now takes its own successive Escape press.
 
 ## 3. Efficiency (not urgent at current scale, worth knowing)
 

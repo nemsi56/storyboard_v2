@@ -1587,6 +1587,30 @@ document.addEventListener('mousedown', e => {
   openDiscardConfirm(editDirty, newLive);
 });
 
+// ── ESCAPE KEY PRIORITY ───────────────────────────────────────────────────────
+// Checked top-to-bottom on Escape; only the first isOpen() match runs its
+// close(), then the loop stops. Order runs most "in front"/blocking first
+// (modals), then floating chrome, then view modes, then board-content state.
+const ESCAPE_ACTIONS = [
+  { isOpen: () => document.getElementById('discard-cfm-modal')?.classList.contains('open'), close: closeDiscardConfirm },
+  { isOpen: () => document.getElementById('modal')?.classList.contains('open'), close: closeModal },
+  { isOpen: () => document.getElementById('add-popup')?.classList.contains('open'), close: closeAddPopup },
+  { isOpen: () => document.getElementById('lib-edit-modal')?.classList.contains('open'), close: closeLibEditModal },
+  { isOpen: () => document.getElementById('libdel-modal')?.classList.contains('open'), close: closeLibDelModal },
+  { isOpen: () => document.getElementById('savecfm-modal')?.classList.contains('open'), close: closeSaveCfm },
+  { isOpen: () => document.getElementById('secdel-modal')?.classList.contains('open'), close: closeSecDelModal },
+  { isOpen: () => document.getElementById('rpt-modal')?.classList.contains('open'), close: closeReportModal },
+  { isOpen: () => document.getElementById('pov-add-modal')?.classList.contains('open'), close: closePovAddModal },
+  { isOpen: () => helpMode, close: closeHelp },
+  { isOpen: () => document.getElementById('sec-filter-drop')?.classList.contains('open'), close: closeSecFilter },
+  { isOpen: () => !!document.querySelector('#menu-bar .mi.open'), close: closeAllMenus },
+  { isOpen: () => typeof chartMode !== 'undefined' && chartMode, close: closeChartView },
+  { isOpen: () => S.editingId !== null, close: maybeCancelEditWithConfirm },
+  { isOpen: () => !!searchQ, close: clearSearch },
+  { isOpen: () => S.selIds.size > 0, close: clearCardSel },
+  { isOpen: () => SECS.some(({ key }) => S.selections[key].size > 0) || S.selections.povs.size > 0, close: clearAllSel },
+];
+
 // ── KEYBOARD & STORYBOARD EVENT LISTENERS ────────────────────────────────────
 if (document.getElementById('sc-title')) {
   document.getElementById('sc-title').addEventListener('keydown', e => { if (e.key === 'Enter') { e.stopPropagation(); } });
@@ -1627,22 +1651,15 @@ document.addEventListener('keydown', e => {
     if (e.code === 'KeyV') { e.preventDefault(); toggleChartView(); return; }
   }
   if (e.key === 'Escape') {
-    closeAllMenus();
-    if (typeof clearAllSel === 'function') try { clearAllSel(); } catch(e){}
-    if (typeof clearCardSel === 'function') try { clearCardSel(); } catch(e){}
-    if (typeof maybeCancelEditWithConfirm === 'function') try { maybeCancelEditWithConfirm(); } catch(e){}
-    if (typeof closeModal === 'function') try { closeModal(); } catch(e){}
-    if (typeof closeAddPopup === 'function') try { closeAddPopup(); } catch(e){}
-    if (typeof clearSearch === 'function') try { clearSearch(); } catch(e){}
-    if (typeof closeLibDelModal === 'function') try { closeLibDelModal(); } catch(e){}
-    if (typeof closeSaveCfm === 'function') try { closeSaveCfm(); } catch(e){}
-    if (typeof closeSecDelModal === 'function') try { closeSecDelModal(); } catch(e){}
-    if (typeof closeSecFilter === 'function') try { closeSecFilter(); } catch(e){}
-    if (typeof closeReportModal === 'function') try { closeReportModal(); } catch(e){}
-    if (typeof closeLibEditModal === 'function') try { closeLibEditModal(); } catch(e){}
-    if (typeof closePovAddModal === 'function') try { closePovAddModal(); } catch(e){}
-    if (typeof closeHelp === 'function') try { closeHelp(); } catch(e){}
-    if (typeof closeChartView === 'function') try { closeChartView(); } catch(e){}
+    // Close/clear only the single front-most thing, in priority order, and
+    // stop — rather than running every close/clear handler unconditionally.
+    // Previously, dismissing one modal also wiped card selections, library
+    // highlights, and search in the same keystroke.
+    for (const action of ESCAPE_ACTIONS) {
+      try {
+        if (action.isOpen()) { action.close(); break; }
+      } catch(err) {}
+    }
   }
 });
 // Close filter dropdown on click outside
