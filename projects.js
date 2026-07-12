@@ -190,7 +190,16 @@ function openProject(id) {
   }
   currentProjectId = id;
   resetState();
-  loadState(projKey(id));
+  if (!loadState(projKey(id))) {
+    // Corrupt/unreadable project data: bounce out instead of opening an empty,
+    // saveable session — the very next save (any edit, undo, even a theme
+    // change) would overwrite the stored blob with that empty state, turning
+    // a possibly-recoverable file into permanent data loss.
+    currentProjectId = null;
+    alert('This project\'s data could not be read (it may be corrupted or from an incompatible version). Nothing has been changed — returning to your project list.');
+    window.location.href = 'projects.html';
+    return;
+  }
   getUserId();
   // Reset board view state left over from whatever was open before. Usually
   // a no-op (a normal "Open" from the Projects page is a full page

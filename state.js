@@ -7,6 +7,10 @@ const LEGACY_KEY   = 'storyboard_v1';
 const PROJECT_INDEX_KEY = 'scriptease_projects';
 const GLOBAL_PREFS_KEY  = 'scriptease_prefs';
 let currentProjectId = null;
+// Alert once per session on a save failure, not once per edit — saveState runs
+// on ~20 different code paths, so an unguarded alert() re-fires (and re-blocks
+// the UI) on every single keystroke/action for as long as storage stays broken.
+let saveErrorAlerted = false;
 
 function projKey(id) { return 'scriptease_proj_' + id; }
 function genProjId() { return 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
@@ -62,8 +66,16 @@ function saveState() {
   } catch(e) {
     const isQuotaErr = e.name === 'QuotaExceededError';
     console.warn('Storage error:', isQuotaErr ? 'quota exceeded' : e.message);
-    if (isQuotaErr && typeof window !== 'undefined') {
-      alert('Your browser storage is full. Please delete some old projects to continue.');
+    // Any save failure — quota or otherwise (storage disabled, a privacy-mode
+    // SecurityError, etc.) — means everything from here on is edited in memory
+    // only and will be lost on refresh with no other warning, so this needs to
+    // surface once. Previously only the quota case alerted at all, and it did
+    // so on every single edit rather than once.
+    if (!saveErrorAlerted && typeof window !== 'undefined') {
+      saveErrorAlerted = true;
+      alert(isQuotaErr
+        ? 'Your browser storage is full. Please delete some old projects, then reload — until then, new changes are not being saved and will be lost if you close or refresh this tab.'
+        : 'Your changes could not be saved (browser storage is unavailable). New changes are not being saved and will be lost if you close or refresh this tab.');
     }
   }
 }
@@ -141,7 +153,16 @@ function loadState(storageKey) {
     });
     if (migrated) saveState();
     return true;
-  } catch(e) { return false; }
+  } catch(e) {
+    // The block above mutates S field-by-field rather than building a temp
+    // object and assigning it atomically, so an exception partway through
+    // (e.g. a malformed `sections` array) can leave S with some fields loaded
+    // from this project and others still at their pre-call values. Reset
+    // before returning false so a caller that (correctly) treats `false` as
+    // "nothing loaded" is actually true, not just conventionally true.
+    if (typeof resetState === 'function') resetState();
+    return false;
+  }
 }
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
