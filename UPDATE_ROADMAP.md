@@ -235,3 +235,61 @@ are the concrete bugs/gaps it turned up.
   the section-filter and section-color-undo fixes above still work post-restructuring.
 
 *(All of §6 landed on `feature/updates_v2`, pushed, not yet merged.)*
+
+## 7. Second full-app audit (drag-and-drop, keyboard, and CSP-migration verification)
+
+A follow-up audit specifically targeting the areas §6 covered lightly (drag-and-drop,
+keyboard shortcuts, panel resize/zoom) plus an independent re-verification of the `*-init.js`
+CSP migration from §6. Three parallel passes: one mechanically re-verified every id/function
+reference in the new `*-init.js` wiring and the CSP/localStorage/global-scope surface
+(all clean — see STATUS.md for the full inventory), one did a line-by-line correctness
+review of `editor.js`'s drag-and-drop and keyboard-handling code, and one did a mechanical
+consistency sweep (duplicate ids, global name collisions, script load order). All findings
+below were independently re-verified against the source before being fixed.
+
+- `[x]` **Ctrl+Z/Ctrl+Y hijacked a text field's own native undo.**
+  [editor.js:1790-1791](editor.js#L1790) (pre-fix) handled undo/redo before the `!inInput`
+  guard that already protected the export/zoom shortcuts a few lines down. Typing in a
+  scene's Summary and pressing Ctrl+Z to fix a typo blocked the browser's native field-undo
+  and instead reverted an unrelated board-level action, leaving the typo untouched. Fixed by
+  moving undo/redo behind the same `!inInput` guard.
+- `[x]` **Undo/redo could fire mid-drag, corrupting drag state.** Folded into the fix above:
+  the same guard now also requires `!drag.on && !ld.on && !sld.on` — pressing Ctrl+Z while
+  actively dragging a card (or a library/section-list item) previously re-rendered the board
+  out from under the drag via `renderBoard()`, so the eventual mouseup committed a reorder
+  against post-undo state and wiped the redo stack in the process.
+- `[x]` **A drag never ended if the mouse button was released outside the browser
+  window.** Drag state (`ptr`/`drag`/`ld`/`sld`, plus the panel-resize state) was only
+  cleared by a `mouseup` listener on `document`, which never fires for an outside-the-window
+  release. The ghost card stuck to the cursor, and the *next unrelated click anywhere* would
+  silently commit a reorder/section-reassignment to wherever the cursor happened to be.
+  Fixed by checking `e.buttons === 0` at the top of the global `mousemove` handler — any
+  stray movement after re-entering the window now self-heals all drag state without
+  committing anything (verified: a simulated stuck card-drag and stuck library-item drag
+  both clear cleanly with the scene/library order provably unchanged afterward).
+- `[x]` **Multi-select drag could silently move a scene hidden by the section filter.**
+  `beginCardDrag()` built `drag.ids` from `S.selIds` with no regard for the active section
+  filter — selecting two scenes across two different sections, then filtering the board to
+  show only one of those sections, then dragging the *visible* card would drag the *hidden*
+  one along with it (only a "+1" badge on the ghost hinted at it). Fixed by filtering
+  `drag.ids` down to scenes whose card is actually rendered in the DOM at drag-start.
+- `[x]` **Ctrl+Shift+E (export) detected Shift by key-case instead of `e.shiftKey`.**
+  [editor.js:1810](editor.js#L1810) (pre-fix) tested `e.key === 'E'`. With Caps Lock on, a
+  plain Ctrl+E (no Shift) produces an uppercase `e.key` and false-triggered export, while the
+  real Ctrl+Shift+E produces a *lowercase* `e.key` under Caps Lock (Shift cancels the
+  inversion) and silently failed to fire. Fixed to check `e.shiftKey && e.code === 'KeyE'`.
+- `[x]` **Alt-letter shortcuts fired underneath an open confirmation/data-entry modal.**
+  Unlike the Escape-key handler (`ESCAPE_ACTIONS`, fully modal-tier-aware), the Alt+N/C/L/
+  T/M/R/V branch only checked `!inInput` — e.g. Alt+N while a "Delete this?" confirmation was
+  open would open a New Scene form underneath it. Added a shared `anyModalOpen()` helper
+  (checking the same 9 overlay ids `ESCAPE_ACTIONS` treats as the modal tier) and gated the
+  whole Alt-shortcut branch on it.
+
+Not done (assessed as low-value polish, not necessary — see conversation): no-op drag drops
+(dropping a card/library item/section back into its exact original position) still push an
+undo-stack entry and a `saveState()` call, since the existing guard only checks
+`dropIdx !== fromIdx` rather than whether the actual resulting order differs. Self-contained
+to `endCardDrag()`/`endLibDrag()`/`endSecListDrag()`, independent of everything else on this
+branch — safe to pick up anytime.
+
+*(All of §7 landed on `feature/updates_v2`, pushed, not yet merged.)*

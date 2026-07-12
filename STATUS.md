@@ -278,3 +278,99 @@ markup restructuring.
   left out deliberately, since (per `build.js`'s own comment) that bundle isn't actually
   used in deployment, and the new files aren't written defensively enough to be safely
   bundled alongside pages that lack their expected DOM elements.
+
+## feature/updates_v2 branch — Second audit: drag-and-drop, keyboard, CSP re-verification
+
+A follow-up to the audit above, this time targeting the areas it covered lightly (drag-and-
+drop, keyboard shortcuts, panel resize/zoom) plus an independent re-verification of the
+`*-init.js` CSP migration. Three parallel passes, all findings re-verified against source
+before anything was fixed.
+
+### CSP migration re-verification — all clean
+A second, independent pass over the `*-init.js` wiring and the wider CSP/global-scope
+surface, specifically checking things the first audit's verification didn't explicitly
+enumerate:
+- Every `getElementById` id referenced by the four `*-init.js` files resolves in its page
+  (91/93 — the 2 "misses" are intentional `!!document.getElementById(...)` feature-detection
+  probes in `test-init.js` checking whether the current page is the editor or projects page,
+  unchanged from the pre-migration inline script).
+- Every function referenced by the four files resolves in a script that page actually loads
+  (69/69).
+- No element gets the same event wired twice (once via an `*-init.js` file and again inside
+  `editor.js`/`projects.js`/etc.).
+- Every inline handler removed by the CSP migration has a verified-equivalent
+  `addEventListener` call (same function(s), same order for multi-statement handlers,
+  correct event-type translation).
+- No top-level `function`/`const`/`let`/`var` name collisions across the 12 scripts sharing
+  one global scope.
+- CSP meta tag byte-identical across all 6 pages; `'unsafe-inline'` confirmed absent from
+  every `script-src` (present only in `style-src`, which was always out of scope).
+- One pre-existing, harmless duplicate id (`hdr-spacer` in `editor.html`, lines 21 and 27)
+  confirmed unchanged from before this branch's work — only `styles.css`'s `#hdr-spacer`
+  selector touches it, and CSS doesn't require id uniqueness to apply a rule, so this has no
+  functional effect. Not worth fixing now, but flagged in case it's ever a source of
+  confusion.
+
+### Drag-and-drop and keyboard fixes
+Five bugs found and fixed in `editor.js`:
+1. **Ctrl+Z/Ctrl+Y hijacked a text field's own native undo.** The undo/redo branch fired
+   before the `!inInput` guard that already protected export/zoom — typing in a scene's
+   Summary and pressing Ctrl+Z to fix a typo reverted an unrelated board action instead of
+   the typo. Moved undo/redo behind the same guard.
+2. **Undo/redo could fire mid-drag.** Folded into fix 1's guard: also requires
+   `!drag.on && !ld.on && !sld.on`, since undo's `renderBoard()` re-render out from under an
+   active drag left the eventual mouseup committing a reorder against post-undo state and
+   wiping the redo stack.
+3. **A drag stuck forever if the mouse button was released outside the browser window** —
+   no `mouseup` ever reaches `document` for an outside release, so the ghost card stayed
+   attached to the cursor and the *next unrelated click* would silently commit a
+   reorder/reassignment wherever the cursor happened to be. Fixed by checking
+   `e.buttons === 0` at the top of the global `mousemove` handler, so any stray movement
+   after re-entering the window self-heals every drag state (card, library-item,
+   section-list, panel-resize) without committing anything.
+4. **Multi-select drag could move a scene hidden by the section filter.** Selecting two
+   scenes across two sections, filtering to just one, then dragging the visible card would
+   silently drag the hidden one along too (`S.selIds` isn't pruned by the filter). Fixed by
+   filtering the drag set down to scenes whose card is actually rendered at drag-start.
+5. **Ctrl+Shift+E (export) was Caps-Lock-dependent.** It tested `e.key === 'E'` instead of
+   `e.shiftKey` — Caps Lock makes a plain Ctrl+E false-trigger export, and makes the real
+   Ctrl+Shift+E silently fail (Shift cancels the Caps Lock inversion, producing lowercase
+   `e.key`). Fixed to check `e.shiftKey && e.code === 'KeyE'`.
+
+Plus one from the Escape-key comparison: **Alt-letter shortcuts fired underneath an open
+confirmation modal** (Escape's `ESCAPE_ACTIONS` already had full modal-tier awareness; the
+Alt+N/C/L/T/M/R/V branch only checked `!inInput`). Added a shared `anyModalOpen()` helper
+(same 9 overlay ids `ESCAPE_ACTIONS` treats as the modal tier) and gated the Alt-shortcut
+branch on it.
+
+### Verification
+Since this environment's native `<input type=color>` interactions aren't scriptable via
+clicks, and drag interactions are timing-sensitive, verification for this round leaned
+heavily on directly dispatching the same event sequences a real interaction produces
+(`pointerdown`/`mousedown`/`mousemove` with the right `buttons`/`clientX`/`clientY`/
+`ctrlKey`/`shiftKey`/`code`, `KeyboardEvent`s with explicit `code`) and asserting on both the
+resulting app state and (for the drag/undo guards) that legitimate/unrelated cases still
+work exactly as before:
+- Ctrl+Z confirmed blocked with focus in a text field, confirmed blocked with `drag.on`
+  true, and confirmed still fires normally in neither case (regression check).
+- Ctrl+E/Ctrl+Shift+E confirmed correct under both simulated Caps-Lock scenarios.
+- A full card drag was started, then a `mousemove` with `buttons: 0` dispatched (simulating
+  re-entering the window after releasing outside it) — confirmed all drag state clears, the
+  ghost hides, and `S.scenes`' order/count are provably unchanged (no silent commit). Same
+  check repeated for a stuck library-item drag with a pending, uncommitted reorder.
+- Two scenes across two sections selected, filtered to one, dragged the visible one —
+  confirmed only the visible scene entered `drag.ids`.
+- Alt+N confirmed blocked (via spying on `menuNewScene` directly) while a section-delete
+  confirmation was open, and confirmed to fire normally once the modal was closed.
+
+### Not done
+Assessed as low-value polish, not necessary: dropping a card/library item/section back into
+its exact original position still pushes an undo-stack entry and a `saveState()` call, since
+the existing no-op guard only checks `dropIdx !== fromIdx` rather than whether the actual
+resulting order differs (a same-index-but-not-same-order case is possible and was traced
+through by hand). Self-contained to `endCardDrag()`/`endLibDrag()`/`endSecListDrag()`,
+independent of everything else on this branch — safe to pick up anytime it's worth the
+~20-30 minutes.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v2`, PR not yet opened.

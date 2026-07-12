@@ -1504,9 +1504,13 @@ function onCardDown(e, id) {
   ptr.down = true; ptr.id = id; ptr.sx = e.clientX; ptr.sy = e.clientY; ptr.dragging = false;
 }
 function beginCardDrag(id, e) {
-  const ids = (S.selIds.has(id) && S.selIds.size > 1)
+  let ids = (S.selIds.has(id) && S.selIds.size > 1)
     ? S.scenes.filter(s => S.selIds.has(s.id)).map(s => s.id)
     : [id];
+  // A section filter can leave other selected scenes hidden (their cards
+  // never rendered) — dragging them anyway would silently move a card the
+  // user can't currently see and gave no input on in this interaction.
+  ids = ids.filter(sid => document.querySelector(`.sc[data-id="${sid}"]`));
   drag.on = true; drag.ids = ids; drag.dropId = null; drag.before = true;
   const card = document.querySelector(`.sc[data-id="${id}"]`), r = card.getBoundingClientRect();
   drag.ox = e.clientX - r.left; drag.oy = e.clientY - r.top;
@@ -1662,6 +1666,36 @@ if (document.getElementById('lp-resize')) {
 
 // ── GLOBAL MOUSE ──────────────────────────────────────────────────────────────
 document.addEventListener('mousemove', e => {
+  // If the mouse button was released outside the browser window/viewport, no
+  // mouseup ever reaches us to clear drag state — the ghost sticks to the
+  // cursor, and the next unrelated click would silently commit a drop
+  // wherever the cursor happens to be. e.buttons reflects the CURRENT button
+  // state on every mousemove regardless of where the release happened, so a
+  // stuck drag self-heals on the next mouse movement inside the window.
+  if (e.buttons === 0 && (ptr.down || ld.on || sld.on || lpDr.on || cpDr.on || spDr.on)) {
+    if (ptr.down) {
+      if (ptr.dragging) {
+        drag.on = false; drag.ids = []; drag.dropId = null; drag.dropSecId = null;
+        document.getElementById('ghost').style.display = 'none';
+        document.querySelectorAll('.sc.dpb, .sc.dpa').forEach(c => c.classList.remove('dpb', 'dpa'));
+        document.querySelectorAll('.sec-group.card-drag-over').forEach(g => g.classList.remove('card-drag-over'));
+        renderBoard();
+      }
+      ptr.down = false; ptr.dragging = false; ptr.id = null;
+    }
+    // Null the drop target before reusing the normal end-handlers so they
+    // clean up drag classes/state without committing a reorder (both already
+    // skip their mutating branch whenever dropIdx is null or unchanged).
+    if (ld.on)  { ld.dropIdx = null; endLibDrag(); }
+    if (sld.on) { sld.dropIdx = null; endSecListDrag(); }
+    [lpDr, cpDr, spDr].forEach(dr => {
+      if (!dr.on) return;
+      dr.on = false;
+      const handle = document.getElementById(dr.handleId);
+      if (handle) handle.classList.remove('dragging');
+    });
+    return;
+  }
   if (ptr.down) {
     if (!ptr.dragging && (Math.abs(e.clientX - ptr.sx) > 4 || Math.abs(e.clientY - ptr.sy) > 4)) {
       ptr.dragging = true; beginCardDrag(ptr.id, e);
@@ -1713,6 +1747,14 @@ document.addEventListener('mousedown', e => {
   openDiscardConfirm(editDirty, newLive);
 });
 
+// IDs of the overlay modals/popups — used both by ESCAPE_ACTIONS below and to
+// stop Alt-letter shortcuts from firing underneath one (e.g. Alt+N opening a
+// New Scene form beneath an open "delete this?" confirmation).
+const MODAL_IDS = ['discard-cfm-modal', 'modal', 'add-popup', 'lib-edit-modal', 'libdel-modal', 'savecfm-modal', 'secdel-modal', 'rpt-modal', 'pov-add-modal'];
+function anyModalOpen() {
+  return MODAL_IDS.some(id => document.getElementById(id)?.classList.contains('open'));
+}
+
 // ── ESCAPE KEY PRIORITY ───────────────────────────────────────────────────────
 // Checked top-to-bottom on Escape; only the first isOpen() match runs its
 // close(), then the loop stops. Order runs most "in front"/blocking first
@@ -1754,20 +1796,36 @@ document.addEventListener('keydown', e => {
     // The app autosaves on every change; swallow Ctrl+S so the browser's
     // Save Page dialog doesn't appear on muscle-memory presses.
     if (e.key === 's') { e.preventDefault(); return; }
-    if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (typeof undo === 'function') undo(); return; }
-    if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); if (typeof redo === 'function') redo(); return; }
+    // Undo/redo must not hijack a text field's own native undo (typing in a
+    // scene's title/summary/notes and pressing Ctrl+Z should fix the typo,
+    // not revert an unrelated board action), and must not fire while a card/
+    // library/section-list drag is in progress — the app's undo rebuilds
+    // S.scenes and re-renders the board out from under an active drag, and
+    // the eventual mouseup would then commit a reorder against post-undo
+    // state and clobber the redo stack.
+    if (!inInput && !drag.on && !ld.on && !sld.on) {
+      if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (typeof undo === 'function') undo(); return; }
+      if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); if (typeof redo === 'function') redo(); return; }
+    }
     if (!inInput) {
-      if (e.key === 'E') { e.preventDefault(); exportCurrentProject(); return; }
+      // Keyed off e.shiftKey explicitly, not e.key's case — Caps Lock also
+      // uppercases e.key for a plain Ctrl+E (no Shift), which would otherwise
+      // both false-trigger export on Ctrl+E and silently swallow the real
+      // Ctrl+Shift+E (Caps Lock cancels the Shift-driven uppercasing, so
+      // e.key comes back lowercase 'e').
+      if (e.shiftKey && e.code === 'KeyE') { e.preventDefault(); exportCurrentProject(); return; }
       if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); return; }
       if (e.key === '-') { e.preventDefault(); zoomOut(); return; }
       if (e.key === '0') { e.preventDefault(); zoomReset(); return; }
     }
   }
-  // Alt shortcuts (not in an input field). Keyed off e.code, not e.key — on Mac,
+  // Alt shortcuts (not in an input field, and not underneath an open modal —
+  // e.g. Alt+N shouldn't open a New Scene form while a delete confirmation is
+  // still open on top of it). Keyed off e.code, not e.key — on Mac,
   // Option+letter remaps e.key to an accented/symbol character (e.g. Option+V → "√",
   // Option+N → a dead key), so matching on e.key silently breaks every one of these.
   // e.code reports the physical key regardless of what the modifier composes.
-  if (e.altKey && !e.ctrlKey && !e.metaKey && !inInput) {
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !inInput && !anyModalOpen()) {
     if (e.code === 'KeyN') { e.preventDefault(); menuNewScene(); return; }
     if (e.code === 'KeyC') { e.preventDefault(); openAddPopup('characters'); return; }
     if (e.code === 'KeyL') { e.preventDefault(); openAddPopup('locations'); return; }
