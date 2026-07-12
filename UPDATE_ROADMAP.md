@@ -293,3 +293,120 @@ to `endCardDrag()`/`endLibDrag()`/`endSecListDrag()`, independent of everything 
 branch — safe to pick up anytime.
 
 *(All of §7 landed on `feature/updates_v2`, pushed, not yet merged.)*
+
+## 8. Third full-app audit (`feature/updates_v3`, post word-count-chart feature)
+
+Two-part audit on `feature/updates_v3`: a first pass over the new chart code plus the files
+earlier audits covered lightly (reports.js, backup.js, ui.js, tracking.js, state.js
+save/load), then a final pass over the fixes themselves plus editor.js's remaining ~1400
+lines (forms, section/library CRUD, modals, selection — only its drag-and-drop/keyboard
+code had been audited before, in §7). Runtime verification was done live in the browser
+(XSS payload injection through the report builders, corrupt-project open, simulated
+storage failures, negative-input entry), not just by reading. Every subagent finding
+below was re-verified against source (and where feasible, reproduced live) before being
+logged.
+
+### Fixed on this branch
+
+- `[x]` **A project that failed to load was silently overwritten by the first save**
+  *(high)*. `openProject()` ([projects.js:185](projects.js#L185)) ignored `loadState()`'s
+  return value, so a corrupt/unreadable blob opened as an empty, live-editable session —
+  the next `saveState()` (any edit, undo, even a theme change) overwrote the stored JSON
+  with that empty state, destroying possibly hand-recoverable data. Variant: a stale
+  `ss_open_project` id opened an empty editor whose saves went to an orphaned storage key
+  invisible in the projects grid. Now checks the return and bounces to projects.html with
+  an alert, leaving the stored blob untouched (reproduced and verified live both ways).
+- `[x]` **Non-quota save failures were completely silent; quota failures alerted on every
+  edit** *(medium)*. [state.js:62](state.js#L62) only alerted on `QuotaExceededError` —
+  storage disabled or a privacy-mode SecurityError meant every subsequent edit was
+  in-memory only, lost on refresh with no warning. And the quota alert re-fired on every
+  one of saveState's ~20 call paths. Both cases now alert exactly once per session
+  (verified: three consecutive simulated failures → one alert). Known accepted limitation:
+  the once-per-session flag never resets on a later successful save, so a
+  break→recover→break-again sequence in one session only alerts the first time.
+- `[x]` **`loadState()` could leave `S` half-populated and still return false** *(medium)*.
+  It mutates `S` field-by-field inside its try, so an exception partway (e.g. a malformed
+  `sections` value) left scenes loaded but sections gone — and before the fix above, that
+  half-state was saveable. The catch now calls `resetState()` before returning false
+  (verified live: a bad-shape blob now yields a clean, fully-reset `S`).
+- `[x]` **Negative word counts were accepted and persisted** *(low)*. `min="0"` on a
+  number input doesn't block a typed/pasted "-500"; `parseInt(v) || null` kept the sign.
+  Charts' `> 0` guards rendered it as "unset," masking the bad value while it round-tripped
+  through export. New/Edit Scene now clamp via a shared `parseWordCount()`; `loadState()`
+  and JSON import both normalize existing ≤0 values to null (reproduced live before the
+  fix, re-verified clamped after).
+- `[x]` **Printed flow chart showed unexplained red "estimated" ticks** *(low)*. The print
+  legend ([charts.js:715](charts.js#L715)) explained section letters but not the
+  estimated-word-count tick the on-screen legend explains. Added the same note, gated on
+  the same `sceneSetHasEstimated()` check.
+
+*(The five fixes above landed as commits `2ebbfe8` and `4432c10`, pushed.)*
+
+### Open — found by this audit, not yet fixed
+
+- `[ ]` **Adding/renaming a character never checks `S.povCustomNames`** *(medium)*.
+  `confirmAdd` ([editor.js:70](editor.js#L70)) and `saveLibEdit`'s rename-collision check
+  ([editor.js:298](editor.js#L298)) only scan `S[sec]`, but `povNames()` concatenates
+  characters + custom names — a name in both lists renders twice in every POV dropdown,
+  saves duplicate entries into `scene.povs`, and `renderPovLibSec` gives the character's
+  row custom-name edit/delete handlers (deleting removes the custom name while the
+  character silently keeps supplying the POV). Repro: add custom POV "Anna" via a scene
+  form, then add character "Anna" from the Library.
+- `[ ]` **`pendingInsert` survives detours and splices a later scene at a stale anchor**
+  *(medium)*. Set by an insert-zone click ([editor.js:451](editor.js#L451)), cleared only
+  by `addScene`/`cancelNewScene` — `menuNewScene` and entering Edit mode don't clear it,
+  so clicking "+ Add Scene" after scene X, then creating a scene via Create > New Scene
+  with a different section selected, splices it at X's array position instead of the
+  documented end-of-section default. Wrong ordering only, no data loss.
+- `[ ]` **Hovering the open menu's own title button closes the menu** *(medium-low)*.
+  `hoverMenu` ([editor.js:125](editor.js#L125)) calls `toggleMenu` for every button while
+  any menu is open — for the already-open menu that toggles it *closed*. Drifting the
+  pointer from the dropdown back across its own title makes the menu vanish mid-use.
+- `[ ]` **`renderPovCk` mutates `S.povCustomNames` during render without persisting**
+  *(low)*. The legacy-name fold-in ([editor.js:1171](editor.js#L1171)) never calls
+  `saveState()`; a reload before the next unrelated save drops the fold. Self-heals on
+  next render — transient inconsistency only.
+- `[ ]` **Cancelling the native color picker strands live-preview state** *(low)*.
+  `input` events mutate `sec.color` and consume the one history entry before `change`
+  ever fires ([editor.js:1421](editor.js#L1421)); if the picker is dismissed without a
+  `change`, the preview color persists unsaved (reload reverts it) and `colorHistPushed`
+  stays true, so the next color drag pushes no history entry and undo jumps two changes.
+- `[ ]` **`quickSetup` pushes history/records an edit even when it creates nothing**
+  *(low)* ([editor.js:1368](editor.js#L1368)) — every generated name already existing
+  still yields a no-op undo entry that wipes the redo stack.
+- `[ ]` **`resetAll` is dead code** *(low)* ([editor.js:425](editor.js#L425)) — no call
+  site anywhere; if ever re-wired it also misses `S.selections.povs.clear()` and
+  `secFilterIds.clear()`. Delete it or fix-and-wire it, but don't leave it as-is.
+- `[ ]` **Clicking a scene card under a dirty edit form toggles its selection beneath the
+  discard confirmation** *(low, cosmetic)* — the card's `mousedown`
+  ([editor.js:917](editor.js#L917)) has no dirty-form guard, so it runs alongside the
+  document-level confirm handler ([editor.js:1744](editor.js#L1744)).
+- `[ ]` **Float `wordCount` from an import false-dirties and truncates in the edit form**
+  *(low)*. Import accepts any number > 0 (e.g. 2.5), but the form round-trips through
+  `parseInt` — the Edit form reads as dirty the moment it opens (2 ≠ 2.5) and saving
+  silently truncates. Either floor on import or compare/store consistently.
+- `[ ]` **Milestone counters are cross-project** *(low, analytics-only)*
+  ([tracking.js:20](tracking.js#L20)) — scene-count-since-ID-creation compares a global
+  baseline against whichever project is open, so counts jump or go negative on project
+  switch; `1st_scene_created` can fire spuriously or never.
+- `[ ]` **A corrupt report counter sticks at `"NaN"` forever** *(low, analytics-only)*
+  ([reports.js:89](reports.js#L89)) — `parseInt` of a non-numeric stored value → NaN,
+  written back as `"NaN"`; the 3rd-report milestone then never fires.
+- `[ ]` **Matrix report chunks columns by screen width, not paper width** *(low)*
+  ([reports.js:336](reports.js#L336)) — printed chunks overflow or underfill the page
+  depending on the window size when the report was generated.
+
+### Verified clean (for coverage)
+
+XSS: hostile scene titles injected live came out escaped in every report type and chart
+tooltip; `rptEsc` correct including the `</script>`-breakout case. All 6 pages load with
+zero console/CSP errors; no inline handlers/scripts have crept back; every
+`getElementById` in charts.js/editor-init.js/backup.js resolves; no global name
+collisions; `build.js` order matches editor.html. External payloads (Formspree/GA) carry
+no scene content; `anonymize_ip` set; failures handled. pushHistory→mutate→recordDataEdit→
+saveState ordering verified across all editor CRUD paths; rename/delete propagation
+(including character→`scene.povs`) correct; no `==` id comparisons; `S.editingId`/
+`S.selIds` cleaned up on delete and undo/redo; section-delete filter cleanup (§6) intact.
+Efficiency: nothing worth flagging at 300-scene scale.
+
+*(Fixes in §8 landed on `feature/updates_v3`, pushed; open items above are the backlog.)*

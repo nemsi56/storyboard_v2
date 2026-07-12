@@ -440,3 +440,55 @@ appears only for a genuine mixed set; verified legible in both a light (ivory) a
 
 ### Not yet done
 - Not merged to `main` — pushed to `origin/feature/updates_v3`.
+
+## feature/updates_v3 branch — Third full-app audit & data-safety fixes
+
+A two-part audit of the whole app in its `updates_v3` state (see `UPDATE_ROADMAP.md` §8
+for the complete per-item detail; this is the summary). First pass: the new word-count
+chart code plus the files earlier audits covered lightly (reports.js, backup.js, ui.js,
+tracking.js, state.js save/load). Final pass: the fixes themselves plus editor.js's
+remaining ~1400 lines (forms, section/library CRUD, modals, selection), which §7's audit
+had only covered for drag-and-drop/keyboard.
+
+### What was found and fixed (commits `2ebbfe8`, `4432c10`)
+- **High:** a corrupt/unreadable project opened as an empty, saveable session, and the
+  first save overwrote the stored blob — permanent data loss from possibly-recoverable
+  data. `openProject()` now checks `loadState()`'s return and bounces to the project list
+  with the stored blob untouched.
+- **Medium ×2:** non-quota storage failures were completely silent (edits silently
+  in-memory only) while quota failures alerted on *every* edit — both now alert once per
+  session; and `loadState()` could leave `S` half-populated on a mid-parse exception —
+  its catch now resets cleanly.
+- **Low ×2:** negative word counts could be typed/pasted/imported and persisted invisibly
+  (now clamped at form entry, on load, and on import via a shared rule); the printed
+  chart's legend didn't explain the red "estimated" tick (now it does).
+
+### How it was verified
+Live in the browser against the real code paths, not just by reading: reproduced the
+corrupt-project overwrite before the fix and confirmed the stored blob survives after;
+injected XSS payloads through every report builder (escaped everywhere); simulated three
+consecutive storage failures (exactly one alert); entered "-500" into the word-count
+field before and after. All test artifacts (corrupt test project, test scenes) were
+confirmed removed from localStorage afterward.
+
+### Open items (deliberately deferred — the backlog for a future branch)
+Twelve items, none data-loss risks, all logged with repro detail in `UPDATE_ROADMAP.md`
+§8 "Open" — headline ones: a character and a custom POV name with the same name produce
+duplicate POV entries and mis-wired edit/delete handlers (medium); a stale
+`pendingInsert` from an insert-zone click makes a later menu-created scene land at the
+wrong position (medium); hovering an open menu's own title button closes it (medium-low).
+The rest are lows: transient/cosmetic states, two analytics-only counter bugs, dead
+`resetAll` code, float-wordCount truncation on import, and matrix-report print chunking
+sized to the screen instead of the page.
+
+### Delegation note
+Mechanical sweeps (CSP/id-reference/global-collision/localStorage-key/build-order
+regression checks) and the first-pass file reviews were delegated to subagents; every
+finding they reported was independently re-verified against source — and reproduced live
+where feasible — before being fixed or logged. Two subagent-reported claims were
+corrected in the process (a report-builder "error" that was the test harness's own wrong
+calling convention, and a garbled storage-key name in an otherwise-correct inventory).
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v3`.
+- The 12 open audit items above (tracked in `UPDATE_ROADMAP.md` §8).
