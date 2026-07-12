@@ -115,6 +115,7 @@ function toggleMenu(name) {
     if (name === 'view') {
       updateThemeMenuState();
       updatePanelMenuStates();
+      updateZoomMenuState();
     }
   }
 }
@@ -129,6 +130,11 @@ function updateThemeMenuState() {
   document.querySelectorAll('#drop-view .theme-di').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === current);
   });
+}
+// Zoom only affects scene cards, which aren't on screen in chart view.
+function updateZoomMenuState() {
+  const group = document.getElementById('menu-zoom-group');
+  if (group) group.style.display = (typeof chartMode !== 'undefined' && chartMode) ? 'none' : '';
 }
 function updatePanelMenuStates() {
   const lp = document.getElementById('lp');
@@ -260,6 +266,19 @@ function openLibEditModal(sec, idx) {
   document.getElementById('lib-edit-hdr').textContent = 'Edit ' + (SINGULAR[sec] || 'Item');
   document.getElementById('lib-edit-name').value  = item.name;
   document.getElementById('lib-edit-notes').value = item.notes || '';
+  document.getElementById('lib-edit-notes-wrap').style.display = '';
+  document.getElementById('lib-edit-modal').classList.add('open');
+  setTimeout(() => document.getElementById('lib-edit-name').focus(), 60);
+}
+// POV custom names have no notes concept and aren't stored in S[sec], so they
+// get their own opener (sharing the same modal DOM) rather than overloading
+// openLibEditModal, which assumes a SECS-configured {name, notes} array.
+function openPovEditModal(idx) {
+  const name = S.povCustomNames[idx]; if (name === undefined) return;
+  libEditSec = 'povCustom'; libEditIdx = idx;
+  document.getElementById('lib-edit-hdr').textContent = 'Edit POV Name';
+  document.getElementById('lib-edit-name').value = name;
+  document.getElementById('lib-edit-notes-wrap').style.display = 'none';
   document.getElementById('lib-edit-modal').classList.add('open');
   setTimeout(() => document.getElementById('lib-edit-name').focus(), 60);
 }
@@ -268,6 +287,7 @@ function closeLibEditModal() {
   libEditSec = null; libEditIdx = null;
 }
 function saveLibEdit() {
+  if (libEditSec === 'povCustom') { savePovEdit(); return; }
   if (libEditSec === null || libEditIdx === null) return;
   const item = S[libEditSec][libEditIdx]; if (!item) return;
   const sec     = libEditSec;
@@ -312,6 +332,53 @@ function saveLibEdit() {
   recordDataEdit();
   saveState();
 }
+// Rename a custom POV name (mirrors the "characters" branch of saveLibEdit()
+// above field-for-field, since S.povCustomNames is a plain string array with
+// no notes and isn't one of the SECS-configured library arrays).
+function savePovEdit() {
+  const idx = libEditIdx;
+  const oldName = S.povCustomNames[idx]; if (oldName === undefined) return;
+  const newName = document.getElementById('lib-edit-name').value.trim();
+  if (!newName) { document.getElementById('lib-edit-name').focus(); return; }
+  const nameTaken = newName !== oldName && (
+    S.characters.some(c => c.name === newName) ||
+    S.povCustomNames.some((n, i) => i !== idx && n === newName)
+  );
+  if (nameTaken) { document.getElementById('lib-edit-name').select(); return; }
+  pushHistory('Edit POV name "' + oldName + '"');
+  S.povCustomNames[idx] = newName;
+  if (newName !== oldName) {
+    S.scenes.forEach(scene => {
+      if (!Array.isArray(scene.povs)) return;
+      const pi = scene.povs.indexOf(oldName);
+      if (pi !== -1) scene.povs[pi] = newName;
+    });
+    if (S.selections.povs.has(oldName)) {
+      S.selections.povs.delete(oldName);
+      S.selections.povs.add(newName);
+    }
+  }
+  const renameInList = arr => arr.map(v => v === oldName ? newName : v);
+  closeLibEditModal();
+  renderPovCk('sc', renameInList(ckCurrentlyChecked('sc', 'povs')));
+  renderPovCk('ed', renameInList(ckCurrentlyChecked('ed', 'povs')));
+  renderPovLibSec(); renderBoard();
+  recordDataEdit();
+  saveState();
+}
+// Delete a custom POV name — mirrors removeItem() above field-for-field,
+// scoped to S.povCustomNames/scene.povs instead of a SECS array.
+function removePovCustomName(name) {
+  pushHistory('Remove POV name "' + name + '"');
+  S.povCustomNames = S.povCustomNames.filter(n => n !== name);
+  S.scenes.forEach(sc => { sc.povs = (sc.povs || []).filter(v => v !== name); });
+  S.selections.povs.delete(name);
+  renderPovCk('sc', ckCurrentlyChecked('sc', 'povs').filter(v => v !== name));
+  renderPovCk('ed', ckCurrentlyChecked('ed', 'povs').filter(v => v !== name));
+  renderPovLibSec(); renderBoard(); updateLibClearBtn();
+  recordDataEdit();
+  saveState();
+}
 
 let libDelSec = null, libDelName = null;
 let secDelId = null;
@@ -322,11 +389,20 @@ function openLibDelModal(sec, name) {
   document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (${label}) from the entire file? This cannot be undone.`;
   document.getElementById('libdel-modal').classList.add('open');
 }
+// Shares the libdel-modal DOM with openLibDelModal above; kept separate
+// because 'povCustom' isn't a SECS key, so the cfg/label lookup above
+// doesn't apply.
+function openPovDelModal(name) {
+  libDelSec = 'povCustom'; libDelName = name;
+  document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (POV) from the entire file? This cannot be undone.`;
+  document.getElementById('libdel-modal').classList.add('open');
+}
 function closeLibDelModal() { document.getElementById('libdel-modal').classList.remove('open'); libDelSec = null; libDelName = null; }
 function confirmLibDel() {
   if (!libDelSec || !libDelName) return;
   const s = libDelSec, n = libDelName;
   closeLibDelModal();
+  if (s === 'povCustom') { removePovCustomName(n); return; }
   removeItem(s, n);
 }
 
@@ -435,9 +511,10 @@ function addScene() {
   if (scenesCreated === 1) {
     trackMilestone('1st_scene_created');
   } else if (scenesCreated === 5) {
+    // Show email popup once, the first time the 5th-scene milestone fires
+    // (deleting back down to 5 and re-adding one must not re-show it).
+    if (!hasMilestoneFired('5th_scene_created')) showEmailPopup();
     trackMilestone('5th_scene_created');
-    // Show email popup at 5th scene
-    showEmailPopup();
   }
 
   recordDataEdit();
@@ -555,17 +632,26 @@ function confirmDiscard() {
   if (editActive) cancelEdit();
   if (newLive) cancelNewScene();
 }
-// Escape-key path to cancelEdit(): skip the prompt entirely when nothing
-// would actually be lost, same rule as the outside-click handler below.
-function maybeCancelEditWithConfirm() {
-  // If the confirm is already showing, Escape dismisses IT (keeps editing)
-  // rather than re-opening it — this function runs inside the same handler
-  // that also fires many other one-shot "close if open" calls, so it must
-  // not both open and close the modal within a single keypress.
+// Escape-key path to cancelEdit()/cancelNewScene(): skip the prompt entirely
+// when nothing would actually be lost, same rule as the outside-click
+// handler below (mirrors its editActive/newLive/editDirty logic exactly).
+function maybeCancelSceneFormWithConfirm() {
+  // If the confirm is already showing, Escape dismisses IT (keeps
+  // editing/typing) rather than re-opening it — this runs inside
+  // ESCAPE_ACTIONS, whose modal tier already guarantees no *other* modal is
+  // open by the time this fires, but the confirm modal it itself can open
+  // needs this explicit re-entry check.
   if (document.getElementById('discard-cfm-modal').classList.contains('open')) { closeDiscardConfirm(); return; }
-  if (S.editingId === null) return;
-  if (isEditFormDirty()) { openDiscardConfirm(true, false); return; }
-  cancelEdit();
+  const tabNew = document.getElementById('tab-new');
+  const editActive = S.editingId !== null;
+  const newLive = !!tabNew && tabNew.classList.contains('live');
+  if (!editActive && !newLive) return;
+  const editDirty = editActive && isEditFormDirty();
+  if (!editDirty && !newLive) {
+    if (editActive) cancelEdit();
+    return;
+  }
+  openDiscardConfirm(editDirty, newLive);
 }
 if (document.getElementById('discard-cfm-modal')) onBackdropClick('discard-cfm-modal', closeDiscardConfirm);
 function saveEdit() {
@@ -654,8 +740,11 @@ function renderAllLib() { SECS.forEach(s => renderLibSec(s.key)); renderPovLibSe
 
 // ── BUILD LIBRARY PANEL ───────────────────────────────────────────────────────
 function buildLibPanel() {
-  const body = document.getElementById('lp-body');
-  // Remove dynamically-built sections only; static elements (ao-global-wrap, lib-clr-wrap) stay
+  // Sections are appended into #lp-scroll, a dedicated inner scroll
+  // container — not #lp-body itself — so the hint text, AND/OR toggle, and
+  // Clear Highlights button stay fixed in place while only the item lists
+  // below them scroll.
+  const body = document.getElementById('lp-scroll');
   body.querySelectorAll('.lsec').forEach(el => el.remove());
   SECS.forEach(({ key, label }) => {
     const sec = document.createElement('div'); sec.className = 'lsec';
@@ -747,25 +836,32 @@ function renderCk(sec, checked=[]) { renderCkList('ck', sec, checked); }
 function renderEditCk(sec, checked=[]) { renderCkList('ek', sec, checked); }
 
 // ── RENDER: BOARD ─────────────────────────────────────────────────────────────
-// Returns the 1-based display number for a scene based on visual board order:
-// unassigned scenes first (leftmost), then each section in S.sections order.
-// This ensures numbers run 1…N left-to-right across ALL sections regardless of
-// the underlying S.scenes array order.
-function sceneDisplayNum(sceneId) {
-  if (!S.sections.length) {
-    const idx = S.scenes.findIndex(s => s.id === sceneId);
-    return idx === -1 ? 1 : idx + 1;
+// Builds a scene id -> 1-based display number map in one pass, based on visual
+// board order: unassigned scenes first (leftmost), then each section in
+// S.sections order. This ensures numbers run 1…N left-to-right across ALL
+// sections regardless of the underlying S.scenes array order.
+// Callers that need every scene's number in the same pass (rendering all
+// cards, or all chart segments) should build this once and look up by id,
+// rather than each calling sceneDisplayNum() — which rebuilds this same
+// ordered list from scratch on every single call.
+function buildSceneNumMap() {
+  const map = new Map();
+  let ordered = S.scenes;
+  if (S.sections.length) {
+    const validSecIds = new Set(S.sections.map(s => s.id));
+    ordered = [
+      ...S.scenes.filter(s => !validSecIds.has(s.sectionId)),           // unassigned
+      ...S.sections.flatMap(sec => S.scenes.filter(s => s.sectionId === sec.id)), // each section in order
+    ];
   }
-  const validSecIds = new Set(S.sections.map(s => s.id));
-  const ordered = [
-    ...S.scenes.filter(s => !validSecIds.has(s.sectionId)),           // unassigned
-    ...S.sections.flatMap(sec => S.scenes.filter(s => s.sectionId === sec.id)), // each section in order
-  ];
-  const idx = ordered.findIndex(s => s.id === sceneId);
-  return idx === -1 ? 1 : idx + 1;
+  ordered.forEach((s, i) => map.set(s.id, i + 1));
+  return map;
+}
+function sceneDisplayNum(sceneId) {
+  return buildSceneNumMap().get(sceneId) ?? 1;
 }
 
-function renderCard(container, scene, idx) {
+function renderCard(container, scene, idx, numMap) {
   const isd = drag.on && drag.ids.includes(scene.id);
   const sel = S.selIds.has(scene.id);
   const dpb = drag.on && drag.dropId === scene.id && drag.before;
@@ -788,7 +884,7 @@ function renderCard(container, scene, idx) {
   sumbtn.addEventListener('click', e => { e.stopPropagation(); if (hasInfo) openModal(scene.id); });
   editbtn.addEventListener('mousedown', e => e.stopPropagation());
   editbtn.addEventListener('click', e => { e.stopPropagation(); openEditMode(scene.id); });
-  const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${sceneDisplayNum(scene.id)}`;
+  const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${numMap.get(scene.id) ?? 1}`;
   const tit  = document.createElement('div'); tit.className  = 'ctit'; tit.textContent = scene.title;
   const meta = document.createElement('div'); meta.className = 'cmeta';
   SECS.forEach(({ key, label, tag }) => {
@@ -823,9 +919,14 @@ function renderBoard() {
   if (!S.scenes.length) { emp.style.display='flex'; return; }
   emp.style.display = 'none';
 
+  // Built once per render pass and shared by every card below, instead of
+  // each card independently rebuilding the same ordered scene list just to
+  // look up its own number.
+  const numMap = buildSceneNumMap();
+
   if (!hasSecs) {
     // Original flat layout
-    S.scenes.forEach((scene, idx) => renderCard(board, scene, idx));
+    S.scenes.forEach((scene, idx) => renderCard(board, scene, idx, numMap));
   } else {
     // Section group layout
     const validSecIds = new Set(S.sections.map(s => s.id));
@@ -876,7 +977,7 @@ function renderBoard() {
       group.scenes.forEach(scene => {
         const wrap = document.createElement('div'); wrap.className = 'card-wrap';
         body.appendChild(wrap);
-        renderCard(wrap, scene, S.scenes.indexOf(scene));
+        renderCard(wrap, scene, S.scenes.indexOf(scene), numMap);
         addInsertZone(wrap, scene.id, group.id);
       });
       // For empty sections, show a single insert zone so the column is still usable
@@ -1021,11 +1122,33 @@ function renderPovLibSec() {
   if (!names.length) { list.innerHTML = '<div class="eh">None yet</div>'; return; }
   names.forEach(name => {
     const isOn = S.selections.povs.has(name);
+    // A name is either a Character (edit/delete lives in the Characters
+    // panel — editing it here would create a second place to rename the
+    // same character, and deleting it can't just mean "delete the
+    // character") or a custom POV-only name (editable/deletable in place).
+    // povNames() guarantees these two sets never overlap.
+    const customIdx = S.povCustomNames.indexOf(name);
+    const isCustom = customIdx !== -1;
     const li = document.createElement('div');
     li.className = 'li' + (isOn ? ' on sec-p' : '');
     const dot = document.createElement('span'); dot.className = 'dot dp';
     const nm  = document.createElement('span'); nm.className = 'iname'; nm.textContent = name;
-    li.appendChild(dot); li.appendChild(nm);
+    const edit = document.createElement('button'); edit.className = 'iedit' + (isCustom ? '' : ' disabled'); edit.textContent = '✎';
+    const del  = document.createElement('button'); del.className  = 'idel'  + (isCustom ? '' : ' disabled'); del.textContent  = '×';
+    edit.title = isCustom ? 'Edit' : 'Edit/delete in Character list';
+    del.title  = isCustom ? 'Remove' : 'Edit/delete in Character list';
+    edit.addEventListener('mousedown', e => e.stopPropagation());
+    del.addEventListener('mousedown',  e => e.stopPropagation());
+    if (isCustom) {
+      edit.addEventListener('click', e => { e.stopPropagation(); openPovEditModal(customIdx); });
+      del.addEventListener('click',  e => { e.stopPropagation(); openPovDelModal(name); });
+    } else {
+      // Disabled: absorb the click (so it doesn't also toggle highlight via
+      // the li's own listener below) without opening anything.
+      edit.addEventListener('click', e => e.stopPropagation());
+      del.addEventListener('click',  e => e.stopPropagation());
+    }
+    li.appendChild(dot); li.appendChild(nm); li.appendChild(edit); li.appendChild(del);
     li.addEventListener('click', () => togglePovHighlight(name));
     list.appendChild(li);
   });
@@ -1203,6 +1326,11 @@ function confirmSecDel() {
   pushHistory('Delete section "' + truncStr(sec.name, 22) + '"');
   S.sections = S.sections.filter(s => s.id !== id);
   S.scenes.forEach(s => { if (s.sectionId === id) s.sectionId = null; });
+  // Otherwise a stale id lingering in the section filter can match nothing
+  // (not the surviving sections, not 'unassigned'), silently emptying the
+  // board even though scenes still exist and "All Sections" isn't selected.
+  secFilterIds.delete(id);
+  updateSecFilterBtn();
   renderSecPanel(); renderSectionSelects(); renderBoard();
   recordDataEdit();
   saveState();
@@ -1240,6 +1368,7 @@ function quickSetup() {
     }
   }
   renderSecPanel(); renderSectionSelects(); renderBoard();
+  recordDataEdit();
   saveState();
 }
 
@@ -1247,7 +1376,11 @@ function renderSecPanel() {
   const list = document.getElementById('sec-list');
   if (!list) return;
   list.innerHTML = '';
-  const unassignedCnt = S.scenes.filter(s => !s.sectionId).length;
+  // Match renderBoard()'s definition of Unassigned: a scene whose sectionId
+  // doesn't resolve to a real section (not just a falsy sectionId) — an
+  // orphaned id (e.g. from an import) is possible and should count here too.
+  const validSecIds = new Set(S.sections.map(s => s.id));
+  const unassignedCnt = S.scenes.filter(s => !validSecIds.has(s.sectionId)).length;
   if (unassignedCnt > 0) {
     const li = document.createElement('div'); li.className = 'sec-li sec-li-unassigned';
     const nameEl = document.createElement('span'); nameEl.className = 'sec-li-name sec-li-name-dim'; nameEl.textContent = 'Unassigned';
@@ -1269,11 +1402,22 @@ function renderSecPanel() {
     colorPick.type = 'color'; colorPick.className = 'sec-color-pick';
     colorPick.value = sec.color || '#5b8dd9'; colorPick.title = 'Section color';
     colorPick.addEventListener('mousedown', e => e.stopPropagation());
+    // The native picker fires 'input' continuously while dragging (for live
+    // preview) and 'change' once on commit. Snapshot before the FIRST 'input'
+    // of each interaction — not in the 'change' handler — since by the time
+    // 'change' fires, 'input' has already mutated sec.color to the new value;
+    // snapshotting there would capture the post-change color and make undo a
+    // no-op.
+    let colorHistPushed = false;
     colorPick.addEventListener('input', e => {
       const s = S.sections.find(x => x.id === sec.id); if (!s) return;
+      if (!colorHistPushed) { pushHistory('Change section color'); colorHistPushed = true; }
       s.color = e.target.value; renderBoard();
     });
-    colorPick.addEventListener('change', e => { colorSection(sec.id, e.target.value); renderBoard(); });
+    colorPick.addEventListener('change', e => {
+      colorHistPushed = false;
+      colorSection(sec.id, e.target.value); renderBoard();
+    });
     const nameEl = document.createElement('span'); nameEl.className = 'sec-li-name'; nameEl.textContent = sec.name;
     nameEl.addEventListener('click', () => startSecRename(li, sec.id));
     const cnt = S.scenes.filter(s => s.sectionId === sec.id).length;
@@ -1345,6 +1489,7 @@ function endSecListDrag() {
     if (!sld.before) ti++;
     arr.splice(ti, 0, item);
     renderSecPanel(); renderSectionSelects(); renderBoard();
+    recordDataEdit();
     saveState();
   }
   sld.on = false; sld.fromIdx = null; sld.dropIdx = null;
@@ -1359,9 +1504,13 @@ function onCardDown(e, id) {
   ptr.down = true; ptr.id = id; ptr.sx = e.clientX; ptr.sy = e.clientY; ptr.dragging = false;
 }
 function beginCardDrag(id, e) {
-  const ids = (S.selIds.has(id) && S.selIds.size > 1)
+  let ids = (S.selIds.has(id) && S.selIds.size > 1)
     ? S.scenes.filter(s => S.selIds.has(s.id)).map(s => s.id)
     : [id];
+  // A section filter can leave other selected scenes hidden (their cards
+  // never rendered) — dragging them anyway would silently move a card the
+  // user can't currently see and gave no input on in this interaction.
+  ids = ids.filter(sid => document.querySelector(`.sc[data-id="${sid}"]`));
   drag.on = true; drag.ids = ids; drag.dropId = null; drag.before = true;
   const card = document.querySelector(`.sc[data-id="${id}"]`), r = card.getBoundingClientRect();
   drag.ox = e.clientX - r.left; drag.oy = e.clientY - r.top;
@@ -1396,7 +1545,19 @@ function moveCardDrag(e) {
     }
   }
   if (newId !== drag.dropId || newBef !== drag.before || newSecId !== drag.dropSecId) {
-    drag.dropId = newId; drag.before = newBef; drag.dropSecId = newSecId; renderBoard();
+    drag.dropId = newId; drag.before = newBef; drag.dropSecId = newSecId;
+    // Toggle just the drop-indicator classes on the existing DOM instead of a
+    // full renderBoard() (innerHTML wipe + rebuild) on every hover change —
+    // nothing else about the board changes while just hovering during a drag.
+    document.querySelectorAll('.sc.dpb, .sc.dpa').forEach(c => c.classList.remove('dpb', 'dpa'));
+    document.querySelectorAll('.sec-group.card-drag-over').forEach(grp => grp.classList.remove('card-drag-over'));
+    if (newId !== null) {
+      const tgt = document.querySelector(`.sc[data-id="${newId}"]`);
+      if (tgt) tgt.classList.add(newBef ? 'dpb' : 'dpa');
+    } else if (newSecId !== null) {
+      const grp = document.querySelector(`.sec-group[data-sec-id="${newSecId}"]`);
+      if (grp) grp.classList.add('card-drag-over');
+    }
   }
 }
 function endCardDrag() {
@@ -1439,7 +1600,7 @@ function endCardDrag() {
   }
   drag.on = false; drag.ids = []; drag.dropId = null; drag.dropSecId = null;
   renderSecPanel(); renderBoard();
-  if (changed) saveState();
+  if (changed) { recordDataEdit(); saveState(); }
 }
 function toggleCardSel(id, e) {
   if (e && (e.target.classList.contains('cdel') || e.target.classList.contains('csum') || e.target.classList.contains('cedit'))) return;
@@ -1479,6 +1640,7 @@ function endLibDrag() {
     if (!ld.before) ti++;
     arr.splice(ti, 0, item);
     renderLibSec(ld.sec); renderCk(ld.sec, ckCurrentlyChecked('ck', ld.sec)); renderEditCk(ld.sec, ckCurrentlyChecked('ek', ld.sec));
+    recordDataEdit();
     saveState();
   }
   ld.on = false; ld.sec = null; ld.fromIdx = null; ld.dropIdx = null;
@@ -1504,6 +1666,36 @@ if (document.getElementById('lp-resize')) {
 
 // ── GLOBAL MOUSE ──────────────────────────────────────────────────────────────
 document.addEventListener('mousemove', e => {
+  // If the mouse button was released outside the browser window/viewport, no
+  // mouseup ever reaches us to clear drag state — the ghost sticks to the
+  // cursor, and the next unrelated click would silently commit a drop
+  // wherever the cursor happens to be. e.buttons reflects the CURRENT button
+  // state on every mousemove regardless of where the release happened, so a
+  // stuck drag self-heals on the next mouse movement inside the window.
+  if (e.buttons === 0 && (ptr.down || ld.on || sld.on || lpDr.on || cpDr.on || spDr.on)) {
+    if (ptr.down) {
+      if (ptr.dragging) {
+        drag.on = false; drag.ids = []; drag.dropId = null; drag.dropSecId = null;
+        document.getElementById('ghost').style.display = 'none';
+        document.querySelectorAll('.sc.dpb, .sc.dpa').forEach(c => c.classList.remove('dpb', 'dpa'));
+        document.querySelectorAll('.sec-group.card-drag-over').forEach(g => g.classList.remove('card-drag-over'));
+        renderBoard();
+      }
+      ptr.down = false; ptr.dragging = false; ptr.id = null;
+    }
+    // Null the drop target before reusing the normal end-handlers so they
+    // clean up drag classes/state without committing a reorder (both already
+    // skip their mutating branch whenever dropIdx is null or unchanged).
+    if (ld.on)  { ld.dropIdx = null; endLibDrag(); }
+    if (sld.on) { sld.dropIdx = null; endSecListDrag(); }
+    [lpDr, cpDr, spDr].forEach(dr => {
+      if (!dr.on) return;
+      dr.on = false;
+      const handle = document.getElementById(dr.handleId);
+      if (handle) handle.classList.remove('dragging');
+    });
+    return;
+  }
   if (ptr.down) {
     if (!ptr.dragging && (Math.abs(e.clientX - ptr.sx) > 4 || Math.abs(e.clientY - ptr.sy) > 4)) {
       ptr.dragging = true; beginCardDrag(ptr.id, e);
@@ -1555,6 +1747,38 @@ document.addEventListener('mousedown', e => {
   openDiscardConfirm(editDirty, newLive);
 });
 
+// IDs of the overlay modals/popups — used both by ESCAPE_ACTIONS below and to
+// stop Alt-letter shortcuts from firing underneath one (e.g. Alt+N opening a
+// New Scene form beneath an open "delete this?" confirmation).
+const MODAL_IDS = ['discard-cfm-modal', 'modal', 'add-popup', 'lib-edit-modal', 'libdel-modal', 'savecfm-modal', 'secdel-modal', 'rpt-modal', 'pov-add-modal'];
+function anyModalOpen() {
+  return MODAL_IDS.some(id => document.getElementById(id)?.classList.contains('open'));
+}
+
+// ── ESCAPE KEY PRIORITY ───────────────────────────────────────────────────────
+// Checked top-to-bottom on Escape; only the first isOpen() match runs its
+// close(), then the loop stops. Order runs most "in front"/blocking first
+// (modals), then floating chrome, then view modes, then board-content state.
+const ESCAPE_ACTIONS = [
+  { isOpen: () => document.getElementById('discard-cfm-modal')?.classList.contains('open'), close: closeDiscardConfirm },
+  { isOpen: () => document.getElementById('modal')?.classList.contains('open'), close: closeModal },
+  { isOpen: () => document.getElementById('add-popup')?.classList.contains('open'), close: closeAddPopup },
+  { isOpen: () => document.getElementById('lib-edit-modal')?.classList.contains('open'), close: closeLibEditModal },
+  { isOpen: () => document.getElementById('libdel-modal')?.classList.contains('open'), close: closeLibDelModal },
+  { isOpen: () => document.getElementById('savecfm-modal')?.classList.contains('open'), close: closeSaveCfm },
+  { isOpen: () => document.getElementById('secdel-modal')?.classList.contains('open'), close: closeSecDelModal },
+  { isOpen: () => document.getElementById('rpt-modal')?.classList.contains('open'), close: closeReportModal },
+  { isOpen: () => document.getElementById('pov-add-modal')?.classList.contains('open'), close: closePovAddModal },
+  { isOpen: () => helpMode, close: closeHelp },
+  { isOpen: () => document.getElementById('sec-filter-drop')?.classList.contains('open'), close: closeSecFilter },
+  { isOpen: () => !!document.querySelector('#menu-bar .mi.open'), close: closeAllMenus },
+  { isOpen: () => typeof chartMode !== 'undefined' && chartMode, close: closeChartView },
+  { isOpen: () => S.editingId !== null || document.getElementById('tab-new')?.classList.contains('live'), close: maybeCancelSceneFormWithConfirm },
+  { isOpen: () => !!searchQ, close: clearSearch },
+  { isOpen: () => S.selIds.size > 0, close: clearCardSel },
+  { isOpen: () => SECS.some(({ key }) => S.selections[key].size > 0) || S.selections.povs.size > 0, close: clearAllSel },
+];
+
 // ── KEYBOARD & STORYBOARD EVENT LISTENERS ────────────────────────────────────
 if (document.getElementById('sc-title')) {
   document.getElementById('sc-title').addEventListener('keydown', e => { if (e.key === 'Enter') { e.stopPropagation(); } });
@@ -1572,20 +1796,36 @@ document.addEventListener('keydown', e => {
     // The app autosaves on every change; swallow Ctrl+S so the browser's
     // Save Page dialog doesn't appear on muscle-memory presses.
     if (e.key === 's') { e.preventDefault(); return; }
-    if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (typeof undo === 'function') undo(); return; }
-    if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); if (typeof redo === 'function') redo(); return; }
+    // Undo/redo must not hijack a text field's own native undo (typing in a
+    // scene's title/summary/notes and pressing Ctrl+Z should fix the typo,
+    // not revert an unrelated board action), and must not fire while a card/
+    // library/section-list drag is in progress — the app's undo rebuilds
+    // S.scenes and re-renders the board out from under an active drag, and
+    // the eventual mouseup would then commit a reorder against post-undo
+    // state and clobber the redo stack.
+    if (!inInput && !drag.on && !ld.on && !sld.on) {
+      if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (typeof undo === 'function') undo(); return; }
+      if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); if (typeof redo === 'function') redo(); return; }
+    }
     if (!inInput) {
-      if (e.key === 'E') { e.preventDefault(); exportCurrentProject(); return; }
+      // Keyed off e.shiftKey explicitly, not e.key's case — Caps Lock also
+      // uppercases e.key for a plain Ctrl+E (no Shift), which would otherwise
+      // both false-trigger export on Ctrl+E and silently swallow the real
+      // Ctrl+Shift+E (Caps Lock cancels the Shift-driven uppercasing, so
+      // e.key comes back lowercase 'e').
+      if (e.shiftKey && e.code === 'KeyE') { e.preventDefault(); exportCurrentProject(); return; }
       if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); return; }
       if (e.key === '-') { e.preventDefault(); zoomOut(); return; }
       if (e.key === '0') { e.preventDefault(); zoomReset(); return; }
     }
   }
-  // Alt shortcuts (not in an input field). Keyed off e.code, not e.key — on Mac,
+  // Alt shortcuts (not in an input field, and not underneath an open modal —
+  // e.g. Alt+N shouldn't open a New Scene form while a delete confirmation is
+  // still open on top of it). Keyed off e.code, not e.key — on Mac,
   // Option+letter remaps e.key to an accented/symbol character (e.g. Option+V → "√",
   // Option+N → a dead key), so matching on e.key silently breaks every one of these.
   // e.code reports the physical key regardless of what the modifier composes.
-  if (e.altKey && !e.ctrlKey && !e.metaKey && !inInput) {
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !inInput && !anyModalOpen()) {
     if (e.code === 'KeyN') { e.preventDefault(); menuNewScene(); return; }
     if (e.code === 'KeyC') { e.preventDefault(); openAddPopup('characters'); return; }
     if (e.code === 'KeyL') { e.preventDefault(); openAddPopup('locations'); return; }
@@ -1595,22 +1835,15 @@ document.addEventListener('keydown', e => {
     if (e.code === 'KeyV') { e.preventDefault(); toggleChartView(); return; }
   }
   if (e.key === 'Escape') {
-    closeAllMenus();
-    if (typeof clearAllSel === 'function') try { clearAllSel(); } catch(e){}
-    if (typeof clearCardSel === 'function') try { clearCardSel(); } catch(e){}
-    if (typeof maybeCancelEditWithConfirm === 'function') try { maybeCancelEditWithConfirm(); } catch(e){}
-    if (typeof closeModal === 'function') try { closeModal(); } catch(e){}
-    if (typeof closeAddPopup === 'function') try { closeAddPopup(); } catch(e){}
-    if (typeof clearSearch === 'function') try { clearSearch(); } catch(e){}
-    if (typeof closeLibDelModal === 'function') try { closeLibDelModal(); } catch(e){}
-    if (typeof closeSaveCfm === 'function') try { closeSaveCfm(); } catch(e){}
-    if (typeof closeSecDelModal === 'function') try { closeSecDelModal(); } catch(e){}
-    if (typeof closeSecFilter === 'function') try { closeSecFilter(); } catch(e){}
-    if (typeof closeReportModal === 'function') try { closeReportModal(); } catch(e){}
-    if (typeof closeLibEditModal === 'function') try { closeLibEditModal(); } catch(e){}
-    if (typeof closePovAddModal === 'function') try { closePovAddModal(); } catch(e){}
-    if (typeof closeHelp === 'function') try { closeHelp(); } catch(e){}
-    if (typeof closeChartView === 'function') try { closeChartView(); } catch(e){}
+    // Close/clear only the single front-most thing, in priority order, and
+    // stop — rather than running every close/clear handler unconditionally.
+    // Previously, dismissing one modal also wiped card selections, library
+    // highlights, and search in the same keystroke.
+    for (const action of ESCAPE_ACTIONS) {
+      try {
+        if (action.isOpen()) { action.close(); break; }
+      } catch(err) {}
+    }
   }
 });
 // Close filter dropdown on click outside

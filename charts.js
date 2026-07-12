@@ -6,7 +6,8 @@ let chartMode = false;          // is chart view active
 let chartType = 'snake';        // 'snake' | 'circle'
 let chartResizeTimer = null;
 let chartLastSize = '';         // last rendered chart-scroll size, "WxH"
-const CHART_PAD = 20;           // must match #chart-canvas padding in styles.css
+const CHART_PAD = 12;           // must match #chart-canvas padding in styles.css
+const SNAKE_SEG_THICKNESS = 34; // stroke width of the snake row "tube" (see addSegments call below)
 const UNASSIGNED_SEC_ID = 'unassigned';
 
 if (document.getElementById('chart-host')) {
@@ -211,12 +212,22 @@ function addSegments(container, centerline, scenes, total, thickness) {
     clone.setAttribute('stroke-linecap', 'butt');
     clone.style.pointerEvents = 'stroke';
     applySegColor(clone, scene);
-    clone.addEventListener('mouseenter', e => showChartTip(e, scene));
+    clone.addEventListener('mouseenter', e => { showChartTip(e, scene); highlightSegNumber(scene.id, true); });
     clone.addEventListener('mousemove', moveChartTip);
-    clone.addEventListener('mouseleave', hideChartTip);
+    clone.addEventListener('mouseleave', () => { hideChartTip(); highlightSegNumber(scene.id, false); });
     clone.addEventListener('click', () => onSegClick(scene));
     container.appendChild(clone);
   });
+}
+// The hover darkening on a segment (see .chart-seg:hover in styles.css) can
+// swallow the resting --sub/--ontx number color it's drawn under, so swap the
+// matching chart-num to --ontx while hovered — the same "readable against a
+// dark/strong fill" color already used for filter-matched numbers, and it
+// reliably contrasts against --tx (the hover color) on every theme since
+// both variables sit at opposite ends of that theme's light/dark polarity.
+function highlightSegNumber(sceneId, on) {
+  const num = document.querySelector('.chart-num[data-scene-id="' + sceneId + '"]');
+  if (num) num.classList.toggle('chart-num-hl', on);
 }
 
 function drawSectionMarkerAt(container, x, y, sectionId, idx) {
@@ -254,19 +265,29 @@ function showSectionTip(e, sectionId) {
 
 // ── SNAKE ──────────────────────────────────────────────────────────────────────
 function computeSnakeLayout(N, W) {
-  const r = 45, M = r + 25, A = Math.PI * r, T = 110;
+  // The row/curve "tube" is a thick stroke centered on this arc: at the tip of
+  // each turn, its outer edge extends SNAKE_SEG_THICKNESS/2 past the
+  // centerline itself, so the margin needs that much extra clearance on top
+  // of the intended CHART_PAD, or the turn's outer edge clips against the
+  // SVG bounds.
+  const r = 45, M = r + CHART_PAD + SNAKE_SEG_THICKNESS / 2, A = Math.PI * r, T = 110;
   const runLen = Math.max(2 * r + 20, W - 2 * M);
   const L = N * T;
   let R = Math.max(1, Math.ceil((L - runLen) / (runLen + A)) + 1);
   let run = (L - (R - 1) * A) / R;
   if (run > runLen) { R++; run = (L - (R - 1) * A) / R; }
   if (R > 1 && run < 180) { R--; run = (L - (R - 1) * A) / R; }
-  if (R === 1 && run < 180) run = L;
+  // The above only sizes `run` to hit ~110px/scene, which leaves it short of
+  // runLen (and thus dead space on the right of every row) whenever N*T
+  // doesn't divide evenly into R rows. Row count R is already settled above,
+  // so stretch to the full available width now.
+  run = runLen;
   return { R, run, M, r };
 }
 function buildSnakePath(N, W) {
   const { R, run, M, r } = computeSnakeLayout(N, W);
-  const y0 = 40 + r;
+  // +24 (not 0) so row 1 doesn't sit flush against the very top of the chart.
+  const y0 = 24 + r;
   let d = `M ${M} ${y0}`, y = y0;
   for (let row = 0; row < R; row++) {
     const leftToRight = row % 2 === 0;
@@ -278,7 +299,7 @@ function buildSnakePath(N, W) {
       y = newY;
     }
   }
-  return { d, height: y0 + (R - 1) * 90 + r + 40 };
+  return { d, height: y0 + (R - 1) * 90 + r + 24 };
 }
 
 function buildSnakeChart(canvas, scenes) {
@@ -298,7 +319,7 @@ function buildSnakeChart(canvas, scenes) {
   centerline.setAttribute('fill', 'none');
   svg.appendChild(centerline);
   const total = centerline.getTotalLength();
-  addSegments(svg, centerline, scenes, total, 34);
+  addSegments(svg, centerline, scenes, total, SNAKE_SEG_THICKNESS);
   addSnakeNumbers(svg, centerline, scenes, total);
   addSnakeSectionMarkers(svg, centerline, scenes, total, W);
 }
@@ -306,6 +327,9 @@ function buildSnakeChart(canvas, scenes) {
 function addSnakeNumbers(svg, centerline, scenes, total) {
   const N = scenes.length, segLen = total / N;
   if (segLen < 26) return;
+  // Built once for this pass instead of each scene independently rebuilding
+  // the same ordered scene list via sceneDisplayNum().
+  const numMap = buildSceneNumMap();
   scenes.forEach((scene, i) => {
     const mid = centerline.getPointAtLength(i * segLen + segLen / 2);
     const txt = document.createElementNS(SVGNS, 'text');
@@ -315,8 +339,9 @@ function addSnakeNumbers(svg, centerline, scenes, total) {
     txt.setAttribute('font-size', '11');
     txt.setAttribute('fill', (chartFilterActive() && sceneMatchesChart(scene)) ? 'var(--ontx)' : 'var(--sub)');
     txt.classList.add('chart-num');
+    txt.dataset.sceneId = scene.id;
     txt.style.pointerEvents = 'none';
-    txt.textContent = String(sceneDisplayNum(scene.id));
+    txt.textContent = String(numMap.get(scene.id) ?? 1);
     svg.appendChild(txt);
   });
 }
@@ -354,7 +379,10 @@ function buildCircleChart(canvas, scenes) {
   const availH = Math.max(300, (scrollEl.clientHeight || 480) - 2 * CHART_PAD);
   const N = scenes.length;
   if (N === 0) { renderChartNoMatch(canvas); return; }
-  const R = Math.max(90, Math.min(availW, availH) / 2 - 70);
+  // -25 leaves just enough room for the ribbon's own stroke half-width (15)
+  // plus a little breathing room — nothing else is drawn outside R (the pie
+  // wedge and its labels sit inward, at outerR = R - 20 and less).
+  const R = Math.max(90, Math.min(availW, availH) / 2 - 25);
   const cx = availW / 2, cy = availH / 2;
   const svg = document.createElementNS(SVGNS, 'svg');
   canvas.appendChild(svg);
@@ -378,6 +406,9 @@ function addCircleNumbers(svg, scenes, cx, cy, R) {
   const N = scenes.length;
   const segLen = (2 * Math.PI * R) / N;
   if (segLen < 26) return;
+  // Built once for this pass instead of each scene independently rebuilding
+  // the same ordered scene list via sceneDisplayNum().
+  const numMap = buildSceneNumMap();
   scenes.forEach((scene, i) => {
     const angleDeg = -90 + (i + 0.5) * 360 / N;
     const rad = angleDeg * Math.PI / 180;
@@ -389,8 +420,9 @@ function addCircleNumbers(svg, scenes, cx, cy, R) {
     txt.setAttribute('font-size', '11');
     txt.setAttribute('fill', (chartFilterActive() && sceneMatchesChart(scene)) ? 'var(--ontx)' : 'var(--sub)');
     txt.classList.add('chart-num');
+    txt.dataset.sceneId = scene.id;
     txt.style.pointerEvents = 'none';
-    txt.textContent = String(sceneDisplayNum(scene.id));
+    txt.textContent = String(numMap.get(scene.id) ?? 1);
     svg.appendChild(txt);
   });
 }

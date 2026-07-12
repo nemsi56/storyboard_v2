@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SceneSetter — My Projects</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; connect-src 'self' https://formspree.io https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; connect-src 'self' https://formspree.io https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NNVHKFSNPG"></script>
 <script src="ga.js"></script>
@@ -30,9 +30,9 @@
         <p style="margin:0;color:#2c2416">Since all your content stays on your device, there is no cloud service for SceneSetter. To share work among separate devices, export the project (a JSON file) and import it on the other device. SceneSetter tracks each project's version: if you import a file that is older than, newer than, or in conflict with your local copy, it will detect that and ask what to do — so you won't accidentally overwrite new work with old. A simple routine: export when you finish on one device, and import that file before you continue on another.</p>
       </div>
       <div class="pm-toolbar">
-        <button class="pm-btn pm-btn-primary" onclick="openNewProjectModal()">+ New Project</button>
-        <button class="pm-btn pm-btn-secondary" onclick="document.getElementById('proj-import-input').click()">Import JSON</button>
-        <input type="file" id="proj-import-input" accept=".json" style="display:none" onchange="importProjectJSON(this)">
+        <button class="pm-btn pm-btn-primary" id="pm-new-project-btn">+ New Project</button>
+        <button class="pm-btn pm-btn-secondary" id="pm-import-btn">Import JSON</button>
+        <input type="file" id="proj-import-input" accept=".json" style="display:none">
       </div>
       <div id="proj-grid" class="pm-grid"></div>
     </div>
@@ -45,8 +45,8 @@
     <div class="pm-modal-title" id="proj-new-title">New Project</div>
     <input type="text" id="proj-new-input" class="pm-modal-input" placeholder="Project name" maxlength="80">
     <div class="pm-modal-btns">
-      <button class="pm-btn pm-btn-secondary" onclick="closeNewProject()">Cancel</button>
-      <button class="pm-btn pm-btn-primary" onclick="confirmNewProject()">Create</button>
+      <button class="pm-btn pm-btn-secondary" id="proj-new-cancel-btn">Cancel</button>
+      <button class="pm-btn pm-btn-primary" id="proj-new-create-btn">Create</button>
     </div>
   </div>
 </div>
@@ -57,8 +57,8 @@
     <div class="pm-modal-title" id="proj-rename-title">Rename Project</div>
     <input type="text" id="proj-rename-input" class="pm-modal-input" placeholder="Project name" maxlength="80">
     <div class="pm-modal-btns">
-      <button class="pm-btn pm-btn-secondary" onclick="closeProjRename()">Cancel</button>
-      <button class="pm-btn pm-btn-primary" onclick="confirmProjRename()">Save</button>
+      <button class="pm-btn pm-btn-secondary" id="proj-rename-cancel-btn">Cancel</button>
+      <button class="pm-btn pm-btn-primary" id="proj-rename-save-btn">Save</button>
     </div>
   </div>
 </div>
@@ -69,8 +69,8 @@
     <div class="pm-modal-title" id="proj-del-title">Delete Project</div>
     <div class="pm-modal-del-msg">Are you sure you want to delete <span id="proj-del-name" class="pm-modal-del-name"></span>? This cannot be undone.</div>
     <div class="pm-modal-btns">
-      <button class="pm-btn pm-btn-secondary" onclick="closeProjDel()">Cancel</button>
-      <button class="pm-btn pm-btn-primary" style="background:var(--rd)" onclick="confirmProjDel()">Delete</button>
+      <button class="pm-btn pm-btn-secondary" id="proj-del-cancel-btn">Cancel</button>
+      <button class="pm-btn pm-btn-primary" style="background:var(--rd)" id="proj-del-confirm-btn">Delete</button>
     </div>
   </div>
 </div>
@@ -82,5 +82,6 @@
 <script src="projects.js"></script>
 <script src="main.js"></script>
 <script src="app.js"></script>
+<script src="projects-init.js"></script>
 </body>
 </html>

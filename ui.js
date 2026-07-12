@@ -51,7 +51,8 @@ function submitEmail() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
-  }).then(() => {
+  }).then(response => {
+    if (!response.ok) throw new Error('Formspree responded with ' + response.status);
     closeEmailPopup();
     console.log('Email submitted successfully');
   }).catch(err => {

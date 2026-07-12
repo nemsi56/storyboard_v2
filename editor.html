@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SceneSetter — Scene Editor</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; connect-src 'self' https://formspree.io https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; connect-src 'self' https://formspree.io https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NNVHKFSNPG"></script>
 <script src="ga.js"></script>
@@ -25,79 +25,82 @@
     <span id="backup-status"   class="backup-status"></span>
   </div>
   <div id="hdr-spacer"></div>
-  <button class="proj-back" onclick="backToProjects()" title="Back to project list">Projects</button>
-  <button id="help-btn" onclick="toggleHelp()" title="Help – hover over highlighted areas to learn what each element does" aria-label="Help">?</button>
+  <button class="proj-back" id="proj-back-btn" title="Back to project list">Projects</button>
+  <button id="help-btn" title="Help – hover over highlighted areas to learn what each element does" aria-label="Help">?</button>
 </div>
 
 <!-- MENU BAR -->
 <div id="menu-bar">
   <!-- File -->
   <div class="mi" id="mi-file">
-    <button class="mi-btn" onclick="toggleMenu('file')" onmouseenter="hoverMenu('file')">File</button>
+    <button class="mi-btn" id="mi-btn-file">File</button>
     <div class="mi-drop" id="drop-file">
-      <button class="di" onclick="exportCurrentProject();closeAllMenus()">Export as JSON<span class="di-sc">Ctrl+⇧E</span></button>
-      <button class="di" onclick="menuImport()">Import from JSON…</button>
+      <button class="di" id="mi-export-json">Export as JSON<span class="di-sc">Ctrl+⇧E</span></button>
+      <button class="di" id="mi-import-json">Import from JSON…</button>
     </div>
   </div>
   <!-- Edit -->
   <div class="mi" id="mi-edit">
-    <button class="mi-btn" onclick="toggleMenu('edit')" onmouseenter="hoverMenu('edit')">Edit</button>
+    <button class="mi-btn" id="mi-btn-edit">Edit</button>
     <div class="mi-drop" id="drop-edit">
-      <button class="di" onclick="undo();closeAllMenus()"><span id="mdi-undo-lbl">Undo</span><span class="di-sc">Ctrl+Z</span></button>
-      <button class="di" onclick="redo();closeAllMenus()"><span id="mdi-redo-lbl">Redo</span><span class="di-sc">Ctrl+⇧Z</span></button>
+      <button class="di" id="mi-undo-btn"><span id="mdi-undo-lbl">Undo</span><span class="di-sc">Ctrl+Z</span></button>
+      <button class="di" id="mi-redo-btn"><span id="mdi-redo-lbl">Redo</span><span class="di-sc">Ctrl+⇧Z</span></button>
     </div>
   </div>
   <!-- Create (scene/library actions) -->
   <div class="mi" id="mi-scene">
-    <button class="mi-btn" onclick="toggleMenu('scene')" onmouseenter="hoverMenu('scene')">Create</button>
+    <button class="mi-btn" id="mi-btn-scene">Create</button>
     <div class="mi-drop" id="drop-scene">
-      <button class="di" onclick="menuNewScene()">New Scene…<span class="di-sc">Alt+N</span></button>
+      <button class="di" id="mi-new-scene">New Scene…<span class="di-sc">Alt+N</span></button>
       <div class="di-sep"></div>
-      <button class="di" onclick="openAddPopup('characters');closeAllMenus()">Add Character<span class="di-sc">Alt+C</span></button>
-      <button class="di" onclick="openAddPopup('locations'); closeAllMenus()">Add Location<span class="di-sc">Alt+L</span></button>
-      <button class="di" onclick="openAddPopup('themes');    closeAllMenus()">Add Theme<span class="di-sc">Alt+T</span></button>
-      <button class="di" onclick="openAddPopup('misc');      closeAllMenus()">Add Misc Item<span class="di-sc">Alt+M</span></button>
+      <button class="di" id="mi-add-char">Add Character<span class="di-sc">Alt+C</span></button>
+      <button class="di" id="mi-add-loc">Add Location<span class="di-sc">Alt+L</span></button>
+      <button class="di" id="mi-add-theme">Add Theme<span class="di-sc">Alt+T</span></button>
+      <button class="di" id="mi-add-misc">Add Misc Item<span class="di-sc">Alt+M</span></button>
       <div class="di-sep"></div>
-      <button class="di" onclick="openReportModal();closeAllMenus()">Generate Report<span class="di-sc">Alt+R</span></button>
+      <button class="di" id="mi-gen-report">Generate Report<span class="di-sc">Alt+R</span></button>
     </div>
   </div>
   <!-- View -->
   <div class="mi" id="mi-view">
-    <button class="mi-btn" onclick="toggleMenu('view')" onmouseenter="hoverMenu('view')">View</button>
+    <button class="mi-btn" id="mi-btn-view">View</button>
     <div class="mi-drop" id="drop-view">
       <div class="di has-sub">Theme ▸<div class="mi-sub">
-        <button class="di theme-di theme-di-ivory" data-theme="ivory" onclick="setTheme('ivory'); closeAllMenus()">Cream</button>
-        <button class="di theme-di theme-di-slate" data-theme="slate" onclick="setTheme('slate'); closeAllMenus()">Slate</button>
-        <button class="di theme-di theme-di-studio" data-theme="studio" onclick="setTheme('studio');closeAllMenus()">Studio</button>
-        <button class="di theme-di theme-di-ocean" data-theme="ocean" onclick="setTheme('ocean'); closeAllMenus()">Ocean</button>
-        <button class="di theme-di theme-di-sunset" data-theme="sunset" onclick="setTheme('sunset');closeAllMenus()">Sunset</button>
+        <button class="di theme-di theme-di-ivory" data-theme="ivory" id="theme-btn-ivory">Cream</button>
+        <button class="di theme-di theme-di-slate" data-theme="slate" id="theme-btn-slate">Slate</button>
+        <button class="di theme-di theme-di-studio" data-theme="studio" id="theme-btn-studio">Studio</button>
+        <button class="di theme-di theme-di-ocean" data-theme="ocean" id="theme-btn-ocean">Ocean</button>
+        <button class="di theme-di theme-di-sunset" data-theme="sunset" id="theme-btn-sunset">Sunset</button>
       </div></div>
       <div class="di-sep"></div>
-      <button class="di" onclick="zoomIn(); closeAllMenus()">Zoom In<span class="di-sc">Ctrl+=</span></button>
-      <button class="di" onclick="zoomOut();closeAllMenus()">Zoom Out<span class="di-sc">Ctrl+−</span></button>
-      <button class="di" onclick="zoomReset();closeAllMenus()">Reset Zoom<span class="di-sc">Ctrl+0</span></button>
+      <!-- Zoom only affects scene cards, which aren't on screen in chart view — hidden there by updateZoomMenuState(). -->
+      <div id="menu-zoom-group">
+        <button class="di" id="zoomin-btn">Zoom In<span class="di-sc">Ctrl+=</span></button>
+        <button class="di" id="zoomout-btn">Zoom Out<span class="di-sc">Ctrl+−</span></button>
+        <button class="di" id="zoomreset-btn">Reset Zoom<span class="di-sc">Ctrl+0</span></button>
+        <div class="di-sep"></div>
+      </div>
+      <button class="di" id="menu-show-library"><span id="menu-lib-text">Hide Library Panel</span></button>
+      <button class="di" id="menu-show-sections"><span id="menu-sec-text">Hide Sections Panel</span></button>
+      <button class="di" id="menu-show-scene"><span id="menu-scn-text">Hide Scene Panel</span></button>
       <div class="di-sep"></div>
-      <button class="di" id="menu-show-library" onclick="togglePanel('lp');setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-lib-text">Hide Library Panel</span></button>
-      <button class="di" id="menu-show-sections" onclick="togglePanel('sp');setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-sec-text">Hide Sections Panel</span></button>
-      <button class="di" id="menu-show-scene" onclick="togglePanel('cp');setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-scn-text">Hide Scene Panel</span></button>
+      <button class="di" id="menu-show-all-panels"><span id="menu-all-text">Hide All Panels</span></button>
       <div class="di-sep"></div>
-      <button class="di" id="menu-show-all-panels" onclick="toggleAllPanels();setTimeout(updatePanelMenuStates,50);closeAllMenus()"><span id="menu-all-text">Hide All Panels</span></button>
-      <div class="di-sep"></div>
-      <button class="di" id="menu-chart" onclick="toggleChartView();closeAllMenus()"><span id="menu-chart-text">Show Scene Flow Chart</span><span class="di-sc">Alt+V</span></button>
+      <button class="di" id="menu-chart"><span id="menu-chart-text">Show Scene Flow Chart</span><span class="di-sc">Alt+V</span></button>
     </div>
   </div>
   <!-- Help -->
   <div class="mi" id="mi-help">
-    <button class="mi-btn" onclick="toggleMenu('help')" onmouseenter="hoverMenu('help')">Help</button>
+    <button class="mi-btn" id="mi-btn-help">Help</button>
     <div class="mi-drop" id="drop-help">
-      <button class="di" onclick="window.open('overview.html','_blank');closeAllMenus()">Overview</button>
-      <button class="di" onclick="window.open('tutorial.html','_blank');closeAllMenus()">Tutorial</button>
-      <button class="di" onclick="toggleHelp();closeAllMenus()">Feature Descriptions</button>
+      <button class="di" id="mi-help-overview">Overview</button>
+      <button class="di" id="mi-help-tutorial">Tutorial</button>
+      <button class="di" id="mi-help-features">Feature Descriptions</button>
     </div>
   </div>
 </div>
 <!-- Hidden file input for JSON import -->
-<input type="file" id="menu-import-input" accept=".json" style="display:none" onchange="importProjectJSON(this)">
+<input type="file" id="menu-import-input" accept=".json" style="display:none">
 
 <!-- Backup reminder banner (shown once export is overdue) -->
 <div id="backup-banner" style="display:none">
@@ -105,21 +108,21 @@
     <span id="backup-banner-msg"></span>
     <span id="backup-banner-note">(Backups can be found where your browser saves downloaded files.)</span>
   </div>
-  <button class="backup-banner-btn" onclick="exportCurrentProject()">Export Now</button>
-  <button class="backup-banner-dismiss" onclick="dismissBackupBanner()" aria-label="Dismiss">×</button>
+  <button class="backup-banner-btn" id="backup-export-btn">Export Now</button>
+  <button class="backup-banner-dismiss" id="backup-dismiss-btn" aria-label="Dismiss">×</button>
 </div>
 
 <div class="main">
 
   <!-- LEFT PANEL -->
   <div class="panel" id="lp">
-    <button class="p-strip" onclick="togglePanel('lp')" aria-label="Expand Library panel">
+    <button class="p-strip" id="lp-strip-btn" aria-label="Expand Library panel">
       <span class="sl" aria-hidden="true">Library</span><span aria-hidden="true">▶</span>
     </button>
     <div class="p-content">
       <div class="p-hdr">Library
         <div class="p-hdr-btns">
-          <button class="cbtn" onclick="togglePanel('lp')" title="Collapse" aria-label="Collapse Library panel">◀</button>
+          <button class="cbtn" id="lp-collapse-btn" title="Collapse" aria-label="Collapse Library panel">◀</button>
         </div>
       </div>
       <div class="p-body" id="lp-body">
@@ -127,12 +130,13 @@
         <!-- Global AND/OR toggle -->
         <div id="ao-global-wrap">
           <span class="ao-lbl">Highlight:</span>
-          <button class="ao-btn on" id="ao-or"  onclick="setAndOr('OR')">OR</button>
-          <button class="ao-btn"    id="ao-and" onclick="setAndOr('AND')">AND</button>
+          <button class="ao-btn on" id="ao-or">OR</button>
+          <button class="ao-btn"    id="ao-and">AND</button>
         </div>
         <!-- Clear highlights button (shown when selections active) -->
-        <div id="lib-clr-wrap"><button id="lib-clr" onclick="clearAllSel()">✕ Clear highlights</button></div>
+        <div id="lib-clr-wrap"><button id="lib-clr">✕ Clear highlights</button></div>
         <!-- Library sections appended by buildLibPanel() -->
+        <div id="lp-scroll"></div>
       </div>
     </div>
   </div>
@@ -142,19 +146,19 @@
   <!-- CENTER PANEL -->
   <!-- SECTIONS PANEL -->
   <div class="panel" id="sp">
-    <button class="p-strip" onclick="togglePanel('sp')" aria-label="Expand Sections panel">
+    <button class="p-strip" id="sp-strip-btn" aria-label="Expand Sections panel">
       <span class="sl" aria-hidden="true">Sections</span><span aria-hidden="true">▶</span>
     </button>
     <div class="p-content">
       <div class="p-hdr">Sections
         <div class="p-hdr-btns">
-          <button class="cbtn" onclick="togglePanel('sp')" title="Collapse" aria-label="Collapse Sections panel">◀</button>
+          <button class="cbtn" id="sp-collapse-btn" title="Collapse" aria-label="Collapse Sections panel">◀</button>
         </div>
       </div>
       <div class="p-body">
         <div class="sp-add-row">
           <input type="text" id="sec-add-inp" class="sp-add-inp" placeholder="New section…" maxlength="60">
-          <button class="sp-add-btn" onclick="addSection()" title="Add section">+</button>
+          <button class="sp-add-btn" id="sec-add-btn" title="Add section">+</button>
         </div>
         <div class="sp-qs">
           <div class="sp-qs-hdr">Quick Setup</div>
@@ -163,7 +167,7 @@
             <input type="number" id="qs-n" class="qs-n" min="1" max="20" value="3">
             <span class="qs-lbl">named</span>
             <input type="text" id="qs-pfx" class="qs-pfx" value="Act" maxlength="20">
-            <button class="qs-btn" onclick="quickSetup()">Go</button>
+            <button class="qs-btn" id="qs-go-btn">Go</button>
           </div>
         </div>
         <div id="sec-list"></div>
@@ -173,47 +177,55 @@
   <div id="sp-resize" title="Drag to resize Sections panel"></div>
 
   <div class="panel" id="cp">
-    <button class="p-strip" onclick="togglePanel('cp')" aria-label="Expand Scene panel">
+    <button class="p-strip" id="cp-strip-btn" aria-label="Expand Scene panel">
       <span class="sl" aria-hidden="true">Scene</span><span aria-hidden="true">▶</span>
     </button>
     <div class="p-content">
       <div class="tabs">
-        <button class="tab on"  id="tab-new"  onclick="switchTab('new')">New Scene</button>
-        <button class="tab dim" id="tab-edit" onclick="switchTab('edit')" disabled>Edit Scene</button>
-        <button class="cbtn tab-cbtn" onclick="togglePanel('cp')" title="Collapse" aria-label="Collapse Scene panel">◀</button>
+        <button class="tab on"  id="tab-new">New Scene</button>
+        <button class="tab dim" id="tab-edit" disabled>Edit Scene</button>
+        <button class="cbtn tab-cbtn" id="cp-collapse-btn" title="Collapse" aria-label="Collapse Scene panel">◀</button>
       </div>
       <!-- New Scene form -->
       <div id="form-new" class="p-body">
-        <div class="form-btns"><button id="new-cancel" onclick="cancelNewScene()">Cancel</button><button id="asb" onclick="addScene()">Save</button></div>
-        <div class="errmsg" id="scerr"></div>
-        <div class="ff"><label>Title</label><textarea id="sc-title" class="ta-title" rows="2" placeholder="Enter scene title…" maxlength="120"></textarea></div>
-        <div class="ff"><label>Summary</label><textarea id="sc-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
-        <div class="ff" id="sc-sec-wrap" style="display:none"><label>Section</label><select id="sc-section" class="ff-sel"><option value="">Unassigned</option></select></div>
-        <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ck-characters-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-characters-wrap','characters')">No characters selected</button><div class="ck-drop-list" id="ck-characters"></div></div></div>
-        <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ck-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ck-locations"></div></div></div>
-        <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ck-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ck-themes"></div></div></div>
-        <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ck-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ck-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ck-misc"></div></div></div>
-        <div class="ff"><label>Word Count</label><input type="number" id="sc-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
-        <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="sc-povs-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('sc-povs-wrap','povs')">No POV selected</button><div class="ck-drop-list" id="sc-povs"></div></div></div>
-        <div class="ff"><label>Notes</label><textarea id="sc-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+        <div class="cp-form-hdr">
+          <div class="form-btns"><button id="new-cancel">Cancel</button><button id="asb">Save</button></div>
+          <div class="errmsg" id="scerr"></div>
+        </div>
+        <div class="cp-form-fields">
+          <div class="ff"><label>Title</label><textarea id="sc-title" class="ta-title" rows="2" placeholder="Enter scene title…" maxlength="120"></textarea></div>
+          <div class="ff"><label>Summary</label><textarea id="sc-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+          <div class="ff" id="sc-sec-wrap" style="display:none"><label>Section</label><select id="sc-section" class="ff-sel"><option value="">Unassigned</option></select></div>
+          <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ck-characters-wrap"><button class="ck-drop-btn" type="button" id="ck-characters-btn">No characters selected</button><div class="ck-drop-list" id="ck-characters"></div></div></div>
+          <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ck-locations-wrap"><button class="ck-drop-btn" type="button" id="ck-locations-btn">No locations selected</button><div class="ck-drop-list" id="ck-locations"></div></div></div>
+          <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ck-themes-wrap"><button class="ck-drop-btn" type="button" id="ck-themes-btn">No themes selected</button><div class="ck-drop-list" id="ck-themes"></div></div></div>
+          <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ck-misc-wrap"><button class="ck-drop-btn" type="button" id="ck-misc-btn">No misc items selected</button><div class="ck-drop-list" id="ck-misc"></div></div></div>
+          <div class="ff"><label>Word Count</label><input type="number" id="sc-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
+          <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="sc-povs-wrap"><button class="ck-drop-btn" type="button" id="sc-povs-btn">No POV selected</button><div class="ck-drop-list" id="sc-povs"></div></div></div>
+          <div class="ff"><label>Notes</label><textarea id="sc-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+        </div>
       </div>
       <!-- Edit Scene form -->
       <div id="form-edit" class="p-body" style="display:none">
-        <div class="form-btns">
-          <button id="canceledit" onclick="cancelEdit()">Cancel</button>
-          <button id="saveedit"   onclick="saveEdit()">Save Changes</button>
+        <div class="cp-form-hdr">
+          <div class="form-btns">
+            <button id="canceledit">Cancel</button>
+            <button id="saveedit">Save Changes</button>
+          </div>
+          <div class="errmsg" id="ederr"></div>
         </div>
-        <div class="errmsg" id="ederr"></div>
-        <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
-        <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
-        <div class="ff" id="ed-sec-wrap" style="display:none"><label>Section</label><select id="ed-section" class="ff-sel"><option value="">Unassigned</option></select></div>
-        <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ek-characters-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-characters-wrap','characters')">No characters selected</button><div class="ck-drop-list" id="ek-characters"></div></div></div>
-        <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ek-locations-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-locations-wrap','locations')">No locations selected</button><div class="ck-drop-list" id="ek-locations"></div></div></div>
-        <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ek-themes-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-themes-wrap','themes')">No themes selected</button><div class="ck-drop-list" id="ek-themes"></div></div></div>
-        <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ek-misc-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ek-misc-wrap','misc')">No misc items selected</button><div class="ck-drop-list" id="ek-misc"></div></div></div>
-        <div class="ff"><label>Word Count</label><input type="number" id="ed-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
-        <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="ed-povs-wrap"><button class="ck-drop-btn" type="button" onclick="toggleCkDrop('ed-povs-wrap','povs')">No POV selected</button><div class="ck-drop-list" id="ed-povs"></div></div></div>
-        <div class="ff"><label>Notes</label><textarea id="ed-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+        <div class="cp-form-fields">
+          <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
+          <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+          <div class="ff" id="ed-sec-wrap" style="display:none"><label>Section</label><select id="ed-section" class="ff-sel"><option value="">Unassigned</option></select></div>
+          <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ek-characters-wrap"><button class="ck-drop-btn" type="button" id="ek-characters-btn">No characters selected</button><div class="ck-drop-list" id="ek-characters"></div></div></div>
+          <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ek-locations-wrap"><button class="ck-drop-btn" type="button" id="ek-locations-btn">No locations selected</button><div class="ck-drop-list" id="ek-locations"></div></div></div>
+          <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ek-themes-wrap"><button class="ck-drop-btn" type="button" id="ek-themes-btn">No themes selected</button><div class="ck-drop-list" id="ek-themes"></div></div></div>
+          <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ek-misc-wrap"><button class="ck-drop-btn" type="button" id="ek-misc-btn">No misc items selected</button><div class="ck-drop-list" id="ek-misc"></div></div></div>
+          <div class="ff"><label>Word Count</label><input type="number" id="ed-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
+          <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="ed-povs-wrap"><button class="ck-drop-btn" type="button" id="ed-povs-btn">No POV selected</button><div class="ck-drop-list" id="ed-povs"></div></div></div>
+          <div class="ff"><label>Notes</label><textarea id="ed-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+        </div>
       </div>
     </div>
   </div>
@@ -225,39 +237,39 @@
       <span class="sbt">Scene Board</span>
       <div class="sbhl">
         <span id="sbcnt">0 scenes</span>
-        <button id="clrsel" onclick="clearCardSel()">Clear selection</button>
+        <button id="clrsel">Clear selection</button>
       </div>
       <label class="det-ck" id="det-ck-wrap" title="Show library elements on scene cards">
-        <input type="checkbox" id="det-toggle" onchange="toggleDetails(this.checked)">
+        <input type="checkbox" id="det-toggle">
         Show Card Details
       </label>
       <div id="sec-filter-wrap" class="sec-filter-wrap">
-        <button id="sec-filter-btn" class="sec-filter-btn" onclick="toggleSecFilter()">All Sections ▾</button>
+        <button id="sec-filter-btn" class="sec-filter-btn">All Sections ▾</button>
         <div id="sec-filter-drop" class="sec-filter-drop"></div>
       </div>
       <div id="srch-wrap">
-        <input type="text" id="srch-inp" placeholder="🔍 Search…" oninput="onSearch()">
-        <select id="srch-scope" onchange="onSearch()" title="Search in…">
+        <input type="text" id="srch-inp" placeholder="🔍 Search…">
+        <select id="srch-scope" title="Search in…">
           <option value="both">Title + Summary</option>
           <option value="title">Title only</option>
           <option value="summary">Summary only</option>
         </select>
-        <button id="srch-clr" onclick="clearSearch()" title="Clear search" aria-label="Clear search">×</button>
+        <button id="srch-clr" title="Clear search" aria-label="Clear search">×</button>
       </div>
       <div class="scalew" id="scalew-wrap">
         <span class="scalelbl">Zoom</span>
-        <input type="range" id="scaler" min="0.55" max="1.65" step="0.05" value="1" oninput="setScale(this.value)">
+        <input type="range" id="scaler" min="0.55" max="1.65" step="0.05" value="1">
       </div>
     </div>
     <div id="sbemp"><div class="ei">🎭</div><p>Create your first scene to get started</p></div>
     <div id="sbscrl"><div id="board"></div></div>
     <div id="chart-host" style="display:none">
       <div id="chart-toolbar">
-        <button id="chart-type-snake" class="chart-type-btn on" onclick="setChartType('snake')">Snake</button>
-        <button id="chart-type-circle" class="chart-type-btn" onclick="setChartType('circle')">Circle</button>
+        <button id="chart-type-snake" class="chart-type-btn on">Snake</button>
+        <button id="chart-type-circle" class="chart-type-btn">Circle</button>
         <span id="chart-status"></span>
-        <button id="chart-print-btn" onclick="printChart()">Print</button>
-        <button id="chart-close-btn" onclick="toggleChartView()" title="Back to board">Board view ✕</button>
+        <button id="chart-print-btn">Print</button>
+        <button id="chart-close-btn" title="Back to board">Board view ✕</button>
       </div>
       <div id="chart-legend"></div>
       <div id="chart-scroll"><div id="chart-canvas"></div></div>
@@ -283,8 +295,8 @@
     <span class="ap-notes-lbl">Notes (optional)</span>
     <textarea id="ap-notes" placeholder="Any details about this item…" rows="3"></textarea>
     <div class="ap-btns">
-      <button id="ap-cancel" onclick="closeAddPopup()">Cancel</button>
-      <button id="ap-ok"     onclick="confirmAdd()">Add</button>
+      <button id="ap-cancel">Cancel</button>
+      <button id="ap-ok">Add</button>
     </div>
   </div>
 </div>
@@ -295,8 +307,8 @@
     <div id="pov-add-title">Add POV Name</div>
     <input id="pov-add-input" type="text" placeholder="Enter name…" maxlength="80">
     <div class="ap-btns">
-      <button onclick="closePovAddModal()">Cancel</button>
-      <button id="pov-add-ok" onclick="confirmPovAdd()">Add</button>
+      <button id="pov-add-cancel">Cancel</button>
+      <button id="pov-add-ok">Add</button>
     </div>
   </div>
 </div>
@@ -307,11 +319,13 @@
     <div id="lib-edit-hdr">Edit Item</div>
     <label class="lib-edit-lbl">Name</label>
     <input id="lib-edit-name" type="text" maxlength="50">
-    <label class="lib-edit-lbl" style="margin-top:12px">Notes</label>
-    <textarea id="lib-edit-notes" placeholder="Any details about this item…" rows="4"></textarea>
+    <div id="lib-edit-notes-wrap">
+      <label class="lib-edit-lbl" style="margin-top:12px">Notes</label>
+      <textarea id="lib-edit-notes" placeholder="Any details about this item…" rows="4"></textarea>
+    </div>
     <div class="ap-btns">
-      <button onclick="closeLibEditModal()">Cancel</button>
-      <button id="lib-edit-ok" onclick="saveLibEdit()">Save</button>
+      <button id="lib-edit-cancel">Cancel</button>
+      <button id="lib-edit-ok">Save</button>
     </div>
   </div>
 </div>
@@ -321,8 +335,8 @@
   <div class="cfm-box">
     <div id="secdel-msg" class="cfm-msg"></div>
     <div class="ap-btns">
-      <button id="secdel-cancel" onclick="closeSecDelModal()">Cancel</button>
-      <button id="secdel-ok" onclick="confirmSecDel()">Delete Section</button>
+      <button id="secdel-cancel">Cancel</button>
+      <button id="secdel-ok">Delete Section</button>
     </div>
   </div>
 </div>
@@ -332,8 +346,8 @@
   <div class="cfm-box">
     <div id="libdel-msg" class="cfm-msg"></div>
     <div class="ap-btns">
-      <button id="libdel-cancel" onclick="closeLibDelModal()">Cancel</button>
-      <button id="libdel-ok" onclick="confirmLibDel()">Delete</button>
+      <button id="libdel-cancel">Cancel</button>
+      <button id="libdel-ok">Delete</button>
     </div>
   </div>
 </div>
@@ -343,8 +357,8 @@
   <div class="cfm-box">
     <div id="savecfm-msg" class="cfm-msg"></div>
     <div class="ap-btns">
-      <button id="savecfm-cancel" onclick="closeSaveCfm()">Cancel</button>
-      <button id="savecfm-ok" onclick="confirmSaveEdit()">Save Changes</button>
+      <button id="savecfm-cancel">Cancel</button>
+      <button id="savecfm-ok">Save Changes</button>
     </div>
   </div>
 </div>
@@ -354,8 +368,8 @@
   <div class="cfm-box">
     <div id="discard-cfm-msg" class="cfm-msg"></div>
     <div class="ap-btns">
-      <button onclick="closeDiscardConfirm()">Keep Editing</button>
-      <button id="discard-cfm-ok" onclick="confirmDiscard()">Discard</button>
+      <button id="discard-cfm-cancel">Keep Editing</button>
+      <button id="discard-cfm-ok">Discard</button>
     </div>
   </div>
 </div>
@@ -363,7 +377,7 @@
 <!-- Summary modal -->
 <div id="modal" role="dialog" aria-modal="true" aria-labelledby="mtit">
   <div id="mbox">
-    <button id="mclose" onclick="closeModal()" aria-label="Close">×</button>
+    <button id="mclose" aria-label="Close">×</button>
     <div id="mnum"></div><div id="mtit"></div>
     <div id="msum-section"><div class="m-sec-hdr">Summary</div><div id="msum"></div></div>
     <div id="mnotes-section"><div class="m-sec-hdr">Notes</div><div id="mnotes"></div></div>
@@ -373,19 +387,19 @@
 <!-- Report Modal -->
 <div id="rpt-modal" role="dialog" aria-modal="true" aria-labelledby="rpt-hdr">
   <div id="rpt-box">
-    <button id="rpt-close" onclick="closeReportModal()" aria-label="Close report">×</button>
+    <button id="rpt-close" aria-label="Close report">×</button>
     <div id="rpt-hdr">Generate Report</div>
 
     <div class="rpt-blk">
       <div class="rpt-blk-hdr">Report Type</div>
       <div class="rpt-type-btns">
-        <button class="rpt-type-btn on" onclick="switchRptType('scenelist',this)">Scene List</button>
-        <button class="rpt-type-btn"    onclick="switchRptType('character',this)">Character</button>
-        <button class="rpt-type-btn"    onclick="switchRptType('location',this)">Location</button>
-        <button class="rpt-type-btn"    onclick="switchRptType('theme',this)">Theme</button>
-        <button class="rpt-type-btn"    onclick="switchRptType('misc',this)">Misc Items</button>
-        <button class="rpt-type-btn"    onclick="switchRptType('pov',this)">POV</button>
-        <button class="rpt-type-btn"    onclick="switchRptType('matrix',this)">Cross-Reference</button>
+        <button class="rpt-type-btn on" id="rpt-type-scenelist">Scene List</button>
+        <button class="rpt-type-btn"    id="rpt-type-character">Character</button>
+        <button class="rpt-type-btn"    id="rpt-type-location">Location</button>
+        <button class="rpt-type-btn"    id="rpt-type-theme">Theme</button>
+        <button class="rpt-type-btn"    id="rpt-type-misc">Misc Items</button>
+        <button class="rpt-type-btn"    id="rpt-type-pov">POV</button>
+        <button class="rpt-type-btn"    id="rpt-type-matrix">Cross-Reference</button>
       </div>
     </div>
 
@@ -472,7 +486,7 @@
         <span class="rpt-matrix-note" id="rpt-mx-note">as rows · Scenes as columns</span>
       </div>
       <div class="rpt-ck-row">
-        <label class="rpt-ck"><input type="checkbox" id="rpt-mx-flip" onchange="updateMxNote()"> Flip axes (Scenes as rows)</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-mx-flip"> Flip axes (Scenes as rows)</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-mx-section" checked> Show section on scenes</label>
       </div>
     </div>
@@ -483,14 +497,14 @@
     <div class="rpt-blk">
       <div class="rpt-blk-hdr">Sections to Include</div>
       <div class="rpt-ck-row">
-        <label class="rpt-ck"><input type="checkbox" id="rpt-sec-all" checked onchange="rptToggleAllSecs(this)"> All sections</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-sec-all" checked> All sections</label>
       </div>
       <div class="rpt-secs-grid" id="rpt-sec-list"></div>
     </div>
 
     <div class="rpt-footer">
-      <button id="rpt-cancel"   onclick="closeReportModal()">Cancel</button>
-      <button id="rpt-generate" onclick="generateReport()">Generate Report</button>
+      <button id="rpt-cancel">Cancel</button>
+      <button id="rpt-generate">Generate Report</button>
     </div>
   </div>
 </div>
@@ -499,15 +513,15 @@
 
 <!-- Email Signup Popup -->
 <div id="email-popup" class="email-popup" role="dialog" aria-modal="true" aria-labelledby="email-popup-title" style="display:none;">
-  <div class="email-popup-overlay" onclick="closeEmailPopup()"></div>
+  <div class="email-popup-overlay" id="email-overlay"></div>
   <div class="email-popup-box">
-    <button class="email-popup-close" onclick="closeEmailPopup()">×</button>
+    <button class="email-popup-close" id="email-close-btn">×</button>
     <h3 id="email-popup-title">Enjoying SceneSetter?</h3>
     <p>Please provide your email to let us know whether it's worth maintaining/updating. Thanks!</p>
     <input type="email" id="email-input" placeholder="your@email.com" maxlength="100">
     <div class="email-popup-buttons">
-      <button class="email-popup-btn-cancel" onclick="closeEmailPopup()">Skip</button>
-      <button class="email-popup-btn-submit" onclick="submitEmail()">Submit</button>
+      <button class="email-popup-btn-cancel" id="email-skip-btn">Skip</button>
+      <button class="email-popup-btn-submit" id="email-submit-btn">Submit</button>
     </div>
   </div>
 </div>
@@ -523,6 +537,6 @@
 <script src="projects.js"></script>
 <script src="main.js"></script>
 <script src="app.js"></script>
+<script src="editor-init.js"></script>
 </body>
 </html>
-

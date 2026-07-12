@@ -27,7 +27,32 @@ function getSectionsCreatedSinceIdCreation() {
   return S.sections.length - countAtCreation;
 }
 
+const FIRED_MILESTONES_KEY = 'scenesetter_fired_milestones';
+
+// Milestones are one-time-per-user events (e.g. "1st scene created"), but the
+// counts driving them (scene/section/report counts) can revisit the same
+// threshold more than once in a session — e.g. deleting back down to 5 scenes
+// then re-adding one. Guard here, once, so every call site stays a simple
+// count check instead of each needing its own has-this-fired bookkeeping.
+function hasMilestoneFired(milestone) {
+  try {
+    const fired = JSON.parse(localStorage.getItem(FIRED_MILESTONES_KEY)) || [];
+    return fired.includes(milestone);
+  } catch(e) { return false; }
+}
+function markMilestoneFired(milestone) {
+  try {
+    const fired = JSON.parse(localStorage.getItem(FIRED_MILESTONES_KEY)) || [];
+    if (!fired.includes(milestone)) {
+      fired.push(milestone);
+      localStorage.setItem(FIRED_MILESTONES_KEY, JSON.stringify(fired));
+    }
+  } catch(e) {}
+}
+
 function trackMilestone(milestone, metadata = {}) {
+  if (hasMilestoneFired(milestone)) return;
+  markMilestoneFired(milestone);
   const data = {
     user_id: getUserId(),
     milestone: milestone,

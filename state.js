@@ -102,10 +102,11 @@ function loadState(storageKey) {
         ? sc.povs.filter(v => typeof v === 'string')
         : (typeof sc.pov === 'string' && sc.pov ? [sc.pov] : []);
       const { pov, ...rest } = sc;
+      const arr = v => Array.isArray(v) ? v : [];
       return {
         ...rest,
-        characters: sc.characters || [], locations: sc.locations || [],
-        themes: sc.themes || [],         misc: sc.misc || [],
+        characters: arr(sc.characters), locations: arr(sc.locations),
+        themes: arr(sc.themes),         misc: arr(sc.misc),
         sectionId: sc.sectionId ?? null,
         povs,
       };
@@ -162,14 +163,15 @@ const S = {
 };
 
 // ── HISTORY (undo / redo) ─────────────────────────────────────────────────────
-const hist = { past:[], future:[], MAX:10 };
+const hist = { past:[], future:[], MAX:50 };
 
 function truncStr(s, n) { return s.length > n ? s.slice(0, n) + '…' : s; }
 
 function snapshot() {
+  const dupe = arr => arr.map(x => ({...x}));
   return {
-    characters: [...S.characters], locations: [...S.locations],
-    themes: [...S.themes],         misc: [...S.misc],
+    characters: dupe(S.characters), locations: dupe(S.locations),
+    themes: dupe(S.themes),         misc: dupe(S.misc),
     scenes: S.scenes.map(s => ({
       ...s,
       characters:[...s.characters], locations:[...s.locations],
@@ -191,8 +193,9 @@ function pushHistory(desc) {
 }
 
 function applySnapshot(snap) {
-  S.characters = [...snap.characters]; S.locations = [...snap.locations];
-  S.themes     = [...snap.themes];     S.misc      = [...snap.misc];
+  const dupe = arr => arr.map(x => ({...x}));
+  S.characters = dupe(snap.characters); S.locations = dupe(snap.locations);
+  S.themes     = dupe(snap.themes);     S.misc      = dupe(snap.misc);
   S.scenes = snap.scenes.map(s => ({
     ...s,
     characters:[...s.characters], locations:[...s.locations],
@@ -204,7 +207,7 @@ function applySnapshot(snap) {
   S.nextSecId = snap.nextSecId || 1;
   S.povCustomNames = [...(snap.povCustomNames || [])];
   SECS.forEach(({ key }) => {
-    S.selections[key] = new Set([...S.selections[key]].filter(v => S[key].includes(v)));
+    S.selections[key] = new Set([...S.selections[key]].filter(v => S[key].some(x => x.name === v)));
   });
   const usedPovs = new Set(S.scenes.flatMap(s => s.povs || []));
   S.selections.povs = new Set([...S.selections.povs].filter(v => usedPovs.has(v)));

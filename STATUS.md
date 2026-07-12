@@ -154,6 +154,223 @@ both a light (ivory) and dark (slate) theme; console clean throughout. Did not v
 `backupIsOverdue()` condition it depends on was directly verified.
 
 ### Not yet done
-- Not merged to `main` or pushed to `origin` — still local-only on `feature/updates_v1`.
 - No UI to adjust the 25-edit / 15-minute thresholds — hardcoded constants at the top of
   `backup.js`, per the user's specified values.
+
+*(Update: `feature/updates_v1` has since been merged to `main` via PR #9.)*
+
+## feature/updates_v2 branch — Chart margin fixes & sample-seeding race fix
+
+Two follow-on bugs surfaced after a prior commit on this branch (`59a256d`, "Tighten flow
+chart margins so more of the window is used") tightened the snake/circle charts' padding —
+plus an unrelated data-integrity bug found while investigating a live report of duplicated
+projects.
+
+### Snake chart width utilization
+`computeSnakeLayout()` ([charts.js:267](charts.js#L267)) sizes each row's width (`run`) to
+hit a ~110px/scene target total path length, not to fill the container. Whenever that
+target didn't divide evenly across the chosen row count, `run` came out short of the actual
+available width (`runLen`) — dead space on the right of every row, while the fixed-width
+left margin stayed correctly tight. This asymmetry existed before the margin-tightening
+commit too, but the old, larger margins mostly hid it. Fix: once row count is settled, set
+`run = runLen` to fill the available width.
+
+### Snake chart curve clipping
+Separately, the horizontal margin (`M = r + 12`) only cleared the turn's centerline arc, not
+the ~34px-thick stroke `addSegments()` draws along it — that stroke's outer edge at the tip
+of each turn extends `stroke-width/2` (17px) further out than the centerline, which with
+only 12px of margin landed past the SVG's bounds and got clipped by its default
+`overflow:hidden`. Visible as both turn caps reading "cut off" on every row, independent of
+the width-utilization bug above (fixing one didn't fix the other — confirmed by a user
+report that persisted after the first fix shipped). Fix: introduced a named
+`SNAKE_SEG_THICKNESS` constant and size the margin as
+`r + CHART_PAD + SNAKE_SEG_THICKNESS / 2`, so it clears the stroke's actual painted extent.
+
+**Verification note:** `getBBox()`/`getBoundingClientRect()` do not reflect stroke width in
+the Claude Code browser preview tool used for verification — confirmed with a minimal
+repro (a straight line, `stroke-width: 40`, reported bbox width `0`). Both fixes were
+instead verified by rasterizing the rendered `<svg>` to a `<canvas>` and reading painted
+pixel boundaries directly: old margin left the curve's paint ~6px from the SVG edge (reads
+as "cut off"); the fix gives a symmetric ~23-24px on both sides at the same window width.
+The width-utilization fix was verified by asserting `computeSnakeLayout()`'s returned `run`
+equals the computed `runLen` across scene counts from 2 to 39 and several window widths.
+
+### Sample-project seeding race condition
+`ensureSampleProjects()` ([projects.js:604](projects.js#L604)) only persisted the
+`samplesSeeded` flag after its sample-file fetches resolved. Two `projects.html` loads
+racing before that write landed (two tabs opened at once, a fast reload) would each read the
+flag as unset and seed their own copy of both samples — a live user report showed exactly
+2× "Pride and Prejudice" and 2× "The Count of Monte Cristo". Fix: claim a short-lived,
+timestamped `samplesSeeding` lock synchronously before starting the async fetches, so a
+concurrent load backs off instead of re-seeding; falls back to retrying on the next visit if
+the lock goes stale. Verified by extracting the old and new function bodies and racing two
+concurrent calls against a cleared `localStorage`: old code produced 4 project entries, new
+code produced 2.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v2`, PR not yet opened.
+
+## feature/updates_v2 branch — Full-app audit fixes & CSP hardening
+
+A fresh ground-up audit of the whole app (not a follow-up to a specific bug report),
+covering every `.js` file plus the XSS/CSP/localStorage/external-endpoint surfaces across
+all HTML pages. See `UPDATE_ROADMAP.md` §6 for the full per-bug technical detail; this is
+the higher-level summary of what changed and how it was verified.
+
+### What the audit found and fixed
+Four real bugs (import validation gap that could crash the board on a corrupted file,
+reports silently dropping scenes with an orphaned `sectionId`, a filtered-then-deleted
+section blanking the whole board, section color changes having no undo entry), one
+perf issue (report generation rebuilding the full scene-number map once per scene instead
+of once per report — same anti-pattern already fixed elsewhere), and one data-safety gap
+(the "Update Local Copy" import dialog could overwrite unexported local edits with no
+warning, since `revision` counts saves rather than content edits).
+
+### CSP hardening
+The remaining item was removing `'unsafe-inline'` from every page's CSP `script-src`. This
+turned out to be a two-part job:
+1. Convert every inline event-handler attribute (`onclick=`, `onchange=`, `oninput=`,
+   `onmouseenter=`, etc. — ~140 call sites across `editor.html`, `projects.html`,
+   `overview.html`, `test.html`, and the projects-grid card template in `projects.js`) to
+   `addEventListener` wiring. All were static, literal calls with no interpolated data, so
+   this was a mechanical CSP-compliance transform, not an XSS fix in itself. Delegated to
+   two parallel subagents (editor.html being the bulk of it, everything else in the
+   second), then independently verified.
+2. Realized partway through that step 1 alone wasn't sufficient: a CSP without
+   `'unsafe-inline'` blocks inline `<script>` *blocks* just as much as inline attributes —
+   and the wiring from step 1, plus some pre-existing inline scripts (overview.html's
+   image-modal logic, test.html's whole test runner), were themselves inline blocks. Moved
+   all of it into four new files: `editor-init.js`, `projects-init.js`, `overview-init.js`,
+   `test-init.js`. Also added a CSP meta tag to `test.html`, which previously shipped with
+   none despite going to production alongside the app.
+
+### Known non-obvious things worth knowing about if you touch this code
+- This environment's browser-automation click tool does not reliably dispatch real click
+  events on some elements (confirmed unrelated to the code changes — direct function calls,
+  the native `.click()` DOM method, and a manually-dispatched full `pointerdown`/
+  `mousedown`/`pointerup`/`mouseup`/`click` event sequence at the identical coordinates all
+  triggered the listener correctly when the tool's own click did not). All interactive
+  verification for this round was done via the manually-dispatched event sequence instead.
+- A first attempt at extracting editor.html's inline script left duplicate content in the
+  file (a botched edit tried to insert `</body></html>` mid-file instead of replacing
+  through the end) — caught immediately via `wc -l`/`tail` before it was ever committed.
+- `test.html`'s inline test suite has never actually loaded any of the app's own JS files
+  (no `<script src="config.js">` etc., confirmed present in `git show HEAD:test.html` before
+  this round's changes too) — its "0 passed, 17 failed" result predates this work and is
+  unrelated to the CSP change; every failure is `<name> not defined` because the globals
+  it's testing for were never loaded on that page to begin with.
+
+### Verification
+On a fresh, uncached origin (a new port, to rule out the disk-cache issues encountered
+earlier in this project): zero remaining inline handlers or inline `<script>` blocks
+(grepped), zero console/CSP-violation errors across all 6 pages on load, and a full
+functional pass — menu bar (toggle + hover-to-switch), theme switching, panel collapse/
+expand, scene creation through the real form, chart view toggle + type switch, report modal
+open + type switch, the projects-grid card actions (Open/Rename/Duplicate/Export/Delete,
+including per-card closure correctness so each button acts on the right project id), the
+overview image-enlargement modal, and a re-verification that the section-filter-delete and
+section-color-undo fixes from earlier in this branch still work correctly after the
+markup restructuring.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v2`, PR not yet opened.
+- `build.js`'s `JS_FILES` list was not updated to include the four new `*-init.js` files —
+  left out deliberately, since (per `build.js`'s own comment) that bundle isn't actually
+  used in deployment, and the new files aren't written defensively enough to be safely
+  bundled alongside pages that lack their expected DOM elements.
+
+## feature/updates_v2 branch — Second audit: drag-and-drop, keyboard, CSP re-verification
+
+A follow-up to the audit above, this time targeting the areas it covered lightly (drag-and-
+drop, keyboard shortcuts, panel resize/zoom) plus an independent re-verification of the
+`*-init.js` CSP migration. Three parallel passes, all findings re-verified against source
+before anything was fixed.
+
+### CSP migration re-verification — all clean
+A second, independent pass over the `*-init.js` wiring and the wider CSP/global-scope
+surface, specifically checking things the first audit's verification didn't explicitly
+enumerate:
+- Every `getElementById` id referenced by the four `*-init.js` files resolves in its page
+  (91/93 — the 2 "misses" are intentional `!!document.getElementById(...)` feature-detection
+  probes in `test-init.js` checking whether the current page is the editor or projects page,
+  unchanged from the pre-migration inline script).
+- Every function referenced by the four files resolves in a script that page actually loads
+  (69/69).
+- No element gets the same event wired twice (once via an `*-init.js` file and again inside
+  `editor.js`/`projects.js`/etc.).
+- Every inline handler removed by the CSP migration has a verified-equivalent
+  `addEventListener` call (same function(s), same order for multi-statement handlers,
+  correct event-type translation).
+- No top-level `function`/`const`/`let`/`var` name collisions across the 12 scripts sharing
+  one global scope.
+- CSP meta tag byte-identical across all 6 pages; `'unsafe-inline'` confirmed absent from
+  every `script-src` (present only in `style-src`, which was always out of scope).
+- One pre-existing, harmless duplicate id (`hdr-spacer` in `editor.html`, lines 21 and 27)
+  confirmed unchanged from before this branch's work — only `styles.css`'s `#hdr-spacer`
+  selector touches it, and CSS doesn't require id uniqueness to apply a rule, so this has no
+  functional effect. Not worth fixing now, but flagged in case it's ever a source of
+  confusion.
+
+### Drag-and-drop and keyboard fixes
+Five bugs found and fixed in `editor.js`:
+1. **Ctrl+Z/Ctrl+Y hijacked a text field's own native undo.** The undo/redo branch fired
+   before the `!inInput` guard that already protected export/zoom — typing in a scene's
+   Summary and pressing Ctrl+Z to fix a typo reverted an unrelated board action instead of
+   the typo. Moved undo/redo behind the same guard.
+2. **Undo/redo could fire mid-drag.** Folded into fix 1's guard: also requires
+   `!drag.on && !ld.on && !sld.on`, since undo's `renderBoard()` re-render out from under an
+   active drag left the eventual mouseup committing a reorder against post-undo state and
+   wiping the redo stack.
+3. **A drag stuck forever if the mouse button was released outside the browser window** —
+   no `mouseup` ever reaches `document` for an outside release, so the ghost card stayed
+   attached to the cursor and the *next unrelated click* would silently commit a
+   reorder/reassignment wherever the cursor happened to be. Fixed by checking
+   `e.buttons === 0` at the top of the global `mousemove` handler, so any stray movement
+   after re-entering the window self-heals every drag state (card, library-item,
+   section-list, panel-resize) without committing anything.
+4. **Multi-select drag could move a scene hidden by the section filter.** Selecting two
+   scenes across two sections, filtering to just one, then dragging the visible card would
+   silently drag the hidden one along too (`S.selIds` isn't pruned by the filter). Fixed by
+   filtering the drag set down to scenes whose card is actually rendered at drag-start.
+5. **Ctrl+Shift+E (export) was Caps-Lock-dependent.** It tested `e.key === 'E'` instead of
+   `e.shiftKey` — Caps Lock makes a plain Ctrl+E false-trigger export, and makes the real
+   Ctrl+Shift+E silently fail (Shift cancels the Caps Lock inversion, producing lowercase
+   `e.key`). Fixed to check `e.shiftKey && e.code === 'KeyE'`.
+
+Plus one from the Escape-key comparison: **Alt-letter shortcuts fired underneath an open
+confirmation modal** (Escape's `ESCAPE_ACTIONS` already had full modal-tier awareness; the
+Alt+N/C/L/T/M/R/V branch only checked `!inInput`). Added a shared `anyModalOpen()` helper
+(same 9 overlay ids `ESCAPE_ACTIONS` treats as the modal tier) and gated the Alt-shortcut
+branch on it.
+
+### Verification
+Since this environment's native `<input type=color>` interactions aren't scriptable via
+clicks, and drag interactions are timing-sensitive, verification for this round leaned
+heavily on directly dispatching the same event sequences a real interaction produces
+(`pointerdown`/`mousedown`/`mousemove` with the right `buttons`/`clientX`/`clientY`/
+`ctrlKey`/`shiftKey`/`code`, `KeyboardEvent`s with explicit `code`) and asserting on both the
+resulting app state and (for the drag/undo guards) that legitimate/unrelated cases still
+work exactly as before:
+- Ctrl+Z confirmed blocked with focus in a text field, confirmed blocked with `drag.on`
+  true, and confirmed still fires normally in neither case (regression check).
+- Ctrl+E/Ctrl+Shift+E confirmed correct under both simulated Caps-Lock scenarios.
+- A full card drag was started, then a `mousemove` with `buttons: 0` dispatched (simulating
+  re-entering the window after releasing outside it) — confirmed all drag state clears, the
+  ghost hides, and `S.scenes`' order/count are provably unchanged (no silent commit). Same
+  check repeated for a stuck library-item drag with a pending, uncommitted reorder.
+- Two scenes across two sections selected, filtered to one, dragged the visible one —
+  confirmed only the visible scene entered `drag.ids`.
+- Alt+N confirmed blocked (via spying on `menuNewScene` directly) while a section-delete
+  confirmation was open, and confirmed to fire normally once the modal was closed.
+
+### Not done
+Assessed as low-value polish, not necessary: dropping a card/library item/section back into
+its exact original position still pushes an undo-stack entry and a `saveState()` call, since
+the existing no-op guard only checks `dropIdx !== fromIdx` rather than whether the actual
+resulting order differs (a same-index-but-not-same-order case is possible and was traced
+through by hand). Self-contained to `endCardDrag()`/`endLibDrag()`/`endSecListDrag()`,
+independent of everything else on this branch — safe to pick up anytime it's worth the
+~20-30 minutes.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v2`, PR not yet opened.

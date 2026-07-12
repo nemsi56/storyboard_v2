@@ -89,14 +89,26 @@ function renderProjectGrid() {
             <span>Modified ${timeAgo(p.modifiedAt)}</span>
           </div>
         </div>
-      </div>
-      <div class="pm-card-actions">
-        <button class="pm-card-btn" onclick="event.stopPropagation();openProject('${p.id}')">Open</button>
-        <button class="pm-card-btn" onclick="event.stopPropagation();startProjRename('${p.id}')">Rename</button>
-        <button class="pm-card-btn" onclick="event.stopPropagation();duplicateProject('${p.id}')">Duplicate</button>
-        <button class="pm-card-btn" onclick="event.stopPropagation();exportProjectJSON('${p.id}')">Export</button>
-        <button class="pm-card-btn del" onclick="event.stopPropagation();startProjDel('${p.id}')">Delete</button>
       </div>`;
+
+    const actions = document.createElement('div');
+    actions.className = 'pm-card-actions';
+
+    const makeBtn = (label, fn, extraClass) => {
+      const btn = document.createElement('button');
+      btn.className = 'pm-card-btn' + (extraClass ? ' ' + extraClass : '');
+      btn.textContent = label;
+      btn.addEventListener('click', (event) => { event.stopPropagation(); fn(p.id); });
+      return btn;
+    };
+
+    actions.appendChild(makeBtn('Open', openProject));
+    actions.appendChild(makeBtn('Rename', startProjRename));
+    actions.appendChild(makeBtn('Duplicate', duplicateProject));
+    actions.appendChild(makeBtn('Export', exportProjectJSON));
+    actions.appendChild(makeBtn('Delete', startProjDel, 'del'));
+
+    card.appendChild(actions);
     grid.appendChild(card);
   });
 }
@@ -125,6 +137,7 @@ function resetState() {
   SECS.forEach(({ key }) => S.selections[key].clear());
   S.selIds.clear(); S.editingId = null;
   S.projectUid = null; S.revision = 0;
+  S.lastExportedAt = null; S.editsSinceExport = 0;
   hist.past = []; hist.future = [];
 }
 
@@ -179,6 +192,16 @@ function openProject(id) {
   resetState();
   loadState(projKey(id));
   getUserId();
+  // Reset board view state left over from whatever was open before. Usually
+  // a no-op (a normal "Open" from the Projects page is a full page
+  // navigation, which already starts clean) — but openProject() can also run
+  // on an already-loaded editor page, e.g. reconciling an "Update Local
+  // Copy" import while the conflicting project is open, or File > New
+  // Project. Without this, a stale section filter or search query can make
+  // the freshly loaded project appear empty for no visible reason.
+  if (typeof secFilterIds !== 'undefined') secFilterIds.clear();
+  if (typeof clearSearch === 'function') clearSearch();
+  if (typeof closeChartView === 'function') closeChartView();
   updateProjectNameDisplay();
   initStoryboard();
   showStoryboard();
@@ -428,14 +451,16 @@ function importProjectJSON(inputEl) {
         return;
       }
 
+      const isStrArr = v => v == null || (Array.isArray(v) && v.every(isStr));
       const badSceneIdx = d.scenes.findIndex(sc =>
         !sc || typeof sc !== 'object' || typeof sc.id !== 'number' || !isStr(sc.title) ||
         (sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes)) ||
         (sc.wordCount != null && typeof sc.wordCount !== 'number') ||
         (sc.pov != null && !isStr(sc.pov)) || // legacy single-value POV, still accepted on import
-        (sc.povs != null && (!Array.isArray(sc.povs) || !sc.povs.every(isStr))));
+        (sc.povs != null && (!Array.isArray(sc.povs) || !sc.povs.every(isStr))) ||
+        !isStrArr(sc.characters) || !isStrArr(sc.locations) || !isStrArr(sc.themes) || !isStrArr(sc.misc));
       if (badSceneIdx !== -1) {
-        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", string "summary"/"notes" if present, a numeric "wordCount" if present, a string "pov" if present, and an array of strings "povs" if present.');
+        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", string "summary"/"notes" if present, a numeric "wordCount" if present, a string "pov" if present, and arrays of strings for "povs"/"characters"/"locations"/"themes"/"misc" if present.');
         return;
       }
       if (new Set(d.scenes.map(sc => sc.id)).size !== d.scenes.length) {
@@ -448,6 +473,16 @@ function importProjectJSON(inputEl) {
         alert('Invalid project structure. Section ' + (badSecIdx + 1) + ' needs a numeric "id" and a string "name".');
         return;
       }
+
+      // Normalize (rather than reject) a missing or stale nextId/nextSecId —
+      // a hand-edited file, or one exported before a counter existed, could
+      // otherwise leave the counter at or below an id already in use, so the
+      // next "add scene"/"add section" in the app would mint a duplicate id
+      // and silently corrupt id-based lookups everywhere.
+      const maxSceneId = d.scenes.reduce((m, sc) => Math.max(m, sc.id), 0);
+      if (typeof d.nextId !== 'number' || d.nextId <= maxSceneId) d.nextId = maxSceneId + 1;
+      const maxSecId = d.sections.reduce((m, sec) => Math.max(m, sec.id), 0);
+      if (typeof d.nextSecId !== 'number' || d.nextSecId <= maxSecId) d.nextSecId = maxSecId + 1;
       if ((d.projectUid != null && !isStr(d.projectUid)) || (d.revision != null && typeof d.revision !== 'number')) {
         alert('Invalid project structure. "projectUid" must be a string and "revision" a number when present.');
         return;
@@ -545,8 +580,16 @@ function importProjectJSON(inputEl) {
       const fileRev   = d.revision || 0;
 
       if (fileRev > localRev) {
+        // revision counts saves, not content edits (a theme change or leaving
+        // the editor bumps it too), so "file is newer" doesn't imply "local
+        // has nothing worth keeping" — editsSinceExport is what actually
+        // tracks unexported content changes, so warn on that instead.
+        const localEdits = existing.data.editsSinceExport || 0;
+        const editsWarning = localEdits > 0
+          ? '\n\nYour local copy has ' + localEdits + ' unexported change' + (localEdits !== 1 ? 's' : '') + ' — updating from this file will overwrite ' + (localEdits !== 1 ? 'them' : 'it') + '.'
+          : '';
         showImportChoiceDialog('Imported File Is Newer',
-          'The file you\'re importing is a newer version of "' + localName + '" (file revision ' + fileRev + ', your local copy revision ' + localRev + ').\n\nUpdate your local copy to match the file?',
+          'The file you\'re importing is a newer version of "' + localName + '" (file revision ' + fileRev + ', your local copy revision ' + localRev + ').' + editsWarning + '\n\nUpdate your local copy to match the file?',
           [
             { label: 'Update Local Copy', primary: true, onClick: () => replaceExisting(existing) },
             { label: 'Keep Both', onClick: () => finishAsNew(true) },
@@ -581,18 +624,29 @@ function importProjectJSON(inputEl) {
 }
 
 function ensureSampleProjects() {
-  const index = loadProjectIndex();
-  const sampleNames = ['Pride and Prejudice', 'The Count of Monte Cristo'];
-  const samplesToLoad = [];
+  // Seed once ever, tracked by a flag rather than matching on project name —
+  // otherwise deleting or renaming a sample project (e.g. "Pride and
+  // Prejudice") makes it silently reappear on the next visit to this page.
+  const prefs = loadGlobalPrefs();
+  if (prefs.samplesSeeded) return Promise.resolve();
 
-  if (!index.some(p => p.name === 'Pride and Prejudice')) {
-    samplesToLoad.push({ name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' });
+  // samplesSeeded is only set after the fetches below resolve, so two page
+  // loads racing before that write lands (two tabs opened at once, a fast
+  // reload) would otherwise both pass the check above and each seed their
+  // own copy of both samples. Claim a short-lived lock synchronously before
+  // starting the async work so the second load backs off instead.
+  const SEEDING_LOCK_MS = 15000;
+  const now = Date.now();
+  if (prefs.samplesSeeding && now - prefs.samplesSeeding < SEEDING_LOCK_MS) {
+    return Promise.resolve();
   }
-  if (!index.some(p => p.name === 'The Count of Monte Cristo')) {
-    samplesToLoad.push({ name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' });
-  }
+  prefs.samplesSeeding = now;
+  saveGlobalPrefs(prefs);
 
-  if (samplesToLoad.length === 0) return Promise.resolve();
+  const samplesToLoad = [
+    { name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' },
+    { name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' },
+  ];
 
   const loadPromises = samplesToLoad.map(sample => {
     return fetch(sample.file)
@@ -615,11 +669,18 @@ function ensureSampleProjects() {
         });
         saveProjectIndex(index);
         trackSampleProjectAutoLoaded();
+        return true;
       })
-      .catch(err => console.log('Could not auto-load sample project: ' + sample.name));
+      .catch(err => { console.log('Could not auto-load sample project: ' + sample.name); return false; });
   });
 
-  return Promise.all(loadPromises);
+  // Only mark seeded if every sample loaded — a transient fetch failure
+  // should still retry on the next visit rather than being marked done.
+  return Promise.all(loadPromises).then(results => {
+    if (results.every(Boolean)) {
+      const p = loadGlobalPrefs(); p.samplesSeeded = true; saveGlobalPrefs(p);
+    }
+  });
 }
 
 if (document.getElementById('proj-rename-modal')) {

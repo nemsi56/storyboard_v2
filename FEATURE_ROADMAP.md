@@ -38,6 +38,26 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   pages to describe the new automatic detection instead of the old "date your files
   yourself" advice.
   *(`strip_AI` branch, merged to `main`)*
+- `[x]*` Import validation now rejects a scene whose `characters`/`locations`/`themes`/
+  `misc` isn't an array of strings when present (only `povs` was checked before) — a
+  hand-edited or corrupted file with e.g. a bare string in one of those fields previously
+  passed validation and crashed the board on first render. `loadState()` also hardened
+  defensively for the same shape regardless of how the data arrived.
+- `[x]*` The "Imported File Is Newer" conflict dialog now warns when the local copy has
+  unexported changes before offering "Update Local Copy," since a newer file revision never
+  implied the local copy had nothing worth keeping (`revision` counts saves, not edits).
+- `[x]*` Removed `'unsafe-inline'` from `script-src` in every page's CSP — all inline event
+  handlers (~140 across the app) and inline `<script>` blocks were converted to
+  `addEventListener` wiring in external files. `test.html` also got a CSP meta tag for the
+  first time.
+- `[x]*` Fixed five drag-and-drop/keyboard bugs found in a follow-up audit: Ctrl+Z/Ctrl+Y no
+  longer hijacks a text field's own native undo or fires mid-drag; a card/library-item drag
+  now self-heals instead of sticking to the cursor forever if the mouse button is released
+  outside the browser window; dragging a multi-selected card no longer silently drags along
+  another selected scene that's hidden by the active section filter; Ctrl+Shift+E (export) no
+  longer misfires or fails depending on Caps Lock state; Alt-letter shortcuts no longer fire
+  underneath an open confirmation/data-entry modal. See `UPDATE_ROADMAP.md` §7 for full detail.
+  *(`feature/updates_v2` branch, pushed, not yet merged)*
 
 ## 3. Scene Flow Chart (visualization)
 
@@ -78,6 +98,21 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 - `[x]*` Hide the Zoom slider and "Show Card Details" checkbox while chart view is open —
   they only affect the card view, so they now disappear entirely instead of sitting there
   inert, and reappear (fully functional) when returning to board view.
+- `[x]*` Tightened the snake/circle charts' canvas padding and internal margins to use more
+  of the available window (`CHART_PAD` 20→12px, snake's row margin, circle's radius buffer).
+- `[x]*` Fixed snake chart rows leaving unused space on the right — `computeSnakeLayout`
+  sized each row's width to hit a ~110px/scene target rather than filling the container, so
+  whenever that target didn't divide evenly across rows the row fell short of the available
+  width (fixed left margin, variable — sometimes large — right margin). Row count is already
+  chosen for that target; the row is now stretched to the full available width once row
+  count is settled.
+- `[x]*` Fixed snake chart curve caps clipping against the canvas edge — the horizontal
+  margin only cleared the turn's centerline arc, not the ~34px-thick stroke drawn along it,
+  whose outer edge at the tip of each turn extends stroke-width/2 further out than the
+  centerline itself, clipping against the SVG's default `overflow:hidden`. Margin now
+  accounts for the stroke's actual painted extent (`r + CHART_PAD + SNAKE_SEG_THICKNESS/2`),
+  verified by rasterizing the rendered SVG to a canvas and measuring the painted pixel
+  boundary directly (DOM bbox APIs don't reflect stroke width).
 - `[ ]` Presence lanes chart — rows are selected library items, columns are scenes in
   order, a filled cell marks where an item appears; a subway-map view of the ensemble.
   Reuses the same data as the existing cross-reference matrix report. *(proposed, not
@@ -214,7 +249,8 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 |---|---|
 | `strip_AI` | Merged to `main` (PR #4) |
 | `feature/flow_visual` | Merged to `main` (PR #7) |
-| `feature/updates_v1` | Committed locally, **not yet pushed to `origin`** — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting, POV chart-highlighting fix, Unassigned chart indicator, Mac Alt-shortcut fix, POV scene-card row, POV added to Reporting, Overview/Tutorial docs updated for POV |
+| `feature/updates_v1` | Merged to `main` (PR #9) — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting, POV chart-highlighting fix, Unassigned chart indicator, Mac Alt-shortcut fix, POV scene-card row, POV added to Reporting, Overview/Tutorial docs updated for POV |
+| `feature/updates_v2` | Pushed to `origin`, **not yet merged to `main`** — all of `UPDATE_ROADMAP.md`'s code-review fixes (§1-3), custom POV name edit/delete, chart segment hover polish, chart margin tightening, the snake chart width-utilization and curve-clipping fixes, the sample-project seeding race fix, a fresh full-app audit's fixes (§6: import validation gap, orphaned-section reports bug, filtered-section-delete bug, section-color undo bug, report-generation perf), the CSP `unsafe-inline` removal, and (most recent) §7's drag-and-drop/keyboard fixes (stuck-drag recovery, multi-select+filter drag, undo/redo input and drag guards, Caps-Lock-proof export shortcut, Alt-shortcuts-under-modal guard) |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
-on `feature/updates_v1` until that branch is pushed and merged into `main`.
+on `feature/updates_v2` until that branch is merged into `main`.
