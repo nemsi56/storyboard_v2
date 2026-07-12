@@ -626,6 +626,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-legend-letter{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:15px;height:15px;border-radius:50%;background:var(--tx);color:var(--bg1);font-weight:700;font-size:9px;transition:background .12s,color .12s}
 .chart-legend-item:hover .chart-legend-letter,.chart-legend-item.chart-legend-hl .chart-legend-letter{background:var(--acc);color:var(--ontx)}
 .chart-legend-sep{flex-shrink:0;margin:0 8px;opacity:.5}
+.chart-legend-tick{display:inline-block;flex-shrink:0;width:2px;height:11px;border-radius:1px;background:var(--rd);transform:rotate(20deg)}
 .chart-type-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:5px 12px;cursor:pointer;transition:background .12s,border-color .12s}
 .chart-type-btn:hover{border-color:var(--acc)}
 .chart-type-btn.on{background:var(--acc);color:var(--ontx);border-color:var(--acc)}
@@ -641,6 +642,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #chart-tip{position:absolute;display:none;background:var(--bg1);border:1px solid var(--bdr);border-radius:6px;padding:8px 10px;font-size:12px;color:var(--tx);max-width:240px;pointer-events:none;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .chart-tip-title{font-weight:700;margin-bottom:2px}
 .chart-tip-sec{color:var(--sub);font-size:11px;margin-bottom:2px}
+.chart-tip-wc{color:var(--sub);font-size:11px;margin-bottom:2px}
 .chart-tip-sum{color:var(--sub);font-size:11px;line-height:1.4}
 .chart-seg{transition:filter .12s,opacity .12s,stroke .12s}
 /* --tx (the theme's main text color) reads as a strong, unambiguous "you're
