@@ -374,3 +374,69 @@ independent of everything else on this branch — safe to pick up anytime it's w
 
 ### Not yet done
 - Not merged to `main` — pushed to `origin/feature/updates_v2`, PR not yet opened.
+
+## feature/updates_v3 branch — Chart segments sized by word count
+
+Adds a "Show relative word count" toggle to `#chart-toolbar` (both snake and circle
+charts) that sizes each scene's segment proportionally to `scene.wordCount` — an existing,
+previously-unused field on scenes — instead of splitting the path evenly. Full design
+rationale is in `CHART_FEATURE_SPEC.md` §14; this is the implementation/status summary.
+
+**Touched files:** `charts.js` (all the layout/tick/tooltip/legend logic), `editor.html`
+(toolbar button), `editor-init.js` (click wiring), `styles.css` (tooltip line + legend
+swatch styles).
+
+### How it works
+- `computeSceneLayout(scenes, total)` is the one function that decides per-scene
+  `{len, offset}` along the centerline — every place that used to compute `total/N`
+  (`addSegments`, `addSnakeNumbers`, `addSnakeSectionMarkers`, `addCircleNumbers`,
+  `drawCirclePie`) now reads from its output instead. With the toggle off it returns the
+  original uniform split unchanged, so existing behavior is a strict subset of the new code
+  path, not a fork of it.
+- Missing `wordCount` (0 treated as unset) falls back to the average of scenes that do have
+  one — deliberately not a fixed default and not a minimum-size floor, since averaging
+  renders a missing value as "typical size" with no extra layout math (no clamp-and-
+  redistribute needed the way a minimum-floor approach would require). If nothing in the
+  set has a wordCount, every weight is 1 and the layout is byte-for-byte the toggle-off
+  case.
+- An averaged-in ("estimated") scene gets a short red (`var(--rd)`) tick drawn just outward
+  from its own scene-number position — both `addSnakeEstimatedTicks` and
+  `addCircleEstimatedTicks` compute it at the *same* offset the number is drawn at
+  (`offset + len/2`), then push it out along the segment's normal/radial direction so it
+  lands beside the digit rather than under it.
+- Tooltip and legend both read a module-level `lastAvgWordCount` (set inside
+  `computeSceneLayout`) — the tooltip labels an estimated scene "~N words (estimated)",
+  and the legend gets one extra entry, but only when `sceneSetHasEstimated()` finds a
+  genuine mix of known/unknown in the currently rendered scene set (an all-known or
+  all-unknown set shows nothing extra — there's nothing to distinguish).
+
+### Known non-obvious fixes worth knowing about if you touch this code
+- The tick was first implemented as a full-width perpendicular line crossing the ribbon at
+  the segment's leading edge — visually it read as a spurious extra segment divider (user
+  feedback, confirmed against a reference screenshot). Redesigned to a short mark anchored
+  to the number's own position instead, colored red so it doesn't compete with the
+  segment's own fill/stroke color states (filter-match/dim/plain — see `applySegColor`).
+- That first revision (still full-width, but repositioned to the segment's leading edge
+  instead of its midpoint to avoid the number) is what caused the numbers to visually
+  disappear on estimated segments during initial testing — the tick and the number were
+  both drawn at the exact same midpoint, and the tick (drawn after, so painted on top)
+  covered the digit. Not a bug in the final version, but worth knowing if the draw order or
+  position of either one changes again.
+- Circle-chart section-pie boundaries (`drawCirclePie`) had to move from index-counted runs
+  (`run.count` scenes = `count * 360/N` degrees) to offset-tracked runs (`run.end` in path
+  units, converted via `/ total * 360`), since a run of consecutive same-section scenes no
+  longer spans a fixed number of degrees once segment widths vary.
+
+### Verification
+Manually tested in-browser against a sample project (39 scenes): mixed known/null/zero
+word counts confirmed correct proportional widths on both chart types; toggle off reduces
+to a single uniform `stroke-dasharray` across all segments (asserted via DOM query, not
+just visual); an all-unset set and an all-known set both correctly produce zero tick marks
+and no legend entry; tooltip shows the real count or the estimated label; legend entry
+appears only for a genuine mixed set; verified legible in both a light (ivory) and dark
+(slate) theme. No wordCount test data or theme changes were left in the sample project
+(confirmed via the project's unchanged "Modified" timestamp) since none of it went through
+`saveState()`.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v3`.

@@ -113,6 +113,14 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   accounts for the stroke's actual painted extent (`r + CHART_PAD + SNAKE_SEG_THICKNESS/2`),
   verified by rasterizing the rendered SVG to a canvas and measuring the painted pixel
   boundary directly (DOM bbox APIs don't reflect stroke width).
+- `[x]*` "Show relative word count" toggle — sizes each scene's segment (both chart
+  types) proportionally to `scene.wordCount` instead of splitting the path evenly. Scenes
+  with no wordCount (0 counts as unset) are weighted at the average of scenes that do have
+  one, so missing data renders as "typical size" instead of a distorting sliver; a set with
+  no wordCounts at all reduces to the original uniform layout unchanged. Averaged-in scenes
+  get a short red tick beside their scene number plus a tooltip note and a legend entry, so
+  it's clear the size is an estimate. See `CHART_FEATURE_SPEC.md` §14.
+  *(`feature/updates_v3` branch, pushed, not yet merged)*
 - `[ ]` Presence lanes chart — rows are selected library items, columns are scenes in
   order, a filled cell marks where an item appears; a subway-map view of the ensemble.
   Reuses the same data as the existing cross-reference matrix report. *(proposed, not
@@ -251,6 +259,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 | `feature/flow_visual` | Merged to `main` (PR #7) |
 | `feature/updates_v1` | Merged to `main` (PR #9) — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting, POV chart-highlighting fix, Unassigned chart indicator, Mac Alt-shortcut fix, POV scene-card row, POV added to Reporting, Overview/Tutorial docs updated for POV |
 | `feature/updates_v2` | Pushed to `origin`, **not yet merged to `main`** — all of `UPDATE_ROADMAP.md`'s code-review fixes (§1-3), custom POV name edit/delete, chart segment hover polish, chart margin tightening, the snake chart width-utilization and curve-clipping fixes, the sample-project seeding race fix, a fresh full-app audit's fixes (§6: import validation gap, orphaned-section reports bug, filtered-section-delete bug, section-color undo bug, report-generation perf), the CSP `unsafe-inline` removal, and (most recent) §7's drag-and-drop/keyboard fixes (stuck-drag recovery, multi-select+filter drag, undo/redo input and drag guards, Caps-Lock-proof export shortcut, Alt-shortcuts-under-modal guard) |
+| `feature/updates_v3` | Pushed to `origin`, **not yet merged to `main`** — "Show relative word count" chart toggle, sizing scene segments proportionally by `wordCount` with an average-based fallback for scenes missing it. See `STATUS.md` and `CHART_FEATURE_SPEC.md` §14. |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
 on `feature/updates_v2` until that branch is merged into `main`.
