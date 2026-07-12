@@ -490,6 +490,11 @@ function importProjectJSON(inputEl) {
       // and silently corrupt id-based lookups everywhere.
       const maxSceneId = d.scenes.reduce((m, sc) => Math.max(m, sc.id), 0);
       if (typeof d.nextId !== 'number' || d.nextId <= maxSceneId) d.nextId = maxSceneId + 1;
+      // A negative/zero wordCount passes the numeric type check above but is
+      // meaningless (and the New/Edit Scene forms no longer let one through) —
+      // normalize to null on the way in rather than rejecting the whole import
+      // over what's just stale bad data, e.g. from a hand-edited file.
+      d.scenes.forEach(sc => { if (sc.wordCount != null && sc.wordCount <= 0) sc.wordCount = null; });
       const maxSecId = d.sections.reduce((m, sec) => Math.max(m, sec.id), 0);
       if (typeof d.nextSecId !== 'number' || d.nextSecId <= maxSecId) d.nextSecId = maxSecId + 1;
       if ((d.projectUid != null && !isStr(d.projectUid)) || (d.revision != null && typeof d.revision !== 'number')) {

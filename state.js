@@ -120,6 +120,12 @@ function loadState(storageKey) {
         characters: arr(sc.characters), locations: arr(sc.locations),
         themes: arr(sc.themes),         misc: arr(sc.misc),
         sectionId: sc.sectionId ?? null,
+        // A negative/zero wordCount could only get here from data saved before
+        // the New/Edit Scene forms started rejecting it (or a hand-edited
+        // file) — normalize on load same as import does, so it can't survive
+        // as invisible bad data (charts already treat it as unset, but stored
+        // reports/exports shouldn't carry a nonsensical negative number).
+        wordCount: (sc.wordCount != null && sc.wordCount > 0) ? sc.wordCount : null,
         povs,
       };
     });

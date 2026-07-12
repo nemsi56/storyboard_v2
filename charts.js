@@ -720,6 +720,16 @@ function printChart() {
         ).join(' &nbsp;·&nbsp; ')
       + '</div>';
   }
+  // The on-screen legend explains the red "estimated" tick (see
+  // updateChartLegend/sceneSetHasEstimated) — without this, a printed chart
+  // with proportional sizing on shows unexplained red marks next to some
+  // scene numbers.
+  if (sceneSetHasEstimated(orderedScenes())) {
+    legendHtml += '<div style="font-size:11px;color:#555;margin-bottom:12px">'
+      + '<span style="display:inline-block;width:2px;height:11px;background:#dc2626;'
+      + 'transform:rotate(20deg);margin-right:6px;vertical-align:middle"></span>'
+      + 'Estimated (no word count)</div>';
+  }
   const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + titleEsc + '</title>'
     + '<style>*{box-sizing:border-box;margin:0;padding:0}body{background:#fff;padding:24px;'
     + "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}"

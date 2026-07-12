@@ -461,6 +461,16 @@ function addInsertZone(container, afterSceneId, sectionId) {
   container.appendChild(zone);
 }
 
+// The <input type="number" min="0"> attribute doesn't block a typed/pasted
+// negative value (e.g. "-500") from reaching .value, so parseInt alone let
+// negative word counts through — they rendered as "unset" in charts (which
+// only ever check `> 0`) but persisted and round-tripped through export as
+// invisible bad data. Clamp to null instead of silently keeping the sign.
+function parseWordCount(value) {
+  const n = parseInt(value);
+  return (Number.isFinite(n) && n > 0) ? n : null;
+}
+
 function addScene() {
   const titleEl = document.getElementById('sc-title'), errEl = document.getElementById('scerr');
   const title = titleEl.value.trim(), summary = document.getElementById('sc-summary').value.trim();
@@ -471,7 +481,7 @@ function addScene() {
   const row = {};
   SECS.forEach(({ key }) => { row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => c.value); });
   const sectionId = S.sections.length ? (parseInt(document.getElementById('sc-section').value) || null) : null;
-  const wordCount = parseInt(document.getElementById('sc-wordcount').value) || null;
+  const wordCount = parseWordCount(document.getElementById('sc-wordcount').value);
   const povs = ckCurrentlyChecked('sc', 'povs');
   pushHistory('Add scene "' + truncStr(title, 22) + '"');
   trackSceneAdded();
@@ -591,7 +601,7 @@ function isEditFormDirty() {
   if (document.getElementById('ed-title').value.trim() !== sc.title.trim()) return true;
   if (document.getElementById('ed-summary').value.trim() !== (sc.summary || '')) return true;
   if (document.getElementById('ed-notes').value.trim() !== (sc.notes || '')) return true;
-  if ((parseInt(document.getElementById('ed-wordcount').value) || null) !== (sc.wordCount || null)) return true;
+  if (parseWordCount(document.getElementById('ed-wordcount').value) !== (sc.wordCount || null)) return true;
   if (S.sections.length) {
     const sectionId = parseInt(document.getElementById('ed-section').value) || null;
     if (sectionId !== (sc.sectionId ?? null)) return true;
@@ -673,7 +683,7 @@ function confirmSaveEdit() {
   pushHistory('Edit scene "' + truncStr(sc.title, 22) + '"');
   const oldSecId = sc.sectionId ?? null;
   sc.title = title; sc.summary = summary; sc.notes = document.getElementById('ed-notes').value.trim();
-  sc.wordCount = parseInt(document.getElementById('ed-wordcount').value) || null;
+  sc.wordCount = parseWordCount(document.getElementById('ed-wordcount').value);
   sc.povs = ckCurrentlyChecked('ed', 'povs');
   if (S.sections.length) sc.sectionId = sectionId;
   SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value); });
