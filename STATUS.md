@@ -450,15 +450,23 @@ tracking.js, state.js save/load). Final pass: the fixes themselves plus editor.j
 remaining ~1400 lines (forms, section/library CRUD, modals, selection), which §7's audit
 had only covered for drag-and-drop/keyboard.
 
-### What was found and fixed (commits `2ebbfe8`, `4432c10`)
+### What was found and fixed (commits `2ebbfe8`, `4432c10`, `e7f7192`)
 - **High:** a corrupt/unreadable project opened as an empty, saveable session, and the
   first save overwrote the stored blob — permanent data loss from possibly-recoverable
   data. `openProject()` now checks `loadState()`'s return and bounces to the project list
   with the stored blob untouched.
-- **Medium ×2:** non-quota storage failures were completely silent (edits silently
+- **Medium ×5:** non-quota storage failures were completely silent (edits silently
   in-memory only) while quota failures alerted on *every* edit — both now alert once per
-  session; and `loadState()` could leave `S` half-populated on a mid-parse exception —
-  its catch now resets cleanly.
+  session; `loadState()` could leave `S` half-populated on a mid-parse exception — its
+  catch now resets cleanly; a character and a custom POV name sharing one name rendered
+  as duplicate POV checkboxes and mis-wired the custom-name edit/delete handlers onto a
+  character row — `confirmAdd` and `saveLibEdit` now check `S.povCustomNames` the way
+  `confirmPovAdd` already checked `S.characters` in the other direction; a stale
+  `pendingInsert` anchor from an insert-zone click survived a detour through Create > New
+  Scene or into Edit mode, letting a later, unrelated Add Scene splice into an abandoned
+  position — both entry points now clear it; hovering an open menu's own title button
+  (after dipping into its dropdown) closed the menu instead of leaving it open —
+  `hoverMenu` now only switches when the hovered menu differs from the one already open.
 - **Low ×2:** negative word counts could be typed/pasted/imported and persisted invisibly
   (now clamped at form entry, on load, and on import via a shared rule); the printed
   chart's legend didn't explain the red "estimated" tick (now it does).
@@ -468,18 +476,22 @@ Live in the browser against the real code paths, not just by reading: reproduced
 corrupt-project overwrite before the fix and confirmed the stored blob survives after;
 injected XSS payloads through every report builder (escaped everywhere); simulated three
 consecutive storage failures (exactly one alert); entered "-500" into the word-count
-field before and after. All test artifacts (corrupt test project, test scenes) were
-confirmed removed from localStorage afterward.
+field before and after; drove the actual `confirmAdd`/`saveLibEdit` collision paths (not
+just the guard logic) and confirmed both block with the input reselected; set
+`pendingInsert` and called `menuNewScene()`/`openEditMode()` directly to confirm each
+clears it, then re-ran the legitimate insert-zone flow to confirm no regression; hovered
+back across an open menu's own title button (the exact repro sequence) and confirmed it
+stays open, then hovered a different menu button and confirmed switching still works.
+All test artifacts (corrupt test project, test scenes, test library items) were confirmed
+removed from localStorage afterward.
 
 ### Open items (deliberately deferred — the backlog for a future branch)
-Twelve items, none data-loss risks, all logged with repro detail in `UPDATE_ROADMAP.md`
-§8 "Open" — headline ones: a character and a custom POV name with the same name produce
-duplicate POV entries and mis-wired edit/delete handlers (medium); a stale
-`pendingInsert` from an insert-zone click makes a later menu-created scene land at the
-wrong position (medium); hovering an open menu's own title button closes it (medium-low).
-The rest are lows: transient/cosmetic states, two analytics-only counter bugs, dead
-`resetAll` code, float-wordCount truncation on import, and matrix-report print chunking
-sized to the screen instead of the page.
+Nine items remain, none data-loss risks — all logged with repro detail in
+`UPDATE_ROADMAP.md` §8 "Open." All are lows: transient/cosmetic states (an unsaved
+`povCustomNames` fold-in, a cancelled color-picker stranding preview state and an undo
+entry, dead `resetAll` code, a card-selection/discard-dialog race), a no-op `quickSetup`
+call polluting the redo stack, float-wordCount truncation on import, two analytics-only
+counter bugs, and matrix-report print chunking sized to the screen instead of the page.
 
 ### Delegation note
 Mechanical sweeps (CSP/id-reference/global-collision/localStorage-key/build-order

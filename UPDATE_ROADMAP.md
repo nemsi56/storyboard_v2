@@ -342,26 +342,35 @@ logged.
 
 *(The five fixes above landed as commits `2ebbfe8` and `4432c10`, pushed.)*
 
+- `[x]` **Adding/renaming a character never checked `S.povCustomNames`** *(medium)*.
+  `confirmAdd` ([editor.js:70](editor.js#L70)) and `saveLibEdit`'s rename-collision check
+  ([editor.js:313](editor.js#L313)) only scanned `S[sec]`, but `povNames()` concatenates
+  characters + custom names — a name in both lists rendered twice in every POV dropdown,
+  saved duplicate entries into `scene.povs`, and `renderPovLibSec` gave the character's
+  row custom-name edit/delete handlers (deleting removed the custom name while the
+  character silently kept supplying the POV). Both now also check
+  `S.povCustomNames.includes(name)` for the `characters` category, mirroring the guard
+  `confirmPovAdd` already had in the other direction (verified live: adding a character
+  or renaming one onto an existing custom POV name is now blocked, input reselected).
+- `[x]` **`pendingInsert` survived detours and could splice a later scene at a stale
+  anchor** *(medium)*. Set by an insert-zone click ([editor.js:451](editor.js#L451)),
+  previously cleared only by `addScene`/`cancelNewScene` — `menuNewScene` and entering
+  Edit mode now also clear it, so a detour through Create > New Scene or into editing a
+  scene no longer lets a later, unrelated Add Scene land at an abandoned anchor position
+  (verified live: the legitimate insert-zone flow still lands the new scene in the right
+  spot; a detour through either entry point now clears the anchor first).
+- `[x]` **Hovering the open menu's own title button closed the menu** *(medium-low)*.
+  `hoverMenu` ([editor.js:132](editor.js#L132)) called `toggleMenu` for every hovered
+  button while any menu was open — for the already-open menu, that toggled it *closed*,
+  so drifting the pointer from the dropdown back across its own title made the menu
+  vanish mid-use. Now only switches when the hovered menu differs from the one already
+  open (verified live: hovering back across File's own title keeps it open; hovering
+  Edit while File is open still switches to Edit).
+
+*(The three fixes above landed as commit `e7f7192`, pushed.)*
+
 ### Open — found by this audit, not yet fixed
 
-- `[ ]` **Adding/renaming a character never checks `S.povCustomNames`** *(medium)*.
-  `confirmAdd` ([editor.js:70](editor.js#L70)) and `saveLibEdit`'s rename-collision check
-  ([editor.js:298](editor.js#L298)) only scan `S[sec]`, but `povNames()` concatenates
-  characters + custom names — a name in both lists renders twice in every POV dropdown,
-  saves duplicate entries into `scene.povs`, and `renderPovLibSec` gives the character's
-  row custom-name edit/delete handlers (deleting removes the custom name while the
-  character silently keeps supplying the POV). Repro: add custom POV "Anna" via a scene
-  form, then add character "Anna" from the Library.
-- `[ ]` **`pendingInsert` survives detours and splices a later scene at a stale anchor**
-  *(medium)*. Set by an insert-zone click ([editor.js:451](editor.js#L451)), cleared only
-  by `addScene`/`cancelNewScene` — `menuNewScene` and entering Edit mode don't clear it,
-  so clicking "+ Add Scene" after scene X, then creating a scene via Create > New Scene
-  with a different section selected, splices it at X's array position instead of the
-  documented end-of-section default. Wrong ordering only, no data loss.
-- `[ ]` **Hovering the open menu's own title button closes the menu** *(medium-low)*.
-  `hoverMenu` ([editor.js:125](editor.js#L125)) calls `toggleMenu` for every button while
-  any menu is open — for the already-open menu that toggles it *closed*. Drifting the
-  pointer from the dropdown back across its own title makes the menu vanish mid-use.
 - `[ ]` **`renderPovCk` mutates `S.povCustomNames` during render without persisting**
   *(low)*. The legacy-name fold-in ([editor.js:1171](editor.js#L1171)) never calls
   `saveState()`; a reload before the next unrelated save drops the fold. Self-heals on
