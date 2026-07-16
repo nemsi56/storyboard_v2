@@ -67,7 +67,14 @@ function confirmAdd() {
   const name = inp.value.trim();
   const notes = document.getElementById('ap-notes').value.trim();
   if (!name) { inp.focus(); return; }
-  if (S[apSec].some(x => x.name === name)) { inp.select(); return; }
+  // A character name and a custom POV name share one combined list in every
+  // POV dropdown (see povNames()) — colliding would render two identical
+  // checkboxes and let renderPovLibSec's custom-name edit/delete handlers
+  // attach to what's actually a character row. confirmPovAdd already guards
+  // this in the other direction; mirror it here.
+  if (S[apSec].some(x => x.name === name) || (apSec === 'characters' && S.povCustomNames.includes(name))) {
+    inp.select(); return;
+  }
   pushHistory('Add ' + SINGULAR[apSec] + ' "' + name + '"');
   trackItemAdded(apSec);
   S[apSec].push({ name, notes });
@@ -123,7 +130,13 @@ function closeAllMenus() {
   document.querySelectorAll('#menu-bar .mi.open').forEach(m => m.classList.remove('open'));
 }
 function hoverMenu(name) {
-  if (document.querySelector('#menu-bar .mi.open')) toggleMenu(name);
+  // Only switch to a *different* menu while one is open (the mouse-driven
+  // hover-to-switch behavior this exists for). Without this check, drifting
+  // the pointer off an open dropdown and back across its own title re-fires
+  // toggleMenu on the menu that's already open, which reads as "close" since
+  // toggleMenu always closes-then-conditionally-reopens.
+  const openMenu = document.querySelector('#menu-bar .mi.open');
+  if (openMenu && openMenu.id !== 'mi-' + name) toggleMenu(name);
 }
 function updateThemeMenuState() {
   const current = document.documentElement.dataset.theme || 'ivory';
@@ -175,6 +188,11 @@ function toggleAllPanels() {
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
 function menuNewScene() {
   closeAllMenus();
+  // A pending insert-zone anchor is only meant for the very next Add Scene —
+  // entering the New Scene form through the menu instead is a fresh, untargeted
+  // add and must not silently splice into wherever an earlier insert-zone click
+  // (possibly long since abandoned) pointed.
+  pendingInsert = null;
   if (document.getElementById('cp').classList.contains('collapsed')) togglePanel('cp');
   switchTab('new');
   setNewSceneLive(false);
@@ -295,7 +313,10 @@ function saveLibEdit() {
   const newName = document.getElementById('lib-edit-name').value.trim();
   const newNotes = document.getElementById('lib-edit-notes').value.trim();
   if (!newName) { document.getElementById('lib-edit-name').focus(); return; }
-  if (newName !== oldName && S[sec].some((x, i) => i !== libEditIdx && x.name === newName)) {
+  // Same collision as confirmAdd: renaming a character onto an existing
+  // custom POV name would create the same characters/povCustomNames overlap.
+  const povCollision = sec === 'characters' && S.povCustomNames.includes(newName);
+  if (newName !== oldName && (povCollision || S[sec].some((x, i) => i !== libEditIdx && x.name === newName))) {
     document.getElementById('lib-edit-name').select(); return;
   }
   pushHistory('Edit "' + oldName + '"');
@@ -568,6 +589,10 @@ function clearCardSel() {
 // ── EDIT MODE ─────────────────────────────────────────────────────────────────
 function openEditMode(id) {
   const sc = S.scenes.find(s => s.id === id); if (!sc) return;
+  // Same reasoning as menuNewScene: editing an existing scene is an unrelated
+  // detour from whatever insert-zone anchor might still be pending, and must
+  // not let a later, unrelated Add Scene splice into that stale position.
+  pendingInsert = null;
   // Auto-open center panel if collapsed
   if (document.getElementById('cp').classList.contains('collapsed')) togglePanel('cp');
   S.editingId = id;
