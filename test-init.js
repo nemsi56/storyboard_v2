@@ -197,7 +197,7 @@ function renderResults() {
   if (failed === 0) {
     container.innerHTML += `<div class="test-suite" style="background: #f1f8f4; border-left: 4px solid #4caf50;">
       <h3>✅ All tests passed! Site structure is sound.</h3>
-      <p>Now run manual browser tests from TEST_PLAN_PHASE_4.md</p>
+      <p>Structure checks only — full validation still needs a manual browser pass.</p>
     </div>`;
   }
 }

@@ -7,8 +7,27 @@ const LEGACY_KEY   = 'storyboard_v1';
 const PROJECT_INDEX_KEY = 'scriptease_projects';
 const GLOBAL_PREFS_KEY  = 'scriptease_prefs';
 let currentProjectId = null;
+// Alert once per session on a save failure, not once per edit — saveState runs
+// on ~20 different code paths, so an unguarded alert() re-fires (and re-blocks
+// the UI) on every single keystroke/action for as long as storage stays broken.
+let saveErrorAlerted = false;
 
 function projKey(id) { return 'scriptease_proj_' + id; }
+// Single normalization rule for scene.wordCount, used both on load and on
+// JSON import: null unless a positive number, rounded to an integer. Without
+// the rounding, a float that slipped in (a hand-edited file, or a future
+// version that allows fractional counts) would silently mismatch the Edit
+// form's parseWordCount() — which only ever produces integers via parseInt —
+// so the form would read as dirty the instant the scene is opened, and saving
+// would truncate the value without the user having changed anything.
+function normalizeWordCount(v) {
+  if (v == null) return null;
+  // Round first, then check positivity — checking `v > 0` before rounding
+  // would let a value like 0.4 (which rounds to 0) through as a non-null 0,
+  // defeating the whole point of this function.
+  const n = Math.round(v);
+  return n > 0 ? n : null;
+}
 function genProjId() { return 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
 // Permanent project lineage id — unlike the storage id above, this survives
 // export/import so copies of the same project can be recognized across devices.
@@ -62,8 +81,16 @@ function saveState() {
   } catch(e) {
     const isQuotaErr = e.name === 'QuotaExceededError';
     console.warn('Storage error:', isQuotaErr ? 'quota exceeded' : e.message);
-    if (isQuotaErr && typeof window !== 'undefined') {
-      alert('Your browser storage is full. Please delete some old projects to continue.');
+    // Any save failure — quota or otherwise (storage disabled, a privacy-mode
+    // SecurityError, etc.) — means everything from here on is edited in memory
+    // only and will be lost on refresh with no other warning, so this needs to
+    // surface once. Previously only the quota case alerted at all, and it did
+    // so on every single edit rather than once.
+    if (!saveErrorAlerted && typeof window !== 'undefined') {
+      saveErrorAlerted = true;
+      alert(isQuotaErr
+        ? 'Your browser storage is full. Please delete some old projects, then reload — until then, new changes are not being saved and will be lost if you close or refresh this tab.'
+        : 'Your changes could not be saved (browser storage is unavailable). New changes are not being saved and will be lost if you close or refresh this tab.');
     }
   }
 }
@@ -108,6 +135,13 @@ function loadState(storageKey) {
         characters: arr(sc.characters), locations: arr(sc.locations),
         themes: arr(sc.themes),         misc: arr(sc.misc),
         sectionId: sc.sectionId ?? null,
+        // A negative/zero/non-integer wordCount could only get here from data
+        // saved before the New/Edit Scene forms started rejecting it (or a
+        // hand-edited file) — normalize on load same as import does, so it
+        // can't survive as invisible bad data (charts already treat ≤0 as
+        // unset, but stored reports/exports shouldn't carry a nonsensical
+        // negative or fractional number).
+        wordCount: normalizeWordCount(sc.wordCount),
         povs,
       };
     });
@@ -128,7 +162,17 @@ function loadState(storageKey) {
     S.editsSinceExport = d.editsSinceExport || 0;
     S.projectUid = d.projectUid || null;
     S.revision   = d.revision || 0;
-    S.povCustomNames = d.povCustomNames || [];
+    // A name in both the Character library and here isn't just redundant — it
+    // renders twice in every POV dropdown, and the read-only Library-panel POV
+    // row hands a character's entry the custom-name edit/delete handlers
+    // (deleting it removes the custom name while the character silently keeps
+    // supplying the POV). confirmAdd/saveLibEdit/confirmPovAdd all guard
+    // against creating this overlap going forward, but stored/imported data
+    // from before those guards existed (or a hand-edited file) can already
+    // have it — drop those on load rather than re-fixing it in every UI entry
+    // point that reads povCustomNames.
+    const charNames = new Set(S.characters.map(c => c.name));
+    S.povCustomNames = (d.povCustomNames || []).filter(n => !charNames.has(n));
     // Fold in any scene's POV name that predates this list (older exports,
     // or a since-removed character) so it's immediately a normal, reusable
     // checklist option rather than only recognized once that scene is opened.
@@ -141,7 +185,16 @@ function loadState(storageKey) {
     });
     if (migrated) saveState();
     return true;
-  } catch(e) { return false; }
+  } catch(e) {
+    // The block above mutates S field-by-field rather than building a temp
+    // object and assigning it atomically, so an exception partway through
+    // (e.g. a malformed `sections` array) can leave S with some fields loaded
+    // from this project and others still at their pre-call values. Reset
+    // before returning false so a caller that (correctly) treats `false` as
+    // "nothing loaded" is actually true, not just conventionally true.
+    if (typeof resetState === 'function') resetState();
+    return false;
+  }
 }
 
 // ── STATE ─────────────────────────────────────────────────────────────────────

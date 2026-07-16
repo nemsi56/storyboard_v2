@@ -190,8 +190,18 @@ function openProject(id) {
   }
   currentProjectId = id;
   resetState();
-  loadState(projKey(id));
+  if (!loadState(projKey(id))) {
+    // Corrupt/unreadable project data: bounce out instead of opening an empty,
+    // saveable session — the very next save (any edit, undo, even a theme
+    // change) would overwrite the stored blob with that empty state, turning
+    // a possibly-recoverable file into permanent data loss.
+    currentProjectId = null;
+    alert('This project\'s data could not be read (it may be corrupted or from an incompatible version). Nothing has been changed — returning to your project list.');
+    window.location.href = 'projects.html';
+    return;
+  }
   getUserId();
+  ensureProjectMilestoneBaselines();
   // Reset board view state left over from whatever was open before. Usually
   // a no-op (a normal "Open" from the Projects page is a full page
   // navigation, which already starts clean) — but openProject() can also run
@@ -358,12 +368,19 @@ function exportProjectJSON(id) {
     const exportedAt = new Date().toISOString();
     data.lastExportedAt = exportedAt;
     data.editsSinceExport = 0;
-    localStorage.setItem(projKey(id), JSON.stringify(data));
-    if (id === currentProjectId) {
-      S.lastExportedAt = exportedAt;
-      S.editsSinceExport = 0;
-      if (typeof refreshBackupStatus === 'function') refreshBackupStatus();
-    }
+    // Best-effort only: this write-back just clears the "N changes since
+    // backup" bookkeeping, and storage being full — quota exceeded, or
+    // disabled entirely — is exactly the moment export is most needed as an
+    // escape hatch. It must not block the actual file download below, which
+    // needs no storage at all.
+    try {
+      localStorage.setItem(projKey(id), JSON.stringify(data));
+      if (id === currentProjectId) {
+        S.lastExportedAt = exportedAt;
+        S.editsSinceExport = 0;
+        if (typeof refreshBackupStatus === 'function') refreshBackupStatus();
+      }
+    } catch(e) { console.warn('Could not update backup bookkeeping:', e.message); }
     data.projectName = name;
     data.exportedAt = exportedAt;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -404,7 +421,12 @@ function findProjectByUid(uid) {
 // buttons: [{ label, primary, onClick }] — every button closes the dialog.
 function showImportChoiceDialog(title, msg, buttons) {
   const overlay = document.createElement('div');
-  overlay.className = 'pm-modal open';
+  // pm-modal-dynamic marks this as the one-off, safe-to-.remove() overlay, as
+  // opposed to the static .pm-modal elements on projects.html (New/Rename/
+  // Delete) — closeImportChoiceDialog() and editor.js's modal guards key off
+  // the specific class so they can never match (and in the close function's
+  // case, permanently delete) one of the static modals.
+  overlay.className = 'pm-modal pm-modal-dynamic open';
   overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-modal', 'true');
   const box = document.createElement('div'); box.className = 'pm-modal-box';
   const t = document.createElement('div'); t.className = 'pm-modal-title'; t.textContent = title;
@@ -421,6 +443,16 @@ function showImportChoiceDialog(title, msg, buttons) {
   box.appendChild(t); box.appendChild(m); box.appendChild(btns);
   overlay.appendChild(box);
   document.body.appendChild(overlay);
+}
+// Escape-key path for the dialog above (mirrors every other modal's close
+// behavior: dismiss without taking any of the buttons' actions). At most one
+// of these is ever open at a time, so removing whichever is present is
+// unambiguous. Matches only .pm-modal-dynamic — a bare '.pm-modal.open'
+// selector would also match the static New/Rename/Delete modals on
+// projects.html, and .remove() would delete those from the DOM permanently
+// rather than just closing them.
+function closeImportChoiceDialog() {
+  document.querySelector('.pm-modal-dynamic.open')?.remove();
 }
 
 function importProjectJSON(inputEl) {
@@ -452,8 +484,13 @@ function importProjectJSON(inputEl) {
       }
 
       const isStrArr = v => v == null || (Array.isArray(v) && v.every(isStr));
+      // Number.isInteger (not typeof === 'number') so NaN/Infinity from a
+      // hand-edited file are rejected here rather than reaching nextId/
+      // nextSecId math below — an Infinity id makes every id-based lookup
+      // afterward (nextId itself becomes Infinity, so every scene added post-
+      // import shares one id) silently ambiguous instead of a clean rejection.
       const badSceneIdx = d.scenes.findIndex(sc =>
-        !sc || typeof sc !== 'object' || typeof sc.id !== 'number' || !isStr(sc.title) ||
+        !sc || typeof sc !== 'object' || !Number.isInteger(sc.id) || !isStr(sc.title) ||
         (sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes)) ||
         (sc.wordCount != null && typeof sc.wordCount !== 'number') ||
         (sc.pov != null && !isStr(sc.pov)) || // legacy single-value POV, still accepted on import
@@ -468,9 +505,18 @@ function importProjectJSON(inputEl) {
         return;
       }
 
-      const badSecIdx = d.sections.findIndex(sec => !sec || typeof sec !== 'object' || typeof sec.id !== 'number' || !isStr(sec.name));
+      const badSecIdx = d.sections.findIndex(sec => !sec || typeof sec !== 'object' || !Number.isInteger(sec.id) || !isStr(sec.name));
       if (badSecIdx !== -1) {
         alert('Invalid project structure. Section ' + (badSecIdx + 1) + ' needs a numeric "id" and a string "name".');
+        return;
+      }
+      // Unlike scenes (checked above), nothing else here rejects a duplicate
+      // section id — the scene-id checks pass, and every field type-checks
+      // fine — but a section whose id collides with another's would render
+      // (and be renamed/deleted/recolored) as one merged group of scenes on
+      // the board, since scenes reference their section purely by that id.
+      if (new Set(d.sections.map(sec => sec.id)).size !== d.sections.length) {
+        alert('Invalid project structure. Section "id" values must be unique.');
         return;
       }
 
@@ -481,6 +527,12 @@ function importProjectJSON(inputEl) {
       // and silently corrupt id-based lookups everywhere.
       const maxSceneId = d.scenes.reduce((m, sc) => Math.max(m, sc.id), 0);
       if (typeof d.nextId !== 'number' || d.nextId <= maxSceneId) d.nextId = maxSceneId + 1;
+      // A negative/zero/non-integer wordCount passes the numeric type check
+      // above but is meaningless (and the New/Edit Scene forms no longer let
+      // one through) — normalize on the way in (same rule as loadState) rather
+      // than rejecting the whole import over what's just stale bad data, e.g.
+      // from a hand-edited file.
+      d.scenes.forEach(sc => { if (sc.wordCount != null) sc.wordCount = normalizeWordCount(sc.wordCount); });
       const maxSecId = d.sections.reduce((m, sec) => Math.max(m, sec.id), 0);
       if (typeof d.nextSecId !== 'number' || d.nextSecId <= maxSecId) d.nextSecId = maxSecId + 1;
       if ((d.projectUid != null && !isStr(d.projectUid)) || (d.revision != null && typeof d.revision !== 'number')) {

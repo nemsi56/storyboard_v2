@@ -374,3 +374,292 @@ independent of everything else on this branch — safe to pick up anytime it's w
 
 ### Not yet done
 - Not merged to `main` — pushed to `origin/feature/updates_v2`, PR not yet opened.
+
+## feature/updates_v3 branch — Chart segments sized by word count
+
+Adds a "Show relative word count" toggle to `#chart-toolbar` (both snake and circle
+charts) that sizes each scene's segment proportionally to `scene.wordCount` — an existing,
+previously-unused field on scenes — instead of splitting the path evenly. Full design
+rationale is in `CHART_FEATURE_SPEC.md` §14; this is the implementation/status summary.
+
+**Touched files:** `charts.js` (all the layout/tick/tooltip/legend logic), `editor.html`
+(toolbar button), `editor-init.js` (click wiring), `styles.css` (tooltip line + legend
+swatch styles).
+
+### How it works
+- `computeSceneLayout(scenes, total)` is the one function that decides per-scene
+  `{len, offset}` along the centerline — every place that used to compute `total/N`
+  (`addSegments`, `addSnakeNumbers`, `addSnakeSectionMarkers`, `addCircleNumbers`,
+  `drawCirclePie`) now reads from its output instead. With the toggle off it returns the
+  original uniform split unchanged, so existing behavior is a strict subset of the new code
+  path, not a fork of it.
+- Missing `wordCount` (0 treated as unset) falls back to the average of scenes that do have
+  one — deliberately not a fixed default and not a minimum-size floor, since averaging
+  renders a missing value as "typical size" with no extra layout math (no clamp-and-
+  redistribute needed the way a minimum-floor approach would require). If nothing in the
+  set has a wordCount, every weight is 1 and the layout is byte-for-byte the toggle-off
+  case.
+- An averaged-in ("estimated") scene gets a short red (`var(--rd)`) tick drawn just outward
+  from its own scene-number position — both `addSnakeEstimatedTicks` and
+  `addCircleEstimatedTicks` compute it at the *same* offset the number is drawn at
+  (`offset + len/2`), then push it out along the segment's normal/radial direction so it
+  lands beside the digit rather than under it.
+- Tooltip and legend both read a module-level `lastAvgWordCount` (set inside
+  `computeSceneLayout`) — the tooltip labels an estimated scene "~N words (estimated)",
+  and the legend gets one extra entry, but only when `sceneSetHasEstimated()` finds a
+  genuine mix of known/unknown in the currently rendered scene set (an all-known or
+  all-unknown set shows nothing extra — there's nothing to distinguish).
+
+### Known non-obvious fixes worth knowing about if you touch this code
+- The tick was first implemented as a full-width perpendicular line crossing the ribbon at
+  the segment's leading edge — visually it read as a spurious extra segment divider (user
+  feedback, confirmed against a reference screenshot). Redesigned to a short mark anchored
+  to the number's own position instead, colored red so it doesn't compete with the
+  segment's own fill/stroke color states (filter-match/dim/plain — see `applySegColor`).
+- That first revision (still full-width, but repositioned to the segment's leading edge
+  instead of its midpoint to avoid the number) is what caused the numbers to visually
+  disappear on estimated segments during initial testing — the tick and the number were
+  both drawn at the exact same midpoint, and the tick (drawn after, so painted on top)
+  covered the digit. Not a bug in the final version, but worth knowing if the draw order or
+  position of either one changes again.
+- Circle-chart section-pie boundaries (`drawCirclePie`) had to move from index-counted runs
+  (`run.count` scenes = `count * 360/N` degrees) to offset-tracked runs (`run.end` in path
+  units, converted via `/ total * 360`), since a run of consecutive same-section scenes no
+  longer spans a fixed number of degrees once segment widths vary.
+
+### Verification
+Manually tested in-browser against a sample project (39 scenes): mixed known/null/zero
+word counts confirmed correct proportional widths on both chart types; toggle off reduces
+to a single uniform `stroke-dasharray` across all segments (asserted via DOM query, not
+just visual); an all-unset set and an all-known set both correctly produce zero tick marks
+and no legend entry; tooltip shows the real count or the estimated label; legend entry
+appears only for a genuine mixed set; verified legible in both a light (ivory) and dark
+(slate) theme. No wordCount test data or theme changes were left in the sample project
+(confirmed via the project's unchanged "Modified" timestamp) since none of it went through
+`saveState()`.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v3`.
+
+## feature/updates_v3 branch — Third full-app audit & data-safety fixes
+
+A two-part audit of the whole app in its `updates_v3` state (see `UPDATE_ROADMAP.md` §8
+for the complete per-item detail; this is the summary). First pass: the new word-count
+chart code plus the files earlier audits covered lightly (reports.js, backup.js, ui.js,
+tracking.js, state.js save/load). Final pass: the fixes themselves plus editor.js's
+remaining ~1400 lines (forms, section/library CRUD, modals, selection), which §7's audit
+had only covered for drag-and-drop/keyboard.
+
+### What was found and fixed (commits `2ebbfe8`, `4432c10`, `e7f7192`)
+- **High:** a corrupt/unreadable project opened as an empty, saveable session, and the
+  first save overwrote the stored blob — permanent data loss from possibly-recoverable
+  data. `openProject()` now checks `loadState()`'s return and bounces to the project list
+  with the stored blob untouched.
+- **Medium ×5:** non-quota storage failures were completely silent (edits silently
+  in-memory only) while quota failures alerted on *every* edit — both now alert once per
+  session; `loadState()` could leave `S` half-populated on a mid-parse exception — its
+  catch now resets cleanly; a character and a custom POV name sharing one name rendered
+  as duplicate POV checkboxes and mis-wired the custom-name edit/delete handlers onto a
+  character row — `confirmAdd` and `saveLibEdit` now check `S.povCustomNames` the way
+  `confirmPovAdd` already checked `S.characters` in the other direction; a stale
+  `pendingInsert` anchor from an insert-zone click survived a detour through Create > New
+  Scene or into Edit mode, letting a later, unrelated Add Scene splice into an abandoned
+  position — both entry points now clear it; hovering an open menu's own title button
+  (after dipping into its dropdown) closed the menu instead of leaving it open —
+  `hoverMenu` now only switches when the hovered menu differs from the one already open.
+- **Low ×2:** negative word counts could be typed/pasted/imported and persisted invisibly
+  (now clamped at form entry, on load, and on import via a shared rule); the printed
+  chart's legend didn't explain the red "estimated" tick (now it does).
+
+### How it was verified
+Live in the browser against the real code paths, not just by reading: reproduced the
+corrupt-project overwrite before the fix and confirmed the stored blob survives after;
+injected XSS payloads through every report builder (escaped everywhere); simulated three
+consecutive storage failures (exactly one alert); entered "-500" into the word-count
+field before and after; drove the actual `confirmAdd`/`saveLibEdit` collision paths (not
+just the guard logic) and confirmed both block with the input reselected; set
+`pendingInsert` and called `menuNewScene()`/`openEditMode()` directly to confirm each
+clears it, then re-ran the legitimate insert-zone flow to confirm no regression; hovered
+back across an open menu's own title button (the exact repro sequence) and confirmed it
+stays open, then hovered a different menu button and confirmed switching still works.
+All test artifacts (corrupt test project, test scenes, test library items) were confirmed
+removed from localStorage afterward.
+
+### Round two (commit `10d30c7`): six more low-severity fixes
+- `renderPovCk`'s legacy-POV-name fold now persists immediately instead of living only
+  in memory until an unrelated later save happened to catch it.
+- Cancelling the section color picker (an `input` preview with no following `change`)
+  now reverts the color and pops the phantom undo entry on blur, instead of stranding an
+  unsaved preview color and silently consuming the next real change's undo entry.
+- `quickSetup` no longer pushes a no-op undo entry when every generated section name
+  already exists; the undo label reflects the real count on a partial collision.
+- Removed `resetAll` — confirmed dead code, zero call sites anywhere in the repo.
+- A click on another scene card while an edit form is dirty no longer also toggles that
+  card's selection underneath the discard-confirm dialog.
+- `wordCount` is now normalized (null unless a positive integer, via a shared
+  `normalizeWordCount()`) on both load and import, so a non-integer value from a
+  hand-edited or future-version file can no longer mismatch the Edit form's integer-only
+  `parseWordCount()` and read as dirty the instant the scene opens.
+
+All six verified live (each original issue reproduced first, then confirmed fixed,
+including the legitimate/non-broken paths for each). One tooling note: this preview
+environment cached a stale copy of `state.js` across several reload attempts on the same
+port while verifying the wordCount fix — confirmed via direct `curl` against the running
+server, and by cross-checking against a fresh origin/port, that the server was always
+serving the correct file; this was a browser-preview-tool caching artifact, not a real
+app or server bug.
+
+### Round three (commit `cc531d7`): the last three, analytics/print-only
+- Milestone scene/section counters used one global baseline snapshotted only the first
+  time any project was ever opened, so a second project's count compared against the
+  first project's baseline instead of its own — counts could go negative or skip past
+  1/5 depending on which project happened to be open. Now snapshots a baseline per
+  project the first time each one is opened.
+- A corrupt/non-numeric stored report counter parsed to NaN and got written back as the
+  literal string `"NaN"`, permanently disabling the 3rd-report milestone. Now falls back
+  to 0 when the stored value isn't finite.
+- The matrix report's print-pagination chunked columns to the popup window's current
+  on-screen width instead of the physical printed page's usable width. Now uses a fixed
+  ~720px estimate for a portrait Letter/A4 page.
+
+Verified live: two sample projects opened side by side show independent baselines and
+counts with no cross-contamination; a corrupted report counter recovers to 1 (not "NaN")
+when the real `generateReport()` runs; the matrix report's generated script now contains
+a fixed `pageW` regardless of window size.
+
+This closes out every finding from the third full-app audit (`UPDATE_ROADMAP.md` §8) —
+nothing remains open from it.
+
+### Delegation note
+Mechanical sweeps (CSP/id-reference/global-collision/localStorage-key/build-order
+regression checks) and the first-pass file reviews were delegated to subagents; every
+finding they reported was independently re-verified against source — and reproduced live
+where feasible — before being fixed or logged. Two subagent-reported claims were
+corrected in the process (a report-builder "error" that was the test harness's own wrong
+calling convention, and a garbled storage-key name in an otherwise-correct inventory).
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v3`.
+- The 12 open audit items above (tracked in `UPDATE_ROADMAP.md` §8).
+
+## feature/updates_v3 branch — "Your Data & Backups" messaging rework
+
+User-requested rework of the "Working Across Devices" box on the Projects, Overview, and
+Tutorial pages — the original one-paragraph copy conflated "why backups matter" entirely
+with cross-device syncing, and gave no indication that a project just persists on its own
+without needing to import anything. Iterated on the copy live with the user (several
+rounds) before touching any file, per their request to see it first.
+
+### What changed
+- Retitled the box **"Your Data & Backups"** (from "Working Across Devices") on
+  `overview.html` and `tutorial.html`, since the content is broader than cross-device use.
+- Rewrote the body as a short lead paragraph + three bullets, making explicit: (a)
+  projects persist automatically in this browser — closing the tab and coming back later
+  needs no import, (b) backups matter because browser storage itself is fragile (clearing
+  cache, a browser issue) — not only because of syncing, and (c) export/import and the
+  timestamp-conflict-detection safety net, condensed to one bullet each.
+- **Projects page**: dropped the full banner entirely. Added a small text link — "Learn
+  about your data and backups" — next to the toolbar, opening `tutorial.html#data-backups`
+  in a new tab (an anchor id added to the same box there). First built as a "?" icon
+  button (styled like the existing `#help-btn`); changed to a plain underlined text link
+  after the user flagged that a bare "?" didn't communicate what it was for.
+- Renamed the "Import JSON" button to **"Import project (JSON file)"** for clarity, and
+  fixed the one other place (a Tutorial step) that still referenced the old label.
+- While updating the Tutorial's Scene Flow Chart section for the "Size by Word Count"
+  toggle (which had no user-facing docs since it shipped — see the "Chart segments sized
+  by word count" section above), also fixed a stale "Undo/Redo: up to 10 steps" line
+  (raised to 50 in an earlier fix; the docs never caught up).
+
+### Verification
+Manually verified in-browser: no leftover "Working Across Devices" or "Import JSON" text
+anywhere in the repo (grepped all `.html`/`.js`); the projects-page link correctly opens
+the Tutorial in a new tab scrolled straight to the box; both Overview and Tutorial render
+the new title, lead paragraph, and three bullets correctly; console clean on all three
+pages.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v3`.
+
+## feature/updates_v3 branch — Fourth full-app audit & fixes
+
+A general re-audit of the whole app, not tied to a specific new feature (see
+`UPDATE_ROADMAP.md` §9 for the complete per-item detail; this is the summary). Same split
+as the third audit: peripheral/wiring files (init scripts, HTML, build.js, CSP, GA/
+Formspree) went to a subagent; the core data-path files (state, projects, editor, charts,
+reports, backup) were read directly.
+
+### What was found and fixed
+- **Medium-high:** the Cross-Reference report's print-pagination script — added in the
+  third audit's round three — never actually ran. It was an inline `<script>` written into
+  the report popup, but every page's CSP forbids inline scripts and popups inherit their
+  opener's CSP, so the chunking silently no-opped from the moment CSP landed; the third
+  audit's fix changed the generated *string* correctly but nothing verified it *executed*.
+  Moved the chunking into a same-origin function that runs from the opener against the
+  popup's document after it's written — outside-in DOM access isn't subject to the target
+  document's CSP.
+- **Medium:** export could produce no file at all if its own bookkeeping write hit a full
+  quota — exactly the moment a user is most likely to reach for export. The write-back is
+  now a separate best-effort try/catch; the file download no longer depends on it.
+- **Medium-low:** stored/imported data could already contain the character ↔ custom-POV-
+  name overlap the UI's add/rename guards block going forward — `loadState()` now dedupes
+  it on load.
+- **Low-medium ×2:** import checked scene-id uniqueness but not section-id uniqueness (a
+  colliding pair rendered as one merged section); both scene and section id validation
+  used `typeof === 'number'`, which admits non-integer floats and `NaN` — both now use
+  `Number.isInteger`.
+- **Low-medium:** jumping from a chart segment to its scene on the board hand-rolled chart-
+  view teardown and skipped restoring two toolbar controls (Show Card Details, zoom
+  slider) — now delegates to `closeChartView()` directly so nothing is duplicated or
+  missed.
+- **Low:** the dynamic import-conflict dialog (newer/older/diverged file) wasn't
+  recognized by any of editor.js's modal guards — Alt-shortcuts fired underneath it,
+  Escape ignored it, and it could stack with the discard-confirm dialog. Added a close
+  function and wired it into the same three guard points every other modal already uses.
+
+### How it was verified
+All core-file findings were reproduced live, either by driving the real UI or — for fixes
+where the local preview's browser HTTP cache kept serving pre-fix script versions after
+files were edited on disk (confirmed via direct `curl`/XHR against the running server that
+the *served* files were always correct, the same class of tooling artifact noted in the
+third audit) — by fetching the served source fresh and executing the exact changed
+function against real app state/DOM, which exercises identical logic to a real page load.
+Specifically: chunking verified by generating a real ~4,700px matrix report table and
+confirming the fresh function splits it into 9 correctly-sized print chunks; export
+verified by simulating `QuotaExceededError` on every `setItem` call and confirming the
+download still fires with no blocking alert; the POV-overlap dedupe verified by loading a
+project with the overlap injected and confirming it's gone from `S.povCustomNames` after;
+both import-validation additions verified by importing synthetic files (duplicate section
+ids, a `2.5` scene id) and confirming each is now rejected before anything is written to
+storage; the chart-segment-click fix verified by opening chart view, confirming the two
+controls are hidden, simulating a segment click, and confirming both are restored; the
+import-dialog fix verified by opening a real dialog via `showImportChoiceDialog` and
+confirming the new close function removes it.
+
+### Not yet done
+- Commit `c4e3320` (plus the final-audit follow-ups in the next section) not yet pushed
+  to `origin/feature/updates_v3`; not merged to `main`.
+
+## feature/updates_v3 branch — Final verification audit
+
+Closing pass over the branch (see `UPDATE_ROADMAP.md` §10 for per-item detail): the §9
+fix commit reviewed line-by-line, a subagent regression sweep of the working tree (all
+clean), and all seven §9 fixes re-verified end-to-end against a fresh origin served with
+`Cache-Control: no-store` — eliminating the stale-cached-script tooling artifact the two
+prior rounds had to work around, so this round exercised the real served code through
+the real UI paths throughout.
+
+### Follow-ups found and fixed in this round
+- **Hardening (latent):** §9's `closeImportChoiceDialog()` matched any `.pm-modal.open`
+  — on projects.html that class belongs to the static New/Rename/Delete modals, and
+  `.remove()` would have deleted one permanently if the function were ever reachable
+  there. The dynamic overlay now carries its own `.pm-modal-dynamic` class and every
+  guard targets that (verified live: Rename modal untouched, dynamic dialog still
+  removed).
+- **Dev-only:** the automated test suite (test.html) had never loaded the app scripts it
+  asserts on and had auto-run to 0/17 passed since the day it was added; it now loads
+  the editor.html script set and passes 17/17 with a clean console.
+- **Dev-only:** test-init.js's all-passed banner pointed at `TEST_PLAN_PHASE_4.md`,
+  which doesn't exist in the repo; reworded.
+
+### Not yet done
+- Not pushed to `origin/feature/updates_v3`; not merged to `main`.

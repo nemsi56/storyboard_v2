@@ -34,6 +34,26 @@
   <div id="results"></div>
 </div>
 
+<!-- The suite below is existence/shape checks against the app's real globals,
+     so the app's scripts must actually be loaded first — same set and order
+     as editor.html (minus editor-init.js, whose unguarded getElementById
+     wiring requires the editor DOM). Every page-specific init inside these
+     is behind an element-existence or _page check, so loading them here is
+     side-effect-free beyond theme application and the idempotent data
+     migration. Without these, every test failed with "not defined" — the
+     suite had never actually been able to pass since it was added. -->
+<script src="ga.js"></script>
+<script src="config.js"></script>
+<script src="tracking.js"></script>
+<script src="state.js"></script>
+<script src="backup.js"></script>
+<script src="reports.js"></script>
+<script src="ui.js"></script>
+<script src="charts.js"></script>
+<script src="editor.js"></script>
+<script src="projects.js"></script>
+<script src="main.js"></script>
+<script src="app.js"></script>
 <script src="test-init.js"></script>
 
 

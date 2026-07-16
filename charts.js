@@ -4,19 +4,27 @@
 const SVGNS = 'http://www.w3.org/2000/svg';
 let chartMode = false;          // is chart view active
 let chartType = 'snake';        // 'snake' | 'circle'
+let showWordCount = false;      // size segments proportionally by scene.wordCount
 let chartResizeTimer = null;
 let chartLastSize = '';         // last rendered chart-scroll size, "WxH"
 const CHART_PAD = 12;           // must match #chart-canvas padding in styles.css
 const SNAKE_SEG_THICKNESS = 34; // stroke width of the snake row "tube" (see addSegments call below)
+const CIRCLE_SEG_THICKNESS = 30;
 const UNASSIGNED_SEC_ID = 'unassigned';
+// Avg wordCount among scenes with one, from the most recently computed layout —
+// stashed here so the tooltip (which only gets a single scene, not the whole
+// layout) can label an averaged-in scene as "~N words (estimated)".
+let lastAvgWordCount = null;
 
 if (document.getElementById('chart-host')) {
 
   (function initChartPrefs() {
     const p = loadGlobalPrefs();
     if (p.chartType === 'snake' || p.chartType === 'circle') chartType = p.chartType;
+    if (typeof p.showWordCount === 'boolean') showWordCount = p.showWordCount;
     document.getElementById('chart-type-snake').classList.toggle('on', chartType === 'snake');
     document.getElementById('chart-type-circle').classList.toggle('on', chartType === 'circle');
+    document.getElementById('chart-wc-toggle').classList.toggle('on', showWordCount);
   })();
 
   // Re-render on any chart-area size change. The ResizeObserver catches panel
@@ -76,6 +84,12 @@ function setChartType(type) {
   const p = loadGlobalPrefs(); p.chartType = type; saveGlobalPrefs(p);
   if (chartMode) renderChart();
 }
+function toggleShowWordCount() {
+  showWordCount = !showWordCount;
+  document.getElementById('chart-wc-toggle').classList.toggle('on', showWordCount);
+  const p = loadGlobalPrefs(); p.showWordCount = showWordCount; saveGlobalPrefs(p);
+  if (chartMode) renderChart();
+}
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
 function orderedScenes() {
@@ -115,7 +129,7 @@ function renderChart() {
   chartLastSize = scrollEl.clientWidth + 'x' + scrollEl.clientHeight;
   const scenes = orderedScenes();
   updateChartStatus(scenes);
-  updateChartLegend();
+  updateChartLegend(scenes);
   if (!S.scenes.length) { renderChartEmpty(canvas); return; }
   if (chartType === 'circle') buildCircleChart(canvas, scenes);
   else buildSnakeChart(canvas, scenes);
@@ -164,20 +178,38 @@ function chartLegendSections() {
   return items;
 }
 
-function updateChartLegend() {
+// True only when the set is a genuine mix — some scenes carry a real wordCount
+// and some don't — so the average-fallback (and its tick marks) is actually in
+// play. An all-or-nothing set never triggers it: with none set, sizing is just
+// the plain uniform layout; with all set, nothing is estimated.
+function sceneSetHasEstimated(scenes) {
+  if (!showWordCount) return false;
+  return scenes.some(s => s.wordCount > 0) && scenes.some(s => !(s.wordCount > 0));
+}
+
+function updateChartLegend(scenes) {
   const el = document.getElementById('chart-legend'); if (!el) return;
   el.innerHTML = '';
-  if (chartType !== 'snake') return; // circle labels its sections directly on the pie
-  chartLegendSections().forEach((sec, i) => {
-    if (i > 0) { const sep = document.createElement('span'); sep.className = 'chart-legend-sep'; sep.textContent = '·'; el.appendChild(sep); }
-    const item = document.createElement('span'); item.className = 'chart-legend-item'; item.dataset.secId = sec.id;
-    const letterEl = document.createElement('span'); letterEl.className = 'chart-legend-letter'; letterEl.textContent = sectionLetter(i);
-    const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = sec.name;
-    item.appendChild(letterEl); item.appendChild(nameEl);
-    item.addEventListener('mouseenter', () => highlightSecMarker(sec.id, true));
-    item.addEventListener('mouseleave', () => highlightSecMarker(sec.id, false));
+  if (chartType === 'snake') { // circle labels its sections directly on the pie
+    chartLegendSections().forEach((sec, i) => {
+      if (i > 0) { const sep = document.createElement('span'); sep.className = 'chart-legend-sep'; sep.textContent = '·'; el.appendChild(sep); }
+      const item = document.createElement('span'); item.className = 'chart-legend-item'; item.dataset.secId = sec.id;
+      const letterEl = document.createElement('span'); letterEl.className = 'chart-legend-letter'; letterEl.textContent = sectionLetter(i);
+      const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = sec.name;
+      item.appendChild(letterEl); item.appendChild(nameEl);
+      item.addEventListener('mouseenter', () => highlightSecMarker(sec.id, true));
+      item.addEventListener('mouseleave', () => highlightSecMarker(sec.id, false));
+      el.appendChild(item);
+    });
+  }
+  if (sceneSetHasEstimated(scenes)) {
+    if (el.children.length) { const sep = document.createElement('span'); sep.className = 'chart-legend-sep'; sep.textContent = '·'; el.appendChild(sep); }
+    const item = document.createElement('span'); item.className = 'chart-legend-item chart-legend-est';
+    const tickEl = document.createElement('span'); tickEl.className = 'chart-legend-tick';
+    const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = 'Estimated (no word count)';
+    item.appendChild(tickEl); item.appendChild(nameEl);
     el.appendChild(item);
-  });
+  }
 }
 function highlightSecMarker(sectionId, on) {
   document.querySelectorAll('.chart-sec-marker[data-sec-id="' + sectionId + '"]').forEach(m => m.classList.toggle('chart-sec-marker-hl', on));
@@ -185,6 +217,34 @@ function highlightSecMarker(sectionId, on) {
 function highlightLegendItem(sectionId, on) {
   const el = document.querySelector('.chart-legend-item[data-sec-id="' + sectionId + '"]');
   if (el) el.classList.toggle('chart-legend-hl', on);
+}
+
+// ── PROPORTIONAL LAYOUT (by word count) ─────────────────────────────────────────
+// Normally every scene gets an equal share of the path. When showWordCount is on,
+// each scene's share is weighted by scene.wordCount instead; scenes with no
+// wordCount (0 counts as unset too) fall back to the average of scenes that do
+// have one, so a handful of missing values render as "typical size" rather than
+// collapsing to invisible slivers. If *no* scene in the set has a wordCount, every
+// weight is 1 and this reduces to the original even split.
+function computeSceneLayout(scenes, total) {
+  const N = scenes.length;
+  if (!showWordCount) {
+    lastAvgWordCount = null;
+    const segLen = total / N;
+    return scenes.map((scene, i) => ({ scene, len: segLen, offset: i * segLen, estimated: false }));
+  }
+  const known = scenes.filter(s => s.wordCount > 0).map(s => s.wordCount);
+  const avg = known.length ? known.reduce((a, b) => a + b, 0) / known.length : null;
+  lastAvgWordCount = avg;
+  const weights = scenes.map(s => (s.wordCount > 0) ? s.wordCount : (avg || 1));
+  const sumW = weights.reduce((a, b) => a + b, 0) || 1;
+  let cum = 0;
+  return scenes.map((scene, i) => {
+    const len = total * weights[i] / sumW;
+    const item = { scene, len, offset: cum, estimated: avg !== null && !(scene.wordCount > 0) };
+    cum += len;
+    return item;
+  });
 }
 
 // ── SEGMENT / NUMBER / TICK PRIMITIVES (shared snake + circle) ────────────────
@@ -198,15 +258,14 @@ function applySegColor(clone, scene) {
   }
 }
 
-function addSegments(container, centerline, scenes, total, thickness) {
-  const N = scenes.length, segLen = total / N;
-  const GAP = Math.min(3, segLen / 3); // keep the dash length positive when segments get tiny
-  scenes.forEach((scene, i) => {
+function addSegments(container, centerline, layout, total, thickness) {
+  layout.forEach(({ scene, len, offset }) => {
+    const GAP = Math.min(3, len / 3); // keep the dash length positive when segments get tiny
     const clone = centerline.cloneNode(false);
     clone.classList.add('chart-seg');
     clone.dataset.sceneId = scene.id;
-    clone.setAttribute('stroke-dasharray', (segLen - GAP) + ' ' + (total - segLen + GAP));
-    clone.setAttribute('stroke-dashoffset', String(-(i * segLen + GAP / 2)));
+    clone.setAttribute('stroke-dasharray', (len - GAP) + ' ' + (total - len + GAP));
+    clone.setAttribute('stroke-dashoffset', String(-(offset + GAP / 2)));
     clone.setAttribute('fill', 'none');
     clone.setAttribute('stroke-width', thickness);
     clone.setAttribute('stroke-linecap', 'butt');
@@ -218,6 +277,23 @@ function addSegments(container, centerline, scenes, total, thickness) {
     clone.addEventListener('click', () => onSegClick(scene));
     container.appendChild(clone);
   });
+}
+// Short red accent mark just past an averaged-in ("estimated") segment's own
+// scene number — deliberately small and off to the side rather than a
+// full-width divider crossing the ribbon, so it reads as an annotation on the
+// number instead of competing with the segment boundaries themselves.
+function drawEstimatedTick(container, x, y, nx, ny, sceneId) {
+  const near = 9, far = 16; // px out from the number position, along the normal
+  const line = document.createElementNS(SVGNS, 'line');
+  line.setAttribute('x1', x + nx * near); line.setAttribute('y1', y + ny * near);
+  line.setAttribute('x2', x + nx * far); line.setAttribute('y2', y + ny * far);
+  line.setAttribute('stroke', 'var(--rd)');
+  line.setAttribute('stroke-width', '2');
+  line.setAttribute('stroke-linecap', 'round');
+  line.classList.add('chart-seg-tick');
+  line.dataset.sceneId = sceneId;
+  line.style.pointerEvents = 'none';
+  container.appendChild(line);
 }
 // The hover darkening on a segment (see .chart-seg:hover in styles.css) can
 // swallow the resting --sub/--ontx number color it's drawn under, so swap the
@@ -319,19 +395,20 @@ function buildSnakeChart(canvas, scenes) {
   centerline.setAttribute('fill', 'none');
   svg.appendChild(centerline);
   const total = centerline.getTotalLength();
-  addSegments(svg, centerline, scenes, total, SNAKE_SEG_THICKNESS);
-  addSnakeNumbers(svg, centerline, scenes, total);
-  addSnakeSectionMarkers(svg, centerline, scenes, total, W);
+  const layout = computeSceneLayout(scenes, total);
+  addSegments(svg, centerline, layout, total, SNAKE_SEG_THICKNESS);
+  addSnakeNumbers(svg, centerline, layout, total);
+  addSnakeSectionMarkers(svg, centerline, layout, total, W);
+  if (showWordCount) addSnakeEstimatedTicks(svg, centerline, layout, total);
 }
 
-function addSnakeNumbers(svg, centerline, scenes, total) {
-  const N = scenes.length, segLen = total / N;
-  if (segLen < 26) return;
+function addSnakeNumbers(svg, centerline, layout, total) {
   // Built once for this pass instead of each scene independently rebuilding
   // the same ordered scene list via sceneDisplayNum().
   const numMap = buildSceneNumMap();
-  scenes.forEach((scene, i) => {
-    const mid = centerline.getPointAtLength(i * segLen + segLen / 2);
+  layout.forEach(({ scene, len, offset }) => {
+    if (len < 26) return; // segment too small on screen to fit a number legibly
+    const mid = centerline.getPointAtLength(offset + len / 2);
     const txt = document.createElementNS(SVGNS, 'text');
     txt.setAttribute('x', mid.x); txt.setAttribute('y', mid.y);
     txt.setAttribute('text-anchor', 'middle');
@@ -346,18 +423,17 @@ function addSnakeNumbers(svg, centerline, scenes, total) {
   });
 }
 
-function addSnakeSectionMarkers(svg, centerline, scenes, total, W) {
+function addSnakeSectionMarkers(svg, centerline, layout, total, W) {
   if (!S.sections.length) return;
-  const N = scenes.length, segLen = total / N;
   const validSecIds = new Set(S.sections.map(s => s.id));
-  const offset = hasUnassignedScenes() ? 1 : 0; // Unassigned (if present) takes letter A
-  const secIndexById = new Map(S.sections.map((s, i) => [s.id, i + offset]));
+  const letterOffset = hasUnassignedScenes() ? 1 : 0; // Unassigned (if present) takes letter A
+  const secIndexById = new Map(S.sections.map((s, i) => [s.id, i + letterOffset]));
   const pad = 14;
   let lastSec;
-  scenes.forEach((scene, i) => {
+  layout.forEach(({ scene, offset }, i) => {
     const secId = validSecIds.has(scene.sectionId) ? scene.sectionId : null;
     if (i > 0 && secId === lastSec) { lastSec = secId; return; }
-    const len = i * segLen;
+    const len = offset;
     const p0 = centerline.getPointAtLength(Math.max(0, len - 0.5));
     const p1 = centerline.getPointAtLength(Math.min(total, len + 0.5));
     const dx = p1.x - p0.x, dy = p1.y - p0.y, dist = Math.hypot(dx, dy) || 1;
@@ -369,6 +445,22 @@ function addSnakeSectionMarkers(svg, centerline, scenes, total, W) {
     const idx = secId !== null ? secIndexById.get(secId) : 0;
     drawSectionMarkerAt(svg, mx, my, markerId, idx);
     lastSec = secId;
+  });
+}
+
+function addSnakeEstimatedTicks(svg, centerline, layout, total) {
+  layout.forEach(({ scene, offset, len, estimated }) => {
+    if (!estimated) return;
+    // Same midpoint the scene number is drawn at (addSnakeNumbers) — the tick
+    // is pushed outward from there along the normal, so it lands just past
+    // the digit instead of on top of it.
+    const mid = offset + len / 2;
+    const p0 = centerline.getPointAtLength(Math.max(0, mid - 0.5));
+    const p1 = centerline.getPointAtLength(Math.min(total, mid + 0.5));
+    const dx = p1.x - p0.x, dy = p1.y - p0.y, dist = Math.hypot(dx, dy) || 1;
+    const nx = -dy / dist, ny = dx / dist;
+    const p = centerline.getPointAtLength(mid);
+    drawEstimatedTick(svg, p.x, p.y, nx, ny, scene.id);
   });
 }
 
@@ -397,20 +489,20 @@ function buildCircleChart(canvas, scenes) {
   centerline.setAttribute('stroke', 'none'); centerline.setAttribute('fill', 'none');
   g.appendChild(centerline);
   const total = centerline.getTotalLength();
-  addSegments(g, centerline, scenes, total, 30);
-  addCircleNumbers(svg, scenes, cx, cy, R);
-  drawCirclePie(svg, scenes, cx, cy, R);
+  const layout = computeSceneLayout(scenes, total);
+  addSegments(g, centerline, layout, total, CIRCLE_SEG_THICKNESS);
+  addCircleNumbers(svg, layout, cx, cy, R, total);
+  drawCirclePie(svg, layout, cx, cy, R, total);
+  if (showWordCount) addCircleEstimatedTicks(svg, layout, cx, cy, R, total);
 }
 
-function addCircleNumbers(svg, scenes, cx, cy, R) {
-  const N = scenes.length;
-  const segLen = (2 * Math.PI * R) / N;
-  if (segLen < 26) return;
+function addCircleNumbers(svg, layout, cx, cy, R, total) {
   // Built once for this pass instead of each scene independently rebuilding
   // the same ordered scene list via sceneDisplayNum().
   const numMap = buildSceneNumMap();
-  scenes.forEach((scene, i) => {
-    const angleDeg = -90 + (i + 0.5) * 360 / N;
+  layout.forEach(({ scene, len, offset }) => {
+    if (len < 26) return; // segment too small on screen to fit a number legibly
+    const angleDeg = -90 + (offset + len / 2) / total * 360;
     const rad = angleDeg * Math.PI / 180;
     const x = cx + R * Math.cos(rad), y = cy + R * Math.sin(rad);
     const txt = document.createElementNS(SVGNS, 'text');
@@ -424,6 +516,20 @@ function addCircleNumbers(svg, scenes, cx, cy, R) {
     txt.style.pointerEvents = 'none';
     txt.textContent = String(numMap.get(scene.id) ?? 1);
     svg.appendChild(txt);
+  });
+}
+
+function addCircleEstimatedTicks(svg, layout, cx, cy, R, total) {
+  layout.forEach(({ scene, offset, len, estimated }) => {
+    if (!estimated) return;
+    // Same midpoint the scene number is drawn at (addCircleNumbers).
+    const angleDeg = -90 + (offset + len / 2) / total * 360;
+    const p = circlePoint(cx, cy, R, angleDeg);
+    const rad = angleDeg * Math.PI / 180;
+    // On a circle the direction crossing the ring (perpendicular to the tangent)
+    // is simply the radial direction, so no separate tangent-sampling is needed
+    // here the way addSnakeEstimatedTicks needs it for an arbitrary path.
+    drawEstimatedTick(svg, p.x, p.y, Math.cos(rad), Math.sin(rad), scene.id);
   });
 }
 
@@ -477,17 +583,16 @@ function drawPieWedge(svg, cx, cy, outerR, startDeg, endDeg, sec) {
     svg.appendChild(txt);
   }
 }
-function drawCirclePie(svg, scenes, cx, cy, R) {
+function drawCirclePie(svg, layout, cx, cy, R, total) {
   if (!S.sections.length) return;
-  const N = scenes.length;
   const validSecIds = new Set(S.sections.map(s => s.id));
   const outerR = R - 20;
   const runs = [];
-  scenes.forEach((scene, i) => {
+  layout.forEach(({ scene, offset, len }) => {
     const secId = validSecIds.has(scene.sectionId) ? scene.sectionId : null;
     const last = runs[runs.length - 1];
-    if (last && last.secId === secId) last.count++;
-    else runs.push({ secId, start: i, count: 1 });
+    if (last && last.secId === secId) last.end = offset + len;
+    else runs.push({ secId, start: offset, end: offset + len });
   });
   // Skip only when there's fundamentally nothing to ever distinguish (one section,
   // no unassigned scenes anywhere). Don't key this off `runs.length` — a section
@@ -499,14 +604,20 @@ function drawCirclePie(svg, scenes, cx, cy, R) {
       ? { id: UNASSIGNED_SEC_ID, name: 'Unassigned' }
       : S.sections.find(s => s.id === run.secId);
     if (!sec) return;
-    const startDeg = -90 + run.start * 360 / N;
+    const startDeg = -90 + run.start / total * 360;
     // A full 360° wedge has coincident arc endpoints and renders as nothing —
     // clamp just short so the path stays valid (hairline gap marks the start).
-    const endDeg = Math.min(-90 + (run.start + run.count) * 360 / N, startDeg + 359.9);
+    const endDeg = Math.min(-90 + run.end / total * 360, startDeg + 359.9);
     drawPieWedge(svg, cx, cy, outerR, startDeg, endDeg, sec);
   });
 }
 // ── TOOLTIP ────────────────────────────────────────────────────────────────────
+function wordCountTipLine(scene) {
+  if (!showWordCount) return null;
+  if (scene.wordCount > 0) return scene.wordCount.toLocaleString() + ' words';
+  if (lastAvgWordCount !== null) return '~' + Math.round(lastAvgWordCount).toLocaleString() + ' words (estimated)';
+  return null;
+}
 function showChartTip(e, scene) {
   const tip = document.getElementById('chart-tip');
   tip.innerHTML = '';
@@ -515,6 +626,8 @@ function showChartTip(e, scene) {
   tip.appendChild(t1);
   const secName = sceneSectionName(scene);
   if (secName) { const t2 = document.createElement('div'); t2.className = 'chart-tip-sec'; t2.textContent = secName; tip.appendChild(t2); }
+  const wcLine = wordCountTipLine(scene);
+  if (wcLine) { const t4 = document.createElement('div'); t4.className = 'chart-tip-wc'; t4.textContent = wcLine; tip.appendChild(t4); }
   if (scene.summary) { const t3 = document.createElement('div'); t3.className = 'chart-tip-sum'; t3.textContent = scene.summary; tip.appendChild(t3); }
   tip.style.display = 'block';
   positionChartTip(e);
@@ -545,12 +658,13 @@ function hideChartTip() {
 
 // ── CLICK: JUMP TO BOARD ───────────────────────────────────────────────────────
 function onSegClick(scene) {
-  chartMode = false;
-  document.getElementById('chart-host').style.display = 'none';
-  document.getElementById('sbscrl').style.display = '';
-  setChartMenuLabel();
+  // Set the selection before tearing down chart view so closeChartView()'s
+  // own renderBoard() already reflects it — avoids hand-rolling its teardown
+  // a second time here, which previously skipped restoring det-ck-wrap/
+  // scalew-wrap (the "Show Card Details" checkbox and zoom slider), leaving
+  // them missing from the toolbar until chart view was toggled again.
   S.selIds.clear(); S.selIds.add(scene.id);
-  renderBoard();
+  closeChartView();
   const card = document.querySelector('.sc[data-id="' + scene.id + '"]');
   if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 }
@@ -606,6 +720,16 @@ function printChart() {
           (chartType === 'snake' ? '<b>' + sectionLetter(i) + '</b> — ' : '') + rptEsc(sec.name)
         ).join(' &nbsp;·&nbsp; ')
       + '</div>';
+  }
+  // The on-screen legend explains the red "estimated" tick (see
+  // updateChartLegend/sceneSetHasEstimated) — without this, a printed chart
+  // with proportional sizing on shows unexplained red marks next to some
+  // scene numbers.
+  if (sceneSetHasEstimated(orderedScenes())) {
+    legendHtml += '<div style="font-size:11px;color:#555;margin-bottom:12px">'
+      + '<span style="display:inline-block;width:2px;height:11px;background:#dc2626;'
+      + 'transform:rotate(20deg);margin-right:6px;vertical-align:middle"></span>'
+      + 'Estimated (no word count)</div>';
   }
   const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + titleEsc + '</title>'
     + '<style>*{box-sizing:border-box;margin:0;padding:0}body{background:#fff;padding:24px;'

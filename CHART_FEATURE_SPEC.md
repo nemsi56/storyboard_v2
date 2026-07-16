@@ -337,3 +337,30 @@ a filter.
 - Don't persist `chartMode` — reopening a project should always start in board view.
 - The board's empty-state element `#sbemp` is toggled inside `renderBoard()`; when
   entering chart mode hide it explicitly or it can bleed through on empty projects.
+
+## 14. Addendum (`feature/updates_v3`): proportional sizing by word count
+
+Added after the rest of this spec was implemented — a "Show relative word count" toggle
+in `#chart-toolbar` (persisted in global prefs like `chartType`) that, when on, sizes each
+scene's segment proportionally to `scene.wordCount` instead of splitting the path evenly.
+
+- **Layout:** `computeSceneLayout(scenes, total)` in `charts.js` is the single source of
+  truth for per-scene `{len, offset}` along the centerline, replacing the old `total/N`
+  uniform math everywhere it appeared (`addSegments`, `addSnakeNumbers`,
+  `addSnakeSectionMarkers`, `addCircleNumbers`, `drawCirclePie`). When the toggle is off,
+  it returns the original even split unchanged.
+- **Missing data:** a scene with no `wordCount` (0 counts as unset too) is weighted at the
+  average of scenes that DO have one — not a fixed default, and not a minimum-size sliver
+  — so a handful of missing values render as "typical size" instead of distorting the
+  chart or collapsing to something unclickable. If *no* scene in the set has a wordCount,
+  every weight is 1 and the layout is identical to the toggle-off case.
+- **"Estimated" indicator:** an averaged-in scene gets a short red tick (`var(--rd)`)
+  positioned just outward from its own scene number — not a tick spanning the ribbon's
+  full width, which was tried first and read as a spurious divider. Tooltip shows the real
+  `wordCount` or "~N words (estimated)"; a legend entry ("Estimated (no word count)")
+  appears only when the current scene set is a genuine mix of known and unknown (all-known
+  or all-unknown sets show nothing extra, since there's nothing to distinguish).
+- **Circle-chart specifics:** the ring's dash offsets, pie-wedge run boundaries, and number
+  placement all switched from index-based (`i * 360/N`) to cumulative-offset-based
+  (`offset / total * 360`) degree math to stay consistent with the new variable segment
+  lengths.

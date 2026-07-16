@@ -67,7 +67,14 @@ function confirmAdd() {
   const name = inp.value.trim();
   const notes = document.getElementById('ap-notes').value.trim();
   if (!name) { inp.focus(); return; }
-  if (S[apSec].some(x => x.name === name)) { inp.select(); return; }
+  // A character name and a custom POV name share one combined list in every
+  // POV dropdown (see povNames()) — colliding would render two identical
+  // checkboxes and let renderPovLibSec's custom-name edit/delete handlers
+  // attach to what's actually a character row. confirmPovAdd already guards
+  // this in the other direction; mirror it here.
+  if (S[apSec].some(x => x.name === name) || (apSec === 'characters' && S.povCustomNames.includes(name))) {
+    inp.select(); return;
+  }
   pushHistory('Add ' + SINGULAR[apSec] + ' "' + name + '"');
   trackItemAdded(apSec);
   S[apSec].push({ name, notes });
@@ -123,7 +130,13 @@ function closeAllMenus() {
   document.querySelectorAll('#menu-bar .mi.open').forEach(m => m.classList.remove('open'));
 }
 function hoverMenu(name) {
-  if (document.querySelector('#menu-bar .mi.open')) toggleMenu(name);
+  // Only switch to a *different* menu while one is open (the mouse-driven
+  // hover-to-switch behavior this exists for). Without this check, drifting
+  // the pointer off an open dropdown and back across its own title re-fires
+  // toggleMenu on the menu that's already open, which reads as "close" since
+  // toggleMenu always closes-then-conditionally-reopens.
+  const openMenu = document.querySelector('#menu-bar .mi.open');
+  if (openMenu && openMenu.id !== 'mi-' + name) toggleMenu(name);
 }
 function updateThemeMenuState() {
   const current = document.documentElement.dataset.theme || 'ivory';
@@ -175,6 +188,11 @@ function toggleAllPanels() {
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
 function menuNewScene() {
   closeAllMenus();
+  // A pending insert-zone anchor is only meant for the very next Add Scene —
+  // entering the New Scene form through the menu instead is a fresh, untargeted
+  // add and must not silently splice into wherever an earlier insert-zone click
+  // (possibly long since abandoned) pointed.
+  pendingInsert = null;
   if (document.getElementById('cp').classList.contains('collapsed')) togglePanel('cp');
   switchTab('new');
   setNewSceneLive(false);
@@ -295,7 +313,10 @@ function saveLibEdit() {
   const newName = document.getElementById('lib-edit-name').value.trim();
   const newNotes = document.getElementById('lib-edit-notes').value.trim();
   if (!newName) { document.getElementById('lib-edit-name').focus(); return; }
-  if (newName !== oldName && S[sec].some((x, i) => i !== libEditIdx && x.name === newName)) {
+  // Same collision as confirmAdd: renaming a character onto an existing
+  // custom POV name would create the same characters/povCustomNames overlap.
+  const povCollision = sec === 'characters' && S.povCustomNames.includes(newName);
+  if (newName !== oldName && (povCollision || S[sec].some((x, i) => i !== libEditIdx && x.name === newName))) {
     document.getElementById('lib-edit-name').select(); return;
   }
   pushHistory('Edit "' + oldName + '"');
@@ -421,23 +442,6 @@ function sceneMatchesLib(scene) {
   return allSel.some(({ key, v }) => (scene[key] || []).includes(v));
 }
 
-// ── RESET ────────────────────────────────────────────────────────────────────
-function resetAll() {
-  if (!confirm('Reset everything?\n\nAll scenes and library items will be permanently deleted.')) return;
-  S.characters = []; S.locations = []; S.themes = []; S.misc = [];
-  S.scenes = []; S.nextId = 1; S.andOr = 'OR';
-  S.sections = []; S.nextSecId = 1;
-  S.povCustomNames = [];
-  SECS.forEach(({ key }) => S.selections[key].clear());
-  S.selIds.clear(); S.editingId = null;
-  hist.past = []; hist.future = [];
-  clearSearch();
-  syncAndOrUI();
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovCk('sc', []); renderPovCk('ed', []); renderBoard(); updateLibClearBtn(); updateUndoRedo();
-  if (currentProjectId) saveState();
-  else localStorage.removeItem(STORAGE_KEY);
-}
-
 // ── SCENE ACTIONS ─────────────────────────────────────────────────────────────
 let pendingInsert = null; // { afterId: sceneId|null (null=prepend), sectionId: number|null }
 
@@ -461,6 +465,16 @@ function addInsertZone(container, afterSceneId, sectionId) {
   container.appendChild(zone);
 }
 
+// The <input type="number" min="0"> attribute doesn't block a typed/pasted
+// negative value (e.g. "-500") from reaching .value, so parseInt alone let
+// negative word counts through — they rendered as "unset" in charts (which
+// only ever check `> 0`) but persisted and round-tripped through export as
+// invisible bad data. Clamp to null instead of silently keeping the sign.
+function parseWordCount(value) {
+  const n = parseInt(value);
+  return (Number.isFinite(n) && n > 0) ? n : null;
+}
+
 function addScene() {
   const titleEl = document.getElementById('sc-title'), errEl = document.getElementById('scerr');
   const title = titleEl.value.trim(), summary = document.getElementById('sc-summary').value.trim();
@@ -471,7 +485,7 @@ function addScene() {
   const row = {};
   SECS.forEach(({ key }) => { row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => c.value); });
   const sectionId = S.sections.length ? (parseInt(document.getElementById('sc-section').value) || null) : null;
-  const wordCount = parseInt(document.getElementById('sc-wordcount').value) || null;
+  const wordCount = parseWordCount(document.getElementById('sc-wordcount').value);
   const povs = ckCurrentlyChecked('sc', 'povs');
   pushHistory('Add scene "' + truncStr(title, 22) + '"');
   trackSceneAdded();
@@ -558,6 +572,10 @@ function clearCardSel() {
 // ── EDIT MODE ─────────────────────────────────────────────────────────────────
 function openEditMode(id) {
   const sc = S.scenes.find(s => s.id === id); if (!sc) return;
+  // Same reasoning as menuNewScene: editing an existing scene is an unrelated
+  // detour from whatever insert-zone anchor might still be pending, and must
+  // not let a later, unrelated Add Scene splice into that stale position.
+  pendingInsert = null;
   // Auto-open center panel if collapsed
   if (document.getElementById('cp').classList.contains('collapsed')) togglePanel('cp');
   S.editingId = id;
@@ -591,7 +609,7 @@ function isEditFormDirty() {
   if (document.getElementById('ed-title').value.trim() !== sc.title.trim()) return true;
   if (document.getElementById('ed-summary').value.trim() !== (sc.summary || '')) return true;
   if (document.getElementById('ed-notes').value.trim() !== (sc.notes || '')) return true;
-  if ((parseInt(document.getElementById('ed-wordcount').value) || null) !== (sc.wordCount || null)) return true;
+  if (parseWordCount(document.getElementById('ed-wordcount').value) !== (sc.wordCount || null)) return true;
   if (S.sections.length) {
     const sectionId = parseInt(document.getElementById('ed-section').value) || null;
     if (sectionId !== (sc.sectionId ?? null)) return true;
@@ -673,7 +691,7 @@ function confirmSaveEdit() {
   pushHistory('Edit scene "' + truncStr(sc.title, 22) + '"');
   const oldSecId = sc.sectionId ?? null;
   sc.title = title; sc.summary = summary; sc.notes = document.getElementById('ed-notes').value.trim();
-  sc.wordCount = parseInt(document.getElementById('ed-wordcount').value) || null;
+  sc.wordCount = parseWordCount(document.getElementById('ed-wordcount').value);
   sc.povs = ckCurrentlyChecked('ed', 'povs');
   if (S.sections.length) sc.sectionId = sectionId;
   SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value); });
@@ -1157,12 +1175,19 @@ function renderPovLibSec() {
 // since removed from the library, or a name saved before this feature
 // existed) is folded into S.povCustomNames on the spot, so it becomes a
 // normal, consistently-reusable option instead of a dead/lost selection.
+// This can run on a pure "view" path (opening Edit mode on an old scene, with
+// no mutation the caller itself saves), so persist it here rather than
+// leaving the fold live-only-in-memory until some unrelated later edit —
+// otherwise a reload right after opening such a scene silently drops it.
 function renderPovCk(prefix, checked=[]) {
+  let foldedNew = false;
   checked.forEach(name => {
     if (!S.characters.some(c => c.name === name) && !S.povCustomNames.includes(name)) {
       S.povCustomNames.push(name);
+      foldedNew = true;
     }
   });
+  if (foldedNew) { recordDataEdit(); saveState(); }
   const wrap = document.getElementById(prefix + '-povs-wrap');
   const box  = document.getElementById(prefix + '-povs'); if (!box) return;
   box.innerHTML = '';
@@ -1359,14 +1384,23 @@ function quickSetup() {
   const n   = Math.min(20, Math.max(1, parseInt(document.getElementById('qs-n').value) || 3));
   const pfx = (document.getElementById('qs-pfx').value.trim() || 'Section');
   if (!confirm(`Create ${n} sections: "${pfx} 1" through "${pfx} ${n}"?`)) return;
-  pushHistory('Quick setup: ' + n + ' sections');
+  // Figure out what would actually be created before touching history/state —
+  // if every generated name already exists, there's nothing to do, and
+  // pushing a history entry for a no-op edit would give undo a phantom step
+  // that restores an already-current state and wipes the redo stack for
+  // nothing.
+  const existingLower = new Set(S.sections.map(s => s.name.toLowerCase()));
+  const toAdd = [];
   for (let i = 1; i <= n; i++) {
     const name = pfx + ' ' + i;
-    if (!S.sections.some(s => s.name.toLowerCase() === name.toLowerCase())) {
-      const color = SEC_COLORS[S.sections.length % SEC_COLORS.length];
-      S.sections.push({ id: S.nextSecId++, name, color });
-    }
+    if (!existingLower.has(name.toLowerCase())) toAdd.push(name);
   }
+  if (!toAdd.length) return;
+  pushHistory('Quick setup: ' + toAdd.length + ' section' + (toAdd.length !== 1 ? 's' : ''));
+  toAdd.forEach(name => {
+    const color = SEC_COLORS[S.sections.length % SEC_COLORS.length];
+    S.sections.push({ id: S.nextSecId++, name, color });
+  });
   renderSecPanel(); renderSectionSelects(); renderBoard();
   recordDataEdit();
   saveState();
@@ -1409,14 +1443,31 @@ function renderSecPanel() {
     // snapshotting there would capture the post-change color and make undo a
     // no-op.
     let colorHistPushed = false;
+    let colorOrig = null;
     colorPick.addEventListener('input', e => {
       const s = S.sections.find(x => x.id === sec.id); if (!s) return;
-      if (!colorHistPushed) { pushHistory('Change section color'); colorHistPushed = true; }
+      if (!colorHistPushed) { colorOrig = s.color; pushHistory('Change section color'); colorHistPushed = true; }
       s.color = e.target.value; renderBoard();
     });
     colorPick.addEventListener('change', e => {
       colorHistPushed = false;
       colorSection(sec.id, e.target.value); renderBoard();
+    });
+    // If the dialog is dismissed without a 'change' (cancelled, or closed some
+    // other way the browser doesn't fire 'change' for), 'input' has already
+    // live-mutated sec.color and pushed a history entry, but nothing was ever
+    // saved — leaving the preview color on screen (a reload would revert it)
+    // and a stale history entry that would make the next real color change
+    // push no entry of its own, so undo would jump back two changes at once.
+    // Revert both on blur if 'change' never followed.
+    colorPick.addEventListener('blur', () => {
+      if (!colorHistPushed) return;
+      colorHistPushed = false;
+      const s = S.sections.find(x => x.id === sec.id);
+      if (s) s.color = colorOrig;
+      hist.past.pop();
+      updateUndoRedo();
+      renderBoard();
     });
     const nameEl = document.createElement('span'); nameEl.className = 'sec-li-name'; nameEl.textContent = sec.name;
     nameEl.addEventListener('click', () => startSecRename(li, sec.id));
@@ -1738,7 +1789,15 @@ document.addEventListener('mousedown', e => {
   const newLive    = tabNew.classList.contains('live');
   if (!editActive && !newLive) return;
   if (e.target.closest('#cp')) return;
-  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open, #pov-add-modal.open')) return;
+  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open, #pov-add-modal.open, .pm-modal-dynamic.open')) return;
+  // If this mousedown landed on a scene card, onCardDown already armed ptr
+  // (ptr.down/ptr.id) expecting a matching mouseup to toggle that card's
+  // selection. This handler firing means the click is actually being treated
+  // as "outside the panel," about to cancel the edit or open the discard
+  // confirm — disarm ptr so the pending mouseup (which will land on the
+  // confirm dialog, not the card) doesn't also toggle the card's selection
+  // underneath it.
+  ptr.down = false; ptr.dragging = false; ptr.id = null;
   const editDirty = editActive && isEditFormDirty();
   if (!editDirty && !newLive) {
     if (editActive) cancelEdit();
@@ -1752,7 +1811,12 @@ document.addEventListener('mousedown', e => {
 // New Scene form beneath an open "delete this?" confirmation).
 const MODAL_IDS = ['discard-cfm-modal', 'modal', 'add-popup', 'lib-edit-modal', 'libdel-modal', 'savecfm-modal', 'secdel-modal', 'rpt-modal', 'pov-add-modal'];
 function anyModalOpen() {
-  return MODAL_IDS.some(id => document.getElementById(id)?.classList.contains('open'));
+  // showImportChoiceDialog() (projects.js) builds its overlay dynamically
+  // rather than toggling a fixed element's class, so it isn't one of the
+  // static MODAL_IDS above — check for it by class instead, the same way the
+  // outside-click discard handler does.
+  return MODAL_IDS.some(id => document.getElementById(id)?.classList.contains('open'))
+    || !!document.querySelector('.pm-modal-dynamic.open');
 }
 
 // ── ESCAPE KEY PRIORITY ───────────────────────────────────────────────────────
@@ -1760,6 +1824,13 @@ function anyModalOpen() {
 // close(), then the loop stops. Order runs most "in front"/blocking first
 // (modals), then floating chrome, then view modes, then board-content state.
 const ESCAPE_ACTIONS = [
+  // Wrapped in a closure rather than passed directly: closeImportChoiceDialog
+  // lives in projects.js, which loads AFTER editor.js (see editor.html's
+  // script order) — referencing the function itself here, at array-
+  // construction time, would throw a ReferenceError before projects.js has
+  // run. By the time this actually fires (a real Escape keypress, well after
+  // every script has loaded), the lookup resolves fine.
+  { isOpen: () => !!document.querySelector('.pm-modal-dynamic.open'), close: () => closeImportChoiceDialog() },
   { isOpen: () => document.getElementById('discard-cfm-modal')?.classList.contains('open'), close: closeDiscardConfirm },
   { isOpen: () => document.getElementById('modal')?.classList.contains('open'), close: closeModal },
   { isOpen: () => document.getElementById('add-popup')?.classList.contains('open'), close: closeAddPopup },

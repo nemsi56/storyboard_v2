@@ -66,7 +66,7 @@
 
       <div class="overview-card">
         <h3>Scene Flow Chart</h3>
-        <p>See your whole story as one continuous ribbon of scenes — winding into a snake or wrapped into a circle — so you can spot pacing, gaps, and structure at a glance. Section boundaries are marked automatically, and clicking a character, POV name, or searching highlights matching scenes right in the chart, just like on the board. Click any scene to jump back to its card.</p>
+        <p>See your whole story as one continuous ribbon of scenes — winding into a snake or wrapped into a circle — so you can spot pacing, gaps, and structure at a glance. Section boundaries are marked automatically, and clicking a character, POV name, or searching highlights matching scenes right in the chart, just like on the board. Click any scene to jump back to its card. Optionally size each scene's segment by its word count instead of splitting evenly, to spot unusually long or short scenes at a glance.</p>
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center">
           <img src="images/overview-flowchart-1.png" alt="Scene flow chart, circle layout, showing sections as pie-slice wedges and a highlighted character's scenes" style="width:49%;height:auto;cursor:pointer;border-radius:4px;border:1px solid #ccc" id="ov-img-flowchart-1">
           <img src="images/overview-flowchart-2.png" alt="Scene flow chart, snake layout, showing lettered section badges and a highlighted character's scenes" style="width:49%;height:auto;cursor:pointer;border-radius:4px;border:1px solid #ccc" id="ov-img-flowchart-2">
@@ -87,9 +87,14 @@
 
     </div>
 
-    <div style="background:#fff8e6;border:2px solid #b06a00;border-radius:8px;padding:20px;margin:40px 0;font-size:14px;line-height:1.6;color:#2c2416">
-      <div style="font-weight:700;text-transform:uppercase;color:#b06a00;margin-bottom:12px;font-size:12px">WORKING ACROSS DEVICES</div>
-      <p style="margin:0;color:#2c2416">Since all your content stays on your device, there is no cloud service for SceneSetter. To share work among separate devices, export the project (a JSON file) and import it on the other device. SceneSetter tracks each project's version: if you import a file that is older than, newer than, or in conflict with your local copy, it will detect that and ask what to do — so you won't accidentally overwrite new work with old. A simple routine: export when you finish on one device, and import that file before you continue on another.</p>
+    <div id="data-backups" style="background:#fff8e6;border:2px solid #b06a00;border-radius:8px;padding:20px;margin:40px 0;font-size:14px;line-height:1.6;color:#2c2416">
+      <div style="font-weight:700;text-transform:uppercase;color:#b06a00;margin-bottom:12px;font-size:12px">YOUR DATA &amp; BACKUPS</div>
+      <p style="margin:0;color:#2c2416">SceneSetter saves everything locally — right in this browser, on this device. Just close the tab and come back anytime; your projects will still be here, no import needed. There's no cloud account, so nothing syncs to another browser or computer — and since this data only exists in this browser's storage, clearing your cache or a browser issue could wipe it too. That's why backing up still matters:</p>
+      <ul style="margin:10px 0 0 20px;padding:0;color:#2c2416">
+        <li><strong>Export regularly.</strong> Each export is a timestamped JSON file, saved wherever your browser puts downloads — your backup and your safety net.</li>
+        <li><strong>Import</strong> to recover lost work, roll back to an earlier version, or move a project to a different browser or computer.</li>
+        <li><strong>No fear of mix-ups</strong> — SceneSetter checks the timestamp on every import and warns you before letting an older file overwrite newer work.</li>
+      </ul>
     </div>
 
     <div class="overview-cta">
