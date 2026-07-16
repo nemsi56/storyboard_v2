@@ -509,11 +509,26 @@ server, and by cross-checking against a fresh origin/port, that the server was a
 serving the correct file; this was a browser-preview-tool caching artifact, not a real
 app or server bug.
 
-### Open items (deliberately deferred — the backlog for a future branch)
-Three items remain, none data-loss risks, all analytics/print-only — logged with repro
-detail in `UPDATE_ROADMAP.md` §8 "Open": two analytics-only counter bugs (cross-project
-milestone tracking, a corrupt report counter stuck at `"NaN"`), and matrix-report print
-chunking sized to the screen instead of the page.
+### Round three (commit `cc531d7`): the last three, analytics/print-only
+- Milestone scene/section counters used one global baseline snapshotted only the first
+  time any project was ever opened, so a second project's count compared against the
+  first project's baseline instead of its own — counts could go negative or skip past
+  1/5 depending on which project happened to be open. Now snapshots a baseline per
+  project the first time each one is opened.
+- A corrupt/non-numeric stored report counter parsed to NaN and got written back as the
+  literal string `"NaN"`, permanently disabling the 3rd-report milestone. Now falls back
+  to 0 when the stored value isn't finite.
+- The matrix report's print-pagination chunked columns to the popup window's current
+  on-screen width instead of the physical printed page's usable width. Now uses a fixed
+  ~720px estimate for a portrait Letter/A4 page.
+
+Verified live: two sample projects opened side by side show independent baselines and
+counts with no cross-contamination; a corrupted report counter recovers to 1 (not "NaN")
+when the real `generateReport()` runs; the matrix report's generated script now contains
+a fixed `pageW` regardless of window size.
+
+This closes out every finding from the third full-app audit (`UPDATE_ROADMAP.md` §8) —
+nothing remains open from it.
 
 ### Delegation note
 Mechanical sweeps (CSP/id-reference/global-collision/localStorage-key/build-order

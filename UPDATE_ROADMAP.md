@@ -410,18 +410,32 @@ several reload attempts on the same port — confirmed via direct `curl` against
 server and a diff against a fresh origin/port that the *served* file was always correct;
 the caching was specific to the browser preview tool, not a real app or server issue.)*
 
-### Open — found by this audit, not yet fixed
+### Fixed (round three — the last three, analytics/print-only)
 
-- `[ ]` **Milestone counters are cross-project** *(low, analytics-only)*
-  ([tracking.js:20](tracking.js#L20)) — scene-count-since-ID-creation compares a global
-  baseline against whichever project is open, so counts jump or go negative on project
-  switch; `1st_scene_created` can fire spuriously or never.
-- `[ ]` **A corrupt report counter sticks at `"NaN"` forever** *(low, analytics-only)*
-  ([reports.js:89](reports.js#L89)) — `parseInt` of a non-numeric stored value → NaN,
-  written back as `"NaN"`; the 3rd-report milestone then never fires.
-- `[ ]` **Matrix report chunks columns by screen width, not paper width** *(low)*
-  ([reports.js:336](reports.js#L336)) — printed chunks overflow or underfill the page
-  depending on the window size when the report was generated.
+- `[x]` **Milestone counters were cross-project** *(low, analytics-only)*. A single
+  global baseline, snapshotted only the first time any project was ever opened, meant
+  opening a second project compared ITS scene count against the first project's
+  baseline — counts could go negative or skip past 1/5 depending on which project
+  happened to be open. `ensureProjectMilestoneBaselines()` ([tracking.js](tracking.js))
+  now snapshots a baseline per project, the first time each one is opened (wired into
+  `openProject()`), so the count is scoped to "scenes added to this project" regardless
+  of how many others exist (verified live: opening two different sample projects shows
+  each with its own independent baseline matching its own scene count, and adding a
+  scene to one correctly shows count=1 with no cross-contamination from the other).
+- `[x]` **A corrupt report counter stuck at `"NaN"` forever** *(low, analytics-only)*
+  ([reports.js:89](reports.js#L89)) — falls back to 0 when the stored value isn't finite
+  instead of incrementing NaN and writing the literal string back (verified live: a
+  manually corrupted counter recovers to 1 after calling the real `generateReport()`,
+  no exception thrown).
+- `[x]` **Matrix report chunked columns by screen width, not paper width** *(low)*
+  ([reports.js:341](reports.js#L341)) — used a fixed ~720px estimate of a portrait
+  Letter/A4 page's usable width instead of the popup window's on-screen
+  `document.body.clientWidth`, which had no relationship to the physical printed page
+  (verified: the generated report's inline script now contains `var pageW = 720`
+  unconditionally, regardless of window size at generation time).
+
+*(All three landed as commit `cc531d7`, pushed. This closes out every finding from the
+third full-app audit — nothing remains open from §8.)*
 
 ### Verified clean (for coverage)
 
