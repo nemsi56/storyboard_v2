@@ -542,7 +542,8 @@ app state/DOM, which exercises the same logic a real page load would.
   `closeImportChoiceDialog` correctly open/close the overlay; `anyModalOpen()`'s source and
   the outside-click selector both confirmed to include the new check).
 
-*(All seven fixes above landed as commit(s) on `feature/updates_v3`, pushed.)*
+*(All seven fixes above landed as commit `c4e3320` on `feature/updates_v3`, not yet
+pushed.)*
 
 ### Verified clean (for coverage)
 
@@ -557,5 +558,48 @@ self-healing on a lost mouseup, and the Ctrl+Z/drag fencing from §7 all intact;
 project-open and save-failure handling from §8 both still correct. Efficiency: nothing
 worth flagging at the app's 300-scene design scale.
 
-*(Fixes in §9 landed on `feature/updates_v3`, pushed; nothing remains open from this
-audit.)*
+*(Fixes in §9 landed on `feature/updates_v3` as commit `c4e3320` (not yet pushed);
+nothing remains open from this audit.)*
+
+## 10. Final verification audit (`feature/updates_v3`, post-§9 fixes)
+
+A closing pass over the branch: the §9 fix commit (`c4e3320`) reviewed line-by-line, a
+subagent regression sweep of the working tree (symbol resolution per page, build.js
+bundle order, stale-reference grep, styles.css scoping, tutorial/overview accuracy — all
+clean), and every §9 fix re-verified end-to-end against a fresh no-cache origin (a
+`Cache-Control: no-store` dev server, eliminating the stale-script tooling artifact both
+prior audit rounds hit). Chunking: a real `generateReport()` run split a ~4,700px
+39-column matrix into 9 chunks ≤720px with zero inline scripts in the popup. Export:
+with every `setItem` throwing `QuotaExceededError`, the download still fired (correct
+filename, no blocking alert). POV dedupe: a stored blob with a name in both lists loaded
+with the overlap dropped and one dropdown entry. Import: real `importProjectJSON` runs
+rejected duplicate section ids, an `Infinity` id, and a `1.5` id, while a valid control
+file still imported. Segment click: both toolbar controls restored. Import-dialog
+guards: verified with positive and negative controls (Alt+N works with no dialog open,
+is blocked beneath one, Escape removes exactly the dialog, Alt+N works again after; the
+outside-click discard-confirm is suppressed beneath the dialog and still fires without it).
+
+### Fixed in this round
+
+- `[x]` **`closeImportChoiceDialog()` could permanently delete a static modal** *(latent,
+  hardening)*. §9's close function removed whichever `.pm-modal.open` matched — on
+  projects.html the New/Rename/Delete modals are static `.pm-modal` elements, so any
+  future call there (or a static `.pm-modal` ever added to editor.html) would `.remove()`
+  one from the DOM for the rest of the session rather than just closing it. Not
+  reachable today (editor.js, the only caller, doesn't load on projects.html), but one
+  page reorganization away. The dynamic overlay is now tagged `.pm-modal-dynamic`, and
+  the close function plus all three editor.js guard points target that class (verified
+  live on projects.html: with the Rename modal open, `closeImportChoiceDialog()` leaves
+  it untouched and still removes a dynamic dialog).
+- `[x]` **The automated test suite had never been able to pass** *(low, dev-only)*.
+  test.html asserts on the app's real globals (`SECS`, `S`, `saveState`, …) but never
+  loaded any app script — not in its original inline form (`5dd9ba6`) nor after the CSP
+  externalization (`34a72de`) — so it auto-ran to 0 passed / 17 failed from birth. It now
+  loads the editor.html script set (minus editor-init.js, which needs the editor DOM)
+  before test-init.js: 17 passed / 0 failed, console clean (verified live).
+- `[x]` **test-init.js pointed testers at a file that doesn't exist** *(low)* — the
+  all-passed banner referenced `TEST_PLAN_PHASE_4.md`, which is nowhere in the repo;
+  reworded to a generic manual-pass note.
+
+*(This closes the final audit; the branch is clean end to end against everything §§8–10
+checked.)*

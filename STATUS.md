@@ -636,4 +636,30 @@ import-dialog fix verified by opening a real dialog via `showImportChoiceDialog`
 confirming the new close function removes it.
 
 ### Not yet done
-- Not merged to `main` — pushed to `origin/feature/updates_v3`.
+- Commit `c4e3320` (plus the final-audit follow-ups in the next section) not yet pushed
+  to `origin/feature/updates_v3`; not merged to `main`.
+
+## feature/updates_v3 branch — Final verification audit
+
+Closing pass over the branch (see `UPDATE_ROADMAP.md` §10 for per-item detail): the §9
+fix commit reviewed line-by-line, a subagent regression sweep of the working tree (all
+clean), and all seven §9 fixes re-verified end-to-end against a fresh origin served with
+`Cache-Control: no-store` — eliminating the stale-cached-script tooling artifact the two
+prior rounds had to work around, so this round exercised the real served code through
+the real UI paths throughout.
+
+### Follow-ups found and fixed in this round
+- **Hardening (latent):** §9's `closeImportChoiceDialog()` matched any `.pm-modal.open`
+  — on projects.html that class belongs to the static New/Rename/Delete modals, and
+  `.remove()` would have deleted one permanently if the function were ever reachable
+  there. The dynamic overlay now carries its own `.pm-modal-dynamic` class and every
+  guard targets that (verified live: Rename modal untouched, dynamic dialog still
+  removed).
+- **Dev-only:** the automated test suite (test.html) had never loaded the app scripts it
+  asserts on and had auto-run to 0/17 passed since the day it was added; it now loads
+  the editor.html script set and passes 17/17 with a clean console.
+- **Dev-only:** test-init.js's all-passed banner pointed at `TEST_PLAN_PHASE_4.md`,
+  which doesn't exist in the repo; reworded.
+
+### Not yet done
+- Not pushed to `origin/feature/updates_v3`; not merged to `main`.

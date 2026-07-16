@@ -421,7 +421,12 @@ function findProjectByUid(uid) {
 // buttons: [{ label, primary, onClick }] — every button closes the dialog.
 function showImportChoiceDialog(title, msg, buttons) {
   const overlay = document.createElement('div');
-  overlay.className = 'pm-modal open';
+  // pm-modal-dynamic marks this as the one-off, safe-to-.remove() overlay, as
+  // opposed to the static .pm-modal elements on projects.html (New/Rename/
+  // Delete) — closeImportChoiceDialog() and editor.js's modal guards key off
+  // the specific class so they can never match (and in the close function's
+  // case, permanently delete) one of the static modals.
+  overlay.className = 'pm-modal pm-modal-dynamic open';
   overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-modal', 'true');
   const box = document.createElement('div'); box.className = 'pm-modal-box';
   const t = document.createElement('div'); t.className = 'pm-modal-title'; t.textContent = title;
@@ -442,9 +447,12 @@ function showImportChoiceDialog(title, msg, buttons) {
 // Escape-key path for the dialog above (mirrors every other modal's close
 // behavior: dismiss without taking any of the buttons' actions). At most one
 // of these is ever open at a time, so removing whichever is present is
-// unambiguous.
+// unambiguous. Matches only .pm-modal-dynamic — a bare '.pm-modal.open'
+// selector would also match the static New/Rename/Delete modals on
+// projects.html, and .remove() would delete those from the DOM permanently
+// rather than just closing them.
 function closeImportChoiceDialog() {
-  document.querySelector('.pm-modal.open')?.remove();
+  document.querySelector('.pm-modal-dynamic.open')?.remove();
 }
 
 function importProjectJSON(inputEl) {

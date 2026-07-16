@@ -1789,7 +1789,7 @@ document.addEventListener('mousedown', e => {
   const newLive    = tabNew.classList.contains('live');
   if (!editActive && !newLive) return;
   if (e.target.closest('#cp')) return;
-  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open, #pov-add-modal.open, .pm-modal.open')) return;
+  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open, #pov-add-modal.open, .pm-modal-dynamic.open')) return;
   // If this mousedown landed on a scene card, onCardDown already armed ptr
   // (ptr.down/ptr.id) expecting a matching mouseup to toggle that card's
   // selection. This handler firing means the click is actually being treated
@@ -1816,7 +1816,7 @@ function anyModalOpen() {
   // static MODAL_IDS above — check for it by class instead, the same way the
   // outside-click discard handler does.
   return MODAL_IDS.some(id => document.getElementById(id)?.classList.contains('open'))
-    || !!document.querySelector('.pm-modal.open');
+    || !!document.querySelector('.pm-modal-dynamic.open');
 }
 
 // ── ESCAPE KEY PRIORITY ───────────────────────────────────────────────────────
@@ -1830,7 +1830,7 @@ const ESCAPE_ACTIONS = [
   // construction time, would throw a ReferenceError before projects.js has
   // run. By the time this actually fires (a real Escape keypress, well after
   // every script has loaded), the lookup resolves fine.
-  { isOpen: () => !!document.querySelector('.pm-modal.open'), close: () => closeImportChoiceDialog() },
+  { isOpen: () => !!document.querySelector('.pm-modal-dynamic.open'), close: () => closeImportChoiceDialog() },
   { isOpen: () => document.getElementById('discard-cfm-modal')?.classList.contains('open'), close: closeDiscardConfirm },
   { isOpen: () => document.getElementById('modal')?.classList.contains('open'), close: closeModal },
   { isOpen: () => document.getElementById('add-popup')?.classList.contains('open'), close: closeAddPopup },
