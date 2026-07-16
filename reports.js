@@ -86,7 +86,12 @@ function generateReport() {
   if (rptType === 'matrix')    html = buildMatrixReport(secSet);
 
   try {
-    let reportCount = parseInt(localStorage.getItem('scenesetter_report_count') || '0');
+    // parseInt of a non-numeric stored value (corrupted localStorage, or a
+    // hand-edited key) yields NaN — incrementing and storing that back as the
+    // literal string "NaN" would parse to NaN again on every future read,
+    // permanently disabling the 3rd-report milestone. Fall back to 0 instead.
+    const stored = parseInt(localStorage.getItem('scenesetter_report_count'));
+    let reportCount = Number.isFinite(stored) ? stored : 0;
     reportCount++;
     localStorage.setItem('scenesetter_report_count', String(reportCount));
     if (reportCount === 3) {
@@ -333,7 +338,14 @@ function buildMatrixReport(secSet) {
   if (!tbl) return;
   var ths = tbl.querySelectorAll('thead th');
   if (ths.length < 2) return;
-  var pageW = document.body.clientWidth || 760;
+  // Chunk to the printed page's usable width, not this popup window's current
+  // on-screen size — document.body.clientWidth reflects whatever size the
+  // window happens to be at generation time (unrelated to paper size), so a
+  // wide window produced chunks that overflowed the physical page, and a
+  // narrow one underfilled it. ~720px approximates a portrait Letter/A4 page's
+  // usable width after typical browser print margins at 96dpi, matching the
+  // print stylesheet's own on-screen max-width (rptBaseCSS's body{max-width}).
+  var pageW = 720;
   var hdrW = ths[0].offsetWidth;
   var colWs = [];
   for (var i = 1; i < ths.length; i++) colWs.push(ths[i].offsetWidth);

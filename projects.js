@@ -201,6 +201,7 @@ function openProject(id) {
     return;
   }
   getUserId();
+  ensureProjectMilestoneBaselines();
   // Reset board view state left over from whatever was open before. Usually
   // a no-op (a normal "Open" from the Projects page is a full page
   // navigation, which already starts clean) — but openProject() can also run
