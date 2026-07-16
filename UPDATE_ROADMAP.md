@@ -451,3 +451,111 @@ saveState ordering verified across all editor CRUD paths; rename/delete propagat
 Efficiency: nothing worth flagging at 300-scene scale.
 
 *(Fixes in §8 landed on `feature/updates_v3`, pushed; open items above are the backlog.)*
+
+## 9. Fourth full-app audit (`feature/updates_v3`, general re-audit)
+
+A general re-audit of the whole app in its current `feature/updates_v3` state, not tied to
+a specific new feature. Split the same way as §8: peripheral/wiring files (init scripts,
+HTML, build.js, CSP, GA/Formspree) went to a subagent, while the core data-path files
+(state, projects, editor, charts, reports, backup) were read directly. Every finding below
+was reproduced live in the running app — either by driving the real UI, or (where the
+local preview's browser-cache made live UI-driving unreliable after edits landed) by
+fetching the served source fresh and executing the exact changed function against real
+app state/DOM, which exercises the same logic a real page load would.
+
+### Fixed on this branch
+
+- `[x]` **The Cross-Reference report's page-width column chunking never ran — silently
+  blocked by CSP** *(medium-high)*. `buildMatrixReport` ([reports.js](reports.js)) wrote an
+  inline `<script>` into the report popup to split a wide table into print-width chunks.
+  Every page's CSP is `script-src 'self' <gtag>` with no `unsafe-inline`, and an
+  `about:blank` popup opened via `window.open()` inherits its opener's CSP in current
+  browsers — so that inline script was dead code from the moment CSP landed. §8's
+  round-three "chunk by paper width" fix changed the *string* correctly but never actually
+  executed; verifying the generated HTML (as §8 did) couldn't have caught this, only
+  running it could. The un-chunked table rendered at whatever width the data happened to
+  need (reproduced live at ~4,700px against a 720px print budget) — print/PDF cut off most
+  columns. Moved the chunking logic out of the popup into a same-origin function
+  (`chunkMatrixTableForPrint`) that runs from the opener against the popup's `document`
+  after it's written — same-origin DOM access from outside a document isn't subject to
+  *that* document's CSP, since it's direct DOM manipulation, not script loading/execution.
+  `openReportWindow` now returns the popup handle so `generateReport` can call it
+  (verified: fetching the live-served function and running it against a real generated
+  report table produces 9 correctly-sized chunk tables from one ~4,700px table).
+- `[x]` **Export silently produced no file if its own bookkeeping write hit a full quota**
+  *(medium, data-safety)*. `exportProjectJSON` ([projects.js](projects.js)) wrote
+  `lastExportedAt`/`editsSinceExport` back to localStorage *before* building the download
+  blob, inside one `try` — a `QuotaExceededError` on that write aborted before the blob was
+  ever built, so the one moment a user most needs export (storage full, per the app's own
+  quota alert) is exactly when it failed, with an alert suggesting a retry that could never
+  succeed. That write-back is now its own best-effort `try`/`catch`; the actual file
+  download (needs no storage) always proceeds (verified live: simulating
+  `QuotaExceededError` on every `setItem` call still triggers `URL.createObjectURL`/the
+  download, with no blocking alert).
+- `[x]` **Stored/imported data could already contain the character ↔ custom-POV-name
+  overlap the UI guards against** *(medium-low)*. `confirmAdd`/`saveLibEdit`/
+  `confirmPovAdd` all block creating a name that exists in both `S.characters` and
+  `S.povCustomNames` — but `loadState()` ([state.js](state.js)) accepted stored/imported
+  data where the overlap already existed (older exports, hand-edited files), and that
+  reached exactly the bug those guards exist to prevent: the name rendered twice in every
+  POV dropdown, and the read-only Library-panel POV row handed a *character's* entry the
+  custom-name edit/delete handlers. `loadState` now drops any `povCustomNames` entry that
+  matches a current character name (verified live: a stored project with the overlap now
+  loads with the character's name appearing exactly once in the POV checklist).
+- `[x]` **Import checked scene-id uniqueness but not section-id uniqueness** *(low-medium)*.
+  [projects.js](projects.js) validated each section's shape but, unlike the scene-id
+  check right above it, never checked section ids for collisions — a file with two
+  sections sharing an id rendered (and could be renamed/recolored/deleted as) one merged
+  group of scenes, since scenes reference their section purely by that id (reproduced live
+  pre-fix: 47 cards rendered for 39 scenes with an injected duplicate section id). Added
+  the same `Set`-size check already used for scene ids (verified live: importing a file
+  with two sections sharing an id is now rejected with "Section id values must be unique"
+  before anything is written to storage).
+- `[x]` **Import accepted non-integer scene/section ids** *(low, hand-edited files)*.
+  Both id checks used `typeof x.id === 'number'`, which admits `NaN` and non-integer
+  floats (a genuine hand-edit typo, e.g. `2.5`) — a non-integer id reaching `nextId`/
+  `nextSecId` math downstream corrupts every id-based lookup from then on. Switched both
+  checks to `Number.isInteger` (verified live: a file with scene `id: 2.5` — previously
+  accepted — is now rejected at the same validation step as a missing/non-numeric id).
+- `[x]` **Clicking a chart segment to jump to the board stranded two toolbar controls**
+  *(low-medium)*. `onSegClick` ([charts.js](charts.js)) hand-rolled `closeChartView`'s
+  teardown instead of calling it, and skipped the two lines that restore
+  `det-ck-wrap`/`scalew-wrap` (the "Show Card Details" checkbox and zoom slider), which
+  `openChartView` hides — so after jumping from a chart segment to its scene, both
+  controls stayed missing from the toolbar until chart view was toggled again. Now sets
+  the scene selection first, then calls `closeChartView()` directly so its own teardown
+  (which already includes the restore) runs once (verified live: `det-ck-wrap`/
+  `scalew-wrap` are correctly non-`none` immediately after a simulated segment click,
+  where they previously stayed `none`).
+- `[x]` **The dynamic import-conflict dialog was invisible to every modal guard**
+  *(low)*. `showImportChoiceDialog` ([projects.js](projects.js)) builds a one-off
+  `.pm-modal.open` overlay rather than toggling a static element's class, so it was never
+  in editor.js's `MODAL_IDS`/`anyModalOpen()`, the `ESCAPE_ACTIONS` priority ladder, or the
+  outside-click discard-confirm handler's selector list — while an "Imported File Is
+  Newer/Older/Diverged" dialog was open: Alt-letter shortcuts (e.g. Alt+N) fired underneath
+  it, Escape acted on whatever was behind it instead of dismissing it, and clicking one of
+  its own buttons while a dirty edit form was open could pop the discard-confirm on top of
+  it. Added a `closeImportChoiceDialog()` (removes whichever `.pm-modal.open` is present,
+  the same silent-dismiss semantics every other modal's Escape path uses), and wired
+  `.pm-modal.open` into `anyModalOpen()`, the outside-click selector list, and a new
+  highest-priority `ESCAPE_ACTIONS` entry (verified live: `showImportChoiceDialog` +
+  `closeImportChoiceDialog` correctly open/close the overlay; `anyModalOpen()`'s source and
+  the outside-click selector both confirmed to include the new check).
+
+*(All seven fixes above landed as commit(s) on `feature/updates_v3`, pushed.)*
+
+### Verified clean (for coverage)
+
+Same coverage areas as §8's closing sweep re-checked against the current code and found
+still correct: XSS escaping across every report type, chart tooltip, and print path; CSP
+identical and violation-free across all six pages (aside from the now-fixed matrix-report
+script, which was inert, not a violation — CSP silently blocks disallowed script
+execution rather than erroring visibly); no scene/project content in GA or Formspree
+payloads (`user_id` + event/milestone name only, plus an email only when the user
+explicitly submits one); `anonymize_ip` set; undo/redo snapshot depth, drag-state
+self-healing on a lost mouseup, and the Ctrl+Z/drag fencing from §7 all intact; corrupt-
+project-open and save-failure handling from §8 both still correct. Efficiency: nothing
+worth flagging at the app's 300-scene design scale.
+
+*(Fixes in §9 landed on `feature/updates_v3`, pushed; nothing remains open from this
+audit.)*

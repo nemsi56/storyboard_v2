@@ -658,12 +658,13 @@ function hideChartTip() {
 
 // ── CLICK: JUMP TO BOARD ───────────────────────────────────────────────────────
 function onSegClick(scene) {
-  chartMode = false;
-  document.getElementById('chart-host').style.display = 'none';
-  document.getElementById('sbscrl').style.display = '';
-  setChartMenuLabel();
+  // Set the selection before tearing down chart view so closeChartView()'s
+  // own renderBoard() already reflects it — avoids hand-rolling its teardown
+  // a second time here, which previously skipped restoring det-ck-wrap/
+  // scalew-wrap (the "Show Card Details" checkbox and zoom slider), leaving
+  // them missing from the toolbar until chart view was toggled again.
   S.selIds.clear(); S.selIds.add(scene.id);
-  renderBoard();
+  closeChartView();
   const card = document.querySelector('.sc[data-id="' + scene.id + '"]');
   if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 }

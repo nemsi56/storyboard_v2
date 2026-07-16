@@ -162,7 +162,17 @@ function loadState(storageKey) {
     S.editsSinceExport = d.editsSinceExport || 0;
     S.projectUid = d.projectUid || null;
     S.revision   = d.revision || 0;
-    S.povCustomNames = d.povCustomNames || [];
+    // A name in both the Character library and here isn't just redundant — it
+    // renders twice in every POV dropdown, and the read-only Library-panel POV
+    // row hands a character's entry the custom-name edit/delete handlers
+    // (deleting it removes the custom name while the character silently keeps
+    // supplying the POV). confirmAdd/saveLibEdit/confirmPovAdd all guard
+    // against creating this overlap going forward, but stored/imported data
+    // from before those guards existed (or a hand-edited file) can already
+    // have it — drop those on load rather than re-fixing it in every UI entry
+    // point that reads povCustomNames.
+    const charNames = new Set(S.characters.map(c => c.name));
+    S.povCustomNames = (d.povCustomNames || []).filter(n => !charNames.has(n));
     // Fold in any scene's POV name that predates this list (older exports,
     // or a since-removed character) so it's immediately a normal, reusable
     // checklist option rather than only recognized once that scene is opened.

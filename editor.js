@@ -1789,7 +1789,7 @@ document.addEventListener('mousedown', e => {
   const newLive    = tabNew.classList.contains('live');
   if (!editActive && !newLive) return;
   if (e.target.closest('#cp')) return;
-  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open, #pov-add-modal.open')) return;
+  if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open, #pov-add-modal.open, .pm-modal.open')) return;
   // If this mousedown landed on a scene card, onCardDown already armed ptr
   // (ptr.down/ptr.id) expecting a matching mouseup to toggle that card's
   // selection. This handler firing means the click is actually being treated
@@ -1811,7 +1811,12 @@ document.addEventListener('mousedown', e => {
 // New Scene form beneath an open "delete this?" confirmation).
 const MODAL_IDS = ['discard-cfm-modal', 'modal', 'add-popup', 'lib-edit-modal', 'libdel-modal', 'savecfm-modal', 'secdel-modal', 'rpt-modal', 'pov-add-modal'];
 function anyModalOpen() {
-  return MODAL_IDS.some(id => document.getElementById(id)?.classList.contains('open'));
+  // showImportChoiceDialog() (projects.js) builds its overlay dynamically
+  // rather than toggling a fixed element's class, so it isn't one of the
+  // static MODAL_IDS above — check for it by class instead, the same way the
+  // outside-click discard handler does.
+  return MODAL_IDS.some(id => document.getElementById(id)?.classList.contains('open'))
+    || !!document.querySelector('.pm-modal.open');
 }
 
 // ── ESCAPE KEY PRIORITY ───────────────────────────────────────────────────────
@@ -1819,6 +1824,13 @@ function anyModalOpen() {
 // close(), then the loop stops. Order runs most "in front"/blocking first
 // (modals), then floating chrome, then view modes, then board-content state.
 const ESCAPE_ACTIONS = [
+  // Wrapped in a closure rather than passed directly: closeImportChoiceDialog
+  // lives in projects.js, which loads AFTER editor.js (see editor.html's
+  // script order) — referencing the function itself here, at array-
+  // construction time, would throw a ReferenceError before projects.js has
+  // run. By the time this actually fires (a real Escape keypress, well after
+  // every script has loaded), the lookup resolves fine.
+  { isOpen: () => !!document.querySelector('.pm-modal.open'), close: () => closeImportChoiceDialog() },
   { isOpen: () => document.getElementById('discard-cfm-modal')?.classList.contains('open'), close: closeDiscardConfirm },
   { isOpen: () => document.getElementById('modal')?.classList.contains('open'), close: closeModal },
   { isOpen: () => document.getElementById('add-popup')?.classList.contains('open'), close: closeAddPopup },

@@ -579,3 +579,61 @@ pages.
 
 ### Not yet done
 - Not merged to `main` — pushed to `origin/feature/updates_v3`.
+
+## feature/updates_v3 branch — Fourth full-app audit & fixes
+
+A general re-audit of the whole app, not tied to a specific new feature (see
+`UPDATE_ROADMAP.md` §9 for the complete per-item detail; this is the summary). Same split
+as the third audit: peripheral/wiring files (init scripts, HTML, build.js, CSP, GA/
+Formspree) went to a subagent; the core data-path files (state, projects, editor, charts,
+reports, backup) were read directly.
+
+### What was found and fixed
+- **Medium-high:** the Cross-Reference report's print-pagination script — added in the
+  third audit's round three — never actually ran. It was an inline `<script>` written into
+  the report popup, but every page's CSP forbids inline scripts and popups inherit their
+  opener's CSP, so the chunking silently no-opped from the moment CSP landed; the third
+  audit's fix changed the generated *string* correctly but nothing verified it *executed*.
+  Moved the chunking into a same-origin function that runs from the opener against the
+  popup's document after it's written — outside-in DOM access isn't subject to the target
+  document's CSP.
+- **Medium:** export could produce no file at all if its own bookkeeping write hit a full
+  quota — exactly the moment a user is most likely to reach for export. The write-back is
+  now a separate best-effort try/catch; the file download no longer depends on it.
+- **Medium-low:** stored/imported data could already contain the character ↔ custom-POV-
+  name overlap the UI's add/rename guards block going forward — `loadState()` now dedupes
+  it on load.
+- **Low-medium ×2:** import checked scene-id uniqueness but not section-id uniqueness (a
+  colliding pair rendered as one merged section); both scene and section id validation
+  used `typeof === 'number'`, which admits non-integer floats and `NaN` — both now use
+  `Number.isInteger`.
+- **Low-medium:** jumping from a chart segment to its scene on the board hand-rolled chart-
+  view teardown and skipped restoring two toolbar controls (Show Card Details, zoom
+  slider) — now delegates to `closeChartView()` directly so nothing is duplicated or
+  missed.
+- **Low:** the dynamic import-conflict dialog (newer/older/diverged file) wasn't
+  recognized by any of editor.js's modal guards — Alt-shortcuts fired underneath it,
+  Escape ignored it, and it could stack with the discard-confirm dialog. Added a close
+  function and wired it into the same three guard points every other modal already uses.
+
+### How it was verified
+All core-file findings were reproduced live, either by driving the real UI or — for fixes
+where the local preview's browser HTTP cache kept serving pre-fix script versions after
+files were edited on disk (confirmed via direct `curl`/XHR against the running server that
+the *served* files were always correct, the same class of tooling artifact noted in the
+third audit) — by fetching the served source fresh and executing the exact changed
+function against real app state/DOM, which exercises identical logic to a real page load.
+Specifically: chunking verified by generating a real ~4,700px matrix report table and
+confirming the fresh function splits it into 9 correctly-sized print chunks; export
+verified by simulating `QuotaExceededError` on every `setItem` call and confirming the
+download still fires with no blocking alert; the POV-overlap dedupe verified by loading a
+project with the overlap injected and confirming it's gone from `S.povCustomNames` after;
+both import-validation additions verified by importing synthetic files (duplicate section
+ids, a `2.5` scene id) and confirming each is now rejected before anything is written to
+storage; the chart-segment-click fix verified by opening chart view, confirming the two
+controls are hidden, simulating a segment click, and confirming both are restored; the
+import-dialog fix verified by opening a real dialog via `showImportChoiceDialog` and
+confirming the new close function removes it.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v3`.

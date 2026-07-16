@@ -99,7 +99,11 @@ function generateReport() {
     }
   } catch(e) {}
 
-  openReportWindow(html);
+  const w = openReportWindow(html);
+  // Only the matrix report's non-flipped layout has an #mx-full table to
+  // chunk; chunkMatrixTableForPrint() itself no-ops when that id isn't
+  // present (flipped layout, or any other report type).
+  if (rptType === 'matrix') chunkMatrixTableForPrint(w);
 }
 
 function rptBaseCSS() {
@@ -156,9 +160,10 @@ function rptBaseCSS() {
 
 function openReportWindow(html) {
   const w = window.open('', '_blank');
-  if (!w) { alert('Pop-up blocked — please allow pop-ups for this page and try again.'); return; }
+  if (!w) { alert('Pop-up blocked — please allow pop-ups for this page and try again.'); return null; }
   w.document.write(html);
   w.document.close();
+  return w;
 }
 
 function rptPageHeader(title) {
@@ -332,51 +337,66 @@ function buildMatrixReport(secSet) {
       html += `</tr>`;
     });
     html += `</tbody></table></div>`;
-    html += `<script>
-(function(){
-  var tbl = document.getElementById('mx-full');
+  }
+  return html + '</body></html>';
+}
+
+// Chunk the full cross-reference table (id="mx-full") into page-width pieces
+// for print. This used to be an inline <script> written into the popup
+// itself, but every page's CSP is script-src 'self' <gtag> with no
+// unsafe-inline, and an about:blank popup opened via window.open() inherits
+// the opener's CSP in current browsers — so that inline script silently
+// never ran, and the un-chunked table (which can be thousands of px wide)
+// printed straight off the edge of the page. Same-origin DOM access from the
+// opener isn't subject to the popup's CSP, so this runs from here instead,
+// against the popup's own document, right after it's written.
+function chunkMatrixTableForPrint(win) {
+  if (!win || win.closed) return;
+  const doc = win.document;
+  const tbl = doc.getElementById('mx-full');
   if (!tbl) return;
-  var ths = tbl.querySelectorAll('thead th');
+  const ths = tbl.querySelectorAll('thead th');
   if (ths.length < 2) return;
   // Chunk to the printed page's usable width, not this popup window's current
-  // on-screen size — document.body.clientWidth reflects whatever size the
-  // window happens to be at generation time (unrelated to paper size), so a
-  // wide window produced chunks that overflowed the physical page, and a
-  // narrow one underfilled it. ~720px approximates a portrait Letter/A4 page's
-  // usable width after typical browser print margins at 96dpi, matching the
-  // print stylesheet's own on-screen max-width (rptBaseCSS's body{max-width}).
-  var pageW = 720;
-  var hdrW = ths[0].offsetWidth;
-  var colWs = [];
-  for (var i = 1; i < ths.length; i++) colWs.push(ths[i].offsetWidth);
-  var chunks = [], ci = 0;
+  // on-screen size — clientWidth reflects whatever size the window happens to
+  // be at generation time (unrelated to paper size), so a wide window
+  // produced chunks that overflowed the physical page, and a narrow one
+  // underfilled it. ~720px approximates a portrait Letter/A4 page's usable
+  // width after typical browser print margins at 96dpi, matching the print
+  // stylesheet's own on-screen max-width (rptBaseCSS's body{max-width}).
+  const pageW = 720;
+  const hdrW = ths[0].offsetWidth;
+  const colWs = [];
+  for (let i = 1; i < ths.length; i++) colWs.push(ths[i].offsetWidth);
+  const chunks = [];
+  let ci = 0;
   while (ci < colWs.length) {
-    var used = hdrW, end = ci;
+    let used = hdrW, end = ci;
     while (end < colWs.length && used + colWs[end] <= pageW) { used += colWs[end]; end++; }
     if (end === ci) end = ci + 1;
     chunks.push([ci, end]);
     ci = end;
   }
   if (chunks.length <= 1) return;
-  var rows = tbl.querySelectorAll('tbody tr');
-  var wrap = document.getElementById('mx-wrap');
-  var frag = document.createDocumentFragment();
-  chunks.forEach(function(c) {
-    var t = document.createElement('table');
+  const rows = tbl.querySelectorAll('tbody tr');
+  const wrap = doc.getElementById('mx-wrap');
+  const frag = doc.createDocumentFragment();
+  chunks.forEach(c => {
+    const t = doc.createElement('table');
     t.style.marginBottom = '18px';
     t.style.pageBreakInside = 'avoid';
-    var thead = document.createElement('thead');
-    var hr = document.createElement('tr');
+    const thead = doc.createElement('thead');
+    const hr = doc.createElement('tr');
     hr.appendChild(ths[0].cloneNode(true));
-    for (var i = c[0]; i < c[1]; i++) hr.appendChild(ths[i+1].cloneNode(true));
+    for (let i = c[0]; i < c[1]; i++) hr.appendChild(ths[i + 1].cloneNode(true));
     thead.appendChild(hr);
     t.appendChild(thead);
-    var tbody = document.createElement('tbody');
-    rows.forEach(function(row) {
-      var cells = row.querySelectorAll('td');
-      var nr = document.createElement('tr');
+    const tbody = doc.createElement('tbody');
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('td');
+      const nr = doc.createElement('tr');
       nr.appendChild(cells[0].cloneNode(true));
-      for (var i = c[0]; i < c[1]; i++) nr.appendChild(cells[i+1].cloneNode(true));
+      for (let i = c[0]; i < c[1]; i++) nr.appendChild(cells[i + 1].cloneNode(true));
       tbody.appendChild(nr);
     });
     t.appendChild(tbody);
@@ -384,8 +404,4 @@ function buildMatrixReport(secSet) {
   });
   wrap.innerHTML = '';
   wrap.appendChild(frag);
-})();
-<\/script>`;
-  }
-  return html + '</body></html>';
 }

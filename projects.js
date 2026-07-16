@@ -368,12 +368,19 @@ function exportProjectJSON(id) {
     const exportedAt = new Date().toISOString();
     data.lastExportedAt = exportedAt;
     data.editsSinceExport = 0;
-    localStorage.setItem(projKey(id), JSON.stringify(data));
-    if (id === currentProjectId) {
-      S.lastExportedAt = exportedAt;
-      S.editsSinceExport = 0;
-      if (typeof refreshBackupStatus === 'function') refreshBackupStatus();
-    }
+    // Best-effort only: this write-back just clears the "N changes since
+    // backup" bookkeeping, and storage being full — quota exceeded, or
+    // disabled entirely — is exactly the moment export is most needed as an
+    // escape hatch. It must not block the actual file download below, which
+    // needs no storage at all.
+    try {
+      localStorage.setItem(projKey(id), JSON.stringify(data));
+      if (id === currentProjectId) {
+        S.lastExportedAt = exportedAt;
+        S.editsSinceExport = 0;
+        if (typeof refreshBackupStatus === 'function') refreshBackupStatus();
+      }
+    } catch(e) { console.warn('Could not update backup bookkeeping:', e.message); }
     data.projectName = name;
     data.exportedAt = exportedAt;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -432,6 +439,13 @@ function showImportChoiceDialog(title, msg, buttons) {
   overlay.appendChild(box);
   document.body.appendChild(overlay);
 }
+// Escape-key path for the dialog above (mirrors every other modal's close
+// behavior: dismiss without taking any of the buttons' actions). At most one
+// of these is ever open at a time, so removing whichever is present is
+// unambiguous.
+function closeImportChoiceDialog() {
+  document.querySelector('.pm-modal.open')?.remove();
+}
 
 function importProjectJSON(inputEl) {
   const file = inputEl.files[0];
@@ -462,8 +476,13 @@ function importProjectJSON(inputEl) {
       }
 
       const isStrArr = v => v == null || (Array.isArray(v) && v.every(isStr));
+      // Number.isInteger (not typeof === 'number') so NaN/Infinity from a
+      // hand-edited file are rejected here rather than reaching nextId/
+      // nextSecId math below — an Infinity id makes every id-based lookup
+      // afterward (nextId itself becomes Infinity, so every scene added post-
+      // import shares one id) silently ambiguous instead of a clean rejection.
       const badSceneIdx = d.scenes.findIndex(sc =>
-        !sc || typeof sc !== 'object' || typeof sc.id !== 'number' || !isStr(sc.title) ||
+        !sc || typeof sc !== 'object' || !Number.isInteger(sc.id) || !isStr(sc.title) ||
         (sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes)) ||
         (sc.wordCount != null && typeof sc.wordCount !== 'number') ||
         (sc.pov != null && !isStr(sc.pov)) || // legacy single-value POV, still accepted on import
@@ -478,9 +497,18 @@ function importProjectJSON(inputEl) {
         return;
       }
 
-      const badSecIdx = d.sections.findIndex(sec => !sec || typeof sec !== 'object' || typeof sec.id !== 'number' || !isStr(sec.name));
+      const badSecIdx = d.sections.findIndex(sec => !sec || typeof sec !== 'object' || !Number.isInteger(sec.id) || !isStr(sec.name));
       if (badSecIdx !== -1) {
         alert('Invalid project structure. Section ' + (badSecIdx + 1) + ' needs a numeric "id" and a string "name".');
+        return;
+      }
+      // Unlike scenes (checked above), nothing else here rejects a duplicate
+      // section id — the scene-id checks pass, and every field type-checks
+      // fine — but a section whose id collides with another's would render
+      // (and be renamed/deleted/recolored) as one merged group of scenes on
+      // the board, since scenes reference their section purely by that id.
+      if (new Set(d.sections.map(sec => sec.id)).size !== d.sections.length) {
+        alert('Invalid project structure. Section "id" values must be unique.');
         return;
       }
 
