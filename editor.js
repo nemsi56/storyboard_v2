@@ -442,23 +442,6 @@ function sceneMatchesLib(scene) {
   return allSel.some(({ key, v }) => (scene[key] || []).includes(v));
 }
 
-// ── RESET ────────────────────────────────────────────────────────────────────
-function resetAll() {
-  if (!confirm('Reset everything?\n\nAll scenes and library items will be permanently deleted.')) return;
-  S.characters = []; S.locations = []; S.themes = []; S.misc = [];
-  S.scenes = []; S.nextId = 1; S.andOr = 'OR';
-  S.sections = []; S.nextSecId = 1;
-  S.povCustomNames = [];
-  SECS.forEach(({ key }) => S.selections[key].clear());
-  S.selIds.clear(); S.editingId = null;
-  hist.past = []; hist.future = [];
-  clearSearch();
-  syncAndOrUI();
-  buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovCk('sc', []); renderPovCk('ed', []); renderBoard(); updateLibClearBtn(); updateUndoRedo();
-  if (currentProjectId) saveState();
-  else localStorage.removeItem(STORAGE_KEY);
-}
-
 // ── SCENE ACTIONS ─────────────────────────────────────────────────────────────
 let pendingInsert = null; // { afterId: sceneId|null (null=prepend), sectionId: number|null }
 
@@ -1192,12 +1175,19 @@ function renderPovLibSec() {
 // since removed from the library, or a name saved before this feature
 // existed) is folded into S.povCustomNames on the spot, so it becomes a
 // normal, consistently-reusable option instead of a dead/lost selection.
+// This can run on a pure "view" path (opening Edit mode on an old scene, with
+// no mutation the caller itself saves), so persist it here rather than
+// leaving the fold live-only-in-memory until some unrelated later edit —
+// otherwise a reload right after opening such a scene silently drops it.
 function renderPovCk(prefix, checked=[]) {
+  let foldedNew = false;
   checked.forEach(name => {
     if (!S.characters.some(c => c.name === name) && !S.povCustomNames.includes(name)) {
       S.povCustomNames.push(name);
+      foldedNew = true;
     }
   });
+  if (foldedNew) { recordDataEdit(); saveState(); }
   const wrap = document.getElementById(prefix + '-povs-wrap');
   const box  = document.getElementById(prefix + '-povs'); if (!box) return;
   box.innerHTML = '';
@@ -1394,14 +1384,23 @@ function quickSetup() {
   const n   = Math.min(20, Math.max(1, parseInt(document.getElementById('qs-n').value) || 3));
   const pfx = (document.getElementById('qs-pfx').value.trim() || 'Section');
   if (!confirm(`Create ${n} sections: "${pfx} 1" through "${pfx} ${n}"?`)) return;
-  pushHistory('Quick setup: ' + n + ' sections');
+  // Figure out what would actually be created before touching history/state —
+  // if every generated name already exists, there's nothing to do, and
+  // pushing a history entry for a no-op edit would give undo a phantom step
+  // that restores an already-current state and wipes the redo stack for
+  // nothing.
+  const existingLower = new Set(S.sections.map(s => s.name.toLowerCase()));
+  const toAdd = [];
   for (let i = 1; i <= n; i++) {
     const name = pfx + ' ' + i;
-    if (!S.sections.some(s => s.name.toLowerCase() === name.toLowerCase())) {
-      const color = SEC_COLORS[S.sections.length % SEC_COLORS.length];
-      S.sections.push({ id: S.nextSecId++, name, color });
-    }
+    if (!existingLower.has(name.toLowerCase())) toAdd.push(name);
   }
+  if (!toAdd.length) return;
+  pushHistory('Quick setup: ' + toAdd.length + ' section' + (toAdd.length !== 1 ? 's' : ''));
+  toAdd.forEach(name => {
+    const color = SEC_COLORS[S.sections.length % SEC_COLORS.length];
+    S.sections.push({ id: S.nextSecId++, name, color });
+  });
   renderSecPanel(); renderSectionSelects(); renderBoard();
   recordDataEdit();
   saveState();
@@ -1444,14 +1443,31 @@ function renderSecPanel() {
     // snapshotting there would capture the post-change color and make undo a
     // no-op.
     let colorHistPushed = false;
+    let colorOrig = null;
     colorPick.addEventListener('input', e => {
       const s = S.sections.find(x => x.id === sec.id); if (!s) return;
-      if (!colorHistPushed) { pushHistory('Change section color'); colorHistPushed = true; }
+      if (!colorHistPushed) { colorOrig = s.color; pushHistory('Change section color'); colorHistPushed = true; }
       s.color = e.target.value; renderBoard();
     });
     colorPick.addEventListener('change', e => {
       colorHistPushed = false;
       colorSection(sec.id, e.target.value); renderBoard();
+    });
+    // If the dialog is dismissed without a 'change' (cancelled, or closed some
+    // other way the browser doesn't fire 'change' for), 'input' has already
+    // live-mutated sec.color and pushed a history entry, but nothing was ever
+    // saved — leaving the preview color on screen (a reload would revert it)
+    // and a stale history entry that would make the next real color change
+    // push no entry of its own, so undo would jump back two changes at once.
+    // Revert both on blur if 'change' never followed.
+    colorPick.addEventListener('blur', () => {
+      if (!colorHistPushed) return;
+      colorHistPushed = false;
+      const s = S.sections.find(x => x.id === sec.id);
+      if (s) s.color = colorOrig;
+      hist.past.pop();
+      updateUndoRedo();
+      renderBoard();
     });
     const nameEl = document.createElement('span'); nameEl.className = 'sec-li-name'; nameEl.textContent = sec.name;
     nameEl.addEventListener('click', () => startSecRename(li, sec.id));
@@ -1774,6 +1790,14 @@ document.addEventListener('mousedown', e => {
   if (!editActive && !newLive) return;
   if (e.target.closest('#cp')) return;
   if (document.querySelector('.cfm-modal.open, #modal.open, #add-popup.open, #rpt-modal.open, #lib-edit-modal.open, #pov-add-modal.open')) return;
+  // If this mousedown landed on a scene card, onCardDown already armed ptr
+  // (ptr.down/ptr.id) expecting a matching mouseup to toggle that card's
+  // selection. This handler firing means the click is actually being treated
+  // as "outside the panel," about to cancel the edit or open the discard
+  // confirm — disarm ptr so the pending mouseup (which will land on the
+  // confirm dialog, not the card) doesn't also toggle the card's selection
+  // underneath it.
+  ptr.down = false; ptr.dragging = false; ptr.id = null;
   const editDirty = editActive && isEditFormDirty();
   if (!editDirty && !newLive) {
     if (editActive) cancelEdit();

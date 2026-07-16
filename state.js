@@ -13,6 +13,21 @@ let currentProjectId = null;
 let saveErrorAlerted = false;
 
 function projKey(id) { return 'scriptease_proj_' + id; }
+// Single normalization rule for scene.wordCount, used both on load and on
+// JSON import: null unless a positive number, rounded to an integer. Without
+// the rounding, a float that slipped in (a hand-edited file, or a future
+// version that allows fractional counts) would silently mismatch the Edit
+// form's parseWordCount() — which only ever produces integers via parseInt —
+// so the form would read as dirty the instant the scene is opened, and saving
+// would truncate the value without the user having changed anything.
+function normalizeWordCount(v) {
+  if (v == null) return null;
+  // Round first, then check positivity — checking `v > 0` before rounding
+  // would let a value like 0.4 (which rounds to 0) through as a non-null 0,
+  // defeating the whole point of this function.
+  const n = Math.round(v);
+  return n > 0 ? n : null;
+}
 function genProjId() { return 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
 // Permanent project lineage id — unlike the storage id above, this survives
 // export/import so copies of the same project can be recognized across devices.
@@ -120,12 +135,13 @@ function loadState(storageKey) {
         characters: arr(sc.characters), locations: arr(sc.locations),
         themes: arr(sc.themes),         misc: arr(sc.misc),
         sectionId: sc.sectionId ?? null,
-        // A negative/zero wordCount could only get here from data saved before
-        // the New/Edit Scene forms started rejecting it (or a hand-edited
-        // file) — normalize on load same as import does, so it can't survive
-        // as invisible bad data (charts already treat it as unset, but stored
-        // reports/exports shouldn't carry a nonsensical negative number).
-        wordCount: (sc.wordCount != null && sc.wordCount > 0) ? sc.wordCount : null,
+        // A negative/zero/non-integer wordCount could only get here from data
+        // saved before the New/Edit Scene forms started rejecting it (or a
+        // hand-edited file) — normalize on load same as import does, so it
+        // can't survive as invisible bad data (charts already treat ≤0 as
+        // unset, but stored reports/exports shouldn't carry a nonsensical
+        // negative or fractional number).
+        wordCount: normalizeWordCount(sc.wordCount),
         povs,
       };
     });
