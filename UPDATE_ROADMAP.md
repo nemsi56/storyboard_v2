@@ -369,31 +369,49 @@ logged.
 
 *(The three fixes above landed as commit `e7f7192`, pushed.)*
 
+### Fixed (round two — six low-severity items)
+
+- `[x]` **`renderPovCk` mutated `S.povCustomNames` during render without persisting**
+  *(low)*. The legacy-name fold-in ([editor.js:1195](editor.js#L1195)) now calls
+  `recordDataEdit()`/`saveState()` whenever a name is actually folded in this render pass
+  (verified live: opening Edit mode on a scene with a legacy POV name now persists the
+  fold to storage immediately, not just in memory).
+- `[x]` **Cancelling the native color picker stranded live-preview state** *(low)*.
+  `input` events mutate `sec.color` and consume the one history entry before `change`
+  fires; a `blur` listener now reverts the color and pops the phantom history entry if
+  `change` never followed (verified live: simulating input-then-blur-without-change
+  reverts the color and leaves the undo stack exactly as it was; a real input-then-change
+  commit still works and persists normally).
+- `[x]` **`quickSetup` pushed history/recorded an edit even when it created nothing**
+  *(low)*. Now computes what would actually be created before touching history/state, and
+  skips entirely if every generated name already exists; the undo label reflects the real
+  count when only some names collide (verified live: an all-collision run pushes zero
+  history entries; a partial-collision run creates only the missing sections and labels
+  the undo entry with the accurate count).
+- `[x]` **`resetAll` was dead code** *(low)* — removed; confirmed zero call sites anywhere
+  in the repo before deletion, and a full reload afterward shows no console errors.
+- `[x]` **Clicking a scene card under a dirty edit form toggled its selection beneath the
+  discard confirmation** *(low, cosmetic)*. The outside-click discard-confirm handler now
+  disarms the pending `ptr.down` pointer state before opening its dialog (verified live,
+  dispatching a real mousedown/mouseup sequence: the confirm opens and the other card's
+  selection does not toggle; a normal click with no dirty form still toggles selection
+  correctly).
+- `[x]` **Float `wordCount` from an import false-dirtied and truncated in the edit form**
+  *(low)*. A shared `normalizeWordCount()` ([state.js](state.js)) now rounds to an integer
+  (and only after rounding checks positivity, so e.g. 0.4 correctly becomes null rather
+  than a non-null 0) on both load and import, so the Edit form's integer-only
+  `parseWordCount()` can never see a stored value it wouldn't itself have produced
+  (verified: 2.5→3, 0.6→1, 0.4→null, -3.5→null, 0→null, 500→500, and an end-to-end
+  `loadState()` of a scene with `wordCount: 2.5` yields a stored integer `3`).
+
+*(All six landed as commit `10d30c7`, pushed. One verification note: while testing the
+wordCount fix, this preview environment served a stale cached copy of `state.js` across
+several reload attempts on the same port — confirmed via direct `curl` against the
+server and a diff against a fresh origin/port that the *served* file was always correct;
+the caching was specific to the browser preview tool, not a real app or server issue.)*
+
 ### Open — found by this audit, not yet fixed
 
-- `[ ]` **`renderPovCk` mutates `S.povCustomNames` during render without persisting**
-  *(low)*. The legacy-name fold-in ([editor.js:1171](editor.js#L1171)) never calls
-  `saveState()`; a reload before the next unrelated save drops the fold. Self-heals on
-  next render — transient inconsistency only.
-- `[ ]` **Cancelling the native color picker strands live-preview state** *(low)*.
-  `input` events mutate `sec.color` and consume the one history entry before `change`
-  ever fires ([editor.js:1421](editor.js#L1421)); if the picker is dismissed without a
-  `change`, the preview color persists unsaved (reload reverts it) and `colorHistPushed`
-  stays true, so the next color drag pushes no history entry and undo jumps two changes.
-- `[ ]` **`quickSetup` pushes history/records an edit even when it creates nothing**
-  *(low)* ([editor.js:1368](editor.js#L1368)) — every generated name already existing
-  still yields a no-op undo entry that wipes the redo stack.
-- `[ ]` **`resetAll` is dead code** *(low)* ([editor.js:425](editor.js#L425)) — no call
-  site anywhere; if ever re-wired it also misses `S.selections.povs.clear()` and
-  `secFilterIds.clear()`. Delete it or fix-and-wire it, but don't leave it as-is.
-- `[ ]` **Clicking a scene card under a dirty edit form toggles its selection beneath the
-  discard confirmation** *(low, cosmetic)* — the card's `mousedown`
-  ([editor.js:917](editor.js#L917)) has no dirty-form guard, so it runs alongside the
-  document-level confirm handler ([editor.js:1744](editor.js#L1744)).
-- `[ ]` **Float `wordCount` from an import false-dirties and truncates in the edit form**
-  *(low)*. Import accepts any number > 0 (e.g. 2.5), but the form round-trips through
-  `parseInt` — the Edit form reads as dirty the moment it opens (2 ≠ 2.5) and saving
-  silently truncates. Either floor on import or compare/store consistently.
 - `[ ]` **Milestone counters are cross-project** *(low, analytics-only)*
   ([tracking.js:20](tracking.js#L20)) — scene-count-since-ID-creation compares a global
   baseline against whichever project is open, so counts jump or go negative on project

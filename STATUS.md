@@ -485,13 +485,35 @@ stays open, then hovered a different menu button and confirmed switching still w
 All test artifacts (corrupt test project, test scenes, test library items) were confirmed
 removed from localStorage afterward.
 
+### Round two (commit `10d30c7`): six more low-severity fixes
+- `renderPovCk`'s legacy-POV-name fold now persists immediately instead of living only
+  in memory until an unrelated later save happened to catch it.
+- Cancelling the section color picker (an `input` preview with no following `change`)
+  now reverts the color and pops the phantom undo entry on blur, instead of stranding an
+  unsaved preview color and silently consuming the next real change's undo entry.
+- `quickSetup` no longer pushes a no-op undo entry when every generated section name
+  already exists; the undo label reflects the real count on a partial collision.
+- Removed `resetAll` — confirmed dead code, zero call sites anywhere in the repo.
+- A click on another scene card while an edit form is dirty no longer also toggles that
+  card's selection underneath the discard-confirm dialog.
+- `wordCount` is now normalized (null unless a positive integer, via a shared
+  `normalizeWordCount()`) on both load and import, so a non-integer value from a
+  hand-edited or future-version file can no longer mismatch the Edit form's integer-only
+  `parseWordCount()` and read as dirty the instant the scene opens.
+
+All six verified live (each original issue reproduced first, then confirmed fixed,
+including the legitimate/non-broken paths for each). One tooling note: this preview
+environment cached a stale copy of `state.js` across several reload attempts on the same
+port while verifying the wordCount fix — confirmed via direct `curl` against the running
+server, and by cross-checking against a fresh origin/port, that the server was always
+serving the correct file; this was a browser-preview-tool caching artifact, not a real
+app or server bug.
+
 ### Open items (deliberately deferred — the backlog for a future branch)
-Nine items remain, none data-loss risks — all logged with repro detail in
-`UPDATE_ROADMAP.md` §8 "Open." All are lows: transient/cosmetic states (an unsaved
-`povCustomNames` fold-in, a cancelled color-picker stranding preview state and an undo
-entry, dead `resetAll` code, a card-selection/discard-dialog race), a no-op `quickSetup`
-call polluting the redo stack, float-wordCount truncation on import, two analytics-only
-counter bugs, and matrix-report print chunking sized to the screen instead of the page.
+Three items remain, none data-loss risks, all analytics/print-only — logged with repro
+detail in `UPDATE_ROADMAP.md` §8 "Open": two analytics-only counter bugs (cross-project
+milestone tracking, a corrupt report counter stuck at `"NaN"`), and matrix-report print
+chunking sized to the screen instead of the page.
 
 ### Delegation note
 Mechanical sweeps (CSP/id-reference/global-collision/localStorage-key/build-order
