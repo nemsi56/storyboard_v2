@@ -541,3 +541,41 @@ calling convention, and a garbled storage-key name in an otherwise-correct inven
 ### Not yet done
 - Not merged to `main` — pushed to `origin/feature/updates_v3`.
 - The 12 open audit items above (tracked in `UPDATE_ROADMAP.md` §8).
+
+## feature/updates_v3 branch — "Your Data & Backups" messaging rework
+
+User-requested rework of the "Working Across Devices" box on the Projects, Overview, and
+Tutorial pages — the original one-paragraph copy conflated "why backups matter" entirely
+with cross-device syncing, and gave no indication that a project just persists on its own
+without needing to import anything. Iterated on the copy live with the user (several
+rounds) before touching any file, per their request to see it first.
+
+### What changed
+- Retitled the box **"Your Data & Backups"** (from "Working Across Devices") on
+  `overview.html` and `tutorial.html`, since the content is broader than cross-device use.
+- Rewrote the body as a short lead paragraph + three bullets, making explicit: (a)
+  projects persist automatically in this browser — closing the tab and coming back later
+  needs no import, (b) backups matter because browser storage itself is fragile (clearing
+  cache, a browser issue) — not only because of syncing, and (c) export/import and the
+  timestamp-conflict-detection safety net, condensed to one bullet each.
+- **Projects page**: dropped the full banner entirely. Added a small text link — "Learn
+  about your data and backups" — next to the toolbar, opening `tutorial.html#data-backups`
+  in a new tab (an anchor id added to the same box there). First built as a "?" icon
+  button (styled like the existing `#help-btn`); changed to a plain underlined text link
+  after the user flagged that a bare "?" didn't communicate what it was for.
+- Renamed the "Import JSON" button to **"Import project (JSON file)"** for clarity, and
+  fixed the one other place (a Tutorial step) that still referenced the old label.
+- While updating the Tutorial's Scene Flow Chart section for the "Size by Word Count"
+  toggle (which had no user-facing docs since it shipped — see the "Chart segments sized
+  by word count" section above), also fixed a stale "Undo/Redo: up to 10 steps" line
+  (raised to 50 in an earlier fix; the docs never caught up).
+
+### Verification
+Manually verified in-browser: no leftover "Working Across Devices" or "Import JSON" text
+anywhere in the repo (grepped all `.html`/`.js`); the projects-page link correctly opens
+the Tutorial in a new tab scrolled straight to the box; both Overview and Tutorial render
+the new title, lead paragraph, and three bullets correctly; console clean on all three
+pages.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v3`.

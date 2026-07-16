@@ -121,6 +121,10 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   get a short red tick beside their scene number plus a tooltip note and a legend entry, so
   it's clear the size is an estimate. See `CHART_FEATURE_SPEC.md` §14.
   *(`feature/updates_v3` branch, pushed, not yet merged)*
+- `[x]*` Added a "Size by Word Count" entry to the Tutorial's Scene Flow Chart section and
+  a sentence to its Overview card — the feature above had no user-facing documentation
+  until now. Also fixed a stale "Undo/Redo: up to 10 steps" in the Tutorial (raised to 50
+  in an earlier fix; the docs were never updated to match).
 - `[ ]` Presence lanes chart — rows are selected library items, columns are scenes in
   order, a filled cell marks where an item appears; a subway-map view of the ensemble.
   Reuses the same data as the existing cross-reference matrix report. *(proposed, not
@@ -152,6 +156,8 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 - `[x]*` Removed the non-functional "Save" menu item (the app already autosaves on every
   change, so it never did anything). Ctrl+S is now a documented no-op instead of
   triggering the browser's own "Save Page As…" dialog.
+- `[x]*` Renamed the Projects page's "Import JSON" button to "Import project (JSON file)"
+  for clarity, and updated the one other place (Tutorial) that referenced the old label.
 
 ## 5. Scene Editing (New/Edit Scene forms)
 
@@ -248,6 +254,15 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   button was.
 - `[ ]` UI to customize the edit-count / time thresholds — currently hardcoded constants
   in `backup.js`.
+- `[x]*` Reworked the "Working Across Devices" messaging (Projects/Overview/Tutorial) into
+  **"Your Data & Backups"** — plainer language for novice users, making clear that (a) a
+  project just persists on its own with no import needed to continue working, (b)
+  backing up matters because browser storage itself can be wiped (not only for moving
+  between devices), and (c) export/import/conflict-detection, now three short bullets
+  instead of one dense paragraph. The Projects page dropped the full banner in favor of a
+  small "Learn about your data and backups" text link next to the toolbar that opens the
+  Tutorial in a new tab, anchored straight to that section (`tutorial.html#data-backups`)
+  — first tried as a "?" icon, changed to a text link after it read as unclear on its own.
 
 ---
 
@@ -259,7 +274,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 | `feature/flow_visual` | Merged to `main` (PR #7) |
 | `feature/updates_v1` | Merged to `main` (PR #9) — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting, POV chart-highlighting fix, Unassigned chart indicator, Mac Alt-shortcut fix, POV scene-card row, POV added to Reporting, Overview/Tutorial docs updated for POV |
 | `feature/updates_v2` | Pushed to `origin`, **not yet merged to `main`** — all of `UPDATE_ROADMAP.md`'s code-review fixes (§1-3), custom POV name edit/delete, chart segment hover polish, chart margin tightening, the snake chart width-utilization and curve-clipping fixes, the sample-project seeding race fix, a fresh full-app audit's fixes (§6: import validation gap, orphaned-section reports bug, filtered-section-delete bug, section-color undo bug, report-generation perf), the CSP `unsafe-inline` removal, and (most recent) §7's drag-and-drop/keyboard fixes (stuck-drag recovery, multi-select+filter drag, undo/redo input and drag guards, Caps-Lock-proof export shortcut, Alt-shortcuts-under-modal guard) |
-| `feature/updates_v3` | Pushed to `origin`, **not yet merged to `main`** — "Show relative word count" chart toggle, sizing scene segments proportionally by `wordCount` with an average-based fallback for scenes missing it. See `STATUS.md` and `CHART_FEATURE_SPEC.md` §14. |
+| `feature/updates_v3` | Pushed to `origin`, **not yet merged to `main`** — "Show relative word count" chart toggle (see `CHART_FEATURE_SPEC.md` §14); a third full-app audit's fixes (`UPDATE_ROADMAP.md` §8: a high-severity corrupt-project-load data-loss bug, save-failure alerting, wordCount clamping, a character/POV-name collision, a stale drag-insert anchor, a menu-hover bug, and several other low-severity fixes — fully closed out, nothing left open); and a "Your Data & Backups" messaging rework across Projects/Overview/Tutorial plus feature-doc refresh (Size by Word Count, a stale Undo/Redo count). See `STATUS.md` for the full narrative. |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
 on `feature/updates_v2` until that branch is merged into `main`.
