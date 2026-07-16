@@ -475,6 +475,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .pm-btn-primary:hover{filter:brightness(1.1);box-shadow:0 4px 14px color-mix(in srgb,var(--acc) 40%,transparent)}
 .pm-btn-secondary{background:var(--s0);color:var(--tx);border:1px solid var(--s1)}
 .pm-btn-secondary:hover{background:var(--s1)}
+.pm-help-link{font-size:13px;font-weight:700;font-family:inherit;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--s1);background:var(--s0);color:var(--sub);cursor:pointer;flex-shrink:0;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s,border-color .12s;text-decoration:none}
+.pm-help-link:hover{background:var(--acc);border-color:var(--acc);color:var(--ontx)}
 .pm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
 .pm-card{background:var(--cbg);border:2px solid var(--cbdr);border-radius:12px;padding:20px;cursor:pointer;transition:border-color .15s,box-shadow .2s,transform .15s;position:relative;display:flex;flex-direction:column;gap:10px}
 .pm-card:hover{border-color:var(--acc);box-shadow:0 6px 24px color-mix(in srgb,var(--acc) 18%,transparent);transform:translateY(-2px)}

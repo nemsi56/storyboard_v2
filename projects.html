@@ -25,14 +25,11 @@
   </div>
   <div class="pm-body">
     <div class="pm-inner">
-      <div style="background:#fff8e6;border:2px solid #b06a00;border-radius:8px;padding:20px;margin:0 0 24px 0;font-size:14px;line-height:1.6;color:#2c2416">
-        <div style="font-weight:700;text-transform:uppercase;color:#b06a00;margin-bottom:12px;font-size:12px">WORKING ACROSS DEVICES</div>
-        <p style="margin:0;color:#2c2416">Since all your content stays on your device, there is no cloud service for SceneSetter. To share work among separate devices, export the project (a JSON file) and import it on the other device. SceneSetter tracks each project's version: if you import a file that is older than, newer than, or in conflict with your local copy, it will detect that and ask what to do — so you won't accidentally overwrite new work with old. A simple routine: export when you finish on one device, and import that file before you continue on another.</p>
-      </div>
       <div class="pm-toolbar">
         <button class="pm-btn pm-btn-primary" id="pm-new-project-btn">+ New Project</button>
-        <button class="pm-btn pm-btn-secondary" id="pm-import-btn">Import JSON</button>
+        <button class="pm-btn pm-btn-secondary" id="pm-import-btn">Import project (JSON file)</button>
         <input type="file" id="proj-import-input" accept=".json" style="display:none">
+        <a href="tutorial.html#data-backups" target="_blank" rel="noopener" class="pm-help-link" title="Learn about your data and backups" aria-label="Learn about your data and backups">?</a>
       </div>
       <div id="proj-grid" class="pm-grid"></div>
     </div>
