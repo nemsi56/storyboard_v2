@@ -78,8 +78,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 }
 #lib-clr.lib-clr-aura:hover{animation-play-state:paused}
 @keyframes lib-clr-pulse{
-  0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--lv) 55%,transparent);transform:scale(1)}
-  50%{box-shadow:0 0 12px 5px color-mix(in srgb,var(--lv) 65%,transparent);transform:scale(1.04)}
+  0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--lv) 45%,transparent);transform:scale(1)}
+  50%{box-shadow:0 0 8px 3px color-mix(in srgb,var(--lv) 45%,transparent);transform:scale(1.02)}
 }
 /* AND/OR shared styles */
 .ao-lbl{font-size:10px;color:var(--o0);flex-shrink:0}
