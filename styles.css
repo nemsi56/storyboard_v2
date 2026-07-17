@@ -427,8 +427,9 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 /* ══ SECTION FILTER MULTI-SELECT ══════════════════════════════════════════ */
 .sec-filter-wrap{position:relative;display:none;flex-shrink:0}
 .sec-filter-wrap.vis{display:block}
-.sec-filter-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:11px;font-family:inherit;padding:4px 8px;cursor:pointer;outline:none;white-space:nowrap;transition:border-color .14s;display:flex;align-items:center;gap:4px}
+.sec-filter-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:11px;font-family:inherit;padding:4px 8px;cursor:pointer;outline:none;white-space:nowrap;transition:border-color .14s,box-shadow .14s;display:flex;align-items:center;gap:4px}
 .sec-filter-btn:hover{border-color:var(--acc)}
+.sec-filter-btn.sec-filter-on{border-color:var(--acc);box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 35%,transparent)}
 .sec-filter-drop{display:none;position:absolute;top:calc(100% + 5px);left:0;z-index:300;background:var(--bg0);border:1.5px solid var(--s1);border-radius:8px;padding:5px 4px;min-width:160px;box-shadow:0 5px 18px rgba(0,0,0,.13)}
 .sec-filter-drop.open{display:flex;flex-direction:column;gap:1px}
 .sec-fck{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:5px;cursor:pointer;font-size:12px;color:var(--tx);transition:background .1s;white-space:nowrap;user-select:none}
@@ -621,9 +622,9 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 /* ── SCENE FLOW CHART ────────────────────────────────────────────────────── */
 #chart-host{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;background:var(--sbg)}
 #chart-toolbar{height:46px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
-#chart-legend{flex-shrink:0;display:flex;align-items:center;gap:0;padding:5px 12px;background:var(--bg1);border-bottom:1px solid var(--bdr);font-size:11px;color:var(--sub);white-space:nowrap;overflow-x:auto}
+#chart-legend{flex-shrink:0;display:flex;flex-wrap:wrap;align-items:center;row-gap:4px;column-gap:0;padding:5px 12px;background:var(--bg1);border-bottom:1px solid var(--bdr);font-size:11px;color:var(--sub);max-height:92px;overflow-y:auto}
 #chart-legend:empty{display:none}
-.chart-legend-item{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:1px 4px}
+.chart-legend-item{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:1px 4px;white-space:nowrap}
 .chart-legend-item:hover,.chart-legend-item.chart-legend-hl{background:var(--s0);color:var(--tx)}
 .chart-legend-letter{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:15px;height:15px;border-radius:50%;background:var(--tx);color:var(--bg1);font-weight:700;font-size:9px;transition:background .12s,color .12s}
 .chart-legend-item:hover .chart-legend-letter,.chart-legend-item.chart-legend-hl .chart-legend-letter{background:var(--acc);color:var(--ontx)}
@@ -632,6 +633,15 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-type-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:5px 12px;cursor:pointer;transition:background .12s,border-color .12s}
 .chart-type-btn:hover{border-color:var(--acc)}
 .chart-type-btn.on{background:var(--acc);color:var(--ontx);border-color:var(--acc)}
+#chart-type-toggle{display:flex;border:1px solid var(--s1);border-radius:6px;overflow:hidden}
+#chart-type-toggle .chart-type-btn{display:flex;align-items:center;justify-content:center;padding:6px 10px;border:none;border-radius:0}
+#chart-type-toggle .chart-type-btn:first-child{border-right:1px solid var(--s1)}
+#chart-type-toggle .chart-type-btn.on svg{color:var(--ontx)}
+#chart-type-toggle .chart-type-btn svg{color:var(--tx);display:block}
+#chart-trace-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)}
+#chart-trace-sel{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:4px 8px;cursor:pointer;transition:border-color .14s,box-shadow .14s}
+#chart-trace-sel:hover{border-color:var(--acc)}
+#chart-trace-sel.trace-on{border-color:var(--acc);box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 35%,transparent)}
 #chart-status{flex:1;color:var(--sub);font-size:11px;margin-left:4px}
 #chart-print-btn,#chart-close-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:11px;font-family:inherit;padding:5px 10px;cursor:pointer;white-space:nowrap;transition:border-color .12s}
 #chart-print-btn:hover,#chart-close-btn:hover{border-color:var(--acc)}
@@ -664,5 +674,14 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-sec-marker:hover text,.chart-sec-marker.chart-sec-marker-hl text{fill:var(--ontx)}
 .chart-pie-wedge{transition:fill .12s;cursor:pointer}
 .chart-pie-wedge:hover{fill:var(--s1)}
+svg.chart-trace .chart-num{paint-order:stroke;stroke:var(--s1);stroke-width:3px}
+.chart-lane{transition:stroke-width .12s,filter .12s;cursor:pointer}
+/* Width is set per-element by highlightLaneLegend() (JS), proportional to the
+   lane's own base width — a fixed CSS px value stopped reading as a highlight
+   once bands were naturally that thick already. filter is the CSS-only half
+   of the same highlight and works regardless of width. */
+.chart-lane.chart-lane-hl{filter:brightness(1.35) saturate(1.3)}
+.chart-legend-swatch{display:inline-block;flex-shrink:0;width:14px;height:3px;border-radius:2px}
+.chart-legend-hint{opacity:.75;font-style:italic}
 
 

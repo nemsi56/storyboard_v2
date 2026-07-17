@@ -125,10 +125,60 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   a sentence to its Overview card — the feature above had no user-facing documentation
   until now. Also fixed a stale "Undo/Redo: up to 10 steps" in the Tutorial (raised to 50
   in an earlier fix; the docs were never updated to match).
+- `[x]*` **Trace lines** — a "Trace:" selector in the chart toolbar lets the user pick one
+  library category (Characters/Locations/Themes/Misc/POV); each item explicitly selected in
+  that category (via the existing Library panel checkboxes) draws as its own colored line
+  running through the scenes it appears in, layered inside the ribbon alongside the existing
+  segments — combining the highlight and flow-chart features into one view, per the user's
+  own framing of the idea. Lanes are only the items actually selected (nothing selected
+  shows a "Select … to trace them" legend hint, not every item in the category); no small
+  hard cap on lane count (an initial `MAX_LANES = 6` was removed after user feedback) — a
+  16-color palette (separate from the 8-color section-color palette, which repeated a color
+  past 8 items) and continuously thinning band widths keep large selections readable, gated
+  only by a 24-item runaway guard. See `TRACE_LINES_SPEC.md` for the original build spec.
+  *(`feature/updates_v4` branch, pushed, not yet merged)*
+- `[x]*` Trace lines' tube/lane geometry, tuned across several rounds of live feedback: the
+  tube (both chart types) widens and its lane bands thin continuously as more items are
+  traced, filling the tube's full width edge to edge rather than clustering in the middle;
+  thickness ramps in smoothly as lanes are added instead of jumping straight to its widened
+  size on the first selection. The circle's inner pie shrinks as the ring thickens, and the
+  ring's own radius shrinks to compensate so the whole chart always stays inside the visible
+  pane (an earlier version let the ring grow past the pane and rely on scrolling, which read
+  as the chart "cutting off"). The snake's turn radius tracks its thickness directly, so
+  row-to-row spacing grows with the tube instead of the turns getting cramped.
+- `[x]*` Fixed a real geometry bug in the snake chart's trace lines: lane dash positions
+  were computed via proportional path-length scaling, which is only exact for a circle — a
+  snake lane's turns have a different radius (and arc length) than its straight runs, so a
+  uniform scale drifted colored lane boundaries away from the true scene boundaries, worst
+  near turns and with wider lane offsets (measured 13.7px of drift at one scene boundary
+  before the fix; a user screenshot showed this as "colors running across scenes").
+  Replaced with an exact length-mapping function that walks the same row/turn structure the
+  lane path is built from — verified worst-case error across every scene boundary in a real
+  render drops to 0.04px.
+- `[x]*` Lane hover/legend-hover highlighting now widens a lane proportionally to its own
+  base width (plus a brightness/saturation bump) instead of to a fixed pixel value, which
+  had stopped reading as a highlight once bands were naturally that thick or thicker on
+  their own — flagged by the user as "hard to tell when they're highlighted."
+- `[x]*` Fixed a stale section-name pin (left over from scrolling the Scene Board) staying
+  on screen after switching to chart view — `renderBoard()` normally clears it but
+  early-returns into `renderChart()` while chart mode is active and never reaches that
+  cleanup line.
+- `[x]*` Fixed the chart status line showing the project's total section count even when
+  the Sections filter had narrowed the board to fewer — now shows the filtered count.
+- `[x]*` The chart's Trace selector and the board's Sections filter button now show an
+  accent glow ring whenever they're not in their default state (a trace category chosen, or
+  the section filter narrowed), matching the app's existing active-state affordance used
+  elsewhere in the toolbar.
+- `[x]*` Snake/Circle chart-type buttons are now a two-icon segmented control (a squiggly
+  line / a ring) instead of text buttons; the snake icon matches the actual chart's 3-row
+  winding shape.
 - `[ ]` Presence lanes chart — rows are selected library items, columns are scenes in
   order, a filled cell marks where an item appears; a subway-map view of the ensemble.
   Reuses the same data as the existing cross-reference matrix report. *(proposed, not
-  built — top pick for the next chart type)*
+  built — largely superseded by Trace lines above, which draws the same "where does this
+  item appear" information as colored lines directly on the existing snake/circle chart
+  rather than a separate grid view; still a distinct idea if a literal row/column matrix
+  layout is ever wanted instead)*
 - `[ ]` Arc diagram — scenes on one line, arcs over the top connecting consecutive
   appearances of a chosen item; reads better than the circle's chords at high scene
   counts. *(proposed, not built)*
@@ -142,7 +192,9 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   the story where. A scene with 2+ POVs needs a split-fill or small multi-dot marker
   rather than one solid color. Distinct from the section-colors toggle skipped above —
   POV coloring is well-suited to this precisely because it's assigned per scene, unlike
-  sections. *(proposed, not built)*
+  sections. Trace lines above already covers most of this need (tracing selected POV
+  names as lines rather than filling each segment), but doesn't fill the segment itself
+  by its own POV the way this proposal describes. *(proposed, not built)*
 
 ## 4. Project Management
 
@@ -275,6 +327,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 | `feature/updates_v1` | Merged to `main` (PR #9) — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting, POV chart-highlighting fix, Unassigned chart indicator, Mac Alt-shortcut fix, POV scene-card row, POV added to Reporting, Overview/Tutorial docs updated for POV |
 | `feature/updates_v2` | Pushed to `origin`, **not yet merged to `main`** — all of `UPDATE_ROADMAP.md`'s code-review fixes (§1-3), custom POV name edit/delete, chart segment hover polish, chart margin tightening, the snake chart width-utilization and curve-clipping fixes, the sample-project seeding race fix, a fresh full-app audit's fixes (§6: import validation gap, orphaned-section reports bug, filtered-section-delete bug, section-color undo bug, report-generation perf), the CSP `unsafe-inline` removal, and (most recent) §7's drag-and-drop/keyboard fixes (stuck-drag recovery, multi-select+filter drag, undo/redo input and drag guards, Caps-Lock-proof export shortcut, Alt-shortcuts-under-modal guard) |
 | `feature/updates_v3` | Pushed to `origin`, **not yet merged to `main`** — "Show relative word count" chart toggle (see `CHART_FEATURE_SPEC.md` §14); a third full-app audit's fixes (`UPDATE_ROADMAP.md` §8: a high-severity corrupt-project-load data-loss bug, save-failure alerting, wordCount clamping, a character/POV-name collision, a stale drag-insert anchor, a menu-hover bug, and several other low-severity fixes — fully closed out, nothing left open); and a "Your Data & Backups" messaging rework across Projects/Overview/Tutorial plus feature-doc refresh (Size by Word Count, a stale Undo/Redo count). See `STATUS.md` for the full narrative. |
+| `feature/updates_v4` | Pushed to `origin`, **not yet merged to `main`** — new "Trace lines" chart feature: a "Trace:" selector draws each selected library item as its own colored line through the scenes it appears in, layered on the existing snake/circle chart (see `TRACE_LINES_SPEC.md`), plus six rounds of live-feedback fixes on top of it — an exact snake lane-position fix (13.7px worst-case drift down to 0.04px), continuous no-cap tube/band scaling that always fills the tube's full width, gradual (not jumping) tube growth, a dedicated 16-color trace palette (the shared 8-color section palette was repeating colors past 8 lanes), proportional (not fixed-px) hover-highlight widening, active-state glow rings on the Trace/Sections selectors, a stale section-pin fix, and a chart section-count fix. See `STATUS.md` for the full narrative. |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
-on `feature/updates_v2` until that branch is merged into `main`.
+on the branch noted for that item until it's merged into `main`.
