@@ -663,9 +663,16 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
    into #chart-toolbar while the chart is open (see openChartView/
    closeChartView in charts.js), always in the same spot relative to the
    Snake/Circle pair so it reads as one control regardless of which view. */
-#view-toggle{display:flex;align-items:flex-end;gap:10px;flex-shrink:0}
-.view-toggle-item{display:flex;flex-direction:column;align-items:center;gap:1px}
-.view-toggle-lbl{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--o0);line-height:1}
+/* align-items:center here, not flex-end — the label below is pulled out of
+   flow (position:absolute) specifically so this item's flex height is just
+   its button, same as every sibling control in the row (Show relative word
+   count, Trace, Showing X scenes…). Stacking the label in-flow instead made
+   the whole column taller than those single-line siblings, so centering it
+   shifted its button down relative to everything else — the row read as
+   uneven even though every item was individually centered correctly. */
+#view-toggle{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.view-toggle-item{position:relative;display:flex}
+.view-toggle-lbl{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:2px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--o0);line-height:1;white-space:nowrap;pointer-events:none}
 #chart-type-cards{display:flex;align-items:center;justify-content:center;padding:6px 10px}
 #chart-type-cards svg{color:var(--tx);display:block}
 #chart-type-cards.on svg{color:var(--ontx)}
