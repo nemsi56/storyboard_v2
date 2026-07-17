@@ -68,6 +68,7 @@ function saveState() {
       lastExportedAt: S.lastExportedAt, editsSinceExport: S.editsSinceExport,
       projectUid: S.projectUid, revision: S.revision,
       povCustomNames: S.povCustomNames,
+      povOrder: S.povOrder,
     }));
     const index = loadProjectIndex();
     const entry = index.find(p => p.id === currentProjectId);
@@ -183,6 +184,11 @@ function loadState(storageKey) {
         }
       });
     });
+    // Manual drag order for the Library panel's POV row (see
+    // orderedUsedPovNames in editor.js) — append-only, so names missing here
+    // (older saves, or a hand-edited file) just fall back to the panel's
+    // default order until dragged, rather than being rejected.
+    S.povOrder = (Array.isArray(d.povOrder) ? d.povOrder : []).filter(n => typeof n === 'string');
     if (migrated) saveState();
     return true;
   } catch(e) {
@@ -213,6 +219,7 @@ const S = {
   projectUid: null,
   revision: 0,
   povCustomNames: [],
+  povOrder: [],
 };
 
 // ── HISTORY (undo / redo) ─────────────────────────────────────────────────────
@@ -235,6 +242,7 @@ function snapshot() {
     sections: S.sections.map(s => ({...s})),
     nextSecId: S.nextSecId,
     povCustomNames: [...S.povCustomNames],
+    povOrder: [...S.povOrder],
   };
 }
 
@@ -259,6 +267,7 @@ function applySnapshot(snap) {
   S.sections  = (snap.sections || []).map(s => ({...s}));
   S.nextSecId = snap.nextSecId || 1;
   S.povCustomNames = [...(snap.povCustomNames || [])];
+  S.povOrder = [...(snap.povOrder || [])];
   SECS.forEach(({ key }) => {
     S.selections[key] = new Set([...S.selections[key]].filter(v => S[key].some(x => x.name === v)));
   });

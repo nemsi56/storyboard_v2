@@ -663,7 +663,9 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
    into #chart-toolbar while the chart is open (see openChartView/
    closeChartView in charts.js), always in the same spot relative to the
    Snake/Circle pair so it reads as one control regardless of which view. */
-#view-toggle{display:flex;align-items:center;gap:6px;flex-shrink:0}
+#view-toggle{display:flex;align-items:flex-end;gap:10px;flex-shrink:0}
+.view-toggle-item{display:flex;flex-direction:column;align-items:center;gap:1px}
+.view-toggle-lbl{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--o0);line-height:1}
 #chart-type-cards{display:flex;align-items:center;justify-content:center;padding:6px 10px}
 #chart-type-cards svg{color:var(--tx);display:block}
 #chart-type-cards.on svg{color:var(--ontx)}

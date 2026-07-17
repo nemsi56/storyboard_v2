@@ -134,6 +134,7 @@ function resetState() {
   S.scenes = []; S.nextId = 1; S.andOr = 'OR';
   S.sections = []; S.nextSecId = 1;
   S.povCustomNames = [];
+  S.povOrder = [];
   SECS.forEach(({ key }) => S.selections[key].clear());
   S.selIds.clear(); S.editingId = null;
   S.projectUid = null; S.revision = 0;
@@ -541,6 +542,10 @@ function importProjectJSON(inputEl) {
       }
       if (d.povCustomNames != null && (!Array.isArray(d.povCustomNames) || !d.povCustomNames.every(isStr))) {
         alert('Invalid project structure. "povCustomNames" must be an array of strings when present.');
+        return;
+      }
+      if (d.povOrder != null && (!Array.isArray(d.povOrder) || !d.povOrder.every(isStr))) {
+        alert('Invalid project structure. "povOrder" must be an array of strings when present.');
         return;
       }
 
