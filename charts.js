@@ -40,13 +40,13 @@ const SNAKE_THICKNESS_CEIL = 220;
 // practice traceThickness rarely asks for this much.
 const CIRCLE_THICKNESS_CEIL = 160;
 const SNAKE_TURN_CLEARANCE = 19; // r - thickness/2, held constant as thickness grows — see computeSnakeLayout
-// The tube jumps to this floor the moment ANY tracing is active (k>=1), rather
-// than growing gradually from `base` — so switching trace on immediately frees
-// visible room (a visibly smaller circle pie, more separated snake rows)
-// instead of only reacting once several items are selected. Untouched when
-// trace is off.
+// The tube ramps up toward this floor as lanes are added (see traceThickness)
+// rather than jumping straight there on the first selection — one lane looks
+// like the non-trace tube, and it visibly grows with each item traced.
+// Untouched (returns `base`) while trace is off.
 const SNAKE_TRACE_FLOOR = 80;
 const CIRCLE_TRACE_FLOOR = 90;
+const TRACE_RAMP_DECAY = 0.6; // how quickly the ramp closes in on the floor — ~92% there by 6 lanes
 const UNASSIGNED_SEC_ID = 'unassigned';
 // Avg wordCount among scenes with one, from the most recently computed layout —
 // stashed here so the tooltip (which only gets a single scene, not the whole
@@ -63,7 +63,9 @@ if (document.getElementById('chart-host')) {
     document.getElementById('chart-type-snake').classList.toggle('on', chartType === 'snake');
     document.getElementById('chart-type-circle').classList.toggle('on', chartType === 'circle');
     document.getElementById('chart-wc-toggle').classList.toggle('on', showWordCount);
-    document.getElementById('chart-trace-sel').value = traceCat;
+    const traceSel = document.getElementById('chart-trace-sel');
+    traceSel.value = traceCat;
+    traceSel.classList.toggle('trace-on', traceCat !== 'off');
   })();
 
   // Re-render on any chart-area size change. The ResizeObserver catches panel
@@ -138,6 +140,7 @@ function traceActive() { return traceCat !== 'off'; }
 function setChartTrace(cat) {
   if (cat !== 'off' && !TRACE_CATS.includes(cat)) return;
   traceCat = cat;
+  document.getElementById('chart-trace-sel').classList.toggle('trace-on', traceCat !== 'off');
   const p = loadGlobalPrefs(); p.chartTrace = traceCat; saveGlobalPrefs(p);
   if (chartMode) renderChart();
 }
@@ -222,10 +225,11 @@ function traceLaneWidth(k) {
   if (k <= 1) return LANE_W_MAX;
   return Math.max(LANE_W_MIN, LANE_W_MAX * Math.pow(LANE_W_DECAY, k - 1));
 }
-// How thick the tube itself should be, given the lane count. Jumps straight to
-// `floor` the moment tracing is active (k>=1) — not a gradual climb from
-// `base` — so turning tracing on immediately claims room instead of only
-// reacting once several items pile up. Beyond that, grows only once `floor`
+// How thick the tube itself should be, given the lane count. Ramps smoothly
+// from `base` toward `floor` as lanes are added (TRACE_RAMP_DECAY controls how
+// fast) rather than jumping straight to `floor` on the first selection — one
+// lane looks like the non-trace tube; the tube visibly grows with each
+// further item traced. Past the ramp, grows further only once `floor`
 // wouldn't leave lanes at least LANE_MIN_PITCH apart when spread across the
 // full tube width (see laneOffsets — lanes always fill whatever width they're
 // given, so this is the one place lane count can still force more room),
@@ -233,11 +237,12 @@ function traceLaneWidth(k) {
 // trace is off — the non-trace appearance is always untouched.
 function traceThickness(base, floor, ceil, k) {
   if (k <= 0) return base;
-  if (k === 1) return floor;
+  const ramped = base + (floor - base) * (1 - Math.pow(TRACE_RAMP_DECAY, k - 1));
+  if (k === 1) return ramped; // equals `base` exactly — see TRACE_RAMP_DECAY math
   const w = traceLaneWidth(k);
   const margin = w / 2 + LANE_EDGE_PAD;
   const needed = 2 * margin + (k - 1) * LANE_MIN_PITCH;
-  return Math.min(ceil, Math.max(floor, needed));
+  return Math.min(ceil, Math.max(ramped, needed));
 }
 // Lanes always spread across the FULL usable width of the tube, edge to edge
 // (not just far enough apart to be legible) — a tube sized generously by
@@ -268,6 +273,7 @@ function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane, laneW
     clone.dataset.lane = lane.name;
     clone.setAttribute('stroke', lane.color);
     clone.setAttribute('stroke-width', laneW);
+    clone.dataset.baseWidth = laneW; // highlightLaneLegend widens relative to this, not a fixed px value
     clone.setAttribute('stroke-linecap', 'round');
     clone.setAttribute('fill', 'none');
     clone.setAttribute('stroke-dasharray', len + ' ' + Math.max(0, laneTotal - len));
@@ -279,8 +285,16 @@ function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane, laneW
     container.appendChild(clone);
   });
 }
+// Widens a lane by a multiple of its OWN width (plus a flat px bump) rather
+// than to a fixed absolute value — a fixed target (e.g. "5px") stops reading
+// as a highlight once bands are naturally that thick or thicker on their own,
+// which is common now that lanes can grow well past their old 3px max.
 function highlightLaneLegend(name, on) {
-  document.querySelectorAll('.chart-lane[data-lane="' + CSS.escape(name) + '"]').forEach(l => l.classList.toggle('chart-lane-hl', on));
+  document.querySelectorAll('.chart-lane[data-lane="' + CSS.escape(name) + '"]').forEach(l => {
+    l.classList.toggle('chart-lane-hl', on);
+    const base = parseFloat(l.dataset.baseWidth) || LANE_W_MIN;
+    l.setAttribute('stroke-width', on ? base * 1.6 + 1.5 : base);
+  });
   const el = document.querySelector('.chart-legend-item[data-lane="' + CSS.escape(name) + '"]');
   if (el) el.classList.toggle('chart-legend-hl', on);
 }
@@ -334,7 +348,10 @@ function renderChartNoMatch(canvas) {
 
 function updateChartStatus(scenes) {
   const el = document.getElementById('chart-status'); if (!el) return;
-  const n = scenes.length, secCount = S.sections.length;
+  // secFilterIds (from the Sections dropdown, editor.js) is empty = "all
+  // sections visible"; once it's narrowed to a subset, that's the section
+  // count that actually describes what's on screen, not S.sections.length.
+  const n = scenes.length, secCount = secFilterIds.size > 0 ? secFilterIds.size : S.sections.length;
   let txt = `${n} scene${n !== 1 ? 's' : ''} · ${secCount} section${secCount !== 1 ? 's' : ''}`;
   if (traceActive() && !searchQ) {
     const k = S.selections[traceCat].size;

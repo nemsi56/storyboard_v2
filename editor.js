@@ -1274,6 +1274,7 @@ function onSecFilterChange(id, checked) {
 function updateSecFilterBtn() {
   const btn = document.getElementById('sec-filter-btn');
   if (!btn) return;
+  btn.classList.toggle('sec-filter-on', secFilterIds.size > 0);
   if (secFilterIds.size === 0) {
     btn.textContent = 'All Sections ▾';
   } else if (secFilterIds.size === 1) {
