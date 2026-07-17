@@ -65,6 +65,14 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #lib-clr-wrap{padding:6px 14px 2px;display:none;flex-shrink:0}
 #lib-clr{font-size:11px;color:var(--lv);background:none;border:1px solid color-mix(in srgb,var(--lv) 40%,transparent);border-radius:5px;cursor:pointer;padding:4px 9px;width:100%;transition:background .12s;font-family:inherit}
 #lib-clr:hover{background:color-mix(in srgb,var(--lv) 12%,transparent)}
+/* Draws the eye while a highlight is actually active — the button itself is
+   otherwise easy to miss among the library panel's other low-key controls. */
+#lib-clr.lib-clr-aura{animation:lib-clr-pulse 1.8s ease-in-out infinite}
+#lib-clr.lib-clr-aura:hover{animation-play-state:paused}
+@keyframes lib-clr-pulse{
+  0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--lv) 45%,transparent)}
+  50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--lv) 0%,transparent)}
+}
 /* AND/OR shared styles */
 .ao-lbl{font-size:10px;color:var(--o0);flex-shrink:0}
 .ao-btn{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;border:1px solid var(--s1);background:var(--s0);color:var(--o1);cursor:pointer;transition:background .12s,color .12s,border-color .12s;font-family:inherit}
@@ -114,6 +122,10 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 /* Grip indicator */
 #cp-resize::after,#sp-resize::after,#lp-resize::after{content:'⠿';position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:var(--o1);opacity:.75;pointer-events:none;transition:opacity .15s,color .15s;line-height:1}
 #cp-resize:hover::after,#cp-resize.dragging::after,#sp-resize:hover::after,#sp-resize.dragging::after,#lp-resize:hover::after,#lp-resize.dragging::after{opacity:1;color:var(--ontx)}
+/* Scene ↔ Scene Board divider: the boundary between editing and board views,
+   so it gets stronger contrast (and a touch more width) than the other two
+   panel dividers instead of blending into the surrounding chrome. */
+#cp-resize{width:9px;background:var(--s1);border-left:1px solid var(--tx);border-right:1px solid var(--tx)}
 
 /* ══ CENTER PANEL ══════════════════════════════════════════════════════════ */
 #cp{width:258px;background:var(--bg2);border-right:none}
@@ -184,7 +196,6 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 /* ══ STORYBOARD PANEL ══════════════════════════════════════════════════════ */
 #sbp{flex:1;min-width:0;background:var(--sbg);display:flex;flex-direction:column;overflow:hidden}
 #sbhdr{height:46px;border-bottom:1px solid var(--bdr);padding:0 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--sbg)}
-.sbt{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--o0);white-space:nowrap;flex-shrink:0}
 .sbhl{display:flex;align-items:center;gap:6px;flex-shrink:0}
 #sbcnt{font-size:12px;color:var(--sub)}
 #clrsel{font-size:11px;color:var(--lv);background:none;border:none;cursor:pointer;padding:3px 7px;border-radius:5px;display:none;transition:background .12s;font-family:inherit;white-space:nowrap}
@@ -603,6 +614,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #backup-banner-text{flex:1;display:flex;flex-direction:column;gap:1px}
 #backup-banner-msg{font-size:13px;font-weight:700}
 #backup-banner-note{font-size:11px;opacity:.85}
+#backup-banner-link{font-size:11px;color:inherit;text-decoration:underline;text-underline-offset:2px;opacity:.85;transition:opacity .12s;width:fit-content}
+#backup-banner-link:hover{opacity:1}
 .backup-banner-btn{padding:6px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:6px;cursor:pointer;border:none;background:var(--ontx);color:var(--acc);flex-shrink:0}
 .backup-banner-btn:hover{opacity:.85}
 .backup-banner-dismiss{background:none;border:none;color:inherit;font-size:18px;line-height:1;cursor:pointer;padding:2px 6px;opacity:.75;flex-shrink:0}
@@ -626,8 +639,6 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #chart-legend:empty{display:none}
 .chart-legend-item{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:1px 4px;white-space:nowrap}
 .chart-legend-item:hover,.chart-legend-item.chart-legend-hl{background:var(--s0);color:var(--tx)}
-.chart-legend-letter{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:15px;height:15px;border-radius:50%;background:var(--tx);color:var(--bg1);font-weight:700;font-size:9px;transition:background .12s,color .12s}
-.chart-legend-item:hover .chart-legend-letter,.chart-legend-item.chart-legend-hl .chart-legend-letter{background:var(--acc);color:var(--ontx)}
 .chart-legend-sep{flex-shrink:0;margin:0 8px;opacity:.5}
 .chart-legend-tick{display:inline-block;flex-shrink:0;width:2px;height:11px;border-radius:1px;background:var(--rd);transform:rotate(20deg)}
 .chart-type-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:5px 12px;cursor:pointer;transition:background .12s,border-color .12s}
@@ -642,7 +653,10 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #chart-trace-sel{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:4px 8px;cursor:pointer;transition:border-color .14s,box-shadow .14s}
 #chart-trace-sel:hover{border-color:var(--acc)}
 #chart-trace-sel.trace-on{border-color:var(--acc);box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 35%,transparent)}
+/* Lives in #sbhdr while the chart is open (see openChartView in charts.js) — flex:1
+   there fills the header line the same way it used to fill the toolbar row. */
 #chart-status{flex:1;color:var(--sub);font-size:11px;margin-left:4px}
+#chart-print-btn{margin-left:auto}
 #chart-print-btn,#chart-close-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:11px;font-family:inherit;padding:5px 10px;cursor:pointer;white-space:nowrap;transition:border-color .12s}
 #chart-print-btn:hover,#chart-close-btn:hover{border-color:var(--acc)}
 #chart-scroll{flex:1;min-height:0;overflow:auto;position:relative;background:var(--sbg)}

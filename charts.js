@@ -105,6 +105,13 @@ function openChartView() {
   // Card-only controls: meaningless once cards aren't on screen.
   document.getElementById('det-ck-wrap').style.display = 'none';
   document.getElementById('scalew-wrap').style.display = 'none';
+  // Reuse the top header line for the chart's own status text (scene/section/
+  // trace counts) in place of the board's scene count, and drop the section
+  // filter down onto the chart toolbar row, after the Trace dropdown — moving
+  // the actual nodes (not clones) keeps their listeners and state intact.
+  document.getElementById('sbcnt').style.display = 'none';
+  document.getElementById('sbhdr').insertBefore(document.getElementById('chart-status'), document.getElementById('det-ck-wrap'));
+  document.getElementById('chart-toolbar').insertBefore(document.getElementById('sec-filter-wrap'), document.getElementById('chart-print-btn'));
   setChartMenuLabel();
   renderChart();
 }
@@ -115,6 +122,9 @@ function closeChartView() {
   document.getElementById('sbscrl').style.display = '';
   document.getElementById('det-ck-wrap').style.display = '';
   document.getElementById('scalew-wrap').style.display = '';
+  document.getElementById('sbcnt').style.display = '';
+  document.getElementById('chart-toolbar').insertBefore(document.getElementById('chart-status'), document.getElementById('chart-print-btn'));
+  document.getElementById('sbhdr').insertBefore(document.getElementById('sec-filter-wrap'), document.getElementById('srch-wrap'));
   setChartMenuLabel();
   renderBoard();
 }
@@ -352,7 +362,7 @@ function updateChartStatus(scenes) {
   // sections visible"; once it's narrowed to a subset, that's the section
   // count that actually describes what's on screen, not S.sections.length.
   const n = scenes.length, secCount = secFilterIds.size > 0 ? secFilterIds.size : S.sections.length;
-  let txt = `${n} scene${n !== 1 ? 's' : ''} · ${secCount} section${secCount !== 1 ? 's' : ''}`;
+  let txt = `Showing ${n} scene${n !== 1 ? 's' : ''} · ${secCount} section${secCount !== 1 ? 's' : ''}`;
   if (traceActive() && !searchQ) {
     const k = S.selections[traceCat].size;
     if (traceCat === 'povs') {
@@ -402,18 +412,12 @@ function chartLegendSep(el) {
 function updateChartLegend(scenes, trace) {
   const el = document.getElementById('chart-legend'); if (!el) return;
   el.innerHTML = '';
-  if (chartType === 'snake') { // circle labels its sections directly on the pie
-    chartLegendSections().forEach((sec, i) => {
-      chartLegendSep(el);
-      const item = document.createElement('span'); item.className = 'chart-legend-item'; item.dataset.secId = sec.id;
-      const letterEl = document.createElement('span'); letterEl.className = 'chart-legend-letter'; letterEl.textContent = sectionLetter(i);
-      const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = sec.name;
-      item.appendChild(letterEl); item.appendChild(nameEl);
-      item.addEventListener('mouseenter', () => highlightSecMarker(sec.id, true));
-      item.addEventListener('mouseleave', () => highlightSecMarker(sec.id, false));
-      el.appendChild(item);
-    });
-  }
+  // Sections used to get a name legend here too, but the snake already marks
+  // each section boundary directly on the tube with a lettered marker (see
+  // addSnakeSectionMarkers/drawSectionMarkerAt) — hovering it shows the name
+  // via showSectionTip, the same on-chart discovery the circle's pie wedges
+  // use. Repeating the names in a legend row just cost a line of header space
+  // for no new information.
   if (sceneSetHasEstimated(scenes)) {
     chartLegendSep(el);
     const item = document.createElement('span'); item.className = 'chart-legend-item chart-legend-est';
@@ -450,14 +454,6 @@ function updateChartLegend(scenes, trace) {
     }
   }
 }
-function highlightSecMarker(sectionId, on) {
-  document.querySelectorAll('.chart-sec-marker[data-sec-id="' + sectionId + '"]').forEach(m => m.classList.toggle('chart-sec-marker-hl', on));
-}
-function highlightLegendItem(sectionId, on) {
-  const el = document.querySelector('.chart-legend-item[data-sec-id="' + sectionId + '"]');
-  if (el) el.classList.toggle('chart-legend-hl', on);
-}
-
 // ── PROPORTIONAL LAYOUT (by word count) ─────────────────────────────────────────
 // Normally every scene gets an equal share of the path. When showWordCount is on,
 // each scene's share is weighted by scene.wordCount instead; scenes with no
@@ -567,9 +563,9 @@ function drawSectionMarkerAt(container, x, y, sectionId, idx) {
   txt.setAttribute('fill', 'var(--bg1)');
   txt.textContent = sectionLetter(idx);
   g.appendChild(circle); g.appendChild(txt);
-  g.addEventListener('mouseenter', e => { showSectionTip(e, sectionId); highlightLegendItem(sectionId, true); });
+  g.addEventListener('mouseenter', e => showSectionTip(e, sectionId));
   g.addEventListener('mousemove', moveChartTip);
-  g.addEventListener('mouseleave', () => { hideChartTip(); highlightLegendItem(sectionId, false); });
+  g.addEventListener('mouseleave', hideChartTip);
   container.appendChild(g);
 }
 function showSectionTip(e, sectionId) {

@@ -92,7 +92,7 @@ const HELP_ZONES = [
   { sel: '.sp-add-row',      tip: 'Add Section — type a name and press + (or Enter) to create a new section.' },
   { sel: '.sp-qs',           tip: 'Quick Setup — rapidly create multiple numbered sections at once (e.g. "Act 1, Act 2, Act 3").' },
   { sel: '#cp .tabs',        tip: 'Scene panel — New Scene creates a scene; Edit Scene (enabled when a card is selected) lets you modify it. Enter a title, summary, section, library tags, and notes. Use ◀ or drag the panel edge to hide or resize.' },
-  { sel: '#sbhdr .sbt',      tip: 'Scene Board — the main workspace. Scenes are arranged by section. Drag cards to reorder them. Click a card to select it; click multiple cards to select them together and move them as a group.' },
+  { sel: '#sbhdr',           tip: 'Scene Board — the main workspace. Scenes are arranged by section. Drag cards to reorder them. Click a card to select it; click multiple cards to select them together and move them as a group.' },
   { sel: '#sbcnt',           tip: 'Scene count — shows how many scenes are currently visible (may be fewer when a section filter is active).' },
   { sel: '#clrsel',          tip: 'Clear Selection — deselects all currently selected scene cards on the board.' },
   { sel: '#det-toggle',      tip: 'Show Card Details — toggle to show or hide library tags (POV, characters, locations, themes, misc) printed on each card.' },

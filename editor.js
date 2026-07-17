@@ -231,6 +231,7 @@ function clearAllSel() {
 function updateLibClearBtn() {
   const any = SECS.some(({ key }) => S.selections[key].size > 0) || S.selections.povs.size > 0;
   document.getElementById('lib-clr-wrap').style.display = any ? 'block' : 'none';
+  document.getElementById('lib-clr').classList.toggle('lib-clr-aura', any);
 }
 
 // ── REMOVE LIB ITEM ───────────────────────────────────────────────────────────
@@ -1086,8 +1087,17 @@ function updateSecPins() {
 }
 
 function updateCount() {
-  const n = S.scenes.length;
-  document.getElementById('sbcnt').textContent = `${n} scene${n !== 1 ? 's' : ''}`;
+  let n;
+  if (S.sections.length === 0 || secFilterIds.size === 0) {
+    n = S.scenes.length;
+  } else {
+    const validSecIds = new Set(S.sections.map(s => s.id));
+    n = S.scenes.filter(s => {
+      const secId = validSecIds.has(s.sectionId) ? s.sectionId : 'unassigned';
+      return secFilterIds.has(secId);
+    }).length;
+  }
+  document.getElementById('sbcnt').textContent = `Showing ${n} scene${n !== 1 ? 's' : ''}`;
 }
 
 // ── SECTION SELECTS (forms + filter) ──────────────────────────────────────────
