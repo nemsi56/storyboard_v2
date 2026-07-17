@@ -5,6 +5,10 @@ const SVGNS = 'http://www.w3.org/2000/svg';
 let chartMode = false;          // is chart view active
 let chartType = 'snake';        // 'snake' | 'circle'
 let showWordCount = false;      // size segments proportionally by scene.wordCount
+let traceCat = 'off';           // 'off' | 'characters' | 'locations' | 'themes' | 'misc' | 'povs'
+const MAX_LANES = 6;            // most trace lines drawable before the tube gets crowded
+const LANE_W = 3;               // stroke width of one trace line
+const TRACE_CATS = ['characters', 'locations', 'themes', 'misc', 'povs'];
 let chartResizeTimer = null;
 let chartLastSize = '';         // last rendered chart-scroll size, "WxH"
 const CHART_PAD = 12;           // must match #chart-canvas padding in styles.css
@@ -22,9 +26,11 @@ if (document.getElementById('chart-host')) {
     const p = loadGlobalPrefs();
     if (p.chartType === 'snake' || p.chartType === 'circle') chartType = p.chartType;
     if (typeof p.showWordCount === 'boolean') showWordCount = p.showWordCount;
+    if (p.chartTrace === 'off' || TRACE_CATS.includes(p.chartTrace)) traceCat = p.chartTrace;
     document.getElementById('chart-type-snake').classList.toggle('on', chartType === 'snake');
     document.getElementById('chart-type-circle').classList.toggle('on', chartType === 'circle');
     document.getElementById('chart-wc-toggle').classList.toggle('on', showWordCount);
+    document.getElementById('chart-trace-sel').value = traceCat;
   })();
 
   // Re-render on any chart-area size change. The ResizeObserver catches panel
@@ -90,6 +96,13 @@ function toggleShowWordCount() {
   const p = loadGlobalPrefs(); p.showWordCount = showWordCount; saveGlobalPrefs(p);
   if (chartMode) renderChart();
 }
+function traceActive() { return traceCat !== 'off'; }
+function setChartTrace(cat) {
+  if (cat !== 'off' && !TRACE_CATS.includes(cat)) return;
+  traceCat = cat;
+  const p = loadGlobalPrefs(); p.chartTrace = traceCat; saveGlobalPrefs(p);
+  if (chartMode) renderChart();
+}
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
 function orderedScenes() {
@@ -119,6 +132,95 @@ function sceneSectionName(scene) {
   return sec ? sec.name : 'Unassigned';
 }
 
+// ── TRACE LANES ─────────────────────────────────────────────────────────────────
+function traceItemNames() {
+  // All item names in the traced category, in stable library order.
+  if (traceCat === 'povs') {
+    const used = new Set(S.scenes.flatMap(s => s.povs || []));
+    return S.characters.map(c => c.name).concat(S.povCustomNames || [])
+      .filter(n => used.has(n));
+  }
+  return S[traceCat].map(item => item.name);
+}
+
+function computeTraceLanes(scenes) {
+  // Returns { lanes: [{name, color}], overflow: number }. Lanes are only the
+  // items the user has explicitly selected in the traced category — nothing
+  // selected means no lanes (see updateChartLegend for the hint shown then).
+  if (!traceActive()) return { lanes: [], overflow: 0 };
+  const inScenes = name => scenes.some(sc => (sc[traceCat] || []).includes(name));
+  const selected = S.selections[traceCat];
+  const names = traceItemNames().filter(n => selected.has(n) && inScenes(n));
+  const overflow = Math.max(0, names.length - MAX_LANES);
+  return { lanes: names.slice(0, MAX_LANES).map((name, i) => ({ name, color: SEC_COLORS[i % SEC_COLORS.length] })), overflow };
+}
+
+function computeLaneRuns(layout, name) {
+  const numMap = buildSceneNumMap();
+  const runs = [];
+  layout.forEach(({ scene, offset, len }) => {
+    const has = (scene[traceCat] || []).includes(name);
+    if (!has) return;
+    const last = runs[runs.length - 1];
+    if (last && Math.abs(last.end - offset) < 0.001) {
+      last.end = offset + len; last.lastNum = numMap.get(scene.id);
+    } else {
+      runs.push({ start: offset, end: offset + len,
+                  firstNum: numMap.get(scene.id), lastNum: numMap.get(scene.id) });
+    }
+  });
+  return runs;
+}
+
+function laneOffsets(k, thickness) {
+  const usable = thickness - 2 * (LANE_W / 2 + 3.5); // 3.5px margin inside each tube edge
+  const spacing = k > 1 ? Math.min(5, usable / (k - 1)) : 0;
+  return Array.from({ length: k }, (_, i) => (i - (k - 1) / 2) * spacing);
+}
+
+function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane) {
+  runs.forEach(run => {
+    const s = run.start / total * laneTotal, e = run.end / total * laneTotal;
+    const inset = Math.min(2, (e - s) / 4); // soft ends, keep length positive
+    const len = Math.max(2, e - s - 2 * inset);
+    const clone = lanePathEl.cloneNode(false);
+    clone.classList.add('chart-lane');
+    clone.dataset.lane = lane.name;
+    clone.setAttribute('stroke', lane.color);
+    clone.setAttribute('stroke-width', LANE_W);
+    clone.setAttribute('stroke-linecap', 'round');
+    clone.setAttribute('fill', 'none');
+    clone.setAttribute('stroke-dasharray', len + ' ' + Math.max(0, laneTotal - len));
+    clone.setAttribute('stroke-dashoffset', String(-(s + inset)));
+    clone.style.pointerEvents = 'stroke';
+    clone.addEventListener('mouseenter', e2 => { showLaneTip(e2, lane, run); highlightLaneLegend(lane.name, true); });
+    clone.addEventListener('mousemove', moveChartTip);
+    clone.addEventListener('mouseleave', () => { hideChartTip(); highlightLaneLegend(lane.name, false); });
+    container.appendChild(clone);
+  });
+}
+function highlightLaneLegend(name, on) {
+  document.querySelectorAll('.chart-lane[data-lane="' + CSS.escape(name) + '"]').forEach(l => l.classList.toggle('chart-lane-hl', on));
+  const el = document.querySelector('.chart-legend-item[data-lane="' + CSS.escape(name) + '"]');
+  if (el) el.classList.toggle('chart-legend-hl', on);
+}
+function showLaneTip(e, lane, run) {
+  const tip = document.getElementById('chart-tip');
+  tip.innerHTML = '';
+  const t1 = document.createElement('div'); t1.className = 'chart-tip-title';
+  t1.textContent = lane.name;
+  const t2 = document.createElement('div'); t2.className = 'chart-tip-sec';
+  t2.textContent = run.firstNum === run.lastNum
+    ? 'Scene ' + run.firstNum : 'Scenes ' + run.firstNum + '–' + run.lastNum;
+  tip.appendChild(t1); tip.appendChild(t2);
+  tip.style.display = 'block';
+  positionChartTip(e);
+}
+function traceCatLabel() {
+  const sec = SECS.find(s => s.key === traceCat);
+  return sec ? sec.label : 'POV';
+}
+
 // ── RENDER ─────────────────────────────────────────────────────────────────────
 function renderChart() {
   const canvas = document.getElementById('chart-canvas');
@@ -128,11 +230,12 @@ function renderChart() {
   const scrollEl = document.getElementById('chart-scroll');
   chartLastSize = scrollEl.clientWidth + 'x' + scrollEl.clientHeight;
   const scenes = orderedScenes();
+  const trace = computeTraceLanes(scenes);
   updateChartStatus(scenes);
-  updateChartLegend(scenes);
+  updateChartLegend(scenes, trace);
   if (!S.scenes.length) { renderChartEmpty(canvas); return; }
-  if (chartType === 'circle') buildCircleChart(canvas, scenes);
-  else buildSnakeChart(canvas, scenes);
+  if (chartType === 'circle') buildCircleChart(canvas, scenes, trace);
+  else buildSnakeChart(canvas, scenes, trace);
 }
 
 function renderChartEmpty(canvas) {
@@ -153,7 +256,16 @@ function updateChartStatus(scenes) {
   const el = document.getElementById('chart-status'); if (!el) return;
   const n = scenes.length, secCount = S.sections.length;
   let txt = `${n} scene${n !== 1 ? 's' : ''} · ${secCount} section${secCount !== 1 ? 's' : ''}`;
-  if (chartFilterActive()) {
+  if (traceActive() && !searchQ) {
+    const k = S.selections[traceCat].size;
+    if (traceCat === 'povs') {
+      txt += ` · tracing ${k} POV${k !== 1 ? 's' : ''}`;
+    } else {
+      const singular = SINGULAR[traceCat].toLowerCase();
+      const label = k === 1 ? singular : singular + 's';
+      txt += ` · tracing ${k} ${label}`;
+    }
+  } else if (chartFilterActive()) {
     const matching = scenes.filter(sceneMatchesChart).length;
     txt += ` · ${matching} matching`;
   }
@@ -187,12 +299,15 @@ function sceneSetHasEstimated(scenes) {
   return scenes.some(s => s.wordCount > 0) && scenes.some(s => !(s.wordCount > 0));
 }
 
-function updateChartLegend(scenes) {
+function chartLegendSep(el) {
+  if (el.children.length) { const sep = document.createElement('span'); sep.className = 'chart-legend-sep'; sep.textContent = '·'; el.appendChild(sep); }
+}
+function updateChartLegend(scenes, trace) {
   const el = document.getElementById('chart-legend'); if (!el) return;
   el.innerHTML = '';
   if (chartType === 'snake') { // circle labels its sections directly on the pie
     chartLegendSections().forEach((sec, i) => {
-      if (i > 0) { const sep = document.createElement('span'); sep.className = 'chart-legend-sep'; sep.textContent = '·'; el.appendChild(sep); }
+      chartLegendSep(el);
       const item = document.createElement('span'); item.className = 'chart-legend-item'; item.dataset.secId = sec.id;
       const letterEl = document.createElement('span'); letterEl.className = 'chart-legend-letter'; letterEl.textContent = sectionLetter(i);
       const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = sec.name;
@@ -203,12 +318,39 @@ function updateChartLegend(scenes) {
     });
   }
   if (sceneSetHasEstimated(scenes)) {
-    if (el.children.length) { const sep = document.createElement('span'); sep.className = 'chart-legend-sep'; sep.textContent = '·'; el.appendChild(sep); }
+    chartLegendSep(el);
     const item = document.createElement('span'); item.className = 'chart-legend-item chart-legend-est';
     const tickEl = document.createElement('span'); tickEl.className = 'chart-legend-tick';
     const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = 'Estimated (no word count)';
     item.appendChild(tickEl); item.appendChild(nameEl);
     el.appendChild(item);
+  }
+  if (trace && traceActive()) {
+    if (trace.lanes.length === 0) {
+      chartLegendSep(el);
+      const hintLabel = traceCat === 'povs' ? 'POVs' : traceCatLabel().toLowerCase();
+      const item = document.createElement('span'); item.className = 'chart-legend-item chart-legend-hint';
+      item.textContent = `Select ${hintLabel} in the library to trace them`;
+      el.appendChild(item);
+    } else {
+      trace.lanes.forEach(lane => {
+        chartLegendSep(el);
+        const item = document.createElement('span'); item.className = 'chart-legend-item'; item.dataset.lane = lane.name;
+        const swatch = document.createElement('span'); swatch.className = 'chart-legend-swatch'; swatch.style.background = lane.color;
+        const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = lane.name;
+        item.appendChild(swatch); item.appendChild(nameEl);
+        item.addEventListener('mouseenter', () => highlightLaneLegend(lane.name, true));
+        item.addEventListener('mouseleave', () => highlightLaneLegend(lane.name, false));
+        el.appendChild(item);
+      });
+      if (trace.overflow > 0) {
+        chartLegendSep(el);
+        const item = document.createElement('span'); item.className = 'chart-legend-item';
+        item.title = 'Select fewer items to choose which lines are shown';
+        item.textContent = `+${trace.overflow} more`;
+        el.appendChild(item);
+      }
+    }
   }
 }
 function highlightSecMarker(sectionId, on) {
@@ -248,10 +390,15 @@ function computeSceneLayout(scenes, total) {
 }
 
 // ── SEGMENT / NUMBER / TICK PRIMITIVES (shared snake + circle) ────────────────
+// While tracing, the library selections that drive sceneMatchesChart() are being
+// visualized as lanes instead — so segment coloring must ignore them and fall back
+// to search-only matching, or the accent fill would fight the trace lines.
+function chartSegFilterActive() { return traceActive() ? !!searchQ : chartFilterActive(); }
+function segIsMatched(scene) { return traceActive() ? (!!searchQ && sceneMatchesSearch(scene)) : sceneMatchesChart(scene); }
 function applySegColor(clone, scene) {
   clone.classList.remove('chart-seg-match', 'chart-seg-dim');
-  if (chartFilterActive()) {
-    if (sceneMatchesChart(scene)) { clone.setAttribute('stroke', 'var(--acc)'); clone.classList.add('chart-seg-match'); }
+  if (chartSegFilterActive()) {
+    if (segIsMatched(scene)) { clone.setAttribute('stroke', 'var(--acc)'); clone.classList.add('chart-seg-match'); }
     else { clone.setAttribute('stroke', 'var(--s1)'); clone.classList.add('chart-seg-dim'); }
   } else {
     clone.setAttribute('stroke', 'var(--s1)');
@@ -377,13 +524,54 @@ function buildSnakePath(N, W) {
   }
   return { d, height: y0 + (R - 1) * 90 + r + 24 };
 }
+// Parallel offset of the snake centerline, for one trace lane. Mirrors
+// buildSnakePath exactly (same R/run/M/r) so lanes land on the same geometry as
+// the tube; d=0 reproduces the centerline. A lane at constant offset "to the
+// left of travel" sits ABOVE the centerline on left-to-right rows and BELOW it
+// on right-to-left rows, and turn radii alternate r+d / r-d — that's what keeps
+// the lane weaving through the turns correctly instead of crossing the tube.
+function buildSnakeLanePathD(N, W, d) {
+  const { R, run, M, r } = computeSnakeLayout(N, W);
+  const y0 = 24 + r;
+  let y = y0;
+  let dd = `M ${M} ${y0 - d}`;
+  for (let row = 0; row < R; row++) {
+    const leftToRight = row % 2 === 0;
+    const yLane = y + (leftToRight ? -d : d);
+    const xEnd = leftToRight ? M + run : M;
+    dd += ` L ${xEnd} ${yLane}`;
+    if (row < R - 1) {
+      const sweep = leftToRight ? 1 : 0;
+      const rLane = leftToRight ? r + d : r - d;
+      const newY = y + 90;
+      const yNext = newY + (leftToRight ? d : -d); // next row travels the other way
+      dd += ` A ${rLane} ${rLane} 0 0 ${sweep} ${xEnd} ${yNext}`;
+      y = newY;
+    }
+  }
+  return dd;
+}
+function addSnakeTraceLanes(svg, N, W, trace, layout, total) {
+  if (!trace || !trace.lanes.length) return;
+  const offsets = laneOffsets(trace.lanes.length, SNAKE_SEG_THICKNESS);
+  trace.lanes.forEach((lane, i) => {
+    const path = document.createElementNS(SVGNS, 'path');
+    path.setAttribute('d', buildSnakeLanePathD(N, W, offsets[i]));
+    path.setAttribute('stroke', 'none'); path.setAttribute('fill', 'none');
+    svg.appendChild(path);
+    const laneTotal = path.getTotalLength();
+    const runs = computeLaneRuns(layout, lane.name);
+    drawLaneRuns(svg, path, laneTotal, total, runs, lane);
+  });
+}
 
-function buildSnakeChart(canvas, scenes) {
+function buildSnakeChart(canvas, scenes, trace) {
   const scrollEl = document.getElementById('chart-scroll');
   const W = Math.max(300, (scrollEl.clientWidth || 800) - 2 * CHART_PAD);
   const N = scenes.length;
   if (N === 0) { renderChartNoMatch(canvas); return; }
   const svg = document.createElementNS(SVGNS, 'svg');
+  if (traceActive()) svg.classList.add('chart-trace');
   canvas.appendChild(svg);
   const { d, height } = buildSnakePath(N, W);
   svg.setAttribute('width', W);
@@ -397,6 +585,7 @@ function buildSnakeChart(canvas, scenes) {
   const total = centerline.getTotalLength();
   const layout = computeSceneLayout(scenes, total);
   addSegments(svg, centerline, layout, total, SNAKE_SEG_THICKNESS);
+  addSnakeTraceLanes(svg, N, W, trace, layout, total);
   addSnakeNumbers(svg, centerline, layout, total);
   addSnakeSectionMarkers(svg, centerline, layout, total, W);
   if (showWordCount) addSnakeEstimatedTicks(svg, centerline, layout, total);
@@ -414,7 +603,7 @@ function addSnakeNumbers(svg, centerline, layout, total) {
     txt.setAttribute('text-anchor', 'middle');
     txt.setAttribute('dominant-baseline', 'central');
     txt.setAttribute('font-size', '11');
-    txt.setAttribute('fill', (chartFilterActive() && sceneMatchesChart(scene)) ? 'var(--ontx)' : 'var(--sub)');
+    txt.setAttribute('fill', (chartSegFilterActive() && segIsMatched(scene)) ? 'var(--ontx)' : 'var(--sub)');
     txt.classList.add('chart-num');
     txt.dataset.sceneId = scene.id;
     txt.style.pointerEvents = 'none';
@@ -465,7 +654,20 @@ function addSnakeEstimatedTicks(svg, centerline, layout, total) {
 }
 
 // ── CIRCLE ─────────────────────────────────────────────────────────────────────
-function buildCircleChart(canvas, scenes) {
+function addCircleTraceLanes(g, layout, cx, cy, R, total, trace) {
+  if (!trace || !trace.lanes.length) return;
+  const offsets = laneOffsets(trace.lanes.length, CIRCLE_SEG_THICKNESS);
+  trace.lanes.forEach((lane, i) => {
+    const path = document.createElementNS(SVGNS, 'circle');
+    path.setAttribute('cx', cx); path.setAttribute('cy', cy); path.setAttribute('r', R + offsets[i]);
+    path.setAttribute('stroke', 'none'); path.setAttribute('fill', 'none');
+    g.appendChild(path);
+    const laneTotal = path.getTotalLength();
+    const runs = computeLaneRuns(layout, lane.name);
+    drawLaneRuns(g, path, laneTotal, total, runs, lane);
+  });
+}
+function buildCircleChart(canvas, scenes, trace) {
   const scrollEl = document.getElementById('chart-scroll');
   const availW = Math.max(300, (scrollEl.clientWidth || 600) - 2 * CHART_PAD);
   const availH = Math.max(300, (scrollEl.clientHeight || 480) - 2 * CHART_PAD);
@@ -477,6 +679,7 @@ function buildCircleChart(canvas, scenes) {
   const R = Math.max(90, Math.min(availW, availH) / 2 - 25);
   const cx = availW / 2, cy = availH / 2;
   const svg = document.createElementNS(SVGNS, 'svg');
+  if (traceActive()) svg.classList.add('chart-trace');
   canvas.appendChild(svg);
   svg.setAttribute('width', availW);
   svg.setAttribute('height', availH);
@@ -491,6 +694,7 @@ function buildCircleChart(canvas, scenes) {
   const total = centerline.getTotalLength();
   const layout = computeSceneLayout(scenes, total);
   addSegments(g, centerline, layout, total, CIRCLE_SEG_THICKNESS);
+  addCircleTraceLanes(g, layout, cx, cy, R, total, trace);
   addCircleNumbers(svg, layout, cx, cy, R, total);
   drawCirclePie(svg, layout, cx, cy, R, total);
   if (showWordCount) addCircleEstimatedTicks(svg, layout, cx, cy, R, total);
@@ -510,7 +714,7 @@ function addCircleNumbers(svg, layout, cx, cy, R, total) {
     txt.setAttribute('text-anchor', 'middle');
     txt.setAttribute('dominant-baseline', 'central');
     txt.setAttribute('font-size', '11');
-    txt.setAttribute('fill', (chartFilterActive() && sceneMatchesChart(scene)) ? 'var(--ontx)' : 'var(--sub)');
+    txt.setAttribute('fill', (chartSegFilterActive() && segIsMatched(scene)) ? 'var(--ontx)' : 'var(--sub)');
     txt.classList.add('chart-num');
     txt.dataset.sceneId = scene.id;
     txt.style.pointerEvents = 'none';
@@ -705,6 +909,16 @@ function printChart() {
   const svgEl = document.querySelector('#chart-canvas svg');
   if (!svgEl) return;
   const clone = svgEl.cloneNode(true);
+  // The number halo (svg.chart-trace .chart-num) comes from a CSS class that
+  // won't exist in the print window — inline it as attributes before variable
+  // resolution so it survives into the plain XML.
+  if (clone.classList.contains('chart-trace')) {
+    clone.querySelectorAll('.chart-num').forEach(num => {
+      num.setAttribute('paint-order', 'stroke');
+      num.setAttribute('stroke', 'var(--s1)');
+      num.setAttribute('stroke-width', '3px');
+    });
+  }
   resolveChartVars(clone);
   // Dimming comes from a CSS class, which won't exist in the print window —
   // inline it so an active filter prints the way it looks on screen.
@@ -730,6 +944,18 @@ function printChart() {
       + '<span style="display:inline-block;width:2px;height:11px;background:#dc2626;'
       + 'transform:rotate(20deg);margin-right:6px;vertical-align:middle"></span>'
       + 'Estimated (no word count)</div>';
+  }
+  if (traceActive()) {
+    const trace = computeTraceLanes(orderedScenes());
+    if (trace.lanes.length) {
+      legendHtml += '<div style="font-size:11px;color:#555;margin-bottom:12px">'
+        + trace.lanes.map(lane =>
+            '<span style="display:inline-block;width:14px;height:3px;border-radius:2px;background:'
+            + lane.color + ';margin-right:6px;vertical-align:middle"></span>' + rptEsc(lane.name)
+          ).join(' &nbsp;·&nbsp; ')
+        + (trace.overflow > 0 ? ' &nbsp;·&nbsp; +' + trace.overflow + ' more' : '')
+        + '</div>';
+    }
   }
   const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + titleEsc + '</title>'
     + '<style>*{box-sizing:border-box;margin:0;padding:0}body{background:#fff;padding:24px;'
