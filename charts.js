@@ -60,8 +60,7 @@ if (document.getElementById('chart-host')) {
     if (p.chartType === 'snake' || p.chartType === 'circle') chartType = p.chartType;
     if (typeof p.showWordCount === 'boolean') showWordCount = p.showWordCount;
     if (p.chartTrace === 'off' || TRACE_CATS.includes(p.chartTrace)) traceCat = p.chartTrace;
-    document.getElementById('chart-type-snake').classList.toggle('on', chartType === 'snake');
-    document.getElementById('chart-type-circle').classList.toggle('on', chartType === 'circle');
+    updateViewToggleUI();
     document.getElementById('chart-wc-toggle').classList.toggle('on', showWordCount);
     const traceSel = document.getElementById('chart-trace-sel');
     traceSel.value = traceCat;
@@ -92,6 +91,14 @@ if (document.getElementById('chart-host')) {
 function toggleChartView() {
   if (chartMode) closeChartView(); else openChartView();
 }
+// Cards/Snake/Circle read as one 3-way switch (see #view-toggle) even though
+// only two of the buttons live in chartType — the third state is "chart
+// isn't open at all".
+function updateViewToggleUI() {
+  document.getElementById('chart-type-cards').classList.toggle('on', !chartMode);
+  document.getElementById('chart-type-snake').classList.toggle('on', chartMode && chartType === 'snake');
+  document.getElementById('chart-type-circle').classList.toggle('on', chartMode && chartType === 'circle');
+}
 function openChartView() {
   chartMode = true;
   document.getElementById('sbscrl').style.display = 'none';
@@ -106,12 +113,15 @@ function openChartView() {
   document.getElementById('det-ck-wrap').style.display = 'none';
   document.getElementById('scalew-wrap').style.display = 'none';
   // Reuse the top header line for the chart's own status text (scene/section/
-  // trace counts) in place of the board's scene count, and drop the section
-  // filter down onto the chart toolbar row, after the Trace dropdown — moving
-  // the actual nodes (not clones) keeps their listeners and state intact.
+  // trace counts) in place of the board's scene count, drop the section
+  // filter down onto the chart toolbar row after the Trace dropdown, and
+  // move the Cards/Snake/Circle view switch onto that same toolbar row —
+  // moving the actual nodes (not clones) keeps their listeners and state intact.
   document.getElementById('sbcnt').style.display = 'none';
   document.getElementById('sbhdr').insertBefore(document.getElementById('chart-status'), document.getElementById('det-ck-wrap'));
   document.getElementById('chart-toolbar').insertBefore(document.getElementById('sec-filter-wrap'), document.getElementById('chart-print-btn'));
+  document.getElementById('chart-toolbar').insertBefore(document.getElementById('view-toggle'), document.getElementById('chart-wc-toggle'));
+  updateViewToggleUI();
   setChartMenuLabel();
   renderChart();
 }
@@ -125,6 +135,8 @@ function closeChartView() {
   document.getElementById('sbcnt').style.display = '';
   document.getElementById('chart-toolbar').insertBefore(document.getElementById('chart-status'), document.getElementById('chart-print-btn'));
   document.getElementById('sbhdr').insertBefore(document.getElementById('sec-filter-wrap'), document.getElementById('srch-wrap'));
+  document.getElementById('sbhdr').insertBefore(document.getElementById('view-toggle'), document.getElementById('sbhdr').firstChild);
+  updateViewToggleUI();
   setChartMenuLabel();
   renderBoard();
 }
@@ -135,10 +147,12 @@ function setChartMenuLabel() {
 function setChartType(type) {
   if (type !== 'snake' && type !== 'circle') return;
   chartType = type;
-  document.getElementById('chart-type-snake').classList.toggle('on', type === 'snake');
-  document.getElementById('chart-type-circle').classList.toggle('on', type === 'circle');
   const p = loadGlobalPrefs(); p.chartType = type; saveGlobalPrefs(p);
-  if (chartMode) renderChart();
+  // Picking Snake/Circle from the board is now how you open the chart at
+  // all (see #view-toggle) — openChartView already renders and updates the
+  // toggle UI, so only do those explicitly on the "already open" path.
+  if (chartMode) { updateViewToggleUI(); renderChart(); }
+  else openChartView();
 }
 function toggleShowWordCount() {
   showWordCount = !showWordCount;
@@ -706,7 +720,6 @@ function buildSnakeChart(canvas, scenes, trace) {
   const thickness = traceThickness(SNAKE_SEG_THICKNESS, SNAKE_TRACE_FLOOR, SNAKE_THICKNESS_CEIL, trace.lanes.length);
   const laneW = traceLaneWidth(trace.lanes.length);
   const svg = document.createElementNS(SVGNS, 'svg');
-  if (traceActive()) svg.classList.add('chart-trace');
   canvas.appendChild(svg);
   const { d, height } = buildSnakePath(N, W, thickness);
   svg.setAttribute('width', W);
@@ -726,6 +739,41 @@ function buildSnakeChart(canvas, scenes, trace) {
   if (showWordCount) addSnakeEstimatedTicks(svg, centerline, layout, total);
 }
 
+// Scene number, drawn on a small solid badge instead of bare text over the
+// segment fill — a text-stroke halo (the old approach, still needed once
+// trace lanes are drawn behind it) reads as blurry at this font size, and a
+// plain color swap on hover wasn't reliably legible against every segment
+// color/trace combination. A badge guarantees contrast regardless of what's
+// underneath. Sized to the text itself (not a fixed circle) since scene
+// counts run past two digits.
+// Default colors are set as attributes (not just CSS) so printChart's clone
+// — a bare document with no app stylesheet — still resolves them via
+// resolveChartVars; the hover state stays CSS-only since print never
+// carries a live hover.
+function drawChartNum(container, x, y, text, sceneId, matched) {
+  const g = document.createElementNS(SVGNS, 'g');
+  g.classList.add('chart-num');
+  g.dataset.sceneId = sceneId;
+  g.style.pointerEvents = 'none';
+  const w = Math.max(15, text.length * 7 + 5), h = 14;
+  const bg = document.createElementNS(SVGNS, 'rect');
+  bg.setAttribute('x', x - w / 2); bg.setAttribute('y', y - h / 2);
+  bg.setAttribute('width', w); bg.setAttribute('height', h);
+  bg.setAttribute('rx', h / 2);
+  bg.setAttribute('fill', matched ? 'var(--acc)' : 'var(--bg1)');
+  bg.classList.add('chart-num-bg');
+  const txt = document.createElementNS(SVGNS, 'text');
+  txt.setAttribute('x', x); txt.setAttribute('y', y);
+  txt.setAttribute('text-anchor', 'middle');
+  txt.setAttribute('dominant-baseline', 'central');
+  txt.setAttribute('font-size', '10');
+  txt.setAttribute('font-weight', '700');
+  txt.setAttribute('fill', matched ? 'var(--ontx)' : 'var(--sub)');
+  txt.textContent = text;
+  g.appendChild(bg); g.appendChild(txt);
+  container.appendChild(g);
+  return g;
+}
 function addSnakeNumbers(svg, centerline, layout, total) {
   // Built once for this pass instead of each scene independently rebuilding
   // the same ordered scene list via sceneDisplayNum().
@@ -733,17 +781,8 @@ function addSnakeNumbers(svg, centerline, layout, total) {
   layout.forEach(({ scene, len, offset }) => {
     if (len < 26) return; // segment too small on screen to fit a number legibly
     const mid = centerline.getPointAtLength(offset + len / 2);
-    const txt = document.createElementNS(SVGNS, 'text');
-    txt.setAttribute('x', mid.x); txt.setAttribute('y', mid.y);
-    txt.setAttribute('text-anchor', 'middle');
-    txt.setAttribute('dominant-baseline', 'central');
-    txt.setAttribute('font-size', '11');
-    txt.setAttribute('fill', (chartSegFilterActive() && segIsMatched(scene)) ? 'var(--ontx)' : 'var(--sub)');
-    txt.classList.add('chart-num');
-    txt.dataset.sceneId = scene.id;
-    txt.style.pointerEvents = 'none';
-    txt.textContent = String(numMap.get(scene.id) ?? 1);
-    svg.appendChild(txt);
+    const matched = chartSegFilterActive() && segIsMatched(scene);
+    drawChartNum(svg, mid.x, mid.y, String(numMap.get(scene.id) ?? 1), scene.id, matched);
   });
 }
 
@@ -822,7 +861,6 @@ function buildCircleChart(canvas, scenes, trace) {
   const availW = paneW, availH = paneH;
   const cx = availW / 2, cy = availH / 2;
   const svg = document.createElementNS(SVGNS, 'svg');
-  if (traceActive()) svg.classList.add('chart-trace');
   canvas.appendChild(svg);
   svg.setAttribute('width', availW);
   svg.setAttribute('height', availH);
@@ -852,17 +890,8 @@ function addCircleNumbers(svg, layout, cx, cy, R, total) {
     const angleDeg = -90 + (offset + len / 2) / total * 360;
     const rad = angleDeg * Math.PI / 180;
     const x = cx + R * Math.cos(rad), y = cy + R * Math.sin(rad);
-    const txt = document.createElementNS(SVGNS, 'text');
-    txt.setAttribute('x', x); txt.setAttribute('y', y);
-    txt.setAttribute('text-anchor', 'middle');
-    txt.setAttribute('dominant-baseline', 'central');
-    txt.setAttribute('font-size', '11');
-    txt.setAttribute('fill', (chartSegFilterActive() && segIsMatched(scene)) ? 'var(--ontx)' : 'var(--sub)');
-    txt.classList.add('chart-num');
-    txt.dataset.sceneId = scene.id;
-    txt.style.pointerEvents = 'none';
-    txt.textContent = String(numMap.get(scene.id) ?? 1);
-    svg.appendChild(txt);
+    const matched = chartSegFilterActive() && segIsMatched(scene);
+    drawChartNum(svg, x, y, String(numMap.get(scene.id) ?? 1), scene.id, matched);
   });
 }
 
@@ -1059,16 +1088,6 @@ function printChart() {
   const svgEl = document.querySelector('#chart-canvas svg');
   if (!svgEl) return;
   const clone = svgEl.cloneNode(true);
-  // The number halo (svg.chart-trace .chart-num) comes from a CSS class that
-  // won't exist in the print window — inline it as attributes before variable
-  // resolution so it survives into the plain XML.
-  if (clone.classList.contains('chart-trace')) {
-    clone.querySelectorAll('.chart-num').forEach(num => {
-      num.setAttribute('paint-order', 'stroke');
-      num.setAttribute('stroke', 'var(--s1)');
-      num.setAttribute('stroke-width', '3px');
-    });
-  }
   resolveChartVars(clone);
   // Dimming comes from a CSS class, which won't exist in the print window —
   // inline it so an active filter prints the way it looks on screen.
