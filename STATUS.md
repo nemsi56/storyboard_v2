@@ -1,6 +1,6 @@
 # Current Status
 
-As of July 7, 2026:
+As of July 17, 2026:
 
 ## Notes
 strip_AI branch: removed all AI features (Analyze Story menu item, AI panel with Analysis/Chat tabs, ai.js, chat.js, and related state/CSS) so the app ships without them for now — to be reintroduced later. Also hardened the app: CSP meta tags on all pages, stricter JSON import validation, and cleanup of leftover AI localStorage keys.
@@ -663,3 +663,118 @@ the real UI paths throughout.
 
 ### Not yet done
 - Not pushed to `origin/feature/updates_v3`; not merged to `main`.
+
+## feature/updates_v4 branch — Library trace lines on the Scene Flow Chart
+
+Adds "trace lines" to the Scene Flow Chart: a "Trace:" selector in the chart toolbar lets
+the user pick one library category (Characters/Locations/Themes/Misc/POV); each item the
+user has explicitly selected in that category (via the existing Library panel checkboxes)
+draws as its own colored line running through the scenes it appears in, layered inside the
+ribbon alongside the existing neutral segments. Combines the chart's existing highlight and
+flow-visualization features into one view, per the user's own framing of the idea — a hand
+sketch of colored lines woven through a snake/ring shape. Built against `TRACE_LINES_SPEC.md`
+(also on this branch) for the initial implementation, then iterated live with the user
+across six rounds of screenshot-driven feedback; this section covers both the spec's build
+and everything that changed afterward.
+
+**Touched files:** `charts.js` (all trace-lane logic — the large majority of this branch's
+diff), `editor.html` (Trace selector, chart-type icon buttons), `editor.js` (Sections-filter
+active-ring class, one line), `editor-init.js` (Trace selector wiring), `styles.css`
+(lane/legend/selector styles).
+
+### How it works
+- `computeTraceLanes(scenes)` turns the current library selection in the traced category
+  into `{lanes: [{name, color}], overflow}` — lanes are ONLY items explicitly selected, not
+  "every item in the category" when nothing's picked; the legend shows a "Select … to trace
+  them" hint instead, so the control never looks broken while empty (a deliberate choice
+  the user made explicitly when the spec was still being planned, before any code existed).
+  There's no small hard cap on lane count — an initial `MAX_LANES = 6` (matching the
+  original spec) was removed after the user asked for it to "theoretically allow unlimited
+  selected items"; a 24-item `LANE_SANITY_CAP` remains purely as a runaway guard.
+- Each lane draws from a dedicated 16-color `TRACE_COLORS` palette. The original build
+  reused the 8-color `SEC_COLORS` (section colors) for lane colors — meant for a different
+  purpose, and it silently repeated a color for any selection past 8 items (lane 1 and lane
+  9 got the literal same hex), which the user spotted in a real Count of Monte Cristo trace
+  ("Mercedes and Heloise, Danglars and Peppino" reading as the same color).
+- Lane *width* (`traceLaneWidth(k)`) and tube *thickness* (`traceThickness(base, floor,
+  ceil, k)`) both scale continuously with lane count `k`: width starts bold (5px) and thins
+  toward a 1.5px floor as more are traced, with no cliff at any particular count; thickness
+  ramps smoothly from the non-trace `base` toward a `floor` as lanes are added
+  (`TRACE_RAMP_DECAY`) — one traced item now looks identical to the non-trace tube, and it
+  visibly grows with each further item, rather than jumping straight to `floor` on the first
+  selection (an earlier version did jump immediately; the user asked for gradual growth
+  instead once they saw it in practice). Both are capped at a generous `ceil` purely as a
+  sanity guard, essentially never hit in normal use.
+- `laneOffsets(k, thickness, laneW)` always spreads lanes across the tube's FULL usable
+  width, edge to edge minus a small margin. An earlier version capped inter-lane spacing at
+  a small fixed pitch even when the tube (sized with headroom for many lanes) had far more
+  room, so a handful of lanes clustered in the middle of a mostly-empty gray band — the
+  user's screenshot showed this plainly ("lines... not using the full space in the tube").
+  Verified lanes now span ~95% of tube width (was ~60%).
+- Circle: the ring's radius `R` shrinks as the tube thickens (`buildCircleChart`), so the
+  whole chart always fits inside the visible pane. An earlier version anchored `R` to the
+  pane using the BASE thickness and let a thicker ring grow the SVG canvas outward beyond
+  the pane instead, relying on `#chart-scroll`'s existing scroll — the user reported this as
+  the chart "cuts off at the bottom of the window," so it was reverted; the pie
+  (`drawCirclePie`'s `outerR`) now shrinks from both the ring thickening AND `R` itself
+  shrinking at once, which also reads as a noticeably smaller pie than the anchored version
+  did (a separate, earlier complaint — "the center pie is still unnecessarily big").
+- Snake: the turn radius `r` (`computeSnakeLayout`) now tracks tube thickness directly
+  (`r = thickness/2 + SNAKE_TURN_CLEARANCE`) instead of being a fixed value — this is what
+  makes row-to-row spacing grow as lanes widen the tube (the user's "snake height expanding
+  correspondingly" ask), while keeping the turn's inner edge a constant, safe distance from
+  the tube's own edge no matter how thick tracing has made it.
+- Trace-active state suppresses the existing library-selection segment highlighting
+  (`chartSegFilterActive()`/`segIsMatched()`) — the selections ARE the lanes now, so an
+  accent-colored segment underneath would fight the lane colors; search highlighting still
+  applies on top of lanes unchanged.
+- Lane hover (from the lane itself or its legend entry, `highlightLaneLegend`) widens that
+  lane proportionally to its OWN base width (1.6× + 1.5px) plus a brightness/saturation CSS
+  bump, rather than to a fixed absolute pixel value — the fixed version (5px) stopped
+  reading as a highlight once bands were naturally that thick or thicker already, which the
+  user flagged directly ("hard to tell when they're highlighted if the colored lines are
+  thick").
+
+### Known non-obvious fixes worth knowing about if you touch this code
+- **The snake lane-position bug — the most significant fix on this branch.** Lane dash
+  positions were originally computed by proportionally scaling centerline length to lane
+  length (`len/total*laneTotal`) — exact for a circle (a concentric offset scales the whole
+  circumference uniformly), but NOT exact for the snake: a lane's turns have a different
+  radius (`r±d`) than its straight runs (unchanged, same `run` value as the centerline), so
+  one uniform ratio is wrong specifically around turns, worse with larger lane offsets. This
+  read as "colors running across scenes" in a user-provided screenshot, and measured at
+  13.7px of drift at one scene boundary before the fix. Replaced with `snakeLenToLaneLen()`,
+  which walks the exact same row/turn structure `buildSnakeLanePathD` draws and converts
+  straight and arc portions on their own terms; verified worst-case error across every scene
+  boundary in a real 18-scene render drops to 0.04px — confirmed both by fixing the bug and
+  by independently re-deriving the OLD formula's error on the same data, to make sure the
+  test itself was capable of detecting the bug it was checking for.
+- A stale section-name pin (created by scrolling the Scene Board — see the flow-chart
+  section above) stayed on screen after switching to chart view. `renderBoard()` normally
+  clears `.sec-pin` elements on every call, but early-returns into `renderChart()` while
+  `chartMode` is active and never reaches that cleanup line. The user spotted this as "a
+  random 'Resolution and Redemption' label at the top of the screen"; fixed by clearing pins
+  explicitly in `openChartView()`.
+- The chart status line's section count (`updateChartStatus`) read `S.sections.length`
+  unconditionally — always the project's total, even when the Sections filter
+  (`secFilterIds`, a board-level control shared with chart view) had narrowed the visible
+  board to fewer. Now uses the filtered count when a filter is active.
+- Backward compatibility was checked at every geometry-formula change across all six
+  rounds: the non-trace (and 1-lane) rendering was re-verified pixel-identical to the
+  pre-trace-lines chart each time (exact `R-20`/`R-25` outer-pie radius, exact 34px/30px
+  tube thickness, no glow CSS classes present), since none of the tuning was meant to touch
+  the resting state — and it never regressed.
+
+### Verification
+Each of the six rounds was verified live in the browser against real sample projects
+(Pride and Prejudice, and — once the user's own screenshots started referencing Mercédès/
+Danglars/Peppino/Héloïse — The Count of Monte Cristo specifically, to match their exact
+data): both chart types, dark and light themes, print export (mocking `window.open` to
+capture the generated HTML rather than actually opening a window), pref persistence across
+a real page reload, and direct numeric assertions everywhere a visual claim could be
+independently checked in code rather than eyeballed — lane/scene-boundary position error,
+tube thickness at specific lane counts, `R`/`outerR` values, hover stroke-width ratios, and
+unique-color counts for a 13-lane trace. No console errors at any point across any round.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v4`, PR not yet opened.
