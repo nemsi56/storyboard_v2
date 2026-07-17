@@ -7,13 +7,16 @@ let chartType = 'snake';        // 'snake' | 'circle'
 let showWordCount = false;      // size segments proportionally by scene.wordCount
 let traceCat = 'off';           // 'off' | 'characters' | 'locations' | 'themes' | 'misc' | 'povs'
 const MAX_LANES = 6;            // most trace lines drawable before the tube gets crowded
-const LANE_W = 3;               // stroke width of one trace line
+const LANE_W_MAX = 3;           // trace-line stroke width with few lanes selected
+const LANE_W_MIN = 1.5;         // trace-line stroke width at MAX_LANES — bands thin out as more are added
 const TRACE_CATS = ['characters', 'locations', 'themes', 'misc', 'povs'];
 let chartResizeTimer = null;
 let chartLastSize = '';         // last rendered chart-scroll size, "WxH"
 const CHART_PAD = 12;           // must match #chart-canvas padding in styles.css
-const SNAKE_SEG_THICKNESS = 34; // stroke width of the snake row "tube" (see addSegments call below)
-const CIRCLE_SEG_THICKNESS = 30;
+const SNAKE_SEG_THICKNESS = 34; // base stroke width of the snake row "tube" — grows with trace lanes, see traceThickness()
+const CIRCLE_SEG_THICKNESS = 30; // base stroke width of the circle ring — same growth rule
+const SNAKE_THICKNESS_MAX_BOOST = 16; // cap on how much lanes can widen the snake tube (turn geometry limits this)
+const CIRCLE_THICKNESS_MAX_BOOST = 26; // circle has no turn-radius constraint, so it can grow more
 const UNASSIGNED_SEC_ID = 'unassigned';
 // Avg wordCount among scenes with one, from the most recently computed layout —
 // stashed here so the tooltip (which only gets a single scene, not the whole
@@ -172,13 +175,37 @@ function computeLaneRuns(layout, name) {
   return runs;
 }
 
-function laneOffsets(k, thickness) {
-  const usable = thickness - 2 * (LANE_W / 2 + 3.5); // 3.5px margin inside each tube edge
-  const spacing = k > 1 ? Math.min(5, usable / (k - 1)) : 0;
+// How wide one trace line is drawn, given how many lanes are sharing the tube —
+// bands thin out from LANE_W_MAX down to LANE_W_MIN as more items are traced,
+// so the maximum lane count still reads as distinct colors instead of a blur.
+function traceLaneWidth(k) {
+  if (k <= 1) return LANE_W_MAX;
+  const t = (Math.min(k, MAX_LANES) - 1) / (MAX_LANES - 1);
+  return LANE_W_MAX - t * (LANE_W_MAX - LANE_W_MIN);
+}
+// How thick the tube itself should be, given the lane count — grows only once
+// lanes actually need the room (a generous ~7px pitch between lane centers),
+// capped at base+maxBoost so turn geometry (snake) or the outer chart bounds
+// (circle) are never violated. Below that threshold this returns `base`
+// unchanged, so the non-trace and few-lane appearance is untouched.
+function traceThickness(base, maxBoost, k) {
+  if (k <= 1) return base;
+  const w = traceLaneWidth(k);
+  const margin = w / 2 + 4;
+  const desiredSpacing = 7;
+  const needed = 2 * margin + (k - 1) * desiredSpacing;
+  return Math.min(base + maxBoost, Math.max(base, needed));
+}
+function laneOffsets(k, thickness, laneW) {
+  const usable = thickness - 2 * (laneW / 2 + 3.5); // 3.5px margin inside each tube edge
+  // 7 matches the pitch traceThickness() sizes the tube for, so lanes actually
+  // use the room it grew — capped by `usable` for cases where the tube didn't
+  // grow (e.g. a caller-clamped thickness) and 7px would overflow it.
+  const spacing = k > 1 ? Math.min(7, usable / (k - 1)) : 0;
   return Array.from({ length: k }, (_, i) => (i - (k - 1) / 2) * spacing);
 }
 
-function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane) {
+function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane, laneW) {
   runs.forEach(run => {
     const s = run.start / total * laneTotal, e = run.end / total * laneTotal;
     const inset = Math.min(2, (e - s) / 4); // soft ends, keep length positive
@@ -187,7 +214,7 @@ function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane) {
     clone.classList.add('chart-lane');
     clone.dataset.lane = lane.name;
     clone.setAttribute('stroke', lane.color);
-    clone.setAttribute('stroke-width', LANE_W);
+    clone.setAttribute('stroke-width', laneW);
     clone.setAttribute('stroke-linecap', 'round');
     clone.setAttribute('fill', 'none');
     clone.setAttribute('stroke-dasharray', len + ' ' + Math.max(0, laneTotal - len));
@@ -487,13 +514,16 @@ function showSectionTip(e, sectionId) {
 }
 
 // ── SNAKE ──────────────────────────────────────────────────────────────────────
-function computeSnakeLayout(N, W) {
+function computeSnakeLayout(N, W, thickness) {
   // The row/curve "tube" is a thick stroke centered on this arc: at the tip of
-  // each turn, its outer edge extends SNAKE_SEG_THICKNESS/2 past the
-  // centerline itself, so the margin needs that much extra clearance on top
-  // of the intended CHART_PAD, or the turn's outer edge clips against the
-  // SVG bounds.
-  const r = 45, M = r + CHART_PAD + SNAKE_SEG_THICKNESS / 2, A = Math.PI * r, T = 110;
+  // each turn, its outer edge extends thickness/2 past the centerline itself,
+  // so the margin needs that much extra clearance on top of the intended
+  // CHART_PAD, or the turn's outer edge clips against the SVG bounds.
+  // r (the turn radius) is deliberately smaller than the tube's max thickness/2
+  // would allow — tighter turns keep row-to-row spacing (2r) compact, which is
+  // most of a snake chart's vertical footprint. Even at the widest boosted
+  // tube this keeps the turn's inner edge (r - thickness/2) safely positive.
+  const r = 36, M = r + CHART_PAD + thickness / 2, A = Math.PI * r, T = 110;
   const runLen = Math.max(2 * r + 20, W - 2 * M);
   const L = N * T;
   let R = Math.max(1, Math.ceil((L - runLen) / (runLen + A)) + 1);
@@ -507,8 +537,9 @@ function computeSnakeLayout(N, W) {
   run = runLen;
   return { R, run, M, r };
 }
-function buildSnakePath(N, W) {
-  const { R, run, M, r } = computeSnakeLayout(N, W);
+function buildSnakePath(N, W, thickness) {
+  const { R, run, M, r } = computeSnakeLayout(N, W, thickness);
+  const rowStep = 2 * r;
   // +24 (not 0) so row 1 doesn't sit flush against the very top of the chart.
   const y0 = 24 + r;
   let d = `M ${M} ${y0}`, y = y0;
@@ -517,12 +548,12 @@ function buildSnakePath(N, W) {
     const xEnd = leftToRight ? M + run : M;
     d += ` L ${xEnd} ${y}`;
     if (row < R - 1) {
-      const sweep = leftToRight ? 1 : 0, newY = y + 90;
+      const sweep = leftToRight ? 1 : 0, newY = y + rowStep;
       d += ` A ${r} ${r} 0 0 ${sweep} ${xEnd} ${newY}`;
       y = newY;
     }
   }
-  return { d, height: y0 + (R - 1) * 90 + r + 24 };
+  return { d, height: y0 + (R - 1) * rowStep + r + 24 };
 }
 // Parallel offset of the snake centerline, for one trace lane. Mirrors
 // buildSnakePath exactly (same R/run/M/r) so lanes land on the same geometry as
@@ -530,8 +561,9 @@ function buildSnakePath(N, W) {
 // left of travel" sits ABOVE the centerline on left-to-right rows and BELOW it
 // on right-to-left rows, and turn radii alternate r+d / r-d — that's what keeps
 // the lane weaving through the turns correctly instead of crossing the tube.
-function buildSnakeLanePathD(N, W, d) {
-  const { R, run, M, r } = computeSnakeLayout(N, W);
+function buildSnakeLanePathD(N, W, d, thickness) {
+  const { R, run, M, r } = computeSnakeLayout(N, W, thickness);
+  const rowStep = 2 * r;
   const y0 = 24 + r;
   let y = y0;
   let dd = `M ${M} ${y0 - d}`;
@@ -543,7 +575,7 @@ function buildSnakeLanePathD(N, W, d) {
     if (row < R - 1) {
       const sweep = leftToRight ? 1 : 0;
       const rLane = leftToRight ? r + d : r - d;
-      const newY = y + 90;
+      const newY = y + rowStep;
       const yNext = newY + (leftToRight ? d : -d); // next row travels the other way
       dd += ` A ${rLane} ${rLane} 0 0 ${sweep} ${xEnd} ${yNext}`;
       y = newY;
@@ -551,17 +583,17 @@ function buildSnakeLanePathD(N, W, d) {
   }
   return dd;
 }
-function addSnakeTraceLanes(svg, N, W, trace, layout, total) {
+function addSnakeTraceLanes(svg, N, W, trace, layout, total, thickness, laneW) {
   if (!trace || !trace.lanes.length) return;
-  const offsets = laneOffsets(trace.lanes.length, SNAKE_SEG_THICKNESS);
+  const offsets = laneOffsets(trace.lanes.length, thickness, laneW);
   trace.lanes.forEach((lane, i) => {
     const path = document.createElementNS(SVGNS, 'path');
-    path.setAttribute('d', buildSnakeLanePathD(N, W, offsets[i]));
+    path.setAttribute('d', buildSnakeLanePathD(N, W, offsets[i], thickness));
     path.setAttribute('stroke', 'none'); path.setAttribute('fill', 'none');
     svg.appendChild(path);
     const laneTotal = path.getTotalLength();
     const runs = computeLaneRuns(layout, lane.name);
-    drawLaneRuns(svg, path, laneTotal, total, runs, lane);
+    drawLaneRuns(svg, path, laneTotal, total, runs, lane, laneW);
   });
 }
 
@@ -570,10 +602,12 @@ function buildSnakeChart(canvas, scenes, trace) {
   const W = Math.max(300, (scrollEl.clientWidth || 800) - 2 * CHART_PAD);
   const N = scenes.length;
   if (N === 0) { renderChartNoMatch(canvas); return; }
+  const thickness = traceThickness(SNAKE_SEG_THICKNESS, SNAKE_THICKNESS_MAX_BOOST, trace.lanes.length);
+  const laneW = traceLaneWidth(trace.lanes.length);
   const svg = document.createElementNS(SVGNS, 'svg');
   if (traceActive()) svg.classList.add('chart-trace');
   canvas.appendChild(svg);
-  const { d, height } = buildSnakePath(N, W);
+  const { d, height } = buildSnakePath(N, W, thickness);
   svg.setAttribute('width', W);
   svg.setAttribute('height', height);
   svg.setAttribute('viewBox', `0 0 ${W} ${height}`);
@@ -584,10 +618,10 @@ function buildSnakeChart(canvas, scenes, trace) {
   svg.appendChild(centerline);
   const total = centerline.getTotalLength();
   const layout = computeSceneLayout(scenes, total);
-  addSegments(svg, centerline, layout, total, SNAKE_SEG_THICKNESS);
-  addSnakeTraceLanes(svg, N, W, trace, layout, total);
+  addSegments(svg, centerline, layout, total, thickness);
+  addSnakeTraceLanes(svg, N, W, trace, layout, total, thickness, laneW);
   addSnakeNumbers(svg, centerline, layout, total);
-  addSnakeSectionMarkers(svg, centerline, layout, total, W);
+  addSnakeSectionMarkers(svg, centerline, layout, total, W, thickness);
   if (showWordCount) addSnakeEstimatedTicks(svg, centerline, layout, total);
 }
 
@@ -612,12 +646,15 @@ function addSnakeNumbers(svg, centerline, layout, total) {
   });
 }
 
-function addSnakeSectionMarkers(svg, centerline, layout, total, W) {
+function addSnakeSectionMarkers(svg, centerline, layout, total, W, thickness) {
   if (!S.sections.length) return;
   const validSecIds = new Set(S.sections.map(s => s.id));
   const letterOffset = hasUnassignedScenes() ? 1 : 0; // Unassigned (if present) takes letter A
   const secIndexById = new Map(S.sections.map((s, i) => [s.id, i + letterOffset]));
   const pad = 14;
+  // 16 is tuned for the base tube thickness; grow it in step with any lane-driven
+  // thickness boost so the marker still clears the (now wider) tube edge.
+  const markerOff = 16 + (thickness - SNAKE_SEG_THICKNESS) / 2;
   let lastSec;
   layout.forEach(({ scene, offset }, i) => {
     const secId = validSecIds.has(scene.sectionId) ? scene.sectionId : null;
@@ -628,8 +665,8 @@ function addSnakeSectionMarkers(svg, centerline, layout, total, W) {
     const dx = p1.x - p0.x, dy = p1.y - p0.y, dist = Math.hypot(dx, dy) || 1;
     const nx = -dy / dist, ny = dx / dist;
     const p = centerline.getPointAtLength(len);
-    const mx = Math.min(W - pad, Math.max(pad, p.x + nx * 16));
-    const my = p.y + ny * 16;
+    const mx = Math.min(W - pad, Math.max(pad, p.x + nx * markerOff));
+    const my = p.y + ny * markerOff;
     const markerId = secId !== null ? secId : UNASSIGNED_SEC_ID;
     const idx = secId !== null ? secIndexById.get(secId) : 0;
     drawSectionMarkerAt(svg, mx, my, markerId, idx);
@@ -654,9 +691,9 @@ function addSnakeEstimatedTicks(svg, centerline, layout, total) {
 }
 
 // ── CIRCLE ─────────────────────────────────────────────────────────────────────
-function addCircleTraceLanes(g, layout, cx, cy, R, total, trace) {
+function addCircleTraceLanes(g, layout, cx, cy, R, total, trace, thickness, laneW) {
   if (!trace || !trace.lanes.length) return;
-  const offsets = laneOffsets(trace.lanes.length, CIRCLE_SEG_THICKNESS);
+  const offsets = laneOffsets(trace.lanes.length, thickness, laneW);
   trace.lanes.forEach((lane, i) => {
     const path = document.createElementNS(SVGNS, 'circle');
     path.setAttribute('cx', cx); path.setAttribute('cy', cy); path.setAttribute('r', R + offsets[i]);
@@ -664,7 +701,7 @@ function addCircleTraceLanes(g, layout, cx, cy, R, total, trace) {
     g.appendChild(path);
     const laneTotal = path.getTotalLength();
     const runs = computeLaneRuns(layout, lane.name);
-    drawLaneRuns(g, path, laneTotal, total, runs, lane);
+    drawLaneRuns(g, path, laneTotal, total, runs, lane, laneW);
   });
 }
 function buildCircleChart(canvas, scenes, trace) {
@@ -673,10 +710,12 @@ function buildCircleChart(canvas, scenes, trace) {
   const availH = Math.max(300, (scrollEl.clientHeight || 480) - 2 * CHART_PAD);
   const N = scenes.length;
   if (N === 0) { renderChartNoMatch(canvas); return; }
-  // -25 leaves just enough room for the ribbon's own stroke half-width (15)
-  // plus a little breathing room — nothing else is drawn outside R (the pie
-  // wedge and its labels sit inward, at outerR = R - 20 and less).
-  const R = Math.max(90, Math.min(availW, availH) / 2 - 25);
+  const thickness = traceThickness(CIRCLE_SEG_THICKNESS, CIRCLE_THICKNESS_MAX_BOOST, trace.lanes.length);
+  const laneW = traceLaneWidth(trace.lanes.length);
+  // thickness/2 leaves room for the ribbon's own stroke half-width, +10 for a
+  // little breathing room beyond that — nothing else is drawn outside R (the
+  // pie wedge and its labels sit inward; see drawCirclePie's outerR).
+  const R = Math.max(90, Math.min(availW, availH) / 2 - (thickness / 2 + 10));
   const cx = availW / 2, cy = availH / 2;
   const svg = document.createElementNS(SVGNS, 'svg');
   if (traceActive()) svg.classList.add('chart-trace');
@@ -693,10 +732,10 @@ function buildCircleChart(canvas, scenes, trace) {
   g.appendChild(centerline);
   const total = centerline.getTotalLength();
   const layout = computeSceneLayout(scenes, total);
-  addSegments(g, centerline, layout, total, CIRCLE_SEG_THICKNESS);
-  addCircleTraceLanes(g, layout, cx, cy, R, total, trace);
+  addSegments(g, centerline, layout, total, thickness);
+  addCircleTraceLanes(g, layout, cx, cy, R, total, trace, thickness, laneW);
   addCircleNumbers(svg, layout, cx, cy, R, total);
-  drawCirclePie(svg, layout, cx, cy, R, total);
+  drawCirclePie(svg, layout, cx, cy, R, total, thickness);
   if (showWordCount) addCircleEstimatedTicks(svg, layout, cx, cy, R, total);
 }
 
@@ -787,10 +826,14 @@ function drawPieWedge(svg, cx, cy, outerR, startDeg, endDeg, sec) {
     svg.appendChild(txt);
   }
 }
-function drawCirclePie(svg, layout, cx, cy, R, total) {
+function drawCirclePie(svg, layout, cx, cy, R, total, thickness) {
   if (!S.sections.length) return;
   const validSecIds = new Set(S.sections.map(s => s.id));
-  const outerR = R - 20;
+  // Leaves a small gap between the pie's outer edge and the ring's inner edge
+  // (thickness/2). At the base thickness this is R-20, same as before trace
+  // lanes existed; as lanes widen the ring, the pie automatically gives up
+  // exactly the room the ring took, rather than the two overlapping.
+  const outerR = Math.max(30, R - thickness / 2 - 5);
   const runs = [];
   layout.forEach(({ scene, offset, len }) => {
     const secId = validSecIds.has(scene.sectionId) ? scene.sectionId : null;
