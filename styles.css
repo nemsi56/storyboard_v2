@@ -621,9 +621,9 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 /* ── SCENE FLOW CHART ────────────────────────────────────────────────────── */
 #chart-host{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;background:var(--sbg)}
 #chart-toolbar{height:46px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
-#chart-legend{flex-shrink:0;display:flex;align-items:center;gap:0;padding:5px 12px;background:var(--bg1);border-bottom:1px solid var(--bdr);font-size:11px;color:var(--sub);white-space:nowrap;overflow-x:auto}
+#chart-legend{flex-shrink:0;display:flex;flex-wrap:wrap;align-items:center;row-gap:4px;column-gap:0;padding:5px 12px;background:var(--bg1);border-bottom:1px solid var(--bdr);font-size:11px;color:var(--sub);max-height:92px;overflow-y:auto}
 #chart-legend:empty{display:none}
-.chart-legend-item{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:1px 4px}
+.chart-legend-item{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:1px 4px;white-space:nowrap}
 .chart-legend-item:hover,.chart-legend-item.chart-legend-hl{background:var(--s0);color:var(--tx)}
 .chart-legend-letter{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:15px;height:15px;border-radius:50%;background:var(--tx);color:var(--bg1);font-weight:700;font-size:9px;transition:background .12s,color .12s}
 .chart-legend-item:hover .chart-legend-letter,.chart-legend-item.chart-legend-hl .chart-legend-letter{background:var(--acc);color:var(--ontx)}
@@ -632,6 +632,11 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-type-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:5px 12px;cursor:pointer;transition:background .12s,border-color .12s}
 .chart-type-btn:hover{border-color:var(--acc)}
 .chart-type-btn.on{background:var(--acc);color:var(--ontx);border-color:var(--acc)}
+#chart-type-toggle{display:flex;border:1px solid var(--s1);border-radius:6px;overflow:hidden}
+#chart-type-toggle .chart-type-btn{display:flex;align-items:center;justify-content:center;padding:6px 10px;border:none;border-radius:0}
+#chart-type-toggle .chart-type-btn:first-child{border-right:1px solid var(--s1)}
+#chart-type-toggle .chart-type-btn.on svg{color:var(--ontx)}
+#chart-type-toggle .chart-type-btn svg{color:var(--tx);display:block}
 #chart-trace-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)}
 #chart-trace-sel{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:4px 8px;cursor:pointer}
 #chart-trace-sel:hover{border-color:var(--acc)}

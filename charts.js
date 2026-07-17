@@ -10,9 +10,11 @@ let traceCat = 'off';           // 'off' | 'characters' | 'locations' | 'themes'
 // as more items are traced, so selection count is only limited by how many
 // items exist and by LANE_SANITY_CAP below (a runaway guard, not a design cap).
 const LANE_SANITY_CAP = 24;
-const LANE_W_MAX = 3;           // trace-line stroke width with one lane
-const LANE_W_MIN = 0.75;        // stroke width floor — bands keep thinning toward this as lanes grow
-const LANE_W_DECAY = 0.85;      // per-additional-lane multiplier on stroke width (continuous, no cliff)
+const LANE_W_MAX = 4.5;         // trace-line stroke width with one lane — bold by default
+const LANE_W_MIN = 1.25;        // stroke width floor — bands keep thinning toward this as lanes grow
+const LANE_W_DECAY = 0.9;       // per-additional-lane multiplier on stroke width (continuous, no cliff)
+const LANE_EDGE_PAD = 2;        // margin kept between the outermost lane and each tube edge
+const LANE_PITCH = 3;           // target px between lane centers — tight, bands hug each other
 const TRACE_CATS = ['characters', 'locations', 'themes', 'misc', 'povs'];
 let chartResizeTimer = null;
 let chartLastSize = '';         // last rendered chart-scroll size, "WxH"
@@ -26,6 +28,13 @@ const CIRCLE_SEG_THICKNESS = 30; // base stroke width of the circle ring — sam
 const SNAKE_THICKNESS_CEIL = 220;
 const CIRCLE_THICKNESS_CEIL = 220;
 const SNAKE_TURN_CLEARANCE = 19; // r - thickness/2, held constant as thickness grows — see computeSnakeLayout
+// The tube jumps to this floor the moment ANY tracing is active (k>=1), rather
+// than growing gradually from `base` — so switching trace on immediately frees
+// visible room (a visibly smaller circle pie, more separated snake rows)
+// instead of only reacting once several items are selected. Untouched when
+// trace is off.
+const SNAKE_TRACE_FLOOR = 60;
+const CIRCLE_TRACE_FLOOR = 70;
 const UNASSIGNED_SEC_ID = 'unassigned';
 // Avg wordCount among scenes with one, from the most recently computed layout —
 // stashed here so the tooltip (which only gets a single scene, not the whole
@@ -74,6 +83,11 @@ function openChartView() {
   document.getElementById('sbscrl').style.display = 'none';
   document.getElementById('sbemp').style.display = 'none';
   document.getElementById('chart-host').style.display = 'flex';
+  // renderBoard() normally clears these body-level pins on every call, but it
+  // early-returns into renderChart() while chartMode is on and never reaches
+  // that cleanup — so a section pin left over from scrolling the board stays
+  // stuck on screen for as long as the chart is open unless cleared here.
+  document.querySelectorAll('.sec-pin').forEach(p => p.remove());
   // Card-only controls: meaningless once cards aren't on screen.
   document.getElementById('det-ck-wrap').style.display = 'none';
   document.getElementById('scalew-wrap').style.display = 'none';
@@ -196,32 +210,43 @@ function traceLaneWidth(k) {
   if (k <= 1) return LANE_W_MAX;
   return Math.max(LANE_W_MIN, LANE_W_MAX * Math.pow(LANE_W_DECAY, k - 1));
 }
-// How thick the tube itself should be, given the lane count — grows once lanes
-// actually need the room (a generous ~7px pitch between lane centers), capped
-// at `ceil` purely as a runaway guard (see SNAKE/CIRCLE_THICKNESS_CEIL). Below
-// that threshold this returns `base` unchanged, so the non-trace and few-lane
-// appearance is untouched; past it, laneOffsets() keeps compressing spacing
-// for any further lanes instead of the tube growing without bound.
-function traceThickness(base, ceil, k) {
-  if (k <= 1) return base;
+// How thick the tube itself should be, given the lane count. Jumps straight to
+// `floor` the moment tracing is active (k>=1) — not a gradual climb from
+// `base` — so turning tracing on immediately claims room instead of only
+// reacting once several items pile up. Beyond that, grows only once lanes
+// actually need more than `floor` (a tight LANE_PITCH between lane centers,
+// since bands are meant to hug each other rather than spread out), capped at
+// `ceil` purely as a runaway guard. Returns `base` unchanged while trace is
+// off — the non-trace appearance is always untouched.
+function traceThickness(base, floor, ceil, k) {
+  if (k <= 0) return base;
+  if (k === 1) return floor;
   const w = traceLaneWidth(k);
-  const margin = w / 2 + 4;
-  const desiredSpacing = 7;
-  const needed = 2 * margin + (k - 1) * desiredSpacing;
-  return Math.min(ceil, Math.max(base, needed));
+  const margin = w / 2 + LANE_EDGE_PAD;
+  const needed = 2 * margin + (k - 1) * LANE_PITCH;
+  return Math.min(ceil, Math.max(floor, needed));
 }
 function laneOffsets(k, thickness, laneW) {
-  const usable = thickness - 2 * (laneW / 2 + 3.5); // 3.5px margin inside each tube edge
-  // 7 matches the pitch traceThickness() sizes the tube for, so lanes actually
-  // use the room it grew — capped by `usable` for cases where the tube didn't
-  // grow (e.g. a caller-clamped thickness) and 7px would overflow it.
-  const spacing = k > 1 ? Math.min(7, usable / (k - 1)) : 0;
+  const usable = thickness - 2 * (laneW / 2 + LANE_EDGE_PAD);
+  // LANE_PITCH matches the pitch traceThickness() sizes the tube for, so lanes
+  // actually use the room it grew — capped by `usable` for cases where the
+  // tube didn't grow (e.g. a caller-clamped thickness) and it would overflow.
+  const spacing = k > 1 ? Math.min(LANE_PITCH, usable / (k - 1)) : 0;
   return Array.from({ length: k }, (_, i) => (i - (k - 1) / 2) * spacing);
 }
 
-function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane, laneW) {
+// mapLen converts a length along the CENTERLINE into the corresponding length
+// along this particular lane path. For a circle this is exact simple
+// proportional scaling (offsetting a full circle's radius scales its whole
+// circumference uniformly). For the snake it is NOT exact — see
+// snakeLenToLaneLen — because a lane's turns have a different radius (and thus
+// a different arc length) than its straight runs, which are unchanged; passing
+// no mapLen falls back to the (circle-correct, snake-approximate) proportional
+// scale for callers that don't need the precise version.
+function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane, laneW, mapLen) {
+  const map = mapLen || (len => len / total * laneTotal);
   runs.forEach(run => {
-    const s = run.start / total * laneTotal, e = run.end / total * laneTotal;
+    const s = map(run.start), e = map(run.end);
     const inset = Math.min(2, (e - s) / 4); // soft ends, keep length positive
     const len = Math.max(2, e - s - 2 * inset);
     const clone = lanePathEl.cloneNode(false);
@@ -599,6 +624,38 @@ function buildSnakeLanePathD(N, W, d, thickness) {
   }
   return dd;
 }
+// Converts a length along the CENTERLINE into the equivalent length along a
+// lane offset by `d`. Proportional scaling (len/total*laneTotal) is wrong here:
+// a lane's straight runs are the exact same length as the centerline's (only
+// shifted in y), but its turns have a different radius (r+d or r-d) and thus a
+// different arc length — so the ratio between centerline-length and
+// lane-length isn't constant, it only changes inside turns. Using proportional
+// scaling anyway visibly drifted lane color boundaries away from the actual
+// scene boundaries, worse the more lanes were offset from center. This walks
+// the same row/turn structure buildSnakeLanePathD draws and converts each
+// piece on its own terms: straight-run lengths pass through unchanged, and an
+// arc's length is rescaled by exactly how much longer/shorter that lane's
+// turn radius makes it.
+function snakeLenToLaneLen(lenC, N, W, thickness, d) {
+  const { R, run, r } = computeSnakeLayout(N, W, thickness);
+  const turnLenC = Math.PI * r;
+  let remaining = lenC, laneLen = 0;
+  for (let row = 0; row < R; row++) {
+    const straight = Math.min(remaining, run);
+    laneLen += straight;
+    remaining -= run;
+    if (remaining <= 0) return laneLen;
+    if (row < R - 1) {
+      const leftToRight = row % 2 === 0;
+      const rLane = leftToRight ? r + d : r - d;
+      const turnLenLane = Math.PI * rLane;
+      if (remaining <= turnLenC) return laneLen + (remaining / turnLenC) * turnLenLane;
+      laneLen += turnLenLane;
+      remaining -= turnLenC;
+    }
+  }
+  return laneLen;
+}
 function addSnakeTraceLanes(svg, N, W, trace, layout, total, thickness, laneW) {
   if (!trace || !trace.lanes.length) return;
   const offsets = laneOffsets(trace.lanes.length, thickness, laneW);
@@ -609,7 +666,8 @@ function addSnakeTraceLanes(svg, N, W, trace, layout, total, thickness, laneW) {
     svg.appendChild(path);
     const laneTotal = path.getTotalLength();
     const runs = computeLaneRuns(layout, lane.name);
-    drawLaneRuns(svg, path, laneTotal, total, runs, lane, laneW);
+    const mapLen = len => snakeLenToLaneLen(len, N, W, thickness, offsets[i]);
+    drawLaneRuns(svg, path, laneTotal, total, runs, lane, laneW, mapLen);
   });
 }
 
@@ -618,7 +676,7 @@ function buildSnakeChart(canvas, scenes, trace) {
   const W = Math.max(300, (scrollEl.clientWidth || 800) - 2 * CHART_PAD);
   const N = scenes.length;
   if (N === 0) { renderChartNoMatch(canvas); return; }
-  const thickness = traceThickness(SNAKE_SEG_THICKNESS, SNAKE_THICKNESS_CEIL, trace.lanes.length);
+  const thickness = traceThickness(SNAKE_SEG_THICKNESS, SNAKE_TRACE_FLOOR, SNAKE_THICKNESS_CEIL, trace.lanes.length);
   const laneW = traceLaneWidth(trace.lanes.length);
   const svg = document.createElementNS(SVGNS, 'svg');
   if (traceActive()) svg.classList.add('chart-trace');
@@ -726,7 +784,7 @@ function buildCircleChart(canvas, scenes, trace) {
   const paneH = Math.max(300, (scrollEl.clientHeight || 480) - 2 * CHART_PAD);
   const N = scenes.length;
   if (N === 0) { renderChartNoMatch(canvas); return; }
-  const thickness = traceThickness(CIRCLE_SEG_THICKNESS, CIRCLE_THICKNESS_CEIL, trace.lanes.length);
+  const thickness = traceThickness(CIRCLE_SEG_THICKNESS, CIRCLE_TRACE_FLOOR, CIRCLE_THICKNESS_CEIL, trace.lanes.length);
   const laneW = traceLaneWidth(trace.lanes.length);
   // R is anchored to the pane using the BASE thickness, not the dynamic one —
   // its size (and the pie's, via outerR below) stays stable as lanes come and
