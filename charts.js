@@ -10,31 +10,43 @@ let traceCat = 'off';           // 'off' | 'characters' | 'locations' | 'themes'
 // as more items are traced, so selection count is only limited by how many
 // items exist and by LANE_SANITY_CAP below (a runaway guard, not a design cap).
 const LANE_SANITY_CAP = 24;
-const LANE_W_MAX = 4.5;         // trace-line stroke width with one lane — bold by default
-const LANE_W_MIN = 1.25;        // stroke width floor — bands keep thinning toward this as lanes grow
+// A separate, larger palette from SEC_COLORS (section colors) — reusing that
+// 8-color list meant any selection past 8 lanes repeated a color outright
+// (e.g. lane 1 and lane 9 identical), which read as two different items being
+// "the same" color. 16 distinct hues, alternating warm/cool so adjacent
+// library items (likely to land at adjacent indices) don't get near-neighbor
+// hues either.
+const TRACE_COLORS = [
+  '#5b8dd9', '#d4844a', '#6aaa80', '#9b7cc4', '#c4a84a', '#4aadb5', '#c47a8a', '#7a8ea8',
+  '#b5574a', '#5ac48a', '#8a6ac4', '#c4914a', '#4a90c4', '#a5c44a', '#c454a0', '#4ac4b0',
+];
+const LANE_W_MAX = 5;           // trace-line stroke width with one lane — bold by default
+const LANE_W_MIN = 1.5;         // stroke width floor — bands keep thinning toward this as lanes grow
 const LANE_W_DECAY = 0.9;       // per-additional-lane multiplier on stroke width (continuous, no cliff)
-const LANE_EDGE_PAD = 2;        // margin kept between the outermost lane and each tube edge
-const LANE_PITCH = 3;           // target px between lane centers — tight, bands hug each other
+const LANE_EDGE_PAD = 1.5;      // margin kept between the outermost lane and each tube edge
+const LANE_MIN_PITCH = 2.5;     // smallest acceptable px between lane centers before the tube must grow
 const TRACE_CATS = ['characters', 'locations', 'themes', 'misc', 'povs'];
 let chartResizeTimer = null;
 let chartLastSize = '';         // last rendered chart-scroll size, "WxH"
 const CHART_PAD = 12;           // must match #chart-canvas padding in styles.css
 const SNAKE_SEG_THICKNESS = 34; // base stroke width of the snake row "tube" — grows with trace lanes, see traceThickness()
 const CIRCLE_SEG_THICKNESS = 30; // base stroke width of the circle ring — same growth rule
-// Generous sanity ceilings, not design targets — the snake's turn radius grows
-// in lockstep with its thickness (see computeSnakeLayout) so it never actually
-// needs this much room; the circle's ring grows outward beyond its pane (see
-// buildCircleChart) rather than being squeezed to fit, so this rarely binds either.
+// Generous sanity ceiling, not a design target — the snake's turn radius grows
+// in lockstep with its thickness (see computeSnakeLayout), so a very wide tube
+// just makes a taller chart rather than breaking the turn geometry.
 const SNAKE_THICKNESS_CEIL = 220;
-const CIRCLE_THICKNESS_CEIL = 220;
+// The circle's ring can't grow past this without R (see buildCircleChart)
+// being squeezed below a size where the pie/labels are still legible; in
+// practice traceThickness rarely asks for this much.
+const CIRCLE_THICKNESS_CEIL = 160;
 const SNAKE_TURN_CLEARANCE = 19; // r - thickness/2, held constant as thickness grows — see computeSnakeLayout
 // The tube jumps to this floor the moment ANY tracing is active (k>=1), rather
 // than growing gradually from `base` — so switching trace on immediately frees
 // visible room (a visibly smaller circle pie, more separated snake rows)
 // instead of only reacting once several items are selected. Untouched when
 // trace is off.
-const SNAKE_TRACE_FLOOR = 60;
-const CIRCLE_TRACE_FLOOR = 70;
+const SNAKE_TRACE_FLOOR = 80;
+const CIRCLE_TRACE_FLOOR = 90;
 const UNASSIGNED_SEC_ID = 'unassigned';
 // Avg wordCount among scenes with one, from the most recently computed layout —
 // stashed here so the tooltip (which only gets a single scene, not the whole
@@ -182,7 +194,7 @@ function computeTraceLanes(scenes) {
   const selected = S.selections[traceCat];
   const names = traceItemNames().filter(n => selected.has(n) && inScenes(n));
   const overflow = Math.max(0, names.length - LANE_SANITY_CAP);
-  return { lanes: names.slice(0, LANE_SANITY_CAP).map((name, i) => ({ name, color: SEC_COLORS[i % SEC_COLORS.length] })), overflow };
+  return { lanes: names.slice(0, LANE_SANITY_CAP).map((name, i) => ({ name, color: TRACE_COLORS[i % TRACE_COLORS.length] })), overflow };
 }
 
 function computeLaneRuns(layout, name) {
@@ -213,25 +225,27 @@ function traceLaneWidth(k) {
 // How thick the tube itself should be, given the lane count. Jumps straight to
 // `floor` the moment tracing is active (k>=1) — not a gradual climb from
 // `base` — so turning tracing on immediately claims room instead of only
-// reacting once several items pile up. Beyond that, grows only once lanes
-// actually need more than `floor` (a tight LANE_PITCH between lane centers,
-// since bands are meant to hug each other rather than spread out), capped at
-// `ceil` purely as a runaway guard. Returns `base` unchanged while trace is
-// off — the non-trace appearance is always untouched.
+// reacting once several items pile up. Beyond that, grows only once `floor`
+// wouldn't leave lanes at least LANE_MIN_PITCH apart when spread across the
+// full tube width (see laneOffsets — lanes always fill whatever width they're
+// given, so this is the one place lane count can still force more room),
+// capped at `ceil` purely as a runaway guard. Returns `base` unchanged while
+// trace is off — the non-trace appearance is always untouched.
 function traceThickness(base, floor, ceil, k) {
   if (k <= 0) return base;
   if (k === 1) return floor;
   const w = traceLaneWidth(k);
   const margin = w / 2 + LANE_EDGE_PAD;
-  const needed = 2 * margin + (k - 1) * LANE_PITCH;
+  const needed = 2 * margin + (k - 1) * LANE_MIN_PITCH;
   return Math.min(ceil, Math.max(floor, needed));
 }
+// Lanes always spread across the FULL usable width of the tube, edge to edge
+// (not just far enough apart to be legible) — a tube sized generously by
+// traceThickness's floor should look filled with color, not like a few thin
+// lines floating in a mostly-empty gray band.
 function laneOffsets(k, thickness, laneW) {
   const usable = thickness - 2 * (laneW / 2 + LANE_EDGE_PAD);
-  // LANE_PITCH matches the pitch traceThickness() sizes the tube for, so lanes
-  // actually use the room it grew — capped by `usable` for cases where the
-  // tube didn't grow (e.g. a caller-clamped thickness) and it would overflow.
-  const spacing = k > 1 ? Math.min(LANE_PITCH, usable / (k - 1)) : 0;
+  const spacing = k > 1 ? usable / (k - 1) : 0;
   return Array.from({ length: k }, (_, i) => (i - (k - 1) / 2) * spacing);
 }
 
@@ -786,16 +800,13 @@ function buildCircleChart(canvas, scenes, trace) {
   if (N === 0) { renderChartNoMatch(canvas); return; }
   const thickness = traceThickness(CIRCLE_SEG_THICKNESS, CIRCLE_TRACE_FLOOR, CIRCLE_THICKNESS_CEIL, trace.lanes.length);
   const laneW = traceLaneWidth(trace.lanes.length);
-  // R is anchored to the pane using the BASE thickness, not the dynamic one —
-  // its size (and the pie's, via outerR below) stays stable as lanes come and
-  // go. Extra thickness from lanes grows the ring OUTWARD past that anchor
-  // instead of shrinking R to keep fitting inside the pane; the canvas below
-  // grows to match and #chart-scroll's overflow:auto lets it scroll into view,
-  // the same way a snake chart grows taller for more scenes.
-  const R = Math.max(90, Math.min(paneW, paneH) / 2 - (CIRCLE_SEG_THICKNESS / 2 + 10));
-  const half = R + thickness / 2 + 10;
-  const availW = Math.max(paneW, half * 2);
-  const availH = Math.max(paneH, half * 2);
+  // R shrinks as the ring thickens, so the whole chart always fits inside the
+  // visible pane — no scrolling to find a ring that's grown past the bottom
+  // of the window. This is also most of why the pie shrinks when tracing: the
+  // ring both gets thicker AND moves inward to compensate. At the base
+  // thickness (trace off) this is identical to the original fixed "-25".
+  const R = Math.max(70, Math.min(paneW, paneH) / 2 - (thickness / 2 + 10));
+  const availW = paneW, availH = paneH;
   const cx = availW / 2, cy = availH / 2;
   const svg = document.createElementNS(SVGNS, 'svg');
   if (traceActive()) svg.classList.add('chart-trace');
@@ -910,11 +921,12 @@ function drawCirclePie(svg, layout, cx, cy, R, total, thickness) {
   if (!S.sections.length) return;
   const validSecIds = new Set(S.sections.map(s => s.id));
   // Leaves a small gap between the pie's outer edge and the ring's inner edge
-  // (thickness/2). At the base thickness this is R-20, same as before trace
-  // lanes existed; as lanes widen the ring, the pie automatically gives up
-  // exactly the room the ring took, rather than the two overlapping. With
-  // enough lanes traced the pie shrinks to a sliver near the center — floored
-  // at 8 (not 0) purely so the wedge path stays numerically well-formed.
+  // (thickness/2). At the base thickness this is R-20, identical to before
+  // trace lanes existed; as lanes widen the ring (and R itself shrinks to
+  // compensate, see buildCircleChart), the pie gives up room from both
+  // directions at once. With enough lanes traced the pie shrinks to a sliver
+  // near the center — floored at 8 (not 0) purely so the wedge path stays
+  // numerically well-formed.
   const outerR = Math.max(8, R - thickness / 2 - 5);
   const runs = [];
   layout.forEach(({ scene, offset, len }) => {
