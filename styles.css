@@ -567,8 +567,6 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .overview-img{max-width:100%;border-radius:8px;border:1px solid var(--s1);cursor:pointer;transition:transform .14s,box-shadow .14s}
 .overview-img:hover{transform:scale(1.02);box-shadow:0 4px 16px rgba(0,0,0,.12)}
 .overview-img-hint{display:block;font-size:10px;color:var(--o0);margin-top:6px}
-.overview-cta{max-width:680px;margin:40px auto;text-align:center}
-.overview-cta h3{font-size:18px;color:var(--tx);margin-bottom:16px}
 
 /* Overview image modal */
 .overview-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;align-items:center;justify-content:center;cursor:pointer}

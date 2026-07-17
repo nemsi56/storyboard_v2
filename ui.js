@@ -92,8 +92,6 @@ const HELP_ZONES = [
   { sel: '.sp-add-row',      tip: 'Add Section — type a name and press + (or Enter) to create a new section.' },
   { sel: '.sp-qs',           tip: 'Quick Setup — rapidly create multiple numbered sections at once (e.g. "Act 1, Act 2, Act 3").' },
   { sel: '#cp .tabs',        tip: 'Scene panel — New Scene creates a scene; Edit Scene (enabled when a card is selected) lets you modify it. Enter a title, summary, section, library tags, and notes. Use ◀ or drag the panel edge to hide or resize.' },
-  { sel: '#sbhdr',           tip: 'Scene Board — the main workspace. Scenes are arranged by section. Drag cards to reorder them. Click a card to select it; click multiple cards to select them together and move them as a group.' },
-  { sel: '#chart-toolbar',   tip: 'Scene Flow Chart toolbar — switch chart layouts, size scenes by word count, trace a library category, filter sections, and print.' },
   { sel: '#sbcnt',           tip: 'Scene count — shows how many scenes are currently visible (may be fewer when a section filter is active).' },
   { sel: '#clrsel',          tip: 'Clear Selection — deselects all currently selected scene cards on the board.' },
   { sel: '#det-toggle',      tip: 'Show Card Details — toggle to show or hide library tags (POV, characters, locations, themes, misc) printed on each card.' },
@@ -132,12 +130,19 @@ function openHelp() {
     if (!el) return;
     const r = el.getBoundingClientRect();
     if (r.width < 2 && r.height < 2) return;
+    // Clamped to the viewport — an edge-to-edge row (the menu bar, a panel
+    // header) would otherwise get a highlight box a few px wider than the
+    // window on each side from the +6 padding below, visibly overflowing it.
+    const left   = Math.max(0, r.left - 3);
+    const top    = Math.max(0, r.top  - 3);
+    const right  = Math.min(window.innerWidth,  r.right  + 3);
+    const bottom = Math.min(window.innerHeight, r.bottom + 3);
     const div = document.createElement('div');
     div.className = 'help-zone';
-    div.style.left   = (r.left   - 3) + 'px';
-    div.style.top    = (r.top    - 3) + 'px';
-    div.style.width  = (r.width  + 6) + 'px';
-    div.style.height = (r.height + 6) + 'px';
+    div.style.left   = left + 'px';
+    div.style.top    = top + 'px';
+    div.style.width  = (right - left) + 'px';
+    div.style.height = (bottom - top) + 'px';
     div.addEventListener('mouseenter', () => showHelpTip(zone.tip, r));
     div.addEventListener('mouseleave', hideHelpTip);
     div.addEventListener('click', e => { e.stopPropagation(); closeHelp(); });
