@@ -205,7 +205,10 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 
 /* ══ STORYBOARD PANEL ══════════════════════════════════════════════════════ */
 #sbp{flex:1;min-width:0;background:var(--sbg);display:flex;flex-direction:column;overflow:hidden}
-#sbhdr{height:46px;border-bottom:1px solid var(--bdr);padding:0 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--sbg)}
+/* 52px, not the 46px every other panel header row uses — the extra height
+   gives the CARDS/FLOW label (see .view-toggle-lbl) breathing room above it
+   instead of sitting flush against the row's top edge. */
+#sbhdr{height:52px;border-bottom:1px solid var(--bdr);padding:0 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--sbg)}
 .sbhl{display:flex;align-items:center;gap:6px;flex-shrink:0}
 #sbcnt{font-size:12px;color:var(--sub)}
 #clrsel{font-size:11px;color:var(--lv);background:none;border:none;cursor:pointer;padding:3px 7px;border-radius:5px;display:none;transition:background .12s;font-family:inherit;white-space:nowrap}
@@ -644,7 +647,9 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 
 /* ── SCENE FLOW CHART ────────────────────────────────────────────────────── */
 #chart-host{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;background:var(--sbg)}
-#chart-toolbar{height:46px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
+/* Matches #sbhdr's 52px so the view-toggle switch (which moves between the
+   two rows) keeps the same headroom above its CARDS/FLOW label either way. */
+#chart-toolbar{height:52px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
 #chart-legend{flex-shrink:0;display:flex;flex-wrap:wrap;align-items:center;row-gap:4px;column-gap:0;padding:5px 12px;background:var(--bg1);border-bottom:1px solid var(--bdr);font-size:11px;color:var(--sub);max-height:92px;overflow-y:auto}
 #chart-legend:empty{display:none}
 .chart-legend-item{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:1px 4px;white-space:nowrap}
