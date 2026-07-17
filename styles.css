@@ -655,7 +655,11 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-type-btn:hover{border-color:var(--acc)}
 .chart-type-btn.on{background:var(--acc);color:var(--ontx);border-color:var(--acc)}
 #chart-type-toggle{display:flex;border:1px solid var(--s1);border-radius:6px;overflow:hidden}
-#chart-type-toggle .chart-type-btn{display:flex;align-items:center;justify-content:center;padding:6px 10px;border:none;border-radius:0}
+/* Shorter than the base .chart-type-btn padding — frees enough headroom
+   above the button (within the 46px row) for the CARDS/FLOW label floating
+   over it (see .view-toggle-lbl) to clear the row's top edge instead of
+   getting clipped by #sbp/#chart-host's overflow:hidden. */
+#chart-type-toggle .chart-type-btn{display:flex;align-items:center;justify-content:center;padding:4px 10px;border:none;border-radius:0}
 #chart-type-toggle .chart-type-btn:first-child{border-right:1px solid var(--s1)}
 #chart-type-toggle .chart-type-btn.on svg{color:var(--ontx)}
 #chart-type-toggle .chart-type-btn svg{color:var(--tx);display:block}
@@ -672,8 +676,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
    uneven even though every item was individually centered correctly. */
 #view-toggle{display:flex;align-items:center;gap:10px;flex-shrink:0}
 .view-toggle-item{position:relative;display:flex}
-.view-toggle-lbl{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:2px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--o0);line-height:1;white-space:nowrap;pointer-events:none}
-#chart-type-cards{display:flex;align-items:center;justify-content:center;padding:6px 10px}
+.view-toggle-lbl{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:1px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--o0);line-height:1;white-space:nowrap;pointer-events:none}
+#chart-type-cards{display:flex;align-items:center;justify-content:center;padding:4px 10px}
 #chart-type-cards svg{color:var(--tx);display:block}
 #chart-type-cards.on svg{color:var(--ontx)}
 #chart-trace-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)}
