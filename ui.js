@@ -92,13 +92,18 @@ const HELP_ZONES = [
   { sel: '.sp-add-row',      tip: 'Add Section — type a name and press + (or Enter) to create a new section.' },
   { sel: '.sp-qs',           tip: 'Quick Setup — rapidly create multiple numbered sections at once (e.g. "Act 1, Act 2, Act 3").' },
   { sel: '#cp .tabs',        tip: 'Scene panel — New Scene creates a scene; Edit Scene (enabled when a card is selected) lets you modify it. Enter a title, summary, section, library tags, and notes. Use ◀ or drag the panel edge to hide or resize.' },
-  { sel: '#sbhdr .sbt',      tip: 'Scene Board — the main workspace. Scenes are arranged by section. Drag cards to reorder them. Click a card to select it; click multiple cards to select them together and move them as a group.' },
   { sel: '#sbcnt',           tip: 'Scene count — shows how many scenes are currently visible (may be fewer when a section filter is active).' },
   { sel: '#clrsel',          tip: 'Clear Selection — deselects all currently selected scene cards on the board.' },
   { sel: '#det-toggle',      tip: 'Show Card Details — toggle to show or hide library tags (POV, characters, locations, themes, misc) printed on each card.' },
-  { sel: '#sec-filter-wrap', tip: 'Section Filter — click to choose which sections are visible on the board. Useful for focusing on one part of your story.' },
+  { sel: '#sec-filter-wrap', tip: 'Section Filter — click to choose which sections are visible. Useful for focusing on one part of your story.' },
   { sel: '#srch-wrap',       tip: 'Search — filter visible cards by title or summary text. Press × or Escape to clear the search.' },
   { sel: '.scalew',          tip: 'Card Size — drag the slider to make scene cards larger or smaller on the board.' },
+  { sel: '#view-toggle',     tip: 'Cards / Snake / Circle — switch between the card board and either the snake or circle Scene Flow Chart layout. Your last-used chart layout is remembered next time you open one.' },
+  { sel: '#chart-wc-toggle', tip: 'Show relative word count — size each scene\'s segment by its word count instead of splitting the ribbon evenly, so unusually long or short scenes stand out at a glance.' },
+  { sel: '#chart-trace-wrap',tip: 'Trace — pick a category (Characters, Locations, Themes, Misc, POV), then select items in the Library to draw colored lines through the chart, tracking them.' },
+  { sel: '#chart-status',    tip: 'Chart status — how many scenes and sections are currently visible, and how many items you\'re tracing.' },
+  { sel: '#chart-legend',    tip: 'Legend — appears when tracing items or sizing by word count, explaining what each color or mark means. Hover an entry to highlight its line on the chart.' },
+  { sel: '#chart-print-btn', tip: 'Print — opens a clean, full-color printable version of the current chart in a new tab.' },
   { sel: '#help-btn',        tip: 'Help — you\'re already here! Click ? to toggle this mode on/off. Hover highlighted areas to learn what each element does.' },
 ];
 
@@ -125,12 +130,19 @@ function openHelp() {
     if (!el) return;
     const r = el.getBoundingClientRect();
     if (r.width < 2 && r.height < 2) return;
+    // Clamped to the viewport — an edge-to-edge row (the menu bar, a panel
+    // header) would otherwise get a highlight box a few px wider than the
+    // window on each side from the +6 padding below, visibly overflowing it.
+    const left   = Math.max(0, r.left - 3);
+    const top    = Math.max(0, r.top  - 3);
+    const right  = Math.min(window.innerWidth,  r.right  + 3);
+    const bottom = Math.min(window.innerHeight, r.bottom + 3);
     const div = document.createElement('div');
     div.className = 'help-zone';
-    div.style.left   = (r.left   - 3) + 'px';
-    div.style.top    = (r.top    - 3) + 'px';
-    div.style.width  = (r.width  + 6) + 'px';
-    div.style.height = (r.height + 6) + 'px';
+    div.style.left   = left + 'px';
+    div.style.top    = top + 'px';
+    div.style.width  = (right - left) + 'px';
+    div.style.height = (bottom - top) + 'px';
     div.addEventListener('mouseenter', () => showHelpTip(zone.tip, r));
     div.addEventListener('mouseleave', hideHelpTip);
     div.addEventListener('click', e => { e.stopPropagation(); closeHelp(); });

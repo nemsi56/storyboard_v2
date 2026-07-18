@@ -145,12 +145,12 @@
   scaler.addEventListener('input', function(){ setScale(scaler.value); });
 
   // Chart view
+  $('chart-type-cards').addEventListener('click', closeChartView);
   $('chart-type-snake').addEventListener('click', function(){ setChartType('snake'); });
   $('chart-type-circle').addEventListener('click', function(){ setChartType('circle'); });
   $('chart-wc-toggle').addEventListener('click', toggleShowWordCount);
   $('chart-trace-sel').addEventListener('change', function(){ setChartTrace(this.value); });
   $('chart-print-btn').addEventListener('click', printChart);
-  $('chart-close-btn').addEventListener('click', toggleChartView);
 
   // Add-item popup
   $('ap-cancel').addEventListener('click', closeAddPopup);

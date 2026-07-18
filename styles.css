@@ -65,6 +65,22 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #lib-clr-wrap{padding:6px 14px 2px;display:none;flex-shrink:0}
 #lib-clr{font-size:11px;color:var(--lv);background:none;border:1px solid color-mix(in srgb,var(--lv) 40%,transparent);border-radius:5px;cursor:pointer;padding:4px 9px;width:100%;transition:background .12s;font-family:inherit}
 #lib-clr:hover{background:color-mix(in srgb,var(--lv) 12%,transparent)}
+/* Draws the eye while a highlight is actually active — the button itself is
+   otherwise easy to miss among the library panel's other low-key controls.
+   A solid resting fill/border (not just the pulse) keeps it visible between
+   beats, and the pulse itself combines an outer glow with a slight scale so
+   it reads clearly rather than as a faint ring around tiny text. */
+#lib-clr.lib-clr-aura{
+  color:var(--tx);
+  border-color:var(--lv);
+  background:color-mix(in srgb,var(--lv) 16%,transparent);
+  animation:lib-clr-pulse 1.3s ease-in-out infinite;
+}
+#lib-clr.lib-clr-aura:hover{animation-play-state:paused}
+@keyframes lib-clr-pulse{
+  0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--lv) 45%,transparent);transform:scale(1)}
+  50%{box-shadow:0 0 8px 3px color-mix(in srgb,var(--lv) 45%,transparent);transform:scale(1.02)}
+}
 /* AND/OR shared styles */
 .ao-lbl{font-size:10px;color:var(--o0);flex-shrink:0}
 .ao-btn{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;border:1px solid var(--s1);background:var(--s0);color:var(--o1);cursor:pointer;transition:background .12s,color .12s,border-color .12s;font-family:inherit}
@@ -114,6 +130,12 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 /* Grip indicator */
 #cp-resize::after,#sp-resize::after,#lp-resize::after{content:'⠿';position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:13px;color:var(--o1);opacity:.75;pointer-events:none;transition:opacity .15s,color .15s;line-height:1}
 #cp-resize:hover::after,#cp-resize.dragging::after,#sp-resize:hover::after,#sp-resize.dragging::after,#lp-resize:hover::after,#lp-resize.dragging::after{opacity:1;color:var(--ontx)}
+/* Scene ↔ Scene Board divider: the boundary between editing and board views,
+   so it gets a touch more width and the theme's own accent color as a fill
+   (not just an outline around the same background as everything else)
+   instead of blending into the surrounding chrome. */
+#cp-resize{width:9px;background:color-mix(in srgb,var(--acc) 55%,var(--s1));border-left:1px solid var(--acc);border-right:1px solid var(--acc)}
+#cp-resize::after{color:var(--ontx);opacity:.9}
 
 /* ══ CENTER PANEL ══════════════════════════════════════════════════════════ */
 #cp{width:258px;background:var(--bg2);border-right:none}
@@ -183,8 +205,10 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 
 /* ══ STORYBOARD PANEL ══════════════════════════════════════════════════════ */
 #sbp{flex:1;min-width:0;background:var(--sbg);display:flex;flex-direction:column;overflow:hidden}
-#sbhdr{height:46px;border-bottom:1px solid var(--bdr);padding:0 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--sbg)}
-.sbt{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--o0);white-space:nowrap;flex-shrink:0}
+/* 52px, not the 46px every other panel header row uses — the extra height
+   gives the CARDS/FLOW label (see .view-toggle-lbl) breathing room above it
+   instead of sitting flush against the row's top edge. */
+#sbhdr{height:52px;border-bottom:1px solid var(--bdr);padding:0 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--sbg)}
 .sbhl{display:flex;align-items:center;gap:6px;flex-shrink:0}
 #sbcnt{font-size:12px;color:var(--sub)}
 #clrsel{font-size:11px;color:var(--lv);background:none;border:none;cursor:pointer;padding:3px 7px;border-radius:5px;display:none;transition:background .12s;font-family:inherit;white-space:nowrap}
@@ -543,8 +567,6 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .overview-img{max-width:100%;border-radius:8px;border:1px solid var(--s1);cursor:pointer;transition:transform .14s,box-shadow .14s}
 .overview-img:hover{transform:scale(1.02);box-shadow:0 4px 16px rgba(0,0,0,.12)}
 .overview-img-hint{display:block;font-size:10px;color:var(--o0);margin-top:6px}
-.overview-cta{max-width:680px;margin:40px auto;text-align:center}
-.overview-cta h3{font-size:18px;color:var(--tx);margin-bottom:16px}
 
 /* Overview image modal */
 .overview-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;align-items:center;justify-content:center;cursor:pointer}
@@ -603,6 +625,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #backup-banner-text{flex:1;display:flex;flex-direction:column;gap:1px}
 #backup-banner-msg{font-size:13px;font-weight:700}
 #backup-banner-note{font-size:11px;opacity:.85}
+#backup-banner-link{font-size:11px;color:inherit;text-decoration:underline;text-underline-offset:2px;opacity:.85;transition:opacity .12s;width:fit-content}
+#backup-banner-link:hover{opacity:1}
 .backup-banner-btn{padding:6px 14px;font-size:12px;font-weight:700;font-family:inherit;border-radius:6px;cursor:pointer;border:none;background:var(--ontx);color:var(--acc);flex-shrink:0}
 .backup-banner-btn:hover{opacity:.85}
 .backup-banner-dismiss{background:none;border:none;color:inherit;font-size:18px;line-height:1;cursor:pointer;padding:2px 6px;opacity:.75;flex-shrink:0}
@@ -621,28 +645,52 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 
 /* ── SCENE FLOW CHART ────────────────────────────────────────────────────── */
 #chart-host{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;background:var(--sbg)}
-#chart-toolbar{height:46px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
+/* Matches #sbhdr's 52px so the view-toggle switch (which moves between the
+   two rows) keeps the same headroom above its CARDS/FLOW label either way. */
+#chart-toolbar{height:52px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
 #chart-legend{flex-shrink:0;display:flex;flex-wrap:wrap;align-items:center;row-gap:4px;column-gap:0;padding:5px 12px;background:var(--bg1);border-bottom:1px solid var(--bdr);font-size:11px;color:var(--sub);max-height:92px;overflow-y:auto}
 #chart-legend:empty{display:none}
 .chart-legend-item{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:1px 4px;white-space:nowrap}
 .chart-legend-item:hover,.chart-legend-item.chart-legend-hl{background:var(--s0);color:var(--tx)}
-.chart-legend-letter{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:15px;height:15px;border-radius:50%;background:var(--tx);color:var(--bg1);font-weight:700;font-size:9px;transition:background .12s,color .12s}
-.chart-legend-item:hover .chart-legend-letter,.chart-legend-item.chart-legend-hl .chart-legend-letter{background:var(--acc);color:var(--ontx)}
 .chart-legend-sep{flex-shrink:0;margin:0 8px;opacity:.5}
 .chart-legend-tick{display:inline-block;flex-shrink:0;width:2px;height:11px;border-radius:1px;background:var(--rd);transform:rotate(20deg)}
 .chart-type-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:5px 12px;cursor:pointer;transition:background .12s,border-color .12s}
 .chart-type-btn:hover{border-color:var(--acc)}
 .chart-type-btn.on{background:var(--acc);color:var(--ontx);border-color:var(--acc)}
 #chart-type-toggle{display:flex;border:1px solid var(--s1);border-radius:6px;overflow:hidden}
-#chart-type-toggle .chart-type-btn{display:flex;align-items:center;justify-content:center;padding:6px 10px;border:none;border-radius:0}
+/* Shorter than the base .chart-type-btn padding — frees enough headroom
+   above the button (within the 46px row) for the CARDS/FLOW label floating
+   over it (see .view-toggle-lbl) to clear the row's top edge instead of
+   getting clipped by #sbp/#chart-host's overflow:hidden. */
+#chart-type-toggle .chart-type-btn{display:flex;align-items:center;justify-content:center;padding:4px 10px;border:none;border-radius:0}
 #chart-type-toggle .chart-type-btn:first-child{border-right:1px solid var(--s1)}
 #chart-type-toggle .chart-type-btn.on svg{color:var(--ontx)}
 #chart-type-toggle .chart-type-btn svg{color:var(--tx);display:block}
+/* Cards/Snake/Circle view switch — lives in #sbhdr on the board and moves
+   into #chart-toolbar while the chart is open (see openChartView/
+   closeChartView in charts.js), always in the same spot relative to the
+   Snake/Circle pair so it reads as one control regardless of which view. */
+/* align-items:center here, not flex-end — the label below is pulled out of
+   flow (position:absolute) specifically so this item's flex height is just
+   its button, same as every sibling control in the row (Show relative word
+   count, Trace, Showing X scenes…). Stacking the label in-flow instead made
+   the whole column taller than those single-line siblings, so centering it
+   shifted its button down relative to everything else — the row read as
+   uneven even though every item was individually centered correctly. */
+#view-toggle{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.view-toggle-item{position:relative;display:flex}
+.view-toggle-lbl{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:1px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--o0);line-height:1;white-space:nowrap;pointer-events:none}
+#chart-type-cards{display:flex;align-items:center;justify-content:center;padding:4px 10px}
+#chart-type-cards svg{color:var(--tx);display:block}
+#chart-type-cards.on svg{color:var(--ontx)}
 #chart-trace-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)}
 #chart-trace-sel{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:4px 8px;cursor:pointer;transition:border-color .14s,box-shadow .14s}
 #chart-trace-sel:hover{border-color:var(--acc)}
 #chart-trace-sel.trace-on{border-color:var(--acc);box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 35%,transparent)}
+/* Lives in #sbhdr while the chart is open (see openChartView in charts.js) — flex:1
+   there fills the header line the same way it used to fill the toolbar row. */
 #chart-status{flex:1;color:var(--sub);font-size:11px;margin-left:4px}
+#chart-print-btn{margin-left:auto}
 #chart-print-btn,#chart-close-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:11px;font-family:inherit;padding:5px 10px;cursor:pointer;white-space:nowrap;transition:border-color .12s}
 #chart-print-btn:hover,#chart-close-btn:hover{border-color:var(--acc)}
 #chart-scroll{flex:1;min-height:0;overflow:auto;position:relative;background:var(--sbg)}
@@ -665,8 +713,10 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-seg:not(.chart-seg-match):hover{stroke:var(--tx);opacity:1;filter:brightness(1.1);cursor:pointer}
 .chart-seg.chart-seg-match:hover{filter:brightness(1.3) saturate(1.25);cursor:pointer}
 .chart-seg.chart-seg-dim{opacity:.45}
-.chart-num{font-family:inherit;user-select:none;transition:fill .12s}
-.chart-num.chart-num-hl{fill:var(--ontx)!important}
+.chart-num text{font-family:inherit;user-select:none;transition:fill .12s}
+.chart-num-bg{transition:fill .12s}
+.chart-num.chart-num-hl .chart-num-bg{fill:var(--tx)!important}
+.chart-num.chart-num-hl text{fill:var(--bg1)!important}
 .chart-sec-marker{cursor:pointer}
 .chart-sec-marker circle{transition:fill .12s}
 .chart-sec-marker text{font-family:inherit;user-select:none;pointer-events:none;transition:fill .12s}
@@ -674,7 +724,6 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-sec-marker:hover text,.chart-sec-marker.chart-sec-marker-hl text{fill:var(--ontx)}
 .chart-pie-wedge{transition:fill .12s;cursor:pointer}
 .chart-pie-wedge:hover{fill:var(--s1)}
-svg.chart-trace .chart-num{paint-order:stroke;stroke:var(--s1);stroke-width:3px}
 .chart-lane{transition:stroke-width .12s,filter .12s;cursor:pointer}
 /* Width is set per-element by highlightLaneLegend() (JS), proportional to the
    lane's own base width — a fixed CSS px value stopped reading as a highlight

@@ -231,6 +231,7 @@ function clearAllSel() {
 function updateLibClearBtn() {
   const any = SECS.some(({ key }) => S.selections[key].size > 0) || S.selections.povs.size > 0;
   document.getElementById('lib-clr-wrap').style.display = any ? 'block' : 'none';
+  document.getElementById('lib-clr').classList.toggle('lib-clr-aura', any);
 }
 
 // ── REMOVE LIB ITEM ───────────────────────────────────────────────────────────
@@ -1086,8 +1087,17 @@ function updateSecPins() {
 }
 
 function updateCount() {
-  const n = S.scenes.length;
-  document.getElementById('sbcnt').textContent = `${n} scene${n !== 1 ? 's' : ''}`;
+  let n;
+  if (S.sections.length === 0 || secFilterIds.size === 0) {
+    n = S.scenes.length;
+  } else {
+    const validSecIds = new Set(S.sections.map(s => s.id));
+    n = S.scenes.filter(s => {
+      const secId = validSecIds.has(s.sectionId) ? s.sectionId : 'unassigned';
+      return secFilterIds.has(secId);
+    }).length;
+  }
+  document.getElementById('sbcnt').textContent = `Showing ${n} scene${n !== 1 ? 's' : ''}`;
 }
 
 // ── SECTION SELECTS (forms + filter) ──────────────────────────────────────────
@@ -1128,6 +1138,25 @@ function usedPovNames() {
   S.scenes.forEach(sc => (sc.povs || []).forEach(n => used.add(n)));
   return povNames().filter(n => used.has(n));
 }
+// Display/drag order for the POV row. Character-derived and custom POV
+// names come from two different lists (S.characters order, S.povCustomNames
+// order) with no order of their own as a merged set, so dragging needs its
+// own list — S.povOrder — rather than reordering either source list
+// directly (which would also reorder the Characters section, or desync
+// from usedPovNames()'s filter). Append-only: a name that stops being used
+// keeps its stored position for if it's ever used again, instead of losing
+// it the moment it's temporarily filtered out.
+function orderedUsedPovNames() {
+  const used = usedPovNames();
+  const newOnes = used.filter(n => !S.povOrder.includes(n));
+  if (newOnes.length) {
+    S.povOrder = [...S.povOrder, ...newOnes];
+    recordDataEdit();
+    saveState();
+  }
+  const usedSet = new Set(used);
+  return S.povOrder.filter(n => usedSet.has(n));
+}
 function togglePovHighlight(name) {
   const s = S.selections.povs;
   if (s.has(name)) s.delete(name); else s.add(name);
@@ -1136,9 +1165,9 @@ function togglePovHighlight(name) {
 function renderPovLibSec() {
   const list = document.getElementById('il-povs'); if (!list) return;
   list.innerHTML = '';
-  const names = usedPovNames();
+  const names = orderedUsedPovNames();
   if (!names.length) { list.innerHTML = '<div class="eh">None yet</div>'; return; }
-  names.forEach(name => {
+  names.forEach((name, idx) => {
     const isOn = S.selections.povs.has(name);
     // A name is either a Character (edit/delete lives in the Characters
     // panel — editing it here would create a second place to rename the
@@ -1149,6 +1178,8 @@ function renderPovLibSec() {
     const isCustom = customIdx !== -1;
     const li = document.createElement('div');
     li.className = 'li' + (isOn ? ' on sec-p' : '');
+    li.dataset.idx = idx; li.dataset.sec = 'povs';
+    const dh  = document.createElement('span'); dh.className = 'dh'; dh.textContent = '⠿';
     const dot = document.createElement('span'); dot.className = 'dot dp';
     const nm  = document.createElement('span'); nm.className = 'iname'; nm.textContent = name;
     const edit = document.createElement('button'); edit.className = 'iedit' + (isCustom ? '' : ' disabled'); edit.textContent = '✎';
@@ -1166,8 +1197,9 @@ function renderPovLibSec() {
       edit.addEventListener('click', e => e.stopPropagation());
       del.addEventListener('click',  e => e.stopPropagation());
     }
-    li.appendChild(dot); li.appendChild(nm); li.appendChild(edit); li.appendChild(del);
+    li.appendChild(dh); li.appendChild(dot); li.appendChild(nm); li.appendChild(edit); li.appendChild(del);
     li.addEventListener('click', () => togglePovHighlight(name));
+    dh.addEventListener('mousedown', e => startLibDrag(e, 'povs', idx));
     list.appendChild(li);
   });
 }
@@ -1685,13 +1717,30 @@ function endLibDrag() {
   const list = document.getElementById('il-' + ld.sec);
   if (list) list.querySelectorAll('.li').forEach(i => i.classList.remove('dib', 'dia', 'dg'));
   if (ld.dropIdx !== null && ld.dropIdx !== ld.fromIdx) {
-    pushHistory('Reorder ' + ld.sec);
-    const arr = S[ld.sec];
-    const [item] = arr.splice(ld.fromIdx, 1);
-    let ti = ld.dropIdx > ld.fromIdx ? ld.dropIdx - 1 : ld.dropIdx;
-    if (!ld.before) ti++;
-    arr.splice(ti, 0, item);
-    renderLibSec(ld.sec); renderCk(ld.sec, ckCurrentlyChecked('ck', ld.sec)); renderEditCk(ld.sec, ckCurrentlyChecked('ek', ld.sec));
+    const isPov = ld.sec === 'povs';
+    pushHistory('Reorder ' + (isPov ? 'POV' : ld.sec));
+    if (isPov) {
+      // The rendered list is orderedUsedPovNames(), a filtered view of the
+      // full S.povOrder — splice by the *names* at these visible positions
+      // rather than raw indices, so names currently hidden (unused) keep
+      // their stored position instead of getting shuffled by an index that
+      // doesn't account for them.
+      const visible = orderedUsedPovNames();
+      const fromName = visible[ld.fromIdx], toName = visible[ld.dropIdx];
+      const arr = S.povOrder;
+      arr.splice(arr.indexOf(fromName), 1);
+      let ti = arr.indexOf(toName);
+      if (!ld.before) ti++;
+      arr.splice(ti, 0, fromName);
+      renderPovLibSec();
+    } else {
+      const arr = S[ld.sec];
+      const [item] = arr.splice(ld.fromIdx, 1);
+      let ti = ld.dropIdx > ld.fromIdx ? ld.dropIdx - 1 : ld.dropIdx;
+      if (!ld.before) ti++;
+      arr.splice(ti, 0, item);
+      renderLibSec(ld.sec); renderCk(ld.sec, ckCurrentlyChecked('ck', ld.sec)); renderEditCk(ld.sec, ckCurrentlyChecked('ek', ld.sec));
+    }
     recordDataEdit();
     saveState();
   }
