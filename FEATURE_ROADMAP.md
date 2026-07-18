@@ -38,26 +38,26 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   pages to describe the new automatic detection instead of the old "date your files
   yourself" advice.
   *(`strip_AI` branch, merged to `main`)*
-- `[x]*` Import validation now rejects a scene whose `characters`/`locations`/`themes`/
+- `[x]` Import validation now rejects a scene whose `characters`/`locations`/`themes`/
   `misc` isn't an array of strings when present (only `povs` was checked before) — a
   hand-edited or corrupted file with e.g. a bare string in one of those fields previously
   passed validation and crashed the board on first render. `loadState()` also hardened
   defensively for the same shape regardless of how the data arrived.
-- `[x]*` The "Imported File Is Newer" conflict dialog now warns when the local copy has
+- `[x]` The "Imported File Is Newer" conflict dialog now warns when the local copy has
   unexported changes before offering "Update Local Copy," since a newer file revision never
   implied the local copy had nothing worth keeping (`revision` counts saves, not edits).
-- `[x]*` Removed `'unsafe-inline'` from `script-src` in every page's CSP — all inline event
+- `[x]` Removed `'unsafe-inline'` from `script-src` in every page's CSP — all inline event
   handlers (~140 across the app) and inline `<script>` blocks were converted to
   `addEventListener` wiring in external files. `test.html` also got a CSP meta tag for the
   first time.
-- `[x]*` Fixed five drag-and-drop/keyboard bugs found in a follow-up audit: Ctrl+Z/Ctrl+Y no
+- `[x]` Fixed five drag-and-drop/keyboard bugs found in a follow-up audit: Ctrl+Z/Ctrl+Y no
   longer hijacks a text field's own native undo or fires mid-drag; a card/library-item drag
   now self-heals instead of sticking to the cursor forever if the mouse button is released
   outside the browser window; dragging a multi-selected card no longer silently drags along
   another selected scene that's hidden by the active section filter; Ctrl+Shift+E (export) no
   longer misfires or fails depending on Caps Lock state; Alt-letter shortcuts no longer fire
   underneath an open confirmation/data-entry modal. See `UPDATE_ROADMAP.md` §7 for full detail.
-  *(`feature/updates_v2` branch, pushed, not yet merged)*
+  *(`feature/updates_v2` branch, merged to `main` via PR #11)*
 
 ## 3. Scene Flow Chart (visualization)
 
@@ -75,18 +75,18 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 - `[x]` Print support (serializes the chart into the existing report-print window).
 - `[x]` View menu entry ("Show/Hide Scene Flow Chart") + Alt+V shortcut.
   *(`feature/flow_visual` branch, merged to `main`)*
-- `[x]*` Fixed POV highlighting not working in either chart — `chartFilterActive()`/
+- `[x]` Fixed POV highlighting not working in either chart — `chartFilterActive()`/
   `sceneMatchesChart()` only checked the four SECS categories (Characters/Locations/
   Themes/Misc) for an active selection, so selecting a POV with nothing else selected
   never triggered highlighting, even though `sceneMatchesLib()` already handled POV
   correctly for the Scene Board itself.
-- `[x]*` "Unassigned" section indicator in both charts — a lettered marker on the snake
+- `[x]` "Unassigned" section indicator in both charts — a lettered marker on the snake
   and a wedge on the circle, shown only when at least one scene has no section. Because
   `orderedScenes()` always places unassigned scenes first (ahead of every real section),
   Unassigned leads the letter sequence (letter A, with real sections shifted down) rather
   than trailing after them, so the letters stay in sync with the chart's actual left-to-
   right / clockwise order.
-- `[x]*` Fixed Alt+N/C/L/T/M/R/V shortcuts not firing on Mac — the handler matched
+- `[x]` Fixed Alt+N/C/L/T/M/R/V shortcuts not firing on Mac — the handler matched
   `e.key`, but macOS remaps that under Option to a composed character (e.g. Option+V →
   "√", Option+N → a dead key), so every Alt shortcut silently failed on Mac. Switched to
   `e.code` ("KeyV", etc.), the physical key, which is unaffected by what the modifier
@@ -95,37 +95,37 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   explicitly optional, build-last item; skipped per direction to keep the resting state
   color-free until filtered.
 - `[ ]` Keyboard navigation between chart segments (currently mouse-only).
-- `[x]*` Hide the Zoom slider and "Show Card Details" checkbox while chart view is open —
+- `[x]` Hide the Zoom slider and "Show Card Details" checkbox while chart view is open —
   they only affect the card view, so they now disappear entirely instead of sitting there
   inert, and reappear (fully functional) when returning to board view.
-- `[x]*` Tightened the snake/circle charts' canvas padding and internal margins to use more
+- `[x]` Tightened the snake/circle charts' canvas padding and internal margins to use more
   of the available window (`CHART_PAD` 20→12px, snake's row margin, circle's radius buffer).
-- `[x]*` Fixed snake chart rows leaving unused space on the right — `computeSnakeLayout`
+- `[x]` Fixed snake chart rows leaving unused space on the right — `computeSnakeLayout`
   sized each row's width to hit a ~110px/scene target rather than filling the container, so
   whenever that target didn't divide evenly across rows the row fell short of the available
   width (fixed left margin, variable — sometimes large — right margin). Row count is already
   chosen for that target; the row is now stretched to the full available width once row
   count is settled.
-- `[x]*` Fixed snake chart curve caps clipping against the canvas edge — the horizontal
+- `[x]` Fixed snake chart curve caps clipping against the canvas edge — the horizontal
   margin only cleared the turn's centerline arc, not the ~34px-thick stroke drawn along it,
   whose outer edge at the tip of each turn extends stroke-width/2 further out than the
   centerline itself, clipping against the SVG's default `overflow:hidden`. Margin now
   accounts for the stroke's actual painted extent (`r + CHART_PAD + SNAKE_SEG_THICKNESS/2`),
   verified by rasterizing the rendered SVG to a canvas and measuring the painted pixel
   boundary directly (DOM bbox APIs don't reflect stroke width).
-- `[x]*` "Show relative word count" toggle — sizes each scene's segment (both chart
+- `[x]` "Show relative word count" toggle — sizes each scene's segment (both chart
   types) proportionally to `scene.wordCount` instead of splitting the path evenly. Scenes
   with no wordCount (0 counts as unset) are weighted at the average of scenes that do have
   one, so missing data renders as "typical size" instead of a distorting sliver; a set with
   no wordCounts at all reduces to the original uniform layout unchanged. Averaged-in scenes
   get a short red tick beside their scene number plus a tooltip note and a legend entry, so
   it's clear the size is an estimate. See `CHART_FEATURE_SPEC.md` §14.
-  *(`feature/updates_v3` branch, pushed, not yet merged)*
-- `[x]*` Added a "Size by Word Count" entry to the Tutorial's Scene Flow Chart section and
+  *(`feature/updates_v3` branch, merged to `main` via PR #12)*
+- `[x]` Added a "Size by Word Count" entry to the Tutorial's Scene Flow Chart section and
   a sentence to its Overview card — the feature above had no user-facing documentation
   until now. Also fixed a stale "Undo/Redo: up to 10 steps" in the Tutorial (raised to 50
   in an earlier fix; the docs were never updated to match).
-- `[x]*` **Trace lines** — a "Trace:" selector in the chart toolbar lets the user pick one
+- `[x]` **Trace lines** — a "Trace:" selector in the chart toolbar lets the user pick one
   library category (Characters/Locations/Themes/Misc/POV); each item explicitly selected in
   that category (via the existing Library panel checkboxes) draws as its own colored line
   running through the scenes it appears in, layered inside the ribbon alongside the existing
@@ -136,8 +136,8 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   16-color palette (separate from the 8-color section-color palette, which repeated a color
   past 8 items) and continuously thinning band widths keep large selections readable, gated
   only by a 24-item runaway guard. See `TRACE_LINES_SPEC.md` for the original build spec.
-  *(`feature/updates_v4` branch, pushed, not yet merged)*
-- `[x]*` Trace lines' tube/lane geometry, tuned across several rounds of live feedback: the
+  *(`feature/updates_v4` branch, merged to `main` via PR #13)*
+- `[x]` Trace lines' tube/lane geometry, tuned across several rounds of live feedback: the
   tube (both chart types) widens and its lane bands thin continuously as more items are
   traced, filling the tube's full width edge to edge rather than clustering in the middle;
   thickness ramps in smoothly as lanes are added instead of jumping straight to its widened
@@ -146,7 +146,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   pane (an earlier version let the ring grow past the pane and rely on scrolling, which read
   as the chart "cutting off"). The snake's turn radius tracks its thickness directly, so
   row-to-row spacing grows with the tube instead of the turns getting cramped.
-- `[x]*` Fixed a real geometry bug in the snake chart's trace lines: lane dash positions
+- `[x]` Fixed a real geometry bug in the snake chart's trace lines: lane dash positions
   were computed via proportional path-length scaling, which is only exact for a circle — a
   snake lane's turns have a different radius (and arc length) than its straight runs, so a
   uniform scale drifted colored lane boundaries away from the true scene boundaries, worst
@@ -155,21 +155,21 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   Replaced with an exact length-mapping function that walks the same row/turn structure the
   lane path is built from — verified worst-case error across every scene boundary in a real
   render drops to 0.04px.
-- `[x]*` Lane hover/legend-hover highlighting now widens a lane proportionally to its own
+- `[x]` Lane hover/legend-hover highlighting now widens a lane proportionally to its own
   base width (plus a brightness/saturation bump) instead of to a fixed pixel value, which
   had stopped reading as a highlight once bands were naturally that thick or thicker on
   their own — flagged by the user as "hard to tell when they're highlighted."
-- `[x]*` Fixed a stale section-name pin (left over from scrolling the Scene Board) staying
+- `[x]` Fixed a stale section-name pin (left over from scrolling the Scene Board) staying
   on screen after switching to chart view — `renderBoard()` normally clears it but
   early-returns into `renderChart()` while chart mode is active and never reaches that
   cleanup line.
-- `[x]*` Fixed the chart status line showing the project's total section count even when
+- `[x]` Fixed the chart status line showing the project's total section count even when
   the Sections filter had narrowed the board to fewer — now shows the filtered count.
-- `[x]*` The chart's Trace selector and the board's Sections filter button now show an
+- `[x]` The chart's Trace selector and the board's Sections filter button now show an
   accent glow ring whenever they're not in their default state (a trace category chosen, or
   the section filter narrowed), matching the app's existing active-state affordance used
   elsewhere in the toolbar.
-- `[x]*` Snake/Circle chart-type buttons are now a two-icon segmented control (a squiggly
+- `[x]` Snake/Circle chart-type buttons are now a two-icon segmented control (a squiggly
   line / a ring) instead of text buttons; the snake icon matches the actual chart's 3-row
   winding shape.
 - `[ ]` Presence lanes chart — rows are selected library items, columns are scenes in
@@ -195,27 +195,46 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   sections. Trace lines above already covers most of this need (tracing selected POV
   names as lines rather than filling each segment), but doesn't fill the segment itself
   by its own POV the way this proposal describes. *(proposed, not built)*
+- `[x]` Removed the snake chart's separate section-name legend row — sections were
+  already marked directly on the ribbon via lettered badges with hover tooltips, the same
+  on-chart approach the circle chart's pie wedges use, so the legend row duplicated that
+  information for a full line of header height. *(`feature/updates_v5` branch)*
+- `[x]` Scene number badges (both chart types) changed from a text-stroke halo — added
+  only while trace lanes were active, and blurry at 10-11px font size — to a small solid
+  pill background behind each number, which reads cleanly against any segment/trace-lane
+  color. *(`feature/updates_v5` branch)*
+- `[x]` **Cards/Snake/Circle view switch** — a persistent 3-way control (labeled icons)
+  replacing the old "Show/Hide Scene Flow Chart" menu-only toggle and the in-toolbar
+  "Board view ✕" button. Lives in the Scene Board header and physically moves into the
+  chart toolbar while a chart is open (same DOM node, not a clone, so its state carries
+  over); picking Snake/Circle from the board now opens the chart directly instead of
+  requiring the menu/shortcut first. *(`feature/updates_v5` branch)*
+- `[x]` Moved the chart's "Showing X scenes · X sections · tracing X …" status text onto
+  the header line (replacing the old "Scene Board" title/count there) and moved the
+  Section filter onto the toolbar row after the Trace picker, so every control in the
+  chart toolbar row is directly identified in Help Mode (previously the toolbar had zero
+  tooltip coverage). *(`feature/updates_v5` branch)*
 
 ## 4. Project Management
 
-- `[x]*` "New Project" naming modal — prefilled with "Untitled Project" and pre-selected
+- `[x]` "New Project" naming modal — prefilled with "Untitled Project" and pre-selected
   so Enter accepts the default in one keystroke, or the user can type a name immediately;
   replaces the old flow where projects were silently created as "Untitled Project" with
   no prompt.
-- `[x]*` Removed the old rename-after-create flow, which silently did nothing when a
+- `[x]` Removed the old rename-after-create flow, which silently did nothing when a
   project was created from the editor's File menu (the rename modal only exists on the
   Projects page).
-- `[x]*` Removed the non-functional "Save" menu item (the app already autosaves on every
+- `[x]` Removed the non-functional "Save" menu item (the app already autosaves on every
   change, so it never did anything). Ctrl+S is now a documented no-op instead of
   triggering the browser's own "Save Page As…" dialog.
-- `[x]*` Renamed the Projects page's "Import JSON" button to "Import project (JSON file)"
+- `[x]` Renamed the Projects page's "Import JSON" button to "Import project (JSON file)"
   for clarity, and updated the one other place (Tutorial) that referenced the old label.
 
 ## 5. Scene Editing (New/Edit Scene forms)
 
-- `[x]*` Word Count field — plain numeric input (0–999,999), placed just before Notes in
+- `[x]` Word Count field — plain numeric input (0–999,999), placed just before Notes in
   both the New Scene and Edit Scene forms.
-- `[x]*` POV field — a multi-select checklist, exactly like Characters/Locations/Themes/
+- `[x]` POV field — a multi-select checklist, exactly like Characters/Locations/Themes/
   Misc, sourced from the Character library plus a separate, growing list of custom POV
   names (`S.povCustomNames`), kept independent of the Characters checklist since a scene's
   POV may not be tagged as a character in that scene, or may not belong in the Character
@@ -223,17 +242,17 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   corresponds to a full chapter, and multi-POV chapters are a normal structure, not an
   edge case — modeling it as single-select would have been wrong for how this app is
   actually used.
-- `[x]*` The checklist's "+ Add POV Name…" trigger opens a small dialog rather than a
+- `[x]` The checklist's "+ Add POV Name…" trigger opens a small dialog rather than a
   free-text field retyped per scene — once added, the name is a normal, permanent,
   reusable option for every future scene, so the same name is never entered inconsistently
   (e.g. "Bob" vs "Bab") across scenes.
-- `[x]*` Renaming a library character propagates into every scene's `povs`; deleting one
+- `[x]` Renaming a library character propagates into every scene's `povs`; deleting one
   preserves those assignments (falls back to a plain custom name) instead of erasing them.
   Legacy single-value `pov` data (string) from before multi-select migrates automatically
   to the new `povs` array shape on load, with the old key dropped; JSON import accepts
   both shapes. Undo/redo, JSON import validation, and project reset all account for the
   new field and list.
-- `[x]*` Read-only "POV" section in the Library panel, alongside Characters/Locations/
+- `[x]` Read-only "POV" section in the Library panel, alongside Characters/Locations/
   Themes/Misc, for highlighting scenes by POV on the board — no add/edit/delete controls
   (POV names are managed from the scene form), and it lists only names actually assigned
   to a scene, not every Character in the library. Because POV is array-valued like the
@@ -241,22 +260,22 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   logic needed — e.g. selecting two POV names in AND mode correctly finds scenes where
   both are POV, a query that wasn't meaningful back when POV was single-select. Added a
   `--pv` theme color (distinct per theme) for its highlight dot.
-- `[x]*` POV shown on Scene Board cards as its own row, after Characters/Locations/
+- `[x]` POV shown on Scene Board cards as its own row, after Characters/Locations/
   Themes/Misc Items, whenever a scene has one or more POVs assigned. Reuses the existing
   "Show Card Details" toggle and its underlying CSS (`#board.hide-details .cmeta`) — no
   separate control needed. Styled with a new `.tp` tag class matching the `--pv` color
   used elsewhere for POV.
-- `[x]*` Every Characters/Locations/Themes/Misc checklist in both scene forms now has a
+- `[x]` Every Characters/Locations/Themes/Misc checklist in both scene forms now has a
   "+ Add [category]…" entry at the top, opening the existing Add Item dialog without
   losing any in-progress scene form data. The new item is auto-checked in whichever
   checklist triggered it. The same button replaces the old dead-end "add to library
   first" message shown when a category is completely empty.
-- `[x]*` Fixed a pre-existing bug found while building the above: adding, renaming, or
+- `[x]` Fixed a pre-existing bug found while building the above: adding, renaming, or
   drag-reordering any library item was silently wiping out whatever was already checked
   in that category's checklist in the Edit Scene form. Checked state is now read from the
   live DOM and restored across all of these re-renders; a rename correctly carries the
   checkmark over to the item's new name.
-- `[x]*` Clicking outside the scene panel, or pressing Escape, while creating a New Scene
+- `[x]` Clicking outside the scene panel, or pressing Escape, while creating a New Scene
   with content or editing a scene with genuine unsaved changes now opens a "Discard
   changes?" confirmation instead of silently discarding the work. Viewing an unchanged
   scene and clicking away still closes silently (`isEditFormDirty()` finds nothing at
@@ -266,7 +285,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   an in-progress New/Edit scene's unsaved form content (a different risk than the backup
   reminder in §6, which only covers scenes already committed to `S.scenes`). Noted during
   the discard-confirmation work as a related, not-yet-built follow-up.
-- `[x]*` POV added to Reporting at parity with the other library categories: a "POV"
+- `[x]` POV added to Reporting at parity with the other library categories: a "POV"
   report type (6th type) mirroring the Character/Location/Theme/Misc per-item reports —
   for each POV name, lists the scenes it narrates with section, characters-in-scene, and
   summary, exactly like its siblings. Also added a POV checkbox to the Scene List report,
@@ -279,34 +298,47 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   scenes, 9,200 words") to show page-time balance across an ensemble — deliberately left
   out of the parity pass above since no other library-item report shows a word-count
   rollup. *(proposed, not built)*
-- `[x]*` Updated the Overview and Tutorial pages to document all of the above POV work —
+- `[x]` Updated the Overview and Tutorial pages to document all of the above POV work —
   the Library panel's read-only POV section, the POV field on the scene form, POV
   highlighting in the flow charts (including the new Unassigned indicator from §3), and
   the POV report/matrix axis — none of which the marketing/help pages mentioned until now.
+- `[x]` POV library items can now be drag-reordered like every other Library section —
+  the one gap left over from POV becoming its own read-only section. POV isn't backed by
+  a simple array the way Characters/Locations/etc. are (it's a filtered, merged view of
+  Character names plus `S.povCustomNames`), so this needed a dedicated, append-only order
+  list (`S.povOrder`) rather than reordering either source list directly, which would also
+  reorder the Characters section or desync from the "only show POVs actually used on a
+  scene" filter. *(`feature/updates_v5` branch)*
 
 ## 6. Backup & Data Safety
 
-- `[x]*` Passive "Backed up N ago" status indicator in the editor header, color-coded
+- `[x]` Passive "Backed up N ago" status indicator in the editor header, color-coded
   (neutral / warning / overdue).
-- `[x]*` Dismissible reminder banner once a backup is overdue.
-- `[x]*` Overdue thresholds: 50 edits since last export, or 1 hour since the project was
+- `[x]` Dismissible reminder banner once a backup is overdue.
+- `[x]` Overdue thresholds: 50 edits since last export, or 1 hour since the project was
   opened/last exported with unexported changes pending — whichever comes first.
-- `[x]*` Dismissing the banner snoozes it for an hour; it reappears automatically once the
+- `[x]` Dismissing the banner snoozes it for an hour; it reappears automatically once the
   snooze expires (recurs hourly rather than staying dismissed for the session).
-- `[x]*` Browser-native "leave site?" warning on tab close, window close, or browser quit
+- `[x]` Browser-native "leave site?" warning on tab close, window close, or browser quit
   whenever any unexported changes exist (not just once the hourly/edit threshold is hit).
-- `[x]*` Added "(Backups can be found where your browser saves downloaded files.)" to the
+- `[x]` Added "(Backups can be found where your browser saves downloaded files.)" to the
   banner text.
-- `[x]*` Banner is now prominent and theme-aware — uses the active theme's accent color
+- `[x]` Banner is now prominent and theme-aware — uses the active theme's accent color
   and on-accent text instead of a fixed color that had poor contrast on light themes.
-- `[x]*` Fixed a bug where clicking the "Projects" button silently skipped the
+- `[x]` Fixed a bug where clicking the "Projects" button silently skipped the
   unexported-changes warning — `backToProjects()` cleared `currentProjectId` before the
   browser's `beforeunload` check ran, so the guard always saw "no project open."
   Tab/window/browser-close were never affected by this; only in-app navigation via that
   button was.
 - `[ ]` UI to customize the edit-count / time thresholds — currently hardcoded constants
   in `backup.js`.
-- `[x]*` Reworked the "Working Across Devices" messaging (Projects/Overview/Tutorial) into
+- `[x]` Added a "Learn about your data and backups" link to the backup reminder banner
+  itself (matching the one already on the Projects page), plus a short privacy sentence —
+  "Your content remains privately yours. We use Google Analytics and other tools to
+  understand feature usage and improve the app, but no personal data or project content is
+  shared." — appended to the Data & Backups block on the splash page and the Tutorial, and
+  to the banner. *(`feature/updates_v5`/`v6` branches)*
+- `[x]` Reworked the "Working Across Devices" messaging (Projects/Overview/Tutorial) into
   **"Your Data & Backups"** — plainer language for novice users, making clear that (a) a
   project just persists on its own with no import needed to continue working, (b)
   backing up matters because browser storage itself can be wiped (not only for moving
@@ -315,6 +347,42 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   small "Learn about your data and backups" text link next to the toolbar that opens the
   Tutorial in a new tab, anchored straight to that section (`tutorial.html#data-backups`)
   — first tried as a "?" icon, changed to a text link after it read as unclear on its own.
+
+## 7. Scene Board Header & Splash/Landing Page
+
+- `[x]` Scene ↔ Scene Board divider now fills with the theme's accent color instead of
+  just an outlined bar matching the surrounding background, and is a couple px thicker
+  than the Library/Sections dividers — it's the boundary between editing and board views,
+  so it reads as more significant. *(`feature/updates_v5` branch)*
+- `[x]` Removed the "Scene Board" panel title; the scene count next to it now reads
+  "Showing N scenes" and — fixing a real bug — reflects the active section filter instead
+  of always showing the project's total scene count. *(`feature/updates_v5` branch)*
+- `[x]` "Clear highlights" button pulses with a glow when library highlights are active,
+  so it's easier to spot among the panel's other low-key controls. *(`feature/updates_v5`
+  branch)*
+- `[x]*` **Merged the splash page and Overview page into one `index.html`.** Frozen header
+  (logo left, "Your Projects"/"Tutorial" centered) → hero (tagline + intro copy) → the six
+  former-Overview feature sections, reworked as an alternating zigzag layout with
+  scroll-reveal animation → the Data & Backups block → the closing contact/Get Started
+  section. `overview.html`/`overview-init.js` deleted; every link that pointed at Overview
+  (Projects page nav, the editor's Help menu) now points at `index.html`. Removed the old
+  "Ready to start? Launch SceneSetter" CTA at the bottom — opening Projects in a second tab
+  from a page the user is already one click from leaving wasn't wanted; the header nav and
+  the closing section's own Get Started button already cover it. *(`feature/updates_v6`
+  branch)*
+- `[x]*` Redesigned the splash page with a bespoke dark palette (scoped to the page, not
+  tied to the app's `data-theme`), drifting color-blob animations behind the hero,
+  gradient hero text, a widened zigzag feature layout with a "browser window" frame around
+  every screenshot, and scroll-reveal animation that replays every time a row scrolls back
+  into view (not just once) — text and image animate on staggered timing rather than the
+  row fading in as one block. Respects `prefers-reduced-motion`. *(`feature/updates_v6`
+  branch)*
+- `[x]*` Populated both built-in sample projects (Pride and Prejudice, The Count of Monte
+  Cristo) with per-scene word counts and POV data — neither had ever had this data, so
+  "Show relative word count" and the POV report/trace features had nothing to demonstrate
+  on the samples. Word counts are reasonable estimates summing close to each novel's real
+  length (~122k and ~465k words); POV names are drawn from each project's existing
+  character list. *(`feature/updates_v6` branch)*
 
 ---
 
@@ -325,9 +393,12 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 | `strip_AI` | Merged to `main` (PR #4) |
 | `feature/flow_visual` | Merged to `main` (PR #7) |
 | `feature/updates_v1` | Merged to `main` (PR #9) — new project modal, backup reminder system, Save-menu removal, `backToProjects` fix, chart-view control hiding, Word Count/multi-select POV fields, "+ Add item" scene checklists, discard-confirmation dialog, POV Library panel highlighting, POV chart-highlighting fix, Unassigned chart indicator, Mac Alt-shortcut fix, POV scene-card row, POV added to Reporting, Overview/Tutorial docs updated for POV |
-| `feature/updates_v2` | Pushed to `origin`, **not yet merged to `main`** — all of `UPDATE_ROADMAP.md`'s code-review fixes (§1-3), custom POV name edit/delete, chart segment hover polish, chart margin tightening, the snake chart width-utilization and curve-clipping fixes, the sample-project seeding race fix, a fresh full-app audit's fixes (§6: import validation gap, orphaned-section reports bug, filtered-section-delete bug, section-color undo bug, report-generation perf), the CSP `unsafe-inline` removal, and (most recent) §7's drag-and-drop/keyboard fixes (stuck-drag recovery, multi-select+filter drag, undo/redo input and drag guards, Caps-Lock-proof export shortcut, Alt-shortcuts-under-modal guard) |
-| `feature/updates_v3` | Pushed to `origin`, **not yet merged to `main`** — "Show relative word count" chart toggle (see `CHART_FEATURE_SPEC.md` §14); a third full-app audit's fixes (`UPDATE_ROADMAP.md` §8: a high-severity corrupt-project-load data-loss bug, save-failure alerting, wordCount clamping, a character/POV-name collision, a stale drag-insert anchor, a menu-hover bug, and several other low-severity fixes — fully closed out, nothing left open); and a "Your Data & Backups" messaging rework across Projects/Overview/Tutorial plus feature-doc refresh (Size by Word Count, a stale Undo/Redo count). See `STATUS.md` for the full narrative. |
-| `feature/updates_v4` | Pushed to `origin`, **not yet merged to `main`** — new "Trace lines" chart feature: a "Trace:" selector draws each selected library item as its own colored line through the scenes it appears in, layered on the existing snake/circle chart (see `TRACE_LINES_SPEC.md`), plus six rounds of live-feedback fixes on top of it — an exact snake lane-position fix (13.7px worst-case drift down to 0.04px), continuous no-cap tube/band scaling that always fills the tube's full width, gradual (not jumping) tube growth, a dedicated 16-color trace palette (the shared 8-color section palette was repeating colors past 8 lanes), proportional (not fixed-px) hover-highlight widening, active-state glow rings on the Trace/Sections selectors, a stale section-pin fix, and a chart section-count fix. See `STATUS.md` for the full narrative. |
+| `feature/updates_v2` | Merged to `main` (PR #11) — all of `UPDATE_ROADMAP.md`'s code-review fixes (§1-3), custom POV name edit/delete, chart segment hover polish, chart margin tightening, the snake chart width-utilization and curve-clipping fixes, the sample-project seeding race fix, a fresh full-app audit's fixes (§6: import validation gap, orphaned-section reports bug, filtered-section-delete bug, section-color undo bug, report-generation perf), the CSP `unsafe-inline` removal, and (most recent) §7's drag-and-drop/keyboard fixes (stuck-drag recovery, multi-select+filter drag, undo/redo input and drag guards, Caps-Lock-proof export shortcut, Alt-shortcuts-under-modal guard) |
+| `feature/updates_v3` | Merged to `main` (PR #12) — "Show relative word count" chart toggle (see `CHART_FEATURE_SPEC.md` §14); a third full-app audit's fixes (`UPDATE_ROADMAP.md` §8: a high-severity corrupt-project-load data-loss bug, save-failure alerting, wordCount clamping, a character/POV-name collision, a stale drag-insert anchor, a menu-hover bug, and several other low-severity fixes — fully closed out, nothing left open); and a "Your Data & Backups" messaging rework across Projects/Overview/Tutorial plus feature-doc refresh (Size by Word Count, a stale Undo/Redo count). See `STATUS.md` for the full narrative. |
+| `feature/updates_v4` | Merged to `main` (PR #13) — new "Trace lines" chart feature: a "Trace:" selector draws each selected library item as its own colored line through the scenes it appears in, layered on the existing snake/circle chart (see `TRACE_LINES_SPEC.md`), plus six rounds of live-feedback fixes on top of it — an exact snake lane-position fix (13.7px worst-case drift down to 0.04px), continuous no-cap tube/band scaling that always fills the tube's full width, gradual (not jumping) tube growth, a dedicated 16-color trace palette (the shared 8-color section palette was repeating colors past 8 lanes), proportional (not fixed-px) hover-highlight widening, active-state glow rings on the Trace/Sections selectors, a stale section-pin fix, and a chart section-count fix. See `STATUS.md` for the full narrative. |
+| `feature/updates_v5` | Merged to `main` (PR #14) — Scene/Scene Board divider and header polish (prominent divider color, "Scene Board" title removed, scene-count-vs-filter bug fix), the Cards/Snake/Circle view switch replacing the old chart toggle button and menu item, removal of the snake chart's redundant section legend, solid-badge scene numbers, POV drag-reorder, a "Learn about your data and backups" link on the backup banner, and Help Mode tooltip coverage for the entire chart toolbar (plus an overflow-clipping fix). See `STATUS.md` for the full narrative. |
+| `feature/updates_v6` | Pushed to `origin`, **not yet merged to `main`** — merged the splash page and Overview page into one redesigned `index.html` (dark palette, animated hero, zigzag feature rows with scroll-reveal, "browser window" screenshot framing), deleted the standalone Overview page, and added word-count/POV data to both sample projects so Word Count sizing and the POV report/trace features have something to demonstrate out of the box. See `STATUS.md` for the full narrative. |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
-on the branch noted for that item until it's merged into `main`.
+on the branch noted for that item until it's merged into `main`. Items marked `[x]` (no
+asterisk) are merged to `main`.

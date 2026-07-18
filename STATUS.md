@@ -778,3 +778,165 @@ unique-color counts for a 13-lane trace. No console errors at any point across a
 
 ### Not yet done
 - Not merged to `main` — pushed to `origin/feature/updates_v4`, PR not yet opened.
+
+## feature/updates_v5 branch — Scene Board / Flow Chart header polish, POV reorder, splash-page prep
+
+A round of UI polish on the Scene Board and Scene Flow Chart headers, plus two smaller
+features (POV drag-reorder, a backup-alert link) and a documentation refresh. Merged to
+`main` via PR #14.
+
+**Touched files:** `editor.html`/`editor.js`/`editor-init.js`/`charts.js` (header
+restructure, view toggle, POV reorder), `state.js`/`projects.js` (new `S.povOrder` field),
+`styles.css` (divider, aura, number badges, view-toggle layout), `ui.js` (help-mode
+tooltips), `overview.html`/`tutorial.html` (still separate pages at this point in the
+branch — merged into one in `feature/updates_v6` below).
+
+### How it works
+- **Scene/Scene Board divider** now fills with the theme's accent color
+  (`color-mix(in srgb, var(--acc) 55%, var(--s1))`) instead of just an outlined
+  same-as-background bar, and is a couple px thicker than the Library/Sections dividers —
+  it's the boundary between editing and board views, so it reads as more significant.
+- **"Scene Board" title removed**; the scene count next to it now reads "Showing N scenes"
+  and — fixing a real bug — actually reflects the active section filter instead of always
+  showing `S.scenes.length` (the project total).
+- **Cards/Snake/Circle view switch** (`#view-toggle` in `charts.js`) replaces the old
+  "Show/Hide Scene Flow Chart" menu-only toggle and the in-toolbar "Board view ✕" button
+  with one persistent 3-way control: it lives in `#sbhdr` on the board and physically moves
+  (`insertBefore`, not cloned — keeps listeners/state) into `#chart-toolbar` while a chart is
+  open. Picking Snake/Circle from the board now opens the chart directly.
+- **Snake chart's section legend row removed.** Sections were already marked directly on
+  the ribbon via lettered badges with hover tooltips (`drawSectionMarkerAt`/
+  `showSectionTip`), the same on-chart approach the circle chart's pie wedges use — the
+  separate legend row duplicated that information and cost a full line of header height for
+  nothing new.
+- **Scene number badges** changed from a text-stroke halo (`paint-order:stroke`, added only
+  when trace lanes were active) to a small solid pill background behind each number
+  (`drawChartNum`) — the stroke approach read as blurry at 10-11px font size, and didn't
+  reliably contrast against every segment/trace-lane color combination the way a solid
+  backing guarantees.
+- **POV library items are now drag-reorderable**, closing the one gap where POV was the only
+  Library section without it. POV isn't backed by a simple array like
+  Characters/Locations/etc. — it's a filtered, merged view of `S.characters` names plus
+  `S.povCustomNames` (`usedPovNames()`) — so dragging needed a dedicated, append-only order
+  list (`S.povOrder`) rather than reordering either source list directly, which would also
+  reorder the Characters section or desync from the "only show POVs actually used on a
+  scene" filter. Wired through `saveState`/`loadState`, undo/redo snapshots, and
+  `resetState()`/import validation the same way `povCustomNames` already was.
+- **Backup alert banner** gained a "Learn about your data and backups" link (matching the
+  one already on the Projects page) plus the same privacy sentence used elsewhere: "Your
+  content remains privately yours. We use Google Analytics and other tools to understand
+  feature usage and improve the app, but no personal data or project content is shared."
+- **Help mode** (`ui.js` `HELP_ZONES`): the Scene Flow Chart toolbar had zero tooltip
+  coverage before this — added tooltips for the view switch, word-count toggle, Trace
+  picker, chart status text, legend, and Print. Also fixed highlight boxes overflowing past
+  the window edges on full-width rows (the `+6px` padding added around every zone pushed an
+  edge-to-edge row like the menu bar a few px past the viewport on each side; now clamped to
+  `[0, window.innerWidth/innerHeight]`), and removed the generic "Scene Board"/"Scene Flow
+  Chart toolbar" catch-all tips once every individual control inside them had its own.
+
+### Known non-obvious fixes worth knowing about if you touch this code
+- The CARDS/FLOW labels floating above the view-toggle icons need real vertical headroom in
+  their row, not just enough to clear the icon buttons — the row height went from 46px to
+  52px (every other panel header row still uses 46px) specifically so the label has a few px
+  of breathing room above it before hitting `#sbp`/`#chart-host`'s `overflow:hidden`.
+- Trimmed the Cards/Snake/Circle buttons' own padding (they were taller than every other
+  control sharing their row) both to fix a vertical-alignment mismatch and to free the extra
+  headroom the label needed.
+
+### Verification
+Manually verified in-browser across board mode and chart mode: divider color/width, count
+text and its bug fix (section-filtered vs. total), view-toggle switching in both directions
+with the toolbar/header DOM move, POV drag-reorder (including the append-only "still in
+`povOrder` while unused" behavior), the backup banner's new link/text, and all new help-mode
+tooltips with zero overflow across 16 zones. No console errors.
+
+## feature/updates_v6 branch — Splash page merge, dark redesign, sample-data enrichment
+
+Combines the old two-page `index.html` (short splash) + `overview.html` (feature tour) into
+one page, redesigns it to actually look like a product landing page instead of a static
+text column, and fixes the built-in sample projects having no Word Count or POV data to
+demonstrate those features with.
+
+**Touched files:** `index.html` (rewritten), `index-init.js` (new — image lightbox +
+scroll-reveal, replaces `overview-init.js`), `styles.css` (`LANDING PAGE` section rewritten
+with a bespoke dark palette), `projects.html`/`editor-init.js` (Overview links now point at
+`index.html`), `overview.html`/`overview-init.js` (deleted), `pride-and-prejudice.json` /
+`count-of-monte-cristo.json` (added `wordCount`/`povs` to every scene).
+
+### How it works
+- **One page, one flow:** frozen header (logo left; "Your Projects"/"Tutorial" centered via
+  a `1fr auto 1fr` grid so the nav stays centered regardless of text width) → hero (tagline +
+  "Welcome to SceneSetter" + the old Overview intro copy) → the six Overview feature
+  sections, reworked as an alternating zigzag layout → the Data & Backups block → the
+  closing contact/Get Started section from the old splash page. `#landing` keeps its
+  existing "fixed header, internally-scrolling body" structure (`.landing-body`); only its
+  contents grew.
+- **Bespoke dark palette scoped to `#landing`** (`--lbg`/`--ltx`/`--lacc`/etc., defined once
+  on `#landing` itself) — deliberately independent of the app's `data-theme` system, since
+  this page isn't part of the editor and has no reason to track a user's chosen theme.
+  `.overview-img`/`.overview-img-wrap`/`.overview-modal` are exclusively used by this page
+  now (their old home, `overview.html`, is gone), so they were restyled directly rather than
+  scoped/duplicated.
+- **Hero:** two slow-drifting blurred color blobs (`::before`/`::after`, `animation:
+  landing-blob-float 18s`) behind the text, a gradient-filled `background-clip:text`
+  headline, and a bobbing scroll-cue chevron — all skipped under
+  `prefers-reduced-motion: reduce`.
+- **Feature rows:** widened from 940px to 1120px max-width to use large-screen space better;
+  alternate left/right (`:nth-child(even)`) with a colored accent per feature
+  (`--landing-accent`, one of six palette colors) driving a glowing circular number badge
+  and a matching glow behind that row's screenshot. Every screenshot sits inside a "browser
+  window" frame (`.landing-window-dots` — three traffic-light dots + card chrome) instead of
+  floating as a bare image. Library/Sections screenshots are much smaller natively (287×598,
+  332×311px) than the others — `.landing-img-compact` caps and centers them at 300px instead
+  of stretching them to fill the same wide column, which blew them up past their native
+  resolution.
+- **Scroll-reveal** (`index-init.js`, `initScrollReveal`): an `IntersectionObserver` rooted
+  at `.landing-body` (not the viewport — this page scrolls internally) toggles an `in-view`
+  class on each `.reveal` element both ways (`classList.toggle('in-view',
+  entry.isIntersecting)`), so a row replays its entrance animation every time it's scrolled
+  back into view rather than only once. Text and media within a row animate on separate
+  staggered timing — text slides in first (with a blur-to-sharp focus effect), the
+  screenshot scales in ~120ms later with an overshoot easing — instead of the row fading in
+  as one flat block.
+- **Sample projects:** `pride-and-prejudice.json` (18 scenes) and `count-of-monte-cristo.json`
+  (39 scenes) previously had no `scene.wordCount` or `scene.povs` on any scene, so "Show
+  relative word count" and the POV report/trace features had nothing to demonstrate on the
+  built-in samples. Added reasonable per-scene word-count estimates (real chapter-level
+  counts aren't available for a scene structure that's already a condensed retelling)
+  weighted toward pivotal/longer scenes, summing close to each novel's actual total (~122k
+  and ~465k words respectively), and POV names drawn from each project's existing character
+  list — primarily the protagonist, with scenes centered on another character's own arc
+  (Danglars' ruin, Villefort's breakdown, Fernand's suicide, etc.) attributed to that
+  character instead, for a POV report with real variety.
+
+### Known non-obvious fixes worth knowing about if you touch this code
+- The old "Ready to start? Launch SceneSetter" CTA at the bottom of the splash page was
+  removed on purpose, not an oversight — opening Projects in a second tab from a page the
+  user is already one click away from leaving wasn't wanted; the existing header nav link
+  and the closing section's own Get Started button already cover it.
+- `ensureSampleProjects()` (`projects.js`) only ever seeds the sample projects once per
+  browser, tracked by a `samplesSeeded` flag in global prefs — a browser that already ran
+  the app before this branch's JSON changes won't see the new word counts/POVs until its
+  existing "Pride and Prejudice"/"The Count of Monte Cristo" projects are deleted and that
+  flag is cleared (or a fresh profile is used). This is existing, intentional behavior (see
+  `UPDATE_ROADMAP.md` §1, "Deleted sample projects resurrect themselves") — not something
+  this branch needed to change, but worth knowing when verifying the new sample data.
+- IntersectionObserver callbacks were unreliable when driven by synthetic
+  `element.scrollTop = N` assignment in automated browser testing (the callback for
+  "leaving" a target sometimes never fired), even though a real mouse-wheel scroll gesture
+  worked correctly every time — a testing-harness quirk, not a code bug; verify this feature
+  with real scroll input, not scripted `scrollTop` writes.
+
+### Verification
+Manually verified in-browser at desktop and mobile widths: header centering/stacking, hero
+animation and gradient text, all six feature rows (including the compact-sized
+Library/Sections images and the multi-image Scene Flow Chart/Reports rows), the image
+lightbox, Data & Backups styling, the Get Started → Projects flow, and — via real scroll
+gestures — that each row's reveal animation replays on re-entry after scrolling away and
+back. Sample-project JSON verified both by direct parsing (word-count sums, every POV name
+matching a real character) and by loading fresh-seeded projects in the running app: word
+count drives the Scene Flow Chart's relative-sizing mode, and POV data populates the Edit
+Scene form correctly.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v6`, PR not yet opened.
