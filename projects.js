@@ -320,13 +320,17 @@ function confirmProjDel() {
   trackProjectDeleted();
   const index = loadProjectIndex();
   const entry = index.find(p => p.id === deletingProjId);
-  // Deleting a sample is a deliberate "I don't want this" — remember its name so a
-  // future SAMPLES_VERSION bump (see ensureSampleProjects in projects.js) never
-  // re-adds it, the same way it's never re-added on a plain page reload today.
+  // Deleting a sample is a deliberate "I don't want this" — remember its stable
+  // key so a future SAMPLES_VERSION bump (see ensureSampleProjects) never re-adds
+  // it, the same way it's never re-added on a plain page reload today. Keyed by
+  // sampleKey (not name) so renaming the project first doesn't let it slip back
+  // in under its original name, nor get re-added as a duplicate under the new one.
+  // entry.sampleKey may be absent on an index entry seeded before this field
+  // existed — fall back to name for that one case so it's still recognized.
   if (entry && entry.isSample) {
     const prefs = loadGlobalPrefs();
     const deleted = new Set(prefs.deletedSamples || []);
-    deleted.add(entry.name);
+    deleted.add(entry.sampleKey || entry.name);
     prefs.deletedSamples = [...deleted];
     saveGlobalPrefs(prefs);
   }
@@ -398,7 +402,11 @@ function exportProjectJSON(id) {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = name.replace(/[^a-zA-Z0-9_\- ]/g, '') + ' ' + formatFileTimestamp(new Date(exportedAt)) + '.json';
+    // A name that's entirely punctuation/symbols (e.g. "!!!") sanitizes down to
+    // an empty string, which would otherwise leave the filename starting with
+    // a bare space before the timestamp.
+    const safeName = name.replace(/[^a-zA-Z0-9_\- ]/g, '').trim() || 'project';
+    a.download = safeName + ' ' + formatFileTimestamp(new Date(exportedAt)) + '.json';
     a.click();
     URL.revokeObjectURL(a.href);
   } catch(e) {
@@ -494,6 +502,20 @@ function importProjectJSON(inputEl) {
         alert('Invalid project structure. Every entry in "' + badLib + '" must be a name or an object with a "name" string.');
         return;
       }
+      // Every name-collision check elsewhere (confirmAdd, saveLibEdit, the
+      // checklist checkbox value itself) assumes one entry per name within a
+      // library array — a duplicate that arrives via import instead of the
+      // UI renders two checkboxes sharing one value, which can only ever
+      // reflect/toggle as a single checked state despite being two distinct
+      // library entries.
+      const badLibDup = ['characters', 'locations', 'themes', 'misc'].find(f => {
+        const names = d[f].map(x => typeof x === 'string' ? x : x.name);
+        return new Set(names).size !== names.length;
+      });
+      if (badLibDup) {
+        alert('Invalid project structure. "' + badLibDup + '" contains duplicate names — each entry must have a unique name.');
+        return;
+      }
 
       const isStrArr = v => v == null || (Array.isArray(v) && v.every(isStr));
       // Number.isInteger (not typeof === 'number') so NaN/Infinity from a
@@ -505,11 +527,12 @@ function importProjectJSON(inputEl) {
         !sc || typeof sc !== 'object' || !Number.isInteger(sc.id) || !isStr(sc.title) ||
         (sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes)) ||
         (sc.wordCount != null && typeof sc.wordCount !== 'number') ||
+        (sc.sectionId != null && !Number.isInteger(sc.sectionId)) ||
         (sc.pov != null && !isStr(sc.pov)) || // legacy single-value POV, still accepted on import
         (sc.povs != null && (!Array.isArray(sc.povs) || !sc.povs.every(isStr))) ||
         !isStrArr(sc.characters) || !isStrArr(sc.locations) || !isStrArr(sc.themes) || !isStrArr(sc.misc));
       if (badSceneIdx !== -1) {
-        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", string "summary"/"notes" if present, a numeric "wordCount" if present, a string "pov" if present, and arrays of strings for "povs"/"characters"/"locations"/"themes"/"misc" if present.');
+        alert('Invalid project structure. Scene ' + (badSceneIdx + 1) + ' needs a numeric "id", a string "title", string "summary"/"notes" if present, a numeric "wordCount" if present, a numeric "sectionId" if present, a string "pov" if present, and arrays of strings for "povs"/"characters"/"locations"/"themes"/"misc" if present.');
         return;
       }
       if (new Set(d.scenes.map(sc => sc.id)).size !== d.scenes.length) {
@@ -547,6 +570,13 @@ function importProjectJSON(inputEl) {
       d.scenes.forEach(sc => { if (sc.wordCount != null) sc.wordCount = normalizeWordCount(sc.wordCount); });
       const maxSecId = d.sections.reduce((m, sec) => Math.max(m, sec.id), 0);
       if (typeof d.nextSecId !== 'number' || d.nextSecId <= maxSecId) d.nextSecId = maxSecId + 1;
+      // A section color reaches an inline style.background/color-mix() string
+      // on the board (see renderBoard) — strip anything that isn't a genuine
+      // hex color (same rule as loadState) rather than rejecting the whole
+      // import, so a hand-edited or otherwise malformed value can't ride
+      // through as unvalidated CSS. Cleared (not defaulted) here; loadState
+      // assigns the actual fallback color the first time this project opens.
+      d.sections.forEach(sec => { if (sec.color != null && !isValidSecColor(sec.color)) delete sec.color; });
       if ((d.projectUid != null && !isStr(d.projectUid)) || (d.revision != null && typeof d.revision !== 'number')) {
         alert('Invalid project structure. "projectUid" must be a string and "revision" a number when present.');
         return;
@@ -719,18 +749,21 @@ function ensureSampleProjects() {
   prefs.samplesSeeding = now;
   saveGlobalPrefs(prefs);
 
-  // Names the user has explicitly deleted — never re-added, at this version bump or any
-  // future one. Without this, a version bump would resurrect a sample the user removed on
-  // purpose, exactly the bug fixed by moving off name-matching in the first place.
+  // Keys (not names) the user has explicitly deleted — never re-added, at this version
+  // bump or any future one. Without this, a version bump would resurrect a sample the
+  // user removed on purpose. Matched/stored by sampleKey rather than display name so
+  // renaming a sample first (then deleting it, or just keeping the rename) can't slip
+  // it back in under its original name or create a re-seeded duplicate alongside it;
+  // entries from before sampleKey existed only ever recorded a name, so check both.
   const deletedSamples = new Set(prefs.deletedSamples || []);
 
   const samplesToLoad = [
-    { name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' },
-    { name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' },
+    { key: 'pride-and-prejudice', name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' },
+    { key: 'count-of-monte-cristo', name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' },
   ];
 
   const loadPromises = samplesToLoad.map(sample => {
-    if (deletedSamples.has(sample.name)) return Promise.resolve(true);
+    if (deletedSamples.has(sample.key) || deletedSamples.has(sample.name)) return Promise.resolve(true);
     return fetch(sample.file)
       .then(response => {
         if (!response.ok) throw new Error('Failed to load sample project');
@@ -740,17 +773,21 @@ function ensureSampleProjects() {
         if (!d || d.v !== DATA_VERSION) return false;
         delete d.projectName;
         const index = loadProjectIndex();
-        const existing = index.find(p => p.isSample && p.name === sample.name);
+        // sampleKey identifies the same entry across a rename; name is the fallback
+        // for an entry seeded before sampleKey existed (never renamed, so name still
+        // matches what was originally seeded).
+        const existing = index.find(p => p.isSample && (p.sampleKey === sample.key || (!p.sampleKey && p.name === sample.name)));
         if (existing) {
           // Only refresh a sample the user never actually touched (revision 0 — no
           // saved edits) — an edited copy is now genuinely theirs, and overwriting it
           // just because SAMPLES_VERSION bumped would silently destroy real work.
           let cur = null;
           try { cur = JSON.parse(localStorage.getItem(projKey(existing.id)) || 'null'); } catch(e) {}
-          if (!cur || (cur.revision || 0) !== 0) return true;
+          if (!cur || (cur.revision || 0) !== 0) { existing.sampleKey = existing.sampleKey || sample.key; saveProjectIndex(index); return true; }
           d.projectUid = cur.projectUid || genProjUid();
           d.revision = 0;
           localStorage.setItem(projKey(existing.id), JSON.stringify(d));
+          existing.sampleKey = sample.key;
           existing.sceneCount = (d.scenes || []).length;
           existing.modifiedAt = new Date().toISOString();
           existing.theme = d.theme || existing.theme || 'ivory';
@@ -763,7 +800,7 @@ function ensureSampleProjects() {
         d.revision = d.revision || 0;
         localStorage.setItem(projKey(id), JSON.stringify(d));
         index.push({
-          id, name: sample.name, createdAt: nowIso, modifiedAt: nowIso,
+          id, name: sample.name, sampleKey: sample.key, createdAt: nowIso, modifiedAt: nowIso,
           sceneCount: (d.scenes||[]).length, theme: d.theme || 'ivory', isSample: true
         });
         saveProjectIndex(index);

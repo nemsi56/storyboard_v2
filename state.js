@@ -28,6 +28,11 @@ function normalizeWordCount(v) {
   const n = Math.round(v);
   return n > 0 ? n : null;
 }
+// Section colors are set by a native <input type=color> (always "#rrggbb") but
+// can also arrive from an imported/hand-edited file — validate the format
+// before it ever reaches a style.background/color-mix() string, rather than
+// trusting an arbitrary string into inline CSS.
+function isValidSecColor(v) { return typeof v === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(v); }
 function genProjId() { return 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
 // Permanent project lineage id — unlike the storage id above, this survives
 // export/import so copies of the same project can be recognized across devices.
@@ -149,13 +154,11 @@ function loadState(storageKey) {
     S.nextId    = d.nextId    || 1;
     S.andOr     = d.andOr === 'AND' ? 'AND' : 'OR';
     S.sections  = d.sections  || [];
-    S.sections.forEach(s => { if (!s.color) s.color = SEC_COLORS[S.sections.indexOf(s) % SEC_COLORS.length]; });
+    S.sections.forEach(s => { if (!isValidSecColor(s.color)) s.color = SEC_COLORS[S.sections.indexOf(s) % SEC_COLORS.length]; });
     S.nextSecId = d.nextSecId || 1;
     const VALID_THEMES = ['ivory','slate','studio','ocean','sunset'];
     const theme = VALID_THEMES.includes(d.theme) ? d.theme : 'ivory';
     document.documentElement.dataset.theme = theme;
-    const sel = document.getElementById('theme-sel');
-    if (sel) sel.value = theme;
     S.lastDataEditAt = d.lastDataEditAt || null;
     // Legacy projects saved before backup tracking existed: treat them as not
     // overdue yet rather than retroactively flagging them as stale on load.

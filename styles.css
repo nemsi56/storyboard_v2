@@ -15,18 +15,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 /* ══ HEADER ═════════════════════════════════════════════════════════════════ */
 #hdr{background:var(--bg1);border-bottom:1px solid var(--bdr);height:50px;padding:0 16px;display:flex;align-items:center;gap:16px;flex-shrink:0;z-index:20;justify-content:space-between}
 #hdr h1{font-size:18px;font-weight:700;color:var(--acc);white-space:nowrap;flex-shrink:0;margin:0}
-#hdr-spacer{flex:1}
+.hdr-spacer{flex:1}
 #hdr .tip{font-size:11px;color:var(--o0);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* Undo / Redo */
-#ur-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.ur-btn{background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap;max-width:148px;overflow:hidden;text-overflow:ellipsis;transition:background .12s,color .12s,opacity .14s;line-height:1.5;position:relative}
-.ur-btn:hover:not([disabled]){background:var(--s1);color:var(--tx)}
-.ur-btn[disabled]{opacity:.38;cursor:default;pointer-events:none}
-/* Theme */
-#theme-wrap{display:flex;align-items:center;gap:7px;background:var(--s0);border:1px solid var(--s1);border-radius:7px;padding:5px 9px;flex-shrink:0}
-#theme-wrap label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--o0);white-space:nowrap}
-#theme-sel{background:transparent;border:none;color:var(--tx);font-size:12px;cursor:pointer;outline:none;font-family:inherit;max-width:110px}
-#theme-sel option{background:var(--bg1);color:var(--tx)}
 
 /* ══ MAIN LAYOUT ════════════════════════════════════════════════════════════ */
 .main{flex:1;min-height:0;display:flex;overflow:hidden}
@@ -346,10 +336,6 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #secdel-ok{background:var(--rd);color:var(--ontx)}
 #secdel-ok:hover{opacity:.86}
 
-/* ══ REPORT BUTTON ═════════════════════════════════════════════════════════ */
-#rpt-btn{font-size:11px;font-weight:600;font-family:inherit;padding:4px 10px;border-radius:6px;border:1px solid var(--s1);background:var(--s0);color:var(--sub);cursor:pointer;flex-shrink:0;transition:background .12s,color .12s}
-#rpt-btn:hover{background:var(--s1);color:var(--tx)}
-
 /* ══ REPORT MODAL ══════════════════════════════════════════════════════════ */
 #rpt-modal{position:fixed;inset:0;background:var(--mov);display:none;align-items:center;justify-content:center;z-index:10003}
 #rpt-modal.open{display:flex}
@@ -534,7 +520,6 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 /* Back to projects button in storyboard header */
 .proj-back{background:var(--s0);border:1px solid var(--s1);color:var(--sub);border-radius:6px;padding:6px 12px;font-size:12px;font-family:inherit;cursor:pointer;transition:background .12s,color .12s;white-space:nowrap;flex-shrink:0;line-height:1}
 .proj-back:hover{background:var(--s1);color:var(--tx)}
-#proj-name{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;flex-shrink:1}
 
 /* ══ LANDING PAGE ══════════════════════════════════════════════════════════
    Bespoke dark palette scoped to #landing, independent of the app's
@@ -784,8 +769,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
    there fills the header line the same way it used to fill the toolbar row. */
 #chart-status{flex:1;color:var(--sub);font-size:11px;margin-left:4px}
 #chart-print-btn{margin-left:auto}
-#chart-print-btn,#chart-close-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:11px;font-family:inherit;padding:5px 10px;cursor:pointer;white-space:nowrap;transition:border-color .12s}
-#chart-print-btn:hover,#chart-close-btn:hover{border-color:var(--acc)}
+#chart-print-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:11px;font-family:inherit;padding:5px 10px;cursor:pointer;white-space:nowrap;transition:border-color .12s}
+#chart-print-btn:hover{border-color:var(--acc)}
 #chart-scroll{flex:1;min-height:0;overflow:auto;position:relative;background:var(--sbg)}
 #chart-canvas{padding:12px;min-height:100%}
 #chart-canvas svg{display:block}

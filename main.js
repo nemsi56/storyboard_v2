@@ -14,12 +14,6 @@ const gPrefs = loadGlobalPrefs();
 const gTheme = ['ivory','slate','studio','ocean','sunset'].includes(gPrefs.theme) ? gPrefs.theme : 'ivory';
 document.documentElement.dataset.theme = gTheme;
 
-// Sync theme selectors (only if they exist on this page)
-const pmThemeSel = document.getElementById('pm-theme-sel');
-const themeSel = document.getElementById('theme-sel');
-if (pmThemeSel) pmThemeSel.value = gTheme;
-if (themeSel) themeSel.value = gTheme;
-
 // Migrate any existing data to project format
 migrateExistingData();
 
