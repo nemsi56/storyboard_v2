@@ -17,30 +17,162 @@
   <div class="landing-hdr">
     <h1 class="landing-logo">📝 SceneSetter</h1>
     <nav class="landing-nav">
-      <a href="overview.html" class="landing-nav-link">Overview</a>
-      <a href="tutorial.html" class="landing-nav-link">Tutorial</a>
-      <a href="projects.html" class="landing-nav-link landing-nav-cta">Get Started</a>
+      <a href="projects.html" class="landing-nav-link landing-nav-cta">Your Projects</a>
+      <a href="tutorial.html" class="landing-nav-link" target="_blank" rel="noopener">Tutorial</a>
     </nav>
+    <div class="landing-hdr-spacer" aria-hidden="true"></div>
   </div>
+
   <div class="landing-body">
-    <div class="landing-hero">
-      <div class="pm-intro-sub">Organize. Visualize. Write.<br>See your story take shape.</div>
-      <div class="pm-intro-main">SceneSetter is a card-based visual story organizer for writers. Get your characters, locations, themes, and scenes in order so you can focus on telling your best story. <a href="overview.html" style="color:var(--acc);text-decoration:none;font-weight:500">(See Overview)</a></div>
-      <div class="pm-intro-tagline">Free to use · No account required</div>
-      <div class="pm-intro-privacy"><u>Your content remains privately yours.</u> All data is stored locally in your browser, per project. (We use Google Analytics and other tools to understand feature usage and improve the app, but no personal data or project content is shared.)</div>
-      <div class="pm-intro-contact">
-        <div style="margin-top: 16px; font-size: 12px; line-height: 1.6; color: var(--sub);">
-          Thoughts? Suggestions? Issues? Urge to donate? Or simply want to be alerted to updates?<br>
-          <a href="mailto:scenesetter@protonmail.com" style="color: var(--acc); text-decoration: none; font-weight: 500;">Email us</a>
+
+    <!-- HERO -->
+    <section class="landing-hero-v2">
+      <div class="landing-hero-inner">
+        <div class="landing-tagline">Organize. Visualize. Write.<br>See your story take shape.</div>
+        <h2 class="landing-welcome">Welcome to SceneSetter</h2>
+        <p class="landing-hero-p">SceneSetter is a card-based visual story organizer built for writers of all kinds — novelists, screenwriters, playwrights, game designers, and anyone who needs to structure a narrative. It helps you organize your characters, locations, themes, and scenes so you can focus on telling your best story.</p>
+        <p class="landing-hero-p">Everything runs in your browser. No account needed, no data sent to any server. Your stories stay yours.</p>
+        <div class="landing-scroll-cue" aria-hidden="true">⌄</div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="landing-features">
+
+      <div class="landing-feature reveal" data-accent="acc">
+        <div class="landing-feature-text">
+          <span class="landing-feature-num">01</span>
+          <h3>Scene Board</h3>
+          <p>Your scenes are displayed as cards on a visual board. Drag and drop to reorder, organize into sections (acts, chapters, parts), and see your entire story structure at a glance.</p>
         </div>
-        <div style="margin-top: 14px; font-size: 13px; font-weight: 500; color: var(--tx);">Enjoy!</div>
+        <div class="landing-feature-media">
+          <div class="overview-img-wrap">
+            <div class="landing-window-dots"><span></span><span></span><span></span></div>
+            <img src="images/overview-sceneboard.png" alt="Scene board showing cards organized by sections" class="overview-img" id="ov-img-sceneboard">
+            <span class="overview-img-hint">Click to enlarge</span>
+          </div>
+        </div>
       </div>
-      <div style="margin-top: 24px;">
-        <a href="projects.html" class="pm-btn pm-btn-primary" style="text-decoration:none;display:inline-block;padding:10px 28px;font-size:14px">Get Started</a>
+
+      <div class="landing-feature reveal" data-accent="bl">
+        <div class="landing-feature-text">
+          <span class="landing-feature-num">02</span>
+          <h3>Character &amp; Element Library</h3>
+          <p>Build a library of characters, locations, themes, and miscellaneous items. Attach them to scenes to track who appears where, which locations are used, and how themes flow through your story. Assign one or more POV names per scene too — handy if your "scenes" are really chapters with a narrator.</p>
+        </div>
+        <div class="landing-feature-media">
+          <div class="overview-img-wrap landing-img-compact">
+            <div class="landing-window-dots"><span></span><span></span><span></span></div>
+            <img src="images/overview-library.png" alt="Library panel showing characters, locations, themes" class="overview-img">
+          </div>
+        </div>
       </div>
+
+      <div class="landing-feature reveal" data-accent="gr">
+        <div class="landing-feature-text">
+          <span class="landing-feature-num">03</span>
+          <h3>Search &amp; Analysis</h3>
+          <p>Search for characters, locations, themes, and items across your entire story. Instantly see which scenes contain your chosen elements, identify where characters appear and disappear, spot narrative gaps, detect over-crowded scenes, and analyze the flow and pacing of character involvement. Perfect for tracking ensemble casts, theme consistency, and location usage across your narrative.</p>
+        </div>
+        <div class="landing-feature-media">
+          <div class="overview-img-wrap">
+            <div class="landing-window-dots"><span></span><span></span><span></span></div>
+            <img src="images/overview-search.png" alt="Cross-reference chart showing character appearances across scenes" class="overview-img" id="ov-img-search">
+            <span class="overview-img-hint">Click to enlarge</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="landing-feature reveal" data-accent="pv">
+        <div class="landing-feature-text">
+          <span class="landing-feature-num">04</span>
+          <h3>Sections &amp; Organization</h3>
+          <p>Group scenes into sections — acts, chapters, parts, or whatever structure fits your story. Use color-coded headers to visually separate your narrative beats.</p>
+        </div>
+        <div class="landing-feature-media">
+          <div class="overview-img-wrap landing-img-compact">
+            <div class="landing-window-dots"><span></span><span></span><span></span></div>
+            <img src="images/overview-sections.png" alt="Sections panel with color-coded acts" class="overview-img">
+          </div>
+        </div>
+      </div>
+
+      <div class="landing-feature reveal" data-accent="am">
+        <div class="landing-feature-text">
+          <span class="landing-feature-num">05</span>
+          <h3>Scene Flow Chart</h3>
+          <p>See your whole story as one continuous ribbon of scenes — winding into a snake or wrapped into a circle — so you can spot pacing, gaps, and structure at a glance. Switch to it anytime with the Cards/Snake/Circle icons in the board header. Section boundaries are marked automatically (hover a badge or wedge for its name). Click a character or POV name in the Library, or type in Search, and matching scenes highlight right in the chart, just like on the board. Click any scene to jump back to its card. Optionally size each scene's segment by its word count instead of splitting evenly, to spot unusually long or short scenes at a glance.</p>
+        </div>
+        <div class="landing-feature-media landing-feature-media-multi">
+          <div class="overview-img-wrap landing-img-half">
+            <div class="landing-window-dots"><span></span><span></span><span></span></div>
+            <img src="images/overview-snake.png" alt="Scene flow chart, snake layout, showing lettered section badges and characters traced through the ribbon" class="overview-img" id="ov-img-flowchart-1">
+          </div>
+          <div class="overview-img-wrap landing-img-half">
+            <div class="landing-window-dots"><span></span><span></span><span></span></div>
+            <img src="images/overview-circle.png" alt="Scene flow chart, circle layout, showing sections as pie-slice wedges and characters traced through the ring" class="overview-img" id="ov-img-flowchart-2">
+          </div>
+        </div>
+      </div>
+
+      <div class="landing-feature reveal" data-accent="lv">
+        <div class="landing-feature-text">
+          <span class="landing-feature-num">06</span>
+          <h3>Reports</h3>
+          <p>Generate a variety of printable reports to review your story from different angles. See which characters appear in which scenes, track location usage, analyze themes across acts, check POV balance across an ensemble, and more. Each report gives you a new perspective on your narrative structure.</p>
+        </div>
+        <div class="landing-feature-media landing-feature-media-multi">
+          <div class="overview-img-wrap landing-img-third">
+            <div class="landing-window-dots"><span></span><span></span><span></span></div>
+            <img src="images/overview-report-1.png" alt="Report 1" class="overview-img" id="ov-img-report-1">
+          </div>
+          <div class="overview-img-wrap landing-img-third">
+            <div class="landing-window-dots"><span></span><span></span><span></span></div>
+            <img src="images/overview-report-2.png" alt="Report 2" class="overview-img" id="ov-img-report-2">
+          </div>
+          <div class="overview-img-wrap landing-img-third">
+            <div class="landing-window-dots"><span></span><span></span><span></span></div>
+            <img src="images/overview-report-3.png" alt="Report 3" class="overview-img" id="ov-img-report-3">
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- DATA & BACKUPS -->
+    <div id="data-backups" class="landing-backups reveal">
+      <div class="landing-backups-label">Your Data &amp; Backups</div>
+      <p>SceneSetter saves everything locally — right in this browser, on this device. Just close the tab and come back anytime; your projects will still be here, no import needed. There's no cloud account, so nothing syncs to another browser or computer — and since this data only exists in this browser's storage, clearing your cache or a browser issue could wipe it too. That's why backing up still matters:</p>
+      <ul>
+        <li><strong>Export regularly.</strong> Each export is a timestamped JSON file, saved wherever your browser puts downloads — your backup and your safety net.</li>
+        <li><strong>Import</strong> to recover lost work, roll back to an earlier version, or move a project to a different browser or computer.</li>
+        <li><strong>No fear of mix-ups</strong> — SceneSetter checks the timestamp on every import and warns you before letting an older file overwrite newer work.</li>
+      </ul>
+      <p class="landing-backups-privacy">Your content remains privately yours. We use Google Analytics and other tools to understand feature usage and improve the app, but no personal data or project content is shared.</p>
     </div>
+
+    <!-- CLOSING -->
+    <section class="landing-closing">
+      <div class="landing-contact">
+        Thoughts? Suggestions? Issues? Urge to donate? Or simply want to be alerted to updates?<br>
+        <a href="mailto:scenesetter@protonmail.com">Email us</a>
+      </div>
+      <div class="landing-enjoy">Enjoy!</div>
+      <a href="projects.html" class="pm-btn pm-btn-primary landing-get-started">Get Started</a>
+    </section>
+
   </div>
 </div>
+
+<!-- Image enlargement modal -->
+<div id="overview-modal" class="overview-modal">
+  <div class="overview-modal-inner">
+    <button class="overview-modal-close" id="overview-modal-close-btn">×</button>
+    <img id="overview-modal-img" src="" alt="Enlarged screenshot">
+  </div>
+</div>
+
+<script src="index-init.js"></script>
 
 </body>
 </html>

@@ -74,7 +74,7 @@
   $('menu-chart').addEventListener('click', function(){ toggleChartView(); closeAllMenus(); });
 
   // Help menu
-  $('mi-help-overview').addEventListener('click', function(){ window.open('overview.html','_blank'); closeAllMenus(); });
+  $('mi-help-overview').addEventListener('click', function(){ window.open('index.html','_blank'); closeAllMenus(); });
   $('mi-help-tutorial').addEventListener('click', function(){ window.open('tutorial.html','_blank'); closeAllMenus(); });
   $('mi-help-features').addEventListener('click', function(){ toggleHelp(); closeAllMenus(); });
 
