@@ -598,6 +598,11 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .landing-feature-media-multi{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .landing-img-half{width:calc(50% - 5px)}
 .landing-img-third{width:calc(33.333% - 7px)}
+/* Library/Sections screenshots are small, narrow UI panels (not a
+   full-width app screenshot like Scene Board) — stretching them to fill
+   the same wide media column blows them up past their native resolution
+   and looks oversized next to the text. Cap and center instead. */
+.landing-img-compact{max-width:300px;margin:0 auto}
 .landing-feature[data-accent="acc"]{--landing-accent:var(--lacc)}
 .landing-feature[data-accent="bl"]{--landing-accent:var(--lbl)}
 .landing-feature[data-accent="gr"]{--landing-accent:var(--lgr)}
