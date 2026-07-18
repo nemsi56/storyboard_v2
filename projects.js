@@ -318,9 +318,20 @@ function closeProjDel() { document.getElementById('proj-del-modal').classList.re
 function confirmProjDel() {
   if (!deletingProjId) return;
   trackProjectDeleted();
+  const index = loadProjectIndex();
+  const entry = index.find(p => p.id === deletingProjId);
+  // Deleting a sample is a deliberate "I don't want this" — remember its name so a
+  // future SAMPLES_VERSION bump (see ensureSampleProjects in projects.js) never
+  // re-adds it, the same way it's never re-added on a plain page reload today.
+  if (entry && entry.isSample) {
+    const prefs = loadGlobalPrefs();
+    const deleted = new Set(prefs.deletedSamples || []);
+    deleted.add(entry.name);
+    prefs.deletedSamples = [...deleted];
+    saveGlobalPrefs(prefs);
+  }
   localStorage.removeItem(projKey(deletingProjId));
-  const index = loadProjectIndex().filter(p => p.id !== deletingProjId);
-  saveProjectIndex(index);
+  saveProjectIndex(index.filter(p => p.id !== deletingProjId));
   closeProjDel();
   renderProjectGrid();
 }
@@ -680,18 +691,26 @@ function importProjectJSON(inputEl) {
   inputEl.value = '';
 }
 
-function ensureSampleProjects() {
-  // Seed once ever, tracked by a flag rather than matching on project name —
-  // otherwise deleting or renaming a sample project (e.g. "Pride and
-  // Prejudice") makes it silently reappear on the next visit to this page.
-  const prefs = loadGlobalPrefs();
-  if (prefs.samplesSeeded) return Promise.resolve();
+// Bump whenever pride-and-prejudice.json / count-of-monte-cristo.json change enough
+// that existing (untouched) sample projects should be refreshed with the new content —
+// e.g. the wordCount/povs addition this constant was introduced for. A user who's still
+// on an older version gets the refresh automatically on their next Projects-page visit;
+// no manual localStorage reset needed.
+const SAMPLES_VERSION = 2;
 
-  // samplesSeeded is only set after the fetches below resolve, so two page
-  // loads racing before that write lands (two tabs opened at once, a fast
-  // reload) would otherwise both pass the check above and each seed their
-  // own copy of both samples. Claim a short-lived lock synchronously before
-  // starting the async work so the second load backs off instead.
+function ensureSampleProjects() {
+  // Seeded/refreshed up to SAMPLES_VERSION already? Nothing to do. Tracked by a version
+  // number rather than re-matching on project name every visit — the deletedSamples list
+  // below is what actually prevents a deleted/renamed sample from reappearing; the version
+  // gate just avoids redoing this whole pass on every single page load once caught up.
+  const prefs = loadGlobalPrefs();
+  const priorVersion = prefs.samplesSeeded ? (prefs.samplesVersion || 1) : 0;
+  if (priorVersion >= SAMPLES_VERSION) return Promise.resolve();
+
+  // Only set once the fetches below resolve, so two page loads racing before that write
+  // lands (two tabs opened at once, a fast reload) would otherwise both pass the check
+  // above and each redo the pass. Claim a short-lived lock synchronously before starting
+  // the async work so the second load backs off instead.
   const SEEDING_LOCK_MS = 15000;
   const now = Date.now();
   if (prefs.samplesSeeding && now - prefs.samplesSeeding < SEEDING_LOCK_MS) {
@@ -700,28 +719,51 @@ function ensureSampleProjects() {
   prefs.samplesSeeding = now;
   saveGlobalPrefs(prefs);
 
+  // Names the user has explicitly deleted — never re-added, at this version bump or any
+  // future one. Without this, a version bump would resurrect a sample the user removed on
+  // purpose, exactly the bug fixed by moving off name-matching in the first place.
+  const deletedSamples = new Set(prefs.deletedSamples || []);
+
   const samplesToLoad = [
     { name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' },
     { name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' },
   ];
 
   const loadPromises = samplesToLoad.map(sample => {
+    if (deletedSamples.has(sample.name)) return Promise.resolve(true);
     return fetch(sample.file)
       .then(response => {
         if (!response.ok) throw new Error('Failed to load sample project');
         return response.json();
       })
       .then(d => {
-        if (!d || d.v !== DATA_VERSION) return;
-        const id = genProjId();
-        const now = new Date().toISOString();
+        if (!d || d.v !== DATA_VERSION) return false;
         delete d.projectName;
+        const index = loadProjectIndex();
+        const existing = index.find(p => p.isSample && p.name === sample.name);
+        if (existing) {
+          // Only refresh a sample the user never actually touched (revision 0 — no
+          // saved edits) — an edited copy is now genuinely theirs, and overwriting it
+          // just because SAMPLES_VERSION bumped would silently destroy real work.
+          let cur = null;
+          try { cur = JSON.parse(localStorage.getItem(projKey(existing.id)) || 'null'); } catch(e) {}
+          if (!cur || (cur.revision || 0) !== 0) return true;
+          d.projectUid = cur.projectUid || genProjUid();
+          d.revision = 0;
+          localStorage.setItem(projKey(existing.id), JSON.stringify(d));
+          existing.sceneCount = (d.scenes || []).length;
+          existing.modifiedAt = new Date().toISOString();
+          existing.theme = d.theme || existing.theme || 'ivory';
+          saveProjectIndex(index);
+          return true;
+        }
+        const id = genProjId();
+        const nowIso = new Date().toISOString();
         d.projectUid = genProjUid();
         d.revision = d.revision || 0;
         localStorage.setItem(projKey(id), JSON.stringify(d));
-        const index = loadProjectIndex();
         index.push({
-          id, name: sample.name, createdAt: now, modifiedAt: now,
+          id, name: sample.name, createdAt: nowIso, modifiedAt: nowIso,
           sceneCount: (d.scenes||[]).length, theme: d.theme || 'ivory', isSample: true
         });
         saveProjectIndex(index);
@@ -731,11 +773,14 @@ function ensureSampleProjects() {
       .catch(err => { console.log('Could not auto-load sample project: ' + sample.name); return false; });
   });
 
-  // Only mark seeded if every sample loaded — a transient fetch failure
-  // should still retry on the next visit rather than being marked done.
+  // Only mark caught-up if every sample resolved — a transient fetch failure should
+  // still retry on the next visit rather than being marked done at the new version.
   return Promise.all(loadPromises).then(results => {
     if (results.every(Boolean)) {
-      const p = loadGlobalPrefs(); p.samplesSeeded = true; saveGlobalPrefs(p);
+      const p = loadGlobalPrefs();
+      p.samplesSeeded = true;
+      p.samplesVersion = SAMPLES_VERSION;
+      saveGlobalPrefs(p);
     }
   });
 }

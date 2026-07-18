@@ -939,4 +939,65 @@ count drives the Scene Flow Chart's relative-sizing mode, and POV data populates
 Scene form correctly.
 
 ### Not yet done
-- Not merged to `main` — pushed to `origin/feature/updates_v6`, PR not yet opened.
+- *(Update: `feature/updates_v6` has since been merged to `main` via PR #15.)*
+
+## feature/updates_v7 branch — Version-tracked sample-project refresh
+
+Answers a gap noticed right after `feature/updates_v6` shipped new word-count/POV data to
+the two sample projects: since `ensureSampleProjects()` only ever seeds once per browser
+(tracked by a `samplesSeeded` flag), anyone who'd already opened the app before that change
+would never see the new data without manually clearing `localStorage` in the console — there
+was no remote or automatic way to refresh them. This branch makes the refresh automatic.
+
+**Touched files:** `projects.js` (`ensureSampleProjects()` rewritten, `confirmProjDel()`
+extended).
+
+### How it works
+- `samplesSeeded` (boolean) is joined by `samplesVersion` (number) and a new
+  `SAMPLES_VERSION` constant, bumped whenever the sample JSON files change enough to want
+  existing sample projects refreshed. A user whose stored version is behind gets the newer
+  content automatically on their next Projects-page visit — no console step needed. A
+  never-seeded browser is treated as version 0; a previously-seeded browser with no
+  `samplesVersion` at all (i.e. everyone before this branch) is treated as version 1, so
+  they're behind `SAMPLES_VERSION = 2` and get the refresh exactly once.
+- The refresh only ever touches a sample project the user never actually modified —
+  `revision === 0` (the project's own save-counter, incremented on every `saveState()` call;
+  untouched by merely opening/viewing it). An edited sample is left completely alone and
+  still counts as "handled" for that version, so it's never checked again until the next
+  version bump. This reuses the same per-sample reconciliation for both the first-ever seed
+  and a later refresh — one code path, not two.
+- Deleting a sample project (`confirmProjDel()`) now records its name into a
+  `deletedSamples` list in global prefs. A version bump skips any name on that list
+  entirely, so deleting a sample on purpose still means it never comes back — the same
+  guarantee `samplesSeeded` originally existed to provide, now extended to survive a version
+  bump instead of only a plain page reload.
+- The existing 15-second `samplesSeeding` lock (guarding against two tabs/a fast reload
+  racing the async fetches) is unchanged and now also covers refresh passes, not just the
+  very first seed.
+
+### Known non-obvious fixes worth knowing about if you touch this code
+- A renamed sample project is deliberately treated like an edited one for matching purposes
+  (it no longer matches by name), but *not* like a deleted one — a version bump will add a
+  fresh copy under the original name alongside the user's renamed copy, rather than treating
+  the rename as "this sample doesn't exist, resurrect it under some other identity." Only an
+  explicit delete suppresses future re-adding.
+- Testing this without a real second-visit gap requires simulating an "old" browser state
+  by hand (clearing `localStorage`, writing back an old-shaped `scriptease_prefs` with
+  `samplesSeeded: true` and no `samplesVersion`, plus a sample project with `revision: 0`)
+  — verified this way for all three cases: untouched-and-behind (refreshes in place, same
+  project id, no duplicate), edited-and-behind (left alone, no duplicate), and
+  deleted-and-behind (never resurrected). Also hit the same stale-fetch-cache artifact seen
+  throughout this project's browser-based testing (a plain `fetch()` of the sample JSON
+  returned a long-cached pre-wordCount copy in the test browser) — confirmed it was a test
+  harness/browser-cache artifact, not a logic bug, by re-running with `fetch` patched to
+  force `cache: 'no-store'`.
+
+### Verification
+Manually verified in-browser (with `fetch` forced to bypass cache to eliminate the
+test-harness caching artifact above): a previously-seeded, untouched sample refreshes to the
+new word-count/POV content in place; an edited sample is left byte-for-byte alone; a
+deleted sample stays deleted across the version bump; and a genuinely fresh browser (no
+prior state at all) still seeds both samples exactly as before. No console errors.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v7`, PR not yet opened.
