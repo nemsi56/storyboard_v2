@@ -587,11 +587,11 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .landing-features{max-width:1120px;margin:8px auto 0;padding:32px 24px 8px;display:flex;flex-direction:column;gap:76px}
 .landing-feature{display:flex;align-items:center;gap:56px}
 .landing-feature:nth-child(even){flex-direction:row-reverse}
-.landing-feature-text{flex:1 1 340px;min-width:0;opacity:0;transform:translateX(-26px);transition:opacity .7s ease,transform .7s ease}
-.landing-feature:nth-child(even) .landing-feature-text{transform:translateX(26px)}
-.landing-feature.in-view .landing-feature-text{opacity:1;transform:translateX(0)}
-.landing-feature-media{flex:1 1 420px;min-width:0;opacity:0;transform:scale(.94);transition:opacity .7s .12s ease,transform .7s .12s ease}
-.landing-feature.in-view .landing-feature-media{opacity:1;transform:scale(1)}
+.landing-feature-text{flex:1 1 340px;min-width:0;opacity:0;filter:blur(4px);transform:translateX(-56px);transition:opacity .6s cubic-bezier(.22,1,.36,1),transform .6s cubic-bezier(.22,1,.36,1),filter .6s ease}
+.landing-feature:nth-child(even) .landing-feature-text{transform:translateX(56px)}
+.landing-feature.in-view .landing-feature-text{opacity:1;filter:blur(0);transform:translateX(0)}
+.landing-feature-media{flex:1 1 420px;min-width:0;opacity:0;transform:scale(.8) translateY(18px);transition:opacity .6s .12s cubic-bezier(.34,1.56,.64,1),transform .6s .12s cubic-bezier(.34,1.56,.64,1)}
+.landing-feature.in-view .landing-feature-media{opacity:1;transform:scale(1) translateY(0)}
 .landing-feature-num{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;font-size:13px;font-weight:800;margin-bottom:16px;color:var(--landing-accent,var(--lacc));background:color-mix(in srgb,var(--landing-accent,var(--lacc)) 16%,transparent);border:1px solid color-mix(in srgb,var(--landing-accent,var(--lacc)) 45%,transparent);box-shadow:0 0 22px -4px color-mix(in srgb,var(--landing-accent,var(--lacc)) 55%,transparent)}
 .landing-feature-text h3{font-size:21px;color:var(--ltx);margin-bottom:10px;font-weight:700}
 .landing-feature-text p{font-size:13.5px;color:var(--lsub);line-height:1.7}
@@ -619,8 +619,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .landing-window-dots span:nth-child(3){background:#5cc26a}
 
 /* Data & backups */
-.landing-backups{max-width:720px;margin:64px auto 0;padding:26px 30px;background:linear-gradient(135deg,color-mix(in srgb,var(--lacc) 10%,var(--lcard)),var(--lcard));border:1px solid color-mix(in srgb,var(--lacc) 30%,transparent);border-radius:12px;font-size:14px;line-height:1.6;color:var(--ltx);opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
-.landing-backups.in-view{opacity:1;transform:translateY(0)}
+.landing-backups{max-width:720px;margin:64px auto 0;padding:26px 30px;background:linear-gradient(135deg,color-mix(in srgb,var(--lacc) 10%,var(--lcard)),var(--lcard));border:1px solid color-mix(in srgb,var(--lacc) 30%,transparent);border-radius:12px;font-size:14px;line-height:1.6;color:var(--ltx);opacity:0;transform:translateY(40px) scale(.96);transition:opacity .6s cubic-bezier(.22,1,.36,1),transform .6s cubic-bezier(.22,1,.36,1)}
+.landing-backups.in-view{opacity:1;transform:translateY(0) scale(1)}
 .landing-backups-label{font-weight:700;text-transform:uppercase;color:var(--lacc2);margin-bottom:12px;font-size:12px;letter-spacing:0.06em}
 .landing-backups p{margin:0;color:var(--lsub)}
 .landing-backups ul{margin:10px 0 0 20px;padding:0;color:var(--lsub)}
@@ -637,7 +637,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 
 @media (max-width:720px){
   .landing-feature,.landing-feature:nth-child(even){flex-direction:column;gap:20px}
-  .landing-feature-text,.landing-feature:nth-child(even) .landing-feature-text{transform:translateY(18px)}
+  .landing-feature-text,.landing-feature:nth-child(even) .landing-feature-text{transform:translateY(36px)}
   .landing-feature.in-view .landing-feature-text{transform:translateY(0)}
   .landing-welcome{font-size:28px}
   .landing-nav{gap:18px}
