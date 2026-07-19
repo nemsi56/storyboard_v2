@@ -67,20 +67,6 @@ function setTheme(name) {
   document.documentElement.dataset.theme = name;
   saveState();
   const prefs = loadGlobalPrefs(); prefs.theme = name; saveGlobalPrefs(prefs);
-  const pmSel = document.getElementById('pm-theme-sel');
-  const tSel = document.getElementById('theme-sel');
-  if (pmSel) pmSel.value = name;
-  if (tSel) tSel.value = name;
-}
-
-function setGlobalTheme(name) {
-  document.documentElement.dataset.theme = name;
-  const prefs = loadGlobalPrefs(); prefs.theme = name; saveGlobalPrefs(prefs);
-  const pmSel = document.getElementById('pm-theme-sel');
-  const tSel = document.getElementById('theme-sel');
-  if (pmSel) pmSel.value = name;
-  if (tSel) tSel.value = name;
-  if (currentProjectId) saveState();
 }
 
 // ── HELP OVERLAY ───────────────────────────────────────────────────────────────

@@ -939,4 +939,101 @@ count drives the Scene Flow Chart's relative-sizing mode, and POV data populates
 Scene form correctly.
 
 ### Not yet done
-- Not merged to `main` — pushed to `origin/feature/updates_v6`, PR not yet opened.
+- *(Update: `feature/updates_v6` has since been merged to `main` via PR #15.)*
+
+## feature/updates_v7 branch — Version-tracked sample-project refresh
+
+Answers a gap noticed right after `feature/updates_v6` shipped new word-count/POV data to
+the two sample projects: since `ensureSampleProjects()` only ever seeds once per browser
+(tracked by a `samplesSeeded` flag), anyone who'd already opened the app before that change
+would never see the new data without manually clearing `localStorage` in the console — there
+was no remote or automatic way to refresh them. This branch makes the refresh automatic.
+
+**Touched files:** `projects.js` (`ensureSampleProjects()` rewritten, `confirmProjDel()`
+extended, `importProjectJSON()`/`exportProjectJSON()` hardened by a follow-up audit — see
+below), `state.js` (new `isValidSecColor()` helper, shared by `loadState()` and the import
+path), `editor.html` (duplicate `hdr-spacer` id fixed), `styles.css`/`ui.js`/`main.js`
+(dead code from an earlier header redesign removed, surfaced by the same audit).
+
+### How it works
+- `samplesSeeded` (boolean) is joined by `samplesVersion` (number) and a new
+  `SAMPLES_VERSION` constant, bumped whenever the sample JSON files change enough to want
+  existing sample projects refreshed. A user whose stored version is behind gets the newer
+  content automatically on their next Projects-page visit — no console step needed. A
+  never-seeded browser is treated as version 0; a previously-seeded browser with no
+  `samplesVersion` at all (i.e. everyone before this branch) is treated as version 1, so
+  they're behind `SAMPLES_VERSION = 2` and get the refresh exactly once.
+- The refresh only ever touches a sample project the user never actually modified —
+  `revision === 0` (the project's own save-counter, incremented on every `saveState()` call;
+  untouched by merely opening/viewing it). An edited sample is left completely alone and
+  still counts as "handled" for that version, so it's never checked again until the next
+  version bump. This reuses the same per-sample reconciliation for both the first-ever seed
+  and a later refresh — one code path, not two.
+- Each sample now carries a permanent `sampleKey` (`'pride-and-prejudice'` /
+  `'count-of-monte-cristo'`) alongside its display `name`. `ensureSampleProjects()` matches
+  an existing index entry by `sampleKey` first, falling back to `name` only for an entry
+  seeded before this field existed (and backfilling `sampleKey` onto it once found).
+  Deleting a sample project (`confirmProjDel()`) records that same `sampleKey` (not the
+  display name) into a `deletedSamples` list in global prefs — see "Known non-obvious
+  fixes" below for why this matters. A version bump skips any key on that list entirely, so
+  deleting a sample on purpose still means it never comes back — the same guarantee
+  `samplesSeeded` originally existed to provide, now extended to survive a version bump
+  instead of only a plain page reload.
+- The existing 15-second `samplesSeeding` lock (guarding against two tabs/a fast reload
+  racing the async fetches) is unchanged and now also covers refresh passes, not just the
+  very first seed.
+
+### Known non-obvious fixes worth knowing about if you touch this code
+- **Bug found and fixed by a follow-up full-app audit before merge:** the branch as
+  originally written matched/tracked samples purely by display `name`. Renaming a sample
+  made it invisible to that matching — a version bump would add a fresh duplicate under the
+  original name alongside the renamed copy; worse, if the renamed copy was then deleted,
+  `deletedSamples` recorded the *new* name, so the next version bump didn't recognize the
+  deletion at all and resurrected the sample under its original name. Fixed by adding the
+  `sampleKey` field described above, which survives a rename — matching and deletion
+  tracking both key off it now, with the original name-matching kept only as a fallback for
+  pre-fix data. Verified live: renamed "Pride and Prejudice" via the Projects page, deleted
+  it, confirmed `deletedSamples` recorded the key (not the new display name), then rolled
+  back `samplesVersion` and reloaded — it did not reappear.
+- The same audit hardened `importProjectJSON()` against a few related gaps: `section.color`
+  is now format-checked (`isValidSecColor()`, shared with `loadState()`) before it can reach
+  an inline `style.background`/`color-mix()` string on the board — an invalid value (e.g. a
+  hand-edited `url(...)`) is stripped rather than trusted, and `loadState()` then assigns the
+  normal palette fallback the first time the project opens; `scene.sectionId` is now
+  type-checked (integer or absent); and a duplicate name within one imported library array
+  (characters/locations/themes/misc) is now rejected outright — previously it silently
+  rendered two checkboxes sharing one value, since every other name-collision check in the
+  app (`confirmAdd`, `saveLibEdit`) assumes one entry per name. `exportProjectJSON()` also no
+  longer produces a filename starting with a bare space when the project name is entirely
+  punctuation. Separately, the same pass found and removed dead CSS/JS left over from an
+  earlier header redesign (a duplicate `id="hdr-spacer"` in `editor.html`; unused
+  `#theme-sel`/`#pm-theme-sel`/`#ur-wrap`/`.ur-btn`/`#proj-name`/`#rpt-btn`/`#chart-close-btn`
+  rules and the JS that read them, none of which exist on any page anymore).
+- Testing the version-refresh mechanics without a real second-visit gap requires simulating
+  an "old" browser state by hand (clearing `localStorage`, writing back an old-shaped
+  `scriptease_prefs` with `samplesSeeded: true` and no `samplesVersion`, plus a sample
+  project with `revision: 0`) — verified this way for all three cases: untouched-and-behind
+  (refreshes in place, same project id, no duplicate), edited-and-behind (left alone, no
+  duplicate), and deleted-and-behind (never resurrected). Also hit the same stale-fetch-cache
+  artifact seen throughout this project's browser-based testing (a plain `fetch()` of the
+  sample JSON returned a long-cached pre-wordCount copy in the test browser) — confirmed it
+  was a test harness/browser-cache artifact, not a logic bug, by re-running with `fetch`
+  patched to force `cache: 'no-store'`.
+
+### Verification
+Manually verified in-browser (with `fetch` forced to bypass cache to eliminate the
+test-harness caching artifact above): a previously-seeded, untouched sample refreshes to the
+new word-count/POV content in place; an edited sample is left byte-for-byte alone; a
+deleted sample stays deleted across the version bump; and a genuinely fresh browser (no
+prior state at all) still seeds both samples exactly as before. No console errors.
+
+Additionally verified after the audit's `sampleKey` fix and import hardening (see above):
+the rename→delete→version-rollback scenario described in "Known non-obvious fixes" no
+longer resurrects the sample. `importProjectJSON()` was also driven directly with synthetic
+files: a library array with a duplicate name is rejected with the new error message; a scene
+with a string `sectionId` is rejected; and a section with a `url(...)`-style `color` value
+imports successfully with the color stripped, with `loadState()` then assigning the normal
+palette fallback on open. No console errors in any case.
+
+### Not yet done
+- Not merged to `main` — pushed to `origin/feature/updates_v7`, PR not yet opened.

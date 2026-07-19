@@ -360,7 +360,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 - `[x]` "Clear highlights" button pulses with a glow when library highlights are active,
   so it's easier to spot among the panel's other low-key controls. *(`feature/updates_v5`
   branch)*
-- `[x]*` **Merged the splash page and Overview page into one `index.html`.** Frozen header
+- `[x]` **Merged the splash page and Overview page into one `index.html`.** Frozen header
   (logo left, "Your Projects"/"Tutorial" centered) → hero (tagline + intro copy) → the six
   former-Overview feature sections, reworked as an alternating zigzag layout with
   scroll-reveal animation → the Data & Backups block → the closing contact/Get Started
@@ -370,19 +370,32 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   from a page the user is already one click from leaving wasn't wanted; the header nav and
   the closing section's own Get Started button already cover it. *(`feature/updates_v6`
   branch)*
-- `[x]*` Redesigned the splash page with a bespoke dark palette (scoped to the page, not
+- `[x]` Redesigned the splash page with a bespoke dark palette (scoped to the page, not
   tied to the app's `data-theme`), drifting color-blob animations behind the hero,
   gradient hero text, a widened zigzag feature layout with a "browser window" frame around
   every screenshot, and scroll-reveal animation that replays every time a row scrolls back
   into view (not just once) — text and image animate on staggered timing rather than the
   row fading in as one block. Respects `prefers-reduced-motion`. *(`feature/updates_v6`
   branch)*
-- `[x]*` Populated both built-in sample projects (Pride and Prejudice, The Count of Monte
+- `[x]` Populated both built-in sample projects (Pride and Prejudice, The Count of Monte
   Cristo) with per-scene word counts and POV data — neither had ever had this data, so
   "Show relative word count" and the POV report/trace features had nothing to demonstrate
   on the samples. Word counts are reasonable estimates summing close to each novel's real
   length (~122k and ~465k words); POV names are drawn from each project's existing
   character list. *(`feature/updates_v6` branch)*
+- `[x]*` **Version-tracked sample-project refresh.** The word-count/POV data above only
+  reaches a browser that seeds the samples for the first time — `ensureSampleProjects()`
+  only ever seeds once per browser, so anyone who'd already opened the app had no way to
+  get the update short of clearing `localStorage` by hand. Added a `samplesVersion` counter
+  alongside the existing `samplesSeeded` flag: a browser behind the current version gets an
+  automatic refresh on its next Projects-page visit, but only for a sample project it never
+  actually touched (`revision === 0`) — an edited copy is left alone and not silently
+  overwritten. Deleting a sample records a permanent `sampleKey` (not its display name) so a
+  version bump never resurrects it, extending the guarantee that already existed for a plain
+  page reload. A follow-up full-app audit caught and fixed a name-matching bug this
+  introduced (a rename could re-add a duplicate, or slip past `deletedSamples` entirely and
+  resurrect after a delete) and hardened JSON import along the way — see `STATUS.md` for the
+  full narrative. *(`feature/updates_v7` branch)*
 
 ---
 
@@ -397,7 +410,8 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 | `feature/updates_v3` | Merged to `main` (PR #12) — "Show relative word count" chart toggle (see `CHART_FEATURE_SPEC.md` §14); a third full-app audit's fixes (`UPDATE_ROADMAP.md` §8: a high-severity corrupt-project-load data-loss bug, save-failure alerting, wordCount clamping, a character/POV-name collision, a stale drag-insert anchor, a menu-hover bug, and several other low-severity fixes — fully closed out, nothing left open); and a "Your Data & Backups" messaging rework across Projects/Overview/Tutorial plus feature-doc refresh (Size by Word Count, a stale Undo/Redo count). See `STATUS.md` for the full narrative. |
 | `feature/updates_v4` | Merged to `main` (PR #13) — new "Trace lines" chart feature: a "Trace:" selector draws each selected library item as its own colored line through the scenes it appears in, layered on the existing snake/circle chart (see `TRACE_LINES_SPEC.md`), plus six rounds of live-feedback fixes on top of it — an exact snake lane-position fix (13.7px worst-case drift down to 0.04px), continuous no-cap tube/band scaling that always fills the tube's full width, gradual (not jumping) tube growth, a dedicated 16-color trace palette (the shared 8-color section palette was repeating colors past 8 lanes), proportional (not fixed-px) hover-highlight widening, active-state glow rings on the Trace/Sections selectors, a stale section-pin fix, and a chart section-count fix. See `STATUS.md` for the full narrative. |
 | `feature/updates_v5` | Merged to `main` (PR #14) — Scene/Scene Board divider and header polish (prominent divider color, "Scene Board" title removed, scene-count-vs-filter bug fix), the Cards/Snake/Circle view switch replacing the old chart toggle button and menu item, removal of the snake chart's redundant section legend, solid-badge scene numbers, POV drag-reorder, a "Learn about your data and backups" link on the backup banner, and Help Mode tooltip coverage for the entire chart toolbar (plus an overflow-clipping fix). See `STATUS.md` for the full narrative. |
-| `feature/updates_v6` | Pushed to `origin`, **not yet merged to `main`** — merged the splash page and Overview page into one redesigned `index.html` (dark palette, animated hero, zigzag feature rows with scroll-reveal, "browser window" screenshot framing), deleted the standalone Overview page, and added word-count/POV data to both sample projects so Word Count sizing and the POV report/trace features have something to demonstrate out of the box. See `STATUS.md` for the full narrative. |
+| `feature/updates_v6` | Merged to `main` (PR #15) — merged the splash page and Overview page into one redesigned `index.html` (dark palette, animated hero, zigzag feature rows with scroll-reveal, "browser window" screenshot framing), deleted the standalone Overview page, and added word-count/POV data to both sample projects so Word Count sizing and the POV report/trace features have something to demonstrate out of the box. See `STATUS.md` for the full narrative. |
+| `feature/updates_v7` | Pushed to `origin`, **not yet merged to `main`** — version-tracked sample-project refresh: a browser that already seeded the samples before v6's word-count/POV update now gets it automatically on its next Projects-page visit, but only for a sample it never edited; deleting a sample records its `sampleKey` so a version bump never brings it back. Plus a follow-up full-app audit's fixes: the rename/delete sample-matching bug above, `importProjectJSON()` hardening (section-color format validation, `sectionId` type check, duplicate-library-name rejection), an export-filename edge case, and dead-code cleanup (`hdr-spacer` duplicate id, retired theme-dropdown CSS/JS). See `STATUS.md` for the full narrative. |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
 on the branch noted for that item until it's merged into `main`. Items marked `[x]` (no
