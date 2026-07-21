@@ -425,10 +425,15 @@ implementation log in `STATUS.md`. Milestones M1–M7 per the spec's own numberi
   adapted for this app's multi-location scenes), a Conflicts tab in the right panel (flag
   mode, dismiss/restore), warn-dots on board/strip/ribbon cards, debounced recompute on
   every save with dismissed-fingerprint pruning.
-- `[ ]` **M7 — Polish + full verification.** Full §13 checklist across all five themes.
+- `[x]*` **M7 — Polish + full verification.** Full §13 checklist (24 items) run across
+  all five themes, against both a fresh project and a migrated sample. Found and fixed
+  a real bug along the way: the M3 Timing/Reveals dropdown buttons ("Also part of,"
+  "This scene reveals," "Requires knowing") were never wired to `toggleCkDrop()` in
+  `editor-init.js`, so they didn't open on click. See `STATUS.md` for the full
+  narrative.
 
-*(`thruLine_v1` branch — not merged to `main`; explicitly scoped to stay off `main` and
-every other branch until it's ready.)*
+*(`thruLine_v1` branch — all M1–M7 milestones complete; not merged to `main`,
+explicitly scoped to stay off `main` and every other branch until it's ready.)*
 
 ---
 
@@ -445,7 +450,7 @@ every other branch until it's ready.)*
 | `feature/updates_v5` | Merged to `main` (PR #14) — Scene/Scene Board divider and header polish (prominent divider color, "Scene Board" title removed, scene-count-vs-filter bug fix), the Cards/Snake/Circle view switch replacing the old chart toggle button and menu item, removal of the snake chart's redundant section legend, solid-badge scene numbers, POV drag-reorder, a "Learn about your data and backups" link on the backup banner, and Help Mode tooltip coverage for the entire chart toolbar (plus an overflow-clipping fix). See `STATUS.md` for the full narrative. |
 | `feature/updates_v6` | Merged to `main` (PR #15) — merged the splash page and Overview page into one redesigned `index.html` (dark palette, animated hero, zigzag feature rows with scroll-reveal, "browser window" screenshot framing), deleted the standalone Overview page, and added word-count/POV data to both sample projects so Word Count sizing and the POV report/trace features have something to demonstrate out of the box. See `STATUS.md` for the full narrative. |
 | `feature/updates_v7` | Pushed to `origin`, **not yet merged to `main`** — version-tracked sample-project refresh: a browser that already seeded the samples before v6's word-count/POV update now gets it automatically on its next Projects-page visit, but only for a sample it never edited; deleting a sample records its `sampleKey` so a version bump never brings it back. Plus a follow-up full-app audit's fixes: the rename/delete sample-matching bug above, `importProjectJSON()` hardening (section-color format validation, `sectionId` type check, duplicate-library-name rejection), an export-filename edge case, and dead-code cleanup (`hdr-spacer` duplicate id, retired theme-dropdown CSS/JS). See `STATUS.md` for the full narrative. |
-| `thruLine_v1` | In progress, **not merged to `main`** — Timeline/entity-id integration (§8 above): M1-M6 of 7 done (schema v3 migration + identity refactor, Timing/Reveals scene-form fields, Timeline view shell with chronology/manuscript/wires/lanes, chron drag + markers, conflict engine + panel + warn-dots). See `STATUS.md` for the full narrative. |
+| `thruLine_v1` | Complete (M1-M7 of 7), **not merged to `main`** — Timeline/entity-id integration (§8 above): schema v3 migration + identity refactor, Timing/Reveals scene-form fields, Timeline view shell with chronology/manuscript/wires/lanes, chron drag + markers, conflict engine + panel + warn-dots, and a full M7 verification pass (with one real bug found and fixed — a dead Timing/Reveals dropdown wiring gap). See `STATUS.md` for the full narrative. |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
 on the branch noted for that item until it's merged into `main`. Items marked `[x]` (no

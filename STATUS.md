@@ -1188,8 +1188,72 @@ Fixing the underlying data and re-saving pruned the dismissed fingerprint automa
 Board warn-dot (`.sc-warn`) confirmed rendering independent of which view is open. Console
 clean throughout.
 
+**M7 — Polish + full verification** (`editor-init.js`): ran the spec's full §13
+checklist (24 items) across all five themes and against both a fresh project and a
+migrated sample (Pride and Prejudice).
+**Bug found and fixed:** the M3 Timing/Reveals form additions (`editor.html`'s
+`ed-also-sl-btn`, `ed-reveals-btn`, `ed-requires-btn`) were wired to `toggleCkDrop()`
+in the surrounding code but never actually hooked up — `editor-init.js`'s click-wiring
+loop for the checklist-dropdown buttons only listed the pre-existing
+characters/locations/themes/misc/POV buttons (both New Scene and Edit Scene variants),
+never the three new Timing/Reveals ones. Clicking "Also part of," "This scene
+reveals," or "Requires knowing" did nothing — `toggleCkDrop` was dead code from those
+buttons' perspective, so the dropdowns could never open and those fields were
+effectively unusable via mouse. Fixed by adding the three buttons to the existing
+wiring array (`toggleCkDrop`'s `sec` parameter is unused inside the function, so any
+label works; used `'storylines'`/`'reveals'` for clarity). Caught only by actually
+clicking the rendered buttons in-browser — reading the code in isolation, both the
+button markup and `toggleCkDrop` looked correct, and it would have passed a review
+that didn't drive the UI.
+
+### M7 verification
+All 24 checklist items confirmed, live in-browser, on both a fresh project and the
+migrated Pride and Prejudice sample:
+- **1–10** (migration/import/undo/validation/identity): re-spot-checked post-fix — v3
+  schema fields present and correct on a fresh migration, `v:'3'` persisted, rename
+  propagation (via the real `saveLibEdit()` path) shows zero dirty-flag on an open
+  scene form and preserves its checkbox selections. (An earlier false-positive dirty
+  reading during this pass was traced to a test-script mistake — calling
+  `renderAllCk()` directly clears checkbox state since it renders with no `checked`
+  argument — not an app bug; the real rename path always supplies
+  `ckCurrentlyChecked()`.)
+- **11–13** (Timing/Reveals/offscreen): anchor date/time/duration round-trip via
+  save/reload confirmed on scene data directly; reveal mint-and-check add, and the
+  "Also part of"/"Requires knowing" dropdowns all confirmed working after the fix
+  above; board offscreen badge and "(N offscreen)" count confirmed.
+- **14, 14a, 14b** (Timeline shell + mode round-trip + menu state): toggle/Alt+K entry,
+  panel hide on entry, Sections-panel-collapsed state surviving a full mode
+  round-trip while Library/Scene panels restore exactly, reparented `#form-edit`
+  working identically in both board and Inspector contexts, Create→library items
+  greyed with New Scene still enabled and creating "Untitled scene N" directly in the
+  Inspector, Reset Zoom disabled in timeline mode.
+- **15–17** (true scale, wires, thread): true-scale positioning and its drag-disabled
+  behavior (chronOrder unchanged after a drag attempt) confirmed; thread picker curve
+  survives an id-based character rename.
+- **18–19** (chron drag + markers): horizontal drag reorders `chronOrder` only (board
+  order untouched) with a correct "Move scene (time)" undo label that both undoes and
+  redoes the on-screen position; vertical drag re-lanes with "Move scene (lane)";
+  marker add (via a dispatched `contextmenu` event — the `computer` tool's real
+  right-click doesn't reach the app's listener in this environment, per the known
+  quirk), rename-on-blur, delete, and the two-successive-right-clicks-no-stray-menu
+  regression all confirmed.
+- **20–22** (conflicts): built a live bilocation case (shared character, disjoint
+  locations, overlapping anchored times); "show scenes" flags chron+ribbon+board
+  cards and hovering an unrelated card does not dim the flagged ones (specificity
+  regression holds); "mark intentional" dismisses, persists in `S.dismissed`, and
+  fixing the underlying anchor auto-pruned the dismissed fingerprint on next save; an
+  offscreen scene in a bilocation conflict still flagged.
+- **23** (XSS/CSP): grepped every `innerHTML` assignment across all `.js` files —
+  every one is either a clear (`= ''`) or static markup with no entity/scene-derived
+  interpolation; CSP meta tag confirmed byte-identical to `main`. Live-set a scene
+  title and a storyline name to `<img src=x onerror=alert(1)>` — rendered as literal
+  text everywhere (board, chron strip, ribbon, lane header, conflict message), no
+  `alert` fired, console stayed clean.
+- **24** (themes): cycled ivory/slate/studio/ocean/sunset with the bilocation conflict
+  still flagged and a thread active — storyline lane colors, wires, and flag/hover
+  states stayed distinct and readable in all five.
+
 ### Not yet done
-- M7 (polish + full §13 verification across all five themes) — see
-  `SCENESETTER_V3_TIMELINE_SPEC.md`.
-- Not merged to `main` — stays on `thruLine_v1` per explicit instruction; main and all other
-  branches are untouched by this work.
+Nothing — M1–M7 are all complete. Still not merged to `main` — stays on
+`thruLine_v1` per explicit instruction; main and all other branches are untouched by
+this work.
