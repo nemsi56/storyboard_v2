@@ -91,14 +91,9 @@ if (document.getElementById('chart-host')) {
 function toggleChartView() {
   if (chartMode) closeChartView(); else openChartView();
 }
-// Cards/Snake/Circle read as one 3-way switch (see #view-toggle) even though
-// only two of the buttons live in chartType — the third state is "chart
-// isn't open at all".
-function updateViewToggleUI() {
-  document.getElementById('chart-type-cards').classList.toggle('on', !chartMode);
-  document.getElementById('chart-type-snake').classList.toggle('on', chartMode && chartType === 'snake');
-  document.getElementById('chart-type-circle').classList.toggle('on', chartMode && chartType === 'circle');
-}
+// updateViewToggleUI() — reads Cards/Snake/Circle/Timeline as one 4-way
+// switch — now lives in timeline.js (schema v3 §6.1), since it needs to know
+// about timelineMode too. Defined there so it stays a single source of truth.
 function openChartView() {
   chartMode = true;
   document.getElementById('sbscrl').style.display = 'none';

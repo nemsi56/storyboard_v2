@@ -189,6 +189,9 @@ function toggleAllPanels() {
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
 function menuNewScene() {
   closeAllMenus();
+  // In timeline mode, New Scene creates immediately with defaults instead of
+  // opening the (hidden) New Scene form — schema v3 §6.1.
+  if (typeof timelineMode !== 'undefined' && timelineMode) { tlCreateScene(); return; }
   // A pending insert-zone anchor is only meant for the very next Add Scene —
   // entering the New Scene form through the menu instead is a fresh, untargeted
   // add and must not silently splice into wherever an earlier insert-zone click
@@ -642,9 +645,13 @@ function isEditFormDirty() {
   return false;
 }
 // ── DISCARD CONFIRMATION (unsaved New/Edit scene) ─────────────────────────────
-let pendingDiscard = null; // { editActive, newLive } — what to discard if confirmed
-function openDiscardConfirm(editActive, newLive) {
-  pendingDiscard = { editActive, newLive };
+// afterDiscard is optional: when the caller has its own next step to run once
+// the user confirms discarding (e.g. timeline.js's runWithDiscardGuard —
+// switching modes or selecting a different scene), it replaces the default
+// cancelEdit()/cancelNewScene() so that step doesn't have to be duplicated.
+let pendingDiscard = null; // { editActive, newLive, afterDiscard? }
+function openDiscardConfirm(editActive, newLive, afterDiscard) {
+  pendingDiscard = { editActive, newLive, afterDiscard };
   const msgEl = document.getElementById('discard-cfm-msg');
   if (editActive) {
     const sc = S.scenes.find(s => s.id === S.editingId);
@@ -662,8 +669,9 @@ function closeDiscardConfirm() {
 }
 function confirmDiscard() {
   if (!pendingDiscard) return;
-  const { editActive, newLive } = pendingDiscard;
+  const { editActive, newLive, afterDiscard } = pendingDiscard;
   closeDiscardConfirm();
+  if (afterDiscard) { afterDiscard(); return; }
   if (editActive) cancelEdit();
   if (newLive) cancelNewScene();
 }
@@ -998,7 +1006,8 @@ function renderEditCk(sec, checked=[]) { renderCkList('ek', sec, checked); }
 // Callers that need every scene's number in the same pass (rendering all
 // cards, or all chart segments) should build this once and look up by id,
 // rather than each calling sceneDisplayNum() — which rebuilds this same
-// ordered list from scratch on every single call.
+// ordered list from scratch on every single call. manuscriptOrder() below
+// mirrors this exact grouping as a scene array — if this changes, that must too.
 function buildSceneNumMap() {
   const map = new Map();
   let ordered = S.scenes;
@@ -1014,6 +1023,20 @@ function buildSceneNumMap() {
 }
 function sceneDisplayNum(sceneId) {
   return buildSceneNumMap().get(sceneId) ?? 1;
+}
+// The manuscript order (schema v3 §5.1), as a scene array rather than a
+// number map: exactly renderBoard()'s / buildSceneNumMap()'s display order,
+// computed from data, never from the DOM. Everything timeline-related (the
+// manuscript ribbon, wires, reveal-order checks) consumes this — if
+// renderBoard()'s grouping ever changes, this function (and buildSceneNumMap
+// above) must change with it.
+function manuscriptOrder() {
+  if (!S.sections.length) return [...S.scenes];
+  const validSecIds = new Set(S.sections.map(s => s.id));
+  return [
+    ...S.scenes.filter(s => !validSecIds.has(s.sectionId)),
+    ...S.sections.flatMap(sec => S.scenes.filter(s => s.sectionId === sec.id)),
+  ];
 }
 
 // Built once per render pass (renderBoard) and shared by every card, rather
@@ -2042,6 +2065,11 @@ const ESCAPE_ACTIONS = [
   { isOpen: () => document.getElementById('sec-filter-drop')?.classList.contains('open'), close: closeSecFilter },
   { isOpen: () => !!document.querySelector('#menu-bar .mi.open'), close: closeAllMenus },
   { isOpen: () => typeof chartMode !== 'undefined' && chartMode, close: closeChartView },
+  // Timeline mode's own deselect (§6.6) takes priority over the board's scene-
+  // form Escape entry below while active, since selecting a scene there opens
+  // the very same #form-edit — deselecting must also clear the chron/ribbon
+  // selection highlight and restore the Inspector placeholder, not just cancel.
+  { isOpen: () => typeof timelineMode !== 'undefined' && timelineMode && (S.editingId !== null || tlSelectedId !== null), close: () => tlSelectScene(null) },
   { isOpen: () => S.editingId !== null || document.getElementById('tab-new')?.classList.contains('live'), close: maybeCancelSceneFormWithConfirm },
   { isOpen: () => !!searchQ, close: clearSearch },
   { isOpen: () => S.selIds.size > 0, close: clearCardSel },
@@ -2083,9 +2111,14 @@ document.addEventListener('keydown', e => {
       // Ctrl+Shift+E (Caps Lock cancels the Shift-driven uppercasing, so
       // e.key comes back lowercase 'e').
       if (e.shiftKey && e.code === 'KeyE') { e.preventDefault(); exportCurrentProject(); return; }
-      if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); return; }
-      if (e.key === '-') { e.preventDefault(); zoomOut(); return; }
-      if (e.key === '0') { e.preventDefault(); zoomReset(); return; }
+      // Board-only zoom is a no-op in timeline mode (schema v3 §6.1) — the
+      // timeline has its own zoom slider.
+      const inTimeline = typeof timelineMode !== 'undefined' && timelineMode;
+      if (!inTimeline) {
+        if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); return; }
+        if (e.key === '-') { e.preventDefault(); zoomOut(); return; }
+        if (e.key === '0') { e.preventDefault(); zoomReset(); return; }
+      }
     }
   }
   // Alt shortcuts (not in an input field, and not underneath an open modal —
@@ -2095,13 +2128,21 @@ document.addEventListener('keydown', e => {
   // Option+N → a dead key), so matching on e.key silently breaks every one of these.
   // e.code reports the physical key regardless of what the modifier composes.
   if (e.altKey && !e.ctrlKey && !e.metaKey && !inInput && !anyModalOpen()) {
+    const inTimeline = typeof timelineMode !== 'undefined' && timelineMode;
     if (e.code === 'KeyN') { e.preventDefault(); menuNewScene(); return; }
-    if (e.code === 'KeyC') { e.preventDefault(); openAddPopup('characters'); return; }
-    if (e.code === 'KeyL') { e.preventDefault(); openAddPopup('locations'); return; }
-    if (e.code === 'KeyT') { e.preventDefault(); openAddPopup('themes'); return; }
-    if (e.code === 'KeyM') { e.preventDefault(); openAddPopup('misc'); return; }
+    // Create -> Character/Location/Theme/Misc belong to board mode's library
+    // workflow — a disabled item's shortcut is a no-op in timeline mode.
+    if (!inTimeline) {
+      if (e.code === 'KeyC') { e.preventDefault(); openAddPopup('characters'); return; }
+      if (e.code === 'KeyL') { e.preventDefault(); openAddPopup('locations'); return; }
+      if (e.code === 'KeyT') { e.preventDefault(); openAddPopup('themes'); return; }
+      if (e.code === 'KeyM') { e.preventDefault(); openAddPopup('misc'); return; }
+    }
     if (e.code === 'KeyR') { e.preventDefault(); openReportModal(); return; }
     if (e.code === 'KeyV') { e.preventDefault(); toggleChartView(); return; }
+    // KeyT is already Add Theme in this codebase (contrary to the schema v3
+    // spec's assumption that it was free) — Timeline view uses Alt+K instead.
+    if (e.code === 'KeyK') { e.preventDefault(); toggleTimelineView(); return; }
   }
   if (e.key === 'Escape') {
     // Close/clear only the single front-most thing, in priority order, and

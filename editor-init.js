@@ -72,6 +72,7 @@
     closeAllMenus();
   });
   $('menu-chart').addEventListener('click', function(){ toggleChartView(); closeAllMenus(); });
+  $('menu-timeline').addEventListener('click', function(){ toggleTimelineView(); closeAllMenus(); });
 
   // Help menu
   $('mi-help-overview').addEventListener('click', function(){ window.open('index.html','_blank'); closeAllMenus(); });
@@ -145,12 +146,26 @@
   scaler.addEventListener('input', function(){ setScale(scaler.value); });
 
   // Chart view
-  $('chart-type-cards').addEventListener('click', closeChartView);
-  $('chart-type-snake').addEventListener('click', function(){ setChartType('snake'); });
-  $('chart-type-circle').addEventListener('click', function(){ setChartType('circle'); });
+  $('chart-type-cards').addEventListener('click', function(){ closeTimelineView(); closeChartView(); });
+  $('chart-type-snake').addEventListener('click', function(){ closeTimelineView(); setChartType('snake'); });
+  $('chart-type-circle').addEventListener('click', function(){ closeTimelineView(); setChartType('circle'); });
   $('chart-wc-toggle').addEventListener('click', toggleShowWordCount);
   $('chart-trace-sel').addEventListener('change', function(){ setChartTrace(this.value); });
   $('chart-print-btn').addEventListener('click', printChart);
+
+  // Timeline view (schema v3 §6)
+  $('chart-type-timeline').addEventListener('click', toggleTimelineView);
+  $('tl-axis-ordinal').addEventListener('click', function(){ setTlAxis('ordinal'); });
+  $('tl-axis-true').addEventListener('click', function(){ setTlAxis('true'); });
+  $('tl-thread-sel').addEventListener('change', function(){ setTlThread(this.value); });
+  $('tl-zoom').addEventListener('input', function(){ setTlZoom(this.value); });
+  $('tl-add-scene-btn').addEventListener('click', tlCreateScene);
+  $('tl-add-storyline-btn').addEventListener('click', addStoryline);
+  $('tl-tab-inspector').addEventListener('click', function(){ tlSwitchTab('inspector'); });
+  $('tl-tab-conflicts').addEventListener('click', function(){ tlSwitchTab('conflicts'); });
+  $('tl-conflicts-badge').addEventListener('click', function(){ tlSwitchTab('conflicts'); });
+  $('tl-chron-scroll').addEventListener('click', function(e){ if (e.target === $('tl-chron-scroll') || e.target.id === 'tl-track') tlSelectScene(null); });
+  $('tl-ms-scroll').addEventListener('click', function(e){ if (e.target === $('tl-ms-scroll') || e.target.id === 'tl-ms-row') tlSelectScene(null); });
 
   // Add-item popup
   $('ap-cancel').addEventListener('click', closeAddPopup);

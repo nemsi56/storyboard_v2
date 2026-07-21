@@ -831,4 +831,120 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-legend-swatch{display:inline-block;flex-shrink:0;width:14px;height:3px;border-radius:2px}
 .chart-legend-hint{opacity:.75;font-style:italic}
 
+/* ══ TIMELINE VIEW (schema v3 §6) ═══════════════════════════════════════════ */
+/* Board-mode's menu items disabled in timeline mode (§6.1) — reuses the menu
+   dropdown's own .di button styling, just dims/blocks it. */
+.di:disabled{opacity:.38;cursor:default;pointer-events:none}
+/* Timeline mode takes the whole stage (§6.1): hide the three left panels and
+   their resize handles (not their own collapse state — a body-level class,
+   so whatever open/collapsed state each panel had is untouched and restored
+   exactly on leaving timeline mode) and the board's own toolbar, which the
+   timeline replaces with its own header. */
+body.tl-mode #lp,body.tl-mode #sp,body.tl-mode #cp,
+body.tl-mode #lp-resize,body.tl-mode #sp-resize,body.tl-mode #cp-resize,
+body.tl-mode #sbhdr{display:none}
+
+#timeline-host{flex:1;min-width:0;display:flex;overflow:hidden}
+#tl-stage{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
+#tl-chron-hdr{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:8px 14px;border-bottom:1px solid var(--s1);background:var(--bg1)}
+#tl-axis-switch{display:flex;border:1px solid var(--s1);border-radius:7px;overflow:hidden}
+.tl-axis-btn{background:var(--s0);color:var(--sub);border:none;padding:6px 10px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer}
+.tl-axis-btn.on{background:var(--acc);color:var(--ontx)}
+.tl-axis-btn:disabled{opacity:.4;cursor:default}
+#tl-thread-wrap{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--sub);font-weight:600}
+#tl-thread-sel{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 8px;color:var(--tx);font-size:12px;font-family:inherit;cursor:pointer}
+#tl-status{font-size:11px;color:var(--sub)}
+.tl-hdr-spacer{flex:1}
+#tl-conflicts-badge{background:var(--s0);border:1px solid var(--s1);border-radius:14px;padding:5px 12px;font-size:11px;font-weight:700;color:var(--sub);cursor:pointer;font-family:inherit}
+#tl-conflicts-badge.has-warn{color:var(--rd);border-color:var(--rd)}
+#tl-add-scene-btn{background:var(--acc);color:var(--ontx);border:none;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
+.tl-zoom-ctl{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.5px;color:var(--sub);font-weight:700;text-transform:uppercase}
+.tl-zoom-ctl input[type=range]{width:90px}
+
+#tl-chron-body{flex:6 1 0;min-height:0;display:flex;overflow:hidden}
+#tl-lane-labels{flex:0 0 132px;display:flex;flex-direction:column;border-right:none;overflow-y:hidden}
+.tl-lane-label{position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:4px 10px;border-right:2px solid var(--s1);border-bottom:1px dashed var(--s1);font-size:11px;color:var(--sub);font-weight:600}
+.tl-lane-label .tl-sw{width:18px;height:3px;border-radius:2px}
+.tl-lane-label .tl-lane-name{color:var(--tx);cursor:text}
+.tl-lane-label .tl-lane-name input{width:100%;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:1px 4px;color:var(--tx);font-size:11px;font-family:inherit}
+.tl-lane-label i{font-style:normal;font-size:9px;color:var(--o0);font-weight:400}
+.tl-lane-del{position:absolute;top:3px;right:4px;background:none;border:none;color:var(--o0);cursor:pointer;font-size:12px;padding:1px 3px;line-height:1;opacity:0;transition:opacity .1s}
+.tl-lane-label:hover .tl-lane-del{opacity:1}
+.tl-lane-del:hover{color:var(--rd)}
+#tl-add-storyline-btn{margin-top:auto;background:none;border:1px dashed var(--s1);border-radius:6px;color:var(--sub);font-size:11px;font-weight:600;font-family:inherit;padding:6px;cursor:pointer;margin:6px 8px 8px}
+#tl-add-storyline-btn:hover{border-color:var(--acc);color:var(--acc)}
+
+#tl-chron-scroll{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden}
+#tl-track{position:relative;min-width:100%}
+.tl-lane-row{position:absolute;left:0;right:0;border-bottom:1px dashed var(--s1)}
+.tl-lane-row.tl-drop-target{outline:2px dashed var(--acc);outline-offset:-2px}
+
+#tl-wires-zone{flex:0 0 48px;position:relative;border-bottom:1px solid var(--s1)}
+#tl-wires{position:absolute;inset:0;pointer-events:none;z-index:5}
+
+#tl-ms-scroll{flex:2.6 1 0;min-height:0;overflow-x:auto;overflow-y:hidden;margin-left:132px;background:var(--bg1)}
+#tl-ms-row{display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start;min-width:100%;padding:10px 10px 8px;height:100%;box-sizing:border-box}
+.tl-sep{flex:0 0 auto;align-self:stretch;width:0;border-left:1px dashed var(--o0);margin:4px 2px 0;position:relative}
+.tl-sep-label{position:absolute;top:-15px;left:3px;font-size:8.5px;letter-spacing:.06em;color:var(--sub);white-space:nowrap;font-weight:700}
+
+.tl-scene,.tl-ms-card{
+  background:var(--cbg);border:1px solid var(--s1);border-radius:7px;
+  border-top:3px solid var(--c,var(--acc));cursor:pointer;
+  transition:opacity .13s,box-shadow .13s,border-color .13s;
+}
+.tl-scene{position:absolute;z-index:2;transform:translate(-50%,-50%);width:96px;padding:5px 7px 4px}
+.tl-ms-card{position:relative;flex:0 0 auto;width:96px;padding:5px 7px 4px}
+.tl-scene .tl-t,.tl-ms-card .tl-t{font-size:10.5px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--tx)}
+.tl-scene .tl-m{font-size:9px;color:var(--sub);margin-top:3px}
+.tl-ms-card .tl-ch{font-size:9px;letter-spacing:.6px;color:var(--o0);font-weight:700}
+.tl-ms-card.tl-offscreen{opacity:.4}
+.tl-scene.tl-offscreen{opacity:1}
+.tl-scene .tl-off-chip,.tl-ms-card .tl-off-chip{font-size:8px;font-weight:700;color:var(--sub);text-transform:uppercase}
+
+.tl-warn-dot{position:absolute;top:-5px;right:-5px;width:9px;height:9px;border-radius:50%;background:var(--rd);border:2px solid var(--sbg);display:none}
+.tl-scene.tl-warn .tl-warn-dot,.tl-ms-card.tl-warn .tl-warn-dot{display:block}
+
+.tl-conv-dots{position:absolute;bottom:-4px;right:-4px;display:flex;align-items:center;gap:2px}
+.tl-conv-dot{width:6px;height:6px;border-radius:50%;border:1px solid var(--sbg)}
+.tl-conv-more{font-size:8px;color:var(--o0)}
+
+body.hovering .tl-scene:not(.tl-hi):not(.tl-flag),
+body.hovering .tl-ms-card:not(.tl-hi):not(.tl-flag){opacity:.28}
+.tl-scene.tl-hi,.tl-ms-card.tl-hi{box-shadow:0 0 0 1px var(--c,var(--acc)),0 4px 14px rgba(0,0,0,.3);border-color:var(--c,var(--acc));opacity:1}
+.tl-scene.tl-sel,.tl-ms-card.tl-sel{box-shadow:0 0 0 2px var(--acc);border-color:var(--acc)}
+.tl-scene.tl-flag,.tl-ms-card.tl-flag{box-shadow:0 0 0 2px var(--rd),0 4px 14px rgba(0,0,0,.3);border-color:var(--rd);opacity:1}
+body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){opacity:.25}
+
+#tl-panel{flex:0 0 300px;background:var(--bg1);border-left:1px solid var(--s1);display:flex;flex-direction:column;min-height:0}
+.tl-panel-tabs{display:flex;border-bottom:1px solid var(--s1);flex:0 0 auto}
+.tl-panel-tab{flex:1;background:none;border:none;color:var(--sub);padding:10px;font-size:11.5px;letter-spacing:.4px;font-weight:600;font-family:inherit;cursor:pointer;border-bottom:2px solid transparent}
+.tl-panel-tab.on{color:var(--tx);border-bottom-color:var(--acc)}
+.tl-panel-body{flex:1;overflow-y:auto;min-height:0}
+.tl-panel-empty{color:var(--sub);font-size:12px;text-align:center;padding:40px 14px;font-style:italic}
+/* Visibility while reparented here is driven entirely by inline style.display
+   (timeline.js's _tlDoSelectScene) — no !important override, or the "select a
+   scene" placeholder could never actually hide the (would-be-empty) form. */
+#tl-inspector-body{padding:0}
+#tl-inspector-body .cp-form-hdr{padding:12px 12px 8px}
+#tl-inspector-body .cp-form-fields{padding:0 12px 12px}
+
+/* one-time drag toasts / popovers reused in M5, styled now so M5 doesn't need
+   another CSS pass */
+.tl-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--cbg);border:1px solid var(--s1);color:var(--tx);padding:8px 14px;border-radius:8px;font-size:12px;z-index:400;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.tl-popover{position:fixed;z-index:300;background:var(--cbg);border:1px solid var(--s1);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;width:200px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.tl-popover input[type=text]{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:6px 8px;color:var(--tx);font-family:inherit}
+.tl-popover .tl-popover-row{display:flex;justify-content:flex-end}
+.tl-popover button{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--tx);cursor:pointer;font-family:inherit}
+.tl-popover button.tl-danger{color:var(--rd)}
+.tl-marker-line{position:absolute;top:4px;bottom:0;width:0;border-left:1px dashed var(--o0);z-index:1}
+.tl-marker-label{position:absolute;top:-15px;left:4px;font-size:9px;letter-spacing:1px;color:var(--o0);white-space:nowrap;cursor:pointer;font-weight:700}
+.tl-marker-label:hover{color:var(--tx)}
+.tl-gap-divider{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--o0);z-index:1;pointer-events:none}
+.tl-gap-label{position:absolute;top:50%;left:4px;transform:translateY(-50%);font-size:9px;color:var(--o0);white-space:nowrap;font-weight:700}
+.tl-drag-ghost{position:absolute;z-index:50;pointer-events:none;opacity:.85;transform:translate(-50%,-50%);cursor:grabbing}
+.tl-ms-drag-ghost{position:fixed;z-index:300;pointer-events:none;opacity:.9;transform:translate(-50%,-50%);cursor:grabbing}
+.tl-insert-line{position:absolute;top:0;bottom:0;width:2px;background:var(--acc);z-index:3;pointer-events:none;opacity:.9;border-radius:1px}
+.tl-ms-insert-line{position:fixed;width:2px;background:var(--acc);z-index:300;pointer-events:none;opacity:.9;border-radius:1px}
+.tl-scene.tl-drag-source,.tl-ms-card.tl-drag-source{opacity:.35}
+
 

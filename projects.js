@@ -220,6 +220,7 @@ function openProject(id) {
   if (typeof secFilterIds !== 'undefined') secFilterIds.clear();
   if (typeof clearSearch === 'function') clearSearch();
   if (typeof closeChartView === 'function') closeChartView();
+  if (typeof closeTimelineView === 'function') closeTimelineView(true);
   updateProjectNameDisplay();
   initStoryboard();
   showStoryboard();
