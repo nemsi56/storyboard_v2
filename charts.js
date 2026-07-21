@@ -198,37 +198,36 @@ function sceneSectionName(scene) {
 }
 
 // ── TRACE LANES ─────────────────────────────────────────────────────────────────
-function traceItemNames() {
-  // All item names in the traced category, in stable library order.
+function traceItems() {
+  // All {id, name} entries in the traced category, in stable library order.
   if (traceCat === 'povs') {
     const used = new Set(S.scenes.flatMap(s => s.povs || []));
-    return S.characters.map(c => c.name).concat(S.povCustomNames || [])
-      .filter(n => used.has(n));
+    return povEntities().filter(e => used.has(e.id));
   }
-  return S[traceCat].map(item => item.name);
+  return S[traceCat].map(item => ({ id: item.id, name: item.name }));
 }
 
 function computeTraceLanes(scenes) {
-  // Returns { lanes: [{name, color}], overflow: number }. Lanes are only the
-  // items the user has explicitly selected in the traced category — nothing
-  // selected means no lanes (see updateChartLegend for the hint shown then).
-  // There's no small design cap on lane count: the tube widens and bands thin
-  // continuously as more are selected (see traceThickness/traceLaneWidth).
-  // LANE_SANITY_CAP only guards against a pathological selection (hundreds of
-  // items), not normal use.
+  // Returns { lanes: [{id, name, color}], overflow: number }. Lanes are only
+  // the items the user has explicitly selected in the traced category —
+  // nothing selected means no lanes (see updateChartLegend for the hint shown
+  // then). There's no small design cap on lane count: the tube widens and
+  // bands thin continuously as more are selected (see traceThickness/
+  // traceLaneWidth). LANE_SANITY_CAP only guards against a pathological
+  // selection (hundreds of items), not normal use.
   if (!traceActive()) return { lanes: [], overflow: 0 };
-  const inScenes = name => scenes.some(sc => (sc[traceCat] || []).includes(name));
+  const inScenes = id => scenes.some(sc => (sc[traceCat] || []).includes(id));
   const selected = S.selections[traceCat];
-  const names = traceItemNames().filter(n => selected.has(n) && inScenes(n));
-  const overflow = Math.max(0, names.length - LANE_SANITY_CAP);
-  return { lanes: names.slice(0, LANE_SANITY_CAP).map((name, i) => ({ name, color: TRACE_COLORS[i % TRACE_COLORS.length] })), overflow };
+  const items = traceItems().filter(e => selected.has(e.id) && inScenes(e.id));
+  const overflow = Math.max(0, items.length - LANE_SANITY_CAP);
+  return { lanes: items.slice(0, LANE_SANITY_CAP).map((e, i) => ({ id: e.id, name: e.name, color: TRACE_COLORS[i % TRACE_COLORS.length] })), overflow };
 }
 
-function computeLaneRuns(layout, name) {
+function computeLaneRuns(layout, id) {
   const numMap = buildSceneNumMap();
   const runs = [];
   layout.forEach(({ scene, offset, len }) => {
-    const has = (scene[traceCat] || []).includes(name);
+    const has = (scene[traceCat] || []).includes(id);
     if (!has) return;
     const last = runs[runs.length - 1];
     if (last && Math.abs(last.end - offset) < 0.001) {
@@ -294,7 +293,7 @@ function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane, laneW
     const len = Math.max(2, e - s - 2 * inset);
     const clone = lanePathEl.cloneNode(false);
     clone.classList.add('chart-lane');
-    clone.dataset.lane = lane.name;
+    clone.dataset.lane = lane.id;
     clone.setAttribute('stroke', lane.color);
     clone.setAttribute('stroke-width', laneW);
     clone.dataset.baseWidth = laneW; // highlightLaneLegend widens relative to this, not a fixed px value
@@ -303,9 +302,9 @@ function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane, laneW
     clone.setAttribute('stroke-dasharray', len + ' ' + Math.max(0, laneTotal - len));
     clone.setAttribute('stroke-dashoffset', String(-(s + inset)));
     clone.style.pointerEvents = 'stroke';
-    clone.addEventListener('mouseenter', e2 => { showLaneTip(e2, lane, run); highlightLaneLegend(lane.name, true); });
+    clone.addEventListener('mouseenter', e2 => { showLaneTip(e2, lane, run); highlightLaneLegend(lane.id, true); });
     clone.addEventListener('mousemove', moveChartTip);
-    clone.addEventListener('mouseleave', () => { hideChartTip(); highlightLaneLegend(lane.name, false); });
+    clone.addEventListener('mouseleave', () => { hideChartTip(); highlightLaneLegend(lane.id, false); });
     container.appendChild(clone);
   });
 }
@@ -313,13 +312,13 @@ function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane, laneW
 // than to a fixed absolute value — a fixed target (e.g. "5px") stops reading
 // as a highlight once bands are naturally that thick or thicker on their own,
 // which is common now that lanes can grow well past their old 3px max.
-function highlightLaneLegend(name, on) {
-  document.querySelectorAll('.chart-lane[data-lane="' + CSS.escape(name) + '"]').forEach(l => {
+function highlightLaneLegend(id, on) {
+  document.querySelectorAll('.chart-lane[data-lane="' + CSS.escape(String(id)) + '"]').forEach(l => {
     l.classList.toggle('chart-lane-hl', on);
     const base = parseFloat(l.dataset.baseWidth) || LANE_W_MIN;
     l.setAttribute('stroke-width', on ? base * 1.6 + 1.5 : base);
   });
-  const el = document.querySelector('.chart-legend-item[data-lane="' + CSS.escape(name) + '"]');
+  const el = document.querySelector('.chart-legend-item[data-lane="' + CSS.escape(String(id)) + '"]');
   if (el) el.classList.toggle('chart-legend-hl', on);
 }
 function showLaneTip(e, lane, run) {
@@ -450,12 +449,12 @@ function updateChartLegend(scenes, trace) {
     } else {
       trace.lanes.forEach(lane => {
         chartLegendSep(el);
-        const item = document.createElement('span'); item.className = 'chart-legend-item'; item.dataset.lane = lane.name;
+        const item = document.createElement('span'); item.className = 'chart-legend-item'; item.dataset.lane = lane.id;
         const swatch = document.createElement('span'); swatch.className = 'chart-legend-swatch'; swatch.style.background = lane.color;
         const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = lane.name;
         item.appendChild(swatch); item.appendChild(nameEl);
-        item.addEventListener('mouseenter', () => highlightLaneLegend(lane.name, true));
-        item.addEventListener('mouseleave', () => highlightLaneLegend(lane.name, false));
+        item.addEventListener('mouseenter', () => highlightLaneLegend(lane.id, true));
+        item.addEventListener('mouseleave', () => highlightLaneLegend(lane.id, false));
         el.appendChild(item);
       });
       if (trace.overflow > 0) {
@@ -706,7 +705,7 @@ function addSnakeTraceLanes(svg, N, W, trace, layout, total, thickness, laneW) {
     path.setAttribute('stroke', 'none'); path.setAttribute('fill', 'none');
     svg.appendChild(path);
     const laneTotal = path.getTotalLength();
-    const runs = computeLaneRuns(layout, lane.name);
+    const runs = computeLaneRuns(layout, lane.id);
     const mapLen = len => snakeLenToLaneLen(len, N, W, thickness, offsets[i]);
     drawLaneRuns(svg, path, laneTotal, total, runs, lane, laneW, mapLen);
   });
@@ -840,7 +839,7 @@ function addCircleTraceLanes(g, layout, cx, cy, R, total, trace, thickness, lane
     path.setAttribute('stroke', 'none'); path.setAttribute('fill', 'none');
     g.appendChild(path);
     const laneTotal = path.getTotalLength();
-    const runs = computeLaneRuns(layout, lane.name);
+    const runs = computeLaneRuns(layout, lane.id);
     drawLaneRuns(g, path, laneTotal, total, runs, lane, laneW);
   });
 }

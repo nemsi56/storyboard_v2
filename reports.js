@@ -183,6 +183,16 @@ function rptFieldRow(label, val) {
 function rptTagsHtml(arr, cls) {
   return arr.map(t => `<span class="tag ${cls}">${rptEsc(t)}</span>`).join('');
 }
+// Scene ref arrays hold ids now — resolve to display names just before
+// building HTML, rather than threading name resolution through every caller.
+function rptNamesOf(ids, lib) {
+  const map = new Map(S[lib].map(x => [x.id, x.name]));
+  return (ids || []).map(id => map.get(id)).filter(Boolean);
+}
+function rptPovNamesOf(ids) {
+  const map = new Map([...S.characters.map(c => [c.id, c.name]), ...S.povCustom.map(p => [p.id, p.name])]);
+  return (ids || []).map(id => map.get(id)).filter(Boolean);
+}
 
 function buildSceneListReport(secSet) {
   const inc = {
@@ -208,32 +218,39 @@ function buildSceneListReport(secSet) {
       if (inc.section)                       html += rptFieldRow('Section',    rptEsc(rptSecName(sc.sectionId)));
       if (inc.summary    && sc.summary)      html += rptFieldRow('Summary',    rptEsc(sc.summary));
       if (inc.notes      && sc.notes)        html += rptFieldRow('Notes',      rptEsc(sc.notes));
-      if (inc.characters && sc.characters?.length) html += rptFieldRow('Characters', rptTagsHtml(sc.characters, 'tag-c'));
-      if (inc.locations  && sc.locations?.length)  html += rptFieldRow('Locations',  rptTagsHtml(sc.locations,  'tag-l'));
-      if (inc.themes     && sc.themes?.length)     html += rptFieldRow('Themes',      rptTagsHtml(sc.themes,     'tag-t'));
-      if (inc.misc       && sc.misc?.length)       html += rptFieldRow('Misc Items',  rptTagsHtml(sc.misc,       'tag-m'));
-      if (inc.pov        && sc.povs?.length)       html += rptFieldRow('POV',         rptTagsHtml(sc.povs,       'tag-p'));
+      if (inc.characters && sc.characters?.length) html += rptFieldRow('Characters', rptTagsHtml(rptNamesOf(sc.characters, 'characters'), 'tag-c'));
+      if (inc.locations  && sc.locations?.length)  html += rptFieldRow('Locations',  rptTagsHtml(rptNamesOf(sc.locations,  'locations'),  'tag-l'));
+      if (inc.themes     && sc.themes?.length)     html += rptFieldRow('Themes',      rptTagsHtml(rptNamesOf(sc.themes,     'themes'),     'tag-t'));
+      if (inc.misc       && sc.misc?.length)       html += rptFieldRow('Misc Items',  rptTagsHtml(rptNamesOf(sc.misc,       'misc'),       'tag-m'));
+      if (inc.pov        && sc.povs?.length)       html += rptFieldRow('POV',         rptTagsHtml(rptPovNamesOf(sc.povs),                  'tag-p'));
       html += `</div>`;
     });
   }
   return html + '</body></html>';
 }
 
+// extraMeta resolves the OTHER category's ids to names for display — every
+// scene ref array (characters/locations/themes/misc/povs) holds ids now, so
+// a raw sc.locations.map(rptEsc) would print ids instead of names.
+const rptResolveNames = (ids, lib) => {
+  const map = new Map(S[lib].map(x => [x.id, x.name]));
+  return (ids || []).map(id => map.get(id)).filter(Boolean).map(rptEsc).join(', ');
+};
 const LIB_RPT_CFG = {
   character: { key:'characters', prefix:'rpt-ch', title:'Character Report', emptyMsg:'No characters in library.', emptyScene:'Does not appear in selected scenes',
-               extraMeta: (inc, sc) => inc.location && sc.locations?.length ? sc.locations.map(rptEsc).join(', ') : null },
+               extraMeta: (inc, sc) => inc.location && sc.locations?.length ? rptResolveNames(sc.locations, 'locations') : null },
   location:  { key:'locations',  prefix:'rpt-lo', title:'Location Report',  emptyMsg:'No locations in library.',  emptyScene:'Not used in selected scenes',
-               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
+               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? rptResolveNames(sc.characters, 'characters') : null },
   theme:     { key:'themes',     prefix:'rpt-th', title:'Theme Report',     emptyMsg:'No themes in library.',     emptyScene:'Not present in selected scenes',
-               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
+               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? rptResolveNames(sc.characters, 'characters') : null },
   misc:      { key:'misc',       prefix:'rpt-mi', title:'Misc Items Report',emptyMsg:'No misc items in library.', emptyScene:'Not present in selected scenes',
-               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
-  // POV isn't a real library array (S.povs doesn't exist) — names come from the
-  // Character library plus S.povCustomNames, so `items` supplies the {name} list
-  // in place of S[key], and there's no per-item Notes field to show.
+               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? rptResolveNames(sc.characters, 'characters') : null },
+  // POV isn't a real library array (S.povs doesn't exist) — entities come from
+  // the Character library plus S.povCustom, so `items` supplies the {id,name}
+  // list in place of S[key], and there's no per-item Notes field to show.
   pov:       { key:'povs',       prefix:'rpt-pv', title:'POV Report',       emptyMsg:'No POV assigned to any scene.', emptyScene:'Not POV in selected scenes',
-               items: () => usedPovNames().map(name => ({ name })),
-               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
+               items: () => usedPovEntities(),
+               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? rptResolveNames(sc.characters, 'characters') : null },
 };
 
 function buildLibItemReport(secSet, type) {
@@ -252,7 +269,7 @@ function buildLibItemReport(secSet, type) {
     html += `<p style="color:#aaa;margin-top:20px;font-style:italic">${cfg.emptyMsg}</p>`;
   } else {
     items.forEach(item => {
-      const appears = scenes.filter(sc => (sc[cfg.key] || []).includes(item.name));
+      const appears = scenes.filter(sc => (sc[cfg.key] || []).includes(item.id));
       html += `<h2>${rptEsc(item.name)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
       if (inc.notes && item.notes) html += `<div class="scene-entry-summary" style="margin:-4px 0 8px">${rptEsc(item.notes)}</div>`;
       if (!appears.length) {
@@ -293,8 +310,8 @@ function buildMatrixReport(secSet) {
   const scenes    = rptFilterScenes(secSet);
   const numMap    = buildSceneNumMap();
   // POV isn't a real library array (S.povs doesn't exist) — build its axis items
-  // from the names actually assigned as POV, same as the POV item report above.
-  const axisItems = axis === 'povs' ? usedPovNames().map(name => ({ name })) : (S[axis] || []);
+  // from the entities actually assigned as POV, same as the POV item report above.
+  const axisItems = axis === 'povs' ? usedPovEntities() : (S[axis] || []);
   const axisLabel = axis === 'povs' ? 'POV' : (SECS.find(s => s.key === axis)?.label || axis);
   const title     = flip ? `Cross-Reference: Scenes × ${axisLabel}` : `Cross-Reference: ${axisLabel} × Scenes`;
   let html = rptPageHeader(title);
@@ -316,7 +333,7 @@ function buildMatrixReport(secSet) {
       const secStr = showSec ? ` <span class="mx-scene-sec" style="font-weight:400">· ${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
       html += `<tr><td class="mx-row-hdr" style="width:200px;max-width:200px"><div class="mx-row-wrap"><span class="mx-row-num">${numMap.get(sc.id) ?? 1} —</span><span class="mx-row-title">${rptEsc(sc.title||'(Untitled)')}${secStr}</span></div></td>`;
       axisItems.forEach(item => {
-        html += (sc[axis] || []).includes(item.name) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
+        html += (sc[axis] || []).includes(item.id) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
       });
       html += `</tr>`;
     });
@@ -332,7 +349,7 @@ function buildMatrixReport(secSet) {
     axisItems.forEach(item => {
       html += `<tr><td class="mx-row-hdr">${rptEsc(item.name)}</td>`;
       scenes.forEach(sc => {
-        html += (sc[axis] || []).includes(item.name) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
+        html += (sc[axis] || []).includes(item.id) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
       });
       html += `</tr>`;
     });

@@ -1,8 +1,12 @@
 'use strict';
 
 // ── PERSISTENCE ───────────────────────────────────────────────────────────────
-const DATA_VERSION = '2';
-const STORAGE_KEY  = 'storyboard_v' + DATA_VERSION;
+const DATA_VERSION = '3';
+// Fossil key from the last single-project (pre scriptease_proj_<id>) era, when
+// DATA_VERSION was '2' — frozen here rather than derived from DATA_VERSION, or
+// bumping DATA_VERSION would stop the legacy bootstrap below from ever finding
+// a real pre-multi-project user's data again.
+const STORAGE_KEY  = 'storyboard_v2';
 const LEGACY_KEY   = 'storyboard_v1';
 const PROJECT_INDEX_KEY = 'scriptease_projects';
 const GLOBAL_PREFS_KEY  = 'scriptease_prefs';
@@ -72,8 +76,16 @@ function saveState() {
       lastDataEditAt: S.lastDataEditAt,
       lastExportedAt: S.lastExportedAt, editsSinceExport: S.editsSinceExport,
       projectUid: S.projectUid, revision: S.revision,
-      povCustomNames: S.povCustomNames,
+      nextEntId: S.nextEntId,
+      povCustom: S.povCustom,
       povOrder: S.povOrder,
+      storylines: S.storylines,
+      revealsLib: S.revealsLib,
+      constraints: S.constraints,
+      markers: S.markers,
+      chronOrder: S.chronOrder,
+      dismissed: S.dismissed,
+      timelinePrefs: S.timelinePrefs,
     }));
     const index = loadProjectIndex();
     const entry = index.find(p => p.id === currentProjectId);
@@ -84,6 +96,7 @@ function saveState() {
       saveProjectIndex(index);
     }
     updateProjectNameDisplay();
+    if (typeof scheduleConflictsRecompute === 'function') scheduleConflictsRecompute();
   } catch(e) {
     const isQuotaErr = e.name === 'QuotaExceededError';
     console.warn('Storage error:', isQuotaErr ? 'quota exceeded' : e.message);
@@ -101,6 +114,91 @@ function saveState() {
   }
 }
 
+// Migrate a parsed v2 project object to v3 in place (schema v3 spec §3.2):
+// library entities/custom POVs gain ids, scene ref arrays switch from name to
+// id arrays, and the timeline fields (storylines/chronOrder/etc) are seeded
+// with defaults. Returns d, mutated, with d.v === '3'.
+function migrateV2toV3(d) {
+  d.nextEntId = 1;
+  const toObj = arr => (arr || []).map(x => typeof x === 'string' ? { name: x, notes: '' } : x);
+  const libMaps = {};
+  ['characters', 'locations', 'themes', 'misc'].forEach(lib => {
+    const entries = toObj(d[lib]);
+    const map = new Map(); // first entry with a given name wins the name -> id mapping
+    entries.forEach(e => {
+      e.id = d.nextEntId++;
+      if (!map.has(e.name)) map.set(e.name, e.id);
+    });
+    d[lib] = entries;
+    libMaps[lib] = map;
+  });
+  const charMap = libMaps.characters;
+  const povMap = new Map();
+  d.povCustom = (d.povCustomNames || []).map(name => {
+    const id = d.nextEntId++;
+    povMap.set(name, id);
+    return { id, name };
+  });
+  delete d.povCustomNames;
+
+  (d.scenes || []).forEach(sc => {
+    ['characters', 'locations', 'themes', 'misc'].forEach(lib => {
+      const map = libMaps[lib];
+      sc[lib] = (sc[lib] || []).map(name => map.get(name)).filter(id => id !== undefined);
+    });
+    const povs = Array.isArray(sc.povs) ? sc.povs : [];
+    sc.povs = povs.map(name => {
+      if (charMap.has(name)) return charMap.get(name);
+      if (povMap.has(name)) return povMap.get(name);
+      const id = d.nextEntId++;
+      povMap.set(name, id);
+      d.povCustom.push({ id, name });
+      return id;
+    });
+  });
+  d.povOrder = (Array.isArray(d.povOrder) ? d.povOrder : [])
+    .map(name => (charMap.has(name) ? charMap.get(name) : povMap.get(name)))
+    .filter(id => id !== undefined);
+
+  // Duplicate names within one library: the first entry keeps the name->id
+  // mapping (above); any other entry with that name is a shadowed duplicate —
+  // drop it unless a scene ref still points at its own (non-canonical) id.
+  ['characters', 'locations', 'themes', 'misc'].forEach(lib => {
+    const map = libMaps[lib];
+    const usedIds = new Set();
+    (d.scenes || []).forEach(sc => (sc[lib] || []).forEach(id => usedIds.add(id)));
+    d[lib] = d[lib].filter(e => usedIds.has(e.id) || map.get(e.name) === e.id);
+  });
+
+  const mainId = d.nextEntId++;
+  d.storylines = [{ id: mainId, name: 'Main', paletteIndex: 0 }];
+  (d.scenes || []).forEach(sc => {
+    sc.storylineId = mainId;
+    sc.alsoStorylineIds = [];
+    sc.anchor = null;
+    sc.durationMin = null;
+    sc.offscreen = false;
+    sc.reveals = [];
+    sc.requires = [];
+  });
+  d.revealsLib = [];
+  d.constraints = [];
+  d.markers = [];
+  d.dismissed = [];
+  d.timelinePrefs = { axis: 'ordinal', threadCharId: null, pxPerScene: 110 };
+
+  // chronOrder = manuscript order at migration time: Unassigned group first
+  // (in d.scenes array order), then each section in d.sections array order —
+  // exactly what renderBoard() displayed pre-migration.
+  const validSecIds = new Set((d.sections || []).map(s => s.id));
+  const unassigned = (d.scenes || []).filter(s => !validSecIds.has(s.sectionId));
+  const bySection = (d.sections || []).flatMap(sec => (d.scenes || []).filter(s => s.sectionId === sec.id));
+  d.chronOrder = [...unassigned, ...bySection].map(s => s.id);
+
+  d.v = '3';
+  return d;
+}
+
 function loadState(storageKey) {
   try {
     const key = storageKey || STORAGE_KEY;
@@ -112,7 +210,7 @@ function loadState(storageKey) {
       const od = JSON.parse(old);
       if (!od || od.v !== '1') return false;
       raw = JSON.stringify({
-        v: DATA_VERSION,
+        v: '2',
         characters: od.characters||[], locations: od.locations||[], themes: od.themes||[], misc: od.misc||[],
         scenes: (od.scenes||[]).map(sc => ({...sc, sectionId: null})),
         nextId: od.nextId||1, andOr: od.andOr, theme: od.theme,
@@ -121,23 +219,18 @@ function loadState(storageKey) {
       migrated = true;
     }
     if (!raw) return false;
-    const d = JSON.parse(raw);
-    if (!d || d.v !== DATA_VERSION) return false;
-    const toObj = arr => (arr || []).map(x => typeof x === 'string' ? { name: x, notes: '' } : x);
-    S.characters = toObj(d.characters);
-    S.locations  = toObj(d.locations);
-    S.themes     = toObj(d.themes);
-    S.misc       = toObj(d.misc);
+    let d = JSON.parse(raw);
+    if (!d) return false;
+    if (d.v === '2') { d = migrateV2toV3(d); migrated = true; }
+    if (d.v !== DATA_VERSION) return false;
+    S.characters = d.characters || [];
+    S.locations  = d.locations  || [];
+    S.themes     = d.themes     || [];
+    S.misc       = d.misc       || [];
     S.scenes = (d.scenes || []).map(sc => {
-      // POV was a single string before multi-POV support; migrate old data
-      // into the new array shape and drop the legacy key.
-      const povs = Array.isArray(sc.povs)
-        ? sc.povs.filter(v => typeof v === 'string')
-        : (typeof sc.pov === 'string' && sc.pov ? [sc.pov] : []);
-      const { pov, ...rest } = sc;
-      const arr = v => Array.isArray(v) ? v : [];
+      const arr = v => Array.isArray(v) ? v.filter(x => Number.isInteger(x)) : [];
       return {
-        ...rest,
+        ...sc,
         characters: arr(sc.characters), locations: arr(sc.locations),
         themes: arr(sc.themes),         misc: arr(sc.misc),
         sectionId: sc.sectionId ?? null,
@@ -148,7 +241,13 @@ function loadState(storageKey) {
         // unset, but stored reports/exports shouldn't carry a nonsensical
         // negative or fractional number).
         wordCount: normalizeWordCount(sc.wordCount),
-        povs,
+        povs: arr(sc.povs),
+        storylineId: sc.storylineId,
+        alsoStorylineIds: arr(sc.alsoStorylineIds),
+        anchor: (sc.anchor && typeof sc.anchor === 'object') ? { date: sc.anchor.date, time: sc.anchor.time ?? null } : null,
+        durationMin: (Number.isInteger(sc.durationMin) && sc.durationMin > 0) ? sc.durationMin : null,
+        offscreen: !!sc.offscreen,
+        reveals: arr(sc.reveals), requires: arr(sc.requires),
       };
     });
     S.nextId    = d.nextId    || 1;
@@ -166,6 +265,7 @@ function loadState(storageKey) {
     S.editsSinceExport = d.editsSinceExport || 0;
     S.projectUid = d.projectUid || null;
     S.revision   = d.revision || 0;
+    S.nextEntId  = d.nextEntId || 1;
     // A name in both the Character library and here isn't just redundant — it
     // renders twice in every POV dropdown, and the read-only Library-panel POV
     // row hands a character's entry the custom-name edit/delete handlers
@@ -174,24 +274,62 @@ function loadState(storageKey) {
     // against creating this overlap going forward, but stored/imported data
     // from before those guards existed (or a hand-edited file) can already
     // have it — drop those on load rather than re-fixing it in every UI entry
-    // point that reads povCustomNames.
-    const charNames = new Set(S.characters.map(c => c.name));
-    S.povCustomNames = (d.povCustomNames || []).filter(n => !charNames.has(n));
-    // Fold in any scene's POV name that predates this list (older exports,
-    // or a since-removed character) so it's immediately a normal, reusable
-    // checklist option rather than only recognized once that scene is opened.
-    S.scenes.forEach(sc => {
-      (sc.povs || []).forEach(name => {
-        if (!S.characters.some(c => c.name === name) && !S.povCustomNames.includes(name)) {
-          S.povCustomNames.push(name);
-        }
-      });
+    // point that reads povCustom, rewriting any scene reference from the
+    // dropped custom id to the character's id.
+    const charByName = new Map(S.characters.map(c => [c.name, c.id]));
+    const droppedPovIds = new Map();
+    S.povCustom = (Array.isArray(d.povCustom) ? d.povCustom : []).filter(p => {
+      if (charByName.has(p.name)) { droppedPovIds.set(p.id, charByName.get(p.name)); return false; }
+      return true;
     });
+    if (droppedPovIds.size) {
+      S.scenes.forEach(sc => { sc.povs = sc.povs.map(id => droppedPovIds.has(id) ? droppedPovIds.get(id) : id); });
+    }
+    // Any POV id that resolves to neither a character nor a custom POV entry
+    // (stale data from before an id existed, or a hand-edited file) can't be
+    // repaired without a name to attach it to — drop it, same as any other
+    // stale-id-treated-as-absent site (the validSecIds pattern).
+    const povIdSet = new Set([...S.characters.map(c => c.id), ...S.povCustom.map(p => p.id)]);
+    S.scenes.forEach(sc => { sc.povs = sc.povs.filter(id => povIdSet.has(id)); });
     // Manual drag order for the Library panel's POV row (see
-    // orderedUsedPovNames in editor.js) — append-only, so names missing here
+    // orderedUsedPovEntities in editor.js) — append-only, so ids missing here
     // (older saves, or a hand-edited file) just fall back to the panel's
     // default order until dragged, rather than being rejected.
-    S.povOrder = (Array.isArray(d.povOrder) ? d.povOrder : []).filter(n => typeof n === 'string');
+    S.povOrder = (Array.isArray(d.povOrder) ? d.povOrder : []).filter(id => Number.isInteger(id));
+
+    S.storylines = Array.isArray(d.storylines) && d.storylines.length ? d.storylines : [{ id: S.nextEntId++, name: 'Main', paletteIndex: 0 }];
+    S.revealsLib = Array.isArray(d.revealsLib) ? d.revealsLib : [];
+    S.constraints = Array.isArray(d.constraints) ? d.constraints : [];
+    S.markers = Array.isArray(d.markers) ? d.markers : [];
+    S.dismissed = Array.isArray(d.dismissed) ? d.dismissed.filter(x => typeof x === 'string') : [];
+    const tp = (d.timelinePrefs && typeof d.timelinePrefs === 'object') ? d.timelinePrefs : {};
+    S.timelinePrefs = {
+      axis: tp.axis === 'true' ? 'true' : 'ordinal',
+      threadCharId: Number.isInteger(tp.threadCharId) && S.characters.some(c => c.id === tp.threadCharId) ? tp.threadCharId : null,
+      pxPerScene: Number.isInteger(tp.pxPerScene) && tp.pxPerScene >= 70 && tp.pxPerScene <= 200 ? tp.pxPerScene : 110,
+    };
+
+    // Every-load invariant repair (schema v3 §3.3, port of ThruLine's
+    // enforceInvariants minus its msOrder section — manuscript order here is
+    // derived from the board, never stored).
+    const stIds = new Set(S.storylines.map(st => st.id));
+    S.scenes.forEach(s => { if (!stIds.has(s.storylineId)) s.storylineId = S.storylines[0].id; });
+    S.scenes.forEach(s => {
+      const out = []; const seenSt = new Set();
+      (s.alsoStorylineIds || []).forEach(id => {
+        if (id === s.storylineId || seenSt.has(id)) return;
+        seenSt.add(id); out.push(id);
+      });
+      s.alsoStorylineIds = out;
+    });
+    const sceneIdSet = new Set(S.scenes.map(s => s.id));
+    const seenChron = new Set();
+    S.chronOrder = (Array.isArray(d.chronOrder) ? d.chronOrder : []).filter(id => {
+      if (!sceneIdSet.has(id) || seenChron.has(id)) return false;
+      seenChron.add(id); return true;
+    });
+    S.scenes.forEach(s => { if (!seenChron.has(s.id)) { S.chronOrder.push(s.id); seenChron.add(s.id); } });
+
     if (migrated) saveState();
     return true;
   } catch(e) {
@@ -221,8 +359,16 @@ const S = {
   editsSinceExport: 0,
   projectUid: null,
   revision: 0,
-  povCustomNames: [],
+  nextEntId: 1,
+  povCustom: [],
   povOrder: [],
+  storylines: [],
+  revealsLib: [],
+  constraints: [],
+  markers: [],
+  chronOrder: [],
+  dismissed: [],
+  timelinePrefs: { axis: 'ordinal', threadCharId: null, pxPerScene: 110 },
 };
 
 // ── HISTORY (undo / redo) ─────────────────────────────────────────────────────
@@ -240,12 +386,24 @@ function snapshot() {
       characters:[...s.characters], locations:[...s.locations],
       themes:[...s.themes],         misc:[...s.misc],
       povs:[...(s.povs||[])],
+      alsoStorylineIds:[...(s.alsoStorylineIds||[])],
+      reveals:[...(s.reveals||[])], requires:[...(s.requires||[])],
+      anchor: s.anchor ? {...s.anchor} : null,
     })),
     nextId: S.nextId,
     sections: S.sections.map(s => ({...s})),
     nextSecId: S.nextSecId,
-    povCustomNames: [...S.povCustomNames],
+    nextEntId: S.nextEntId,
+    povCustom: dupe(S.povCustom),
     povOrder: [...S.povOrder],
+    storylines: dupe(S.storylines),
+    revealsLib: dupe(S.revealsLib),
+    constraints: dupe(S.constraints),
+    markers: dupe(S.markers),
+    chronOrder: [...S.chronOrder],
+    dismissed: [...S.dismissed],
+    // timelinePrefs is deliberately excluded — view state, not data (mirrors
+    // ThruLine's viewPrefs-outside-undo rule).
   };
 }
 
@@ -265,14 +423,24 @@ function applySnapshot(snap) {
     characters:[...s.characters], locations:[...s.locations],
     themes:[...s.themes],         misc:[...s.misc],
     povs:[...(s.povs||[])],
+    alsoStorylineIds:[...(s.alsoStorylineIds||[])],
+    reveals:[...(s.reveals||[])], requires:[...(s.requires||[])],
+    anchor: s.anchor ? {...s.anchor} : null,
   }));
   S.nextId    = snap.nextId;
   S.sections  = (snap.sections || []).map(s => ({...s}));
   S.nextSecId = snap.nextSecId || 1;
-  S.povCustomNames = [...(snap.povCustomNames || [])];
+  S.nextEntId = snap.nextEntId || 1;
+  S.povCustom = dupe(snap.povCustom || []);
   S.povOrder = [...(snap.povOrder || [])];
+  S.storylines = dupe(snap.storylines || []);
+  S.revealsLib = dupe(snap.revealsLib || []);
+  S.constraints = dupe(snap.constraints || []);
+  S.markers = dupe(snap.markers || []);
+  S.chronOrder = [...(snap.chronOrder || [])];
+  S.dismissed = [...(snap.dismissed || [])];
   SECS.forEach(({ key }) => {
-    S.selections[key] = new Set([...S.selections[key]].filter(v => S[key].some(x => x.name === v)));
+    S.selections[key] = new Set([...S.selections[key]].filter(v => S[key].some(x => x.id === v)));
   });
   const usedPovs = new Set(S.scenes.flatMap(s => s.povs || []));
   S.selections.povs = new Set([...S.selections.povs].filter(v => usedPovs.has(v)));

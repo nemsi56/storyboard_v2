@@ -59,7 +59,7 @@ function closeAddPopup() {
 // exactly what was checked instead of resetting to nothing.
 function ckCurrentlyChecked(prefix, sec) {
   const box = document.getElementById(prefix + '-' + sec);
-  return box ? [...box.querySelectorAll('input:checked')].map(c => c.value) : [];
+  return box ? [...box.querySelectorAll('input:checked')].map(c => parseInt(c.value, 10)) : [];
 }
 function confirmAdd() {
   if (!apSec) return;
@@ -68,21 +68,22 @@ function confirmAdd() {
   const notes = document.getElementById('ap-notes').value.trim();
   if (!name) { inp.focus(); return; }
   // A character name and a custom POV name share one combined list in every
-  // POV dropdown (see povNames()) — colliding would render two identical
+  // POV dropdown (see povEntities()) — colliding would render two identical
   // checkboxes and let renderPovLibSec's custom-name edit/delete handlers
   // attach to what's actually a character row. confirmPovAdd already guards
   // this in the other direction; mirror it here.
-  if (S[apSec].some(x => x.name === name) || (apSec === 'characters' && S.povCustomNames.includes(name))) {
+  if (S[apSec].some(x => x.name === name) || (apSec === 'characters' && S.povCustom.some(p => p.name === name))) {
     inp.select(); return;
   }
   pushHistory('Add ' + SINGULAR[apSec] + ' "' + name + '"');
   trackItemAdded(apSec);
-  S[apSec].push({ name, notes });
+  const newId = S.nextEntId++;
+  S[apSec].push({ id: newId, name, notes });
   const newCkChecked = ckCurrentlyChecked('ck', apSec);
   const newEkChecked = ckCurrentlyChecked('ek', apSec);
   if (apReturnCk && apReturnCk.sec === apSec) {
-    if (apReturnCk.prefix === 'ck') newCkChecked.push(name);
-    if (apReturnCk.prefix === 'ek') newEkChecked.push(name);
+    if (apReturnCk.prefix === 'ck') newCkChecked.push(newId);
+    if (apReturnCk.prefix === 'ek') newEkChecked.push(newId);
   }
   renderLibSec(apSec); renderCk(apSec, newCkChecked); renderEditCk(apSec, newEkChecked);
   if (apSec === 'characters') {
@@ -235,20 +236,26 @@ function updateLibClearBtn() {
 }
 
 // ── REMOVE LIB ITEM ───────────────────────────────────────────────────────────
-function removeItem(sec, name) {
-  pushHistory('Remove "' + name + '"');
-  S[sec] = S[sec].filter(x => x.name !== name);
-  S.scenes.forEach(sc => { sc[sec] = (sc[sec] || []).filter(x => x !== name); });
-  S.selections[sec].delete(name);
+function removeItem(sec, id) {
+  const item = S[sec].find(x => x.id === id); if (!item) return;
+  pushHistory('Remove "' + item.name + '"');
+  S[sec] = S[sec].filter(x => x.id !== id);
+  S.scenes.forEach(sc => { sc[sec] = (sc[sec] || []).filter(x => x !== id); });
+  S.selections[sec].delete(id);
   // Deliberately NOT clearing a scene's povs when the matching character is
   // removed — keep it selectable as a plain custom POV name instead of
   // losing the assignment, since a removed library character may still be
-  // the intended POV.
-  if (sec === 'characters' && S.scenes.some(sc => (sc.povs || []).includes(name)) && !S.povCustomNames.includes(name)) {
-    S.povCustomNames.push(name);
+  // the intended POV. The POV id itself must change (a character id is no
+  // longer a valid POV once the character is gone), so scenes still pointing
+  // at it are rewritten to a freshly minted custom POV entry of the same name.
+  if (sec === 'characters' && S.scenes.some(sc => (sc.povs || []).includes(id))) {
+    const newPovId = S.nextEntId++;
+    S.povCustom.push({ id: newPovId, name: item.name });
+    S.scenes.forEach(sc => { sc.povs = (sc.povs || []).map(v => v === id ? newPovId : v); });
   }
-  const newCkChecked = ckCurrentlyChecked('ck', sec).filter(v => v !== name);
-  const newEkChecked = ckCurrentlyChecked('ek', sec).filter(v => v !== name);
+  if (sec === 'characters' && S.timelinePrefs.threadCharId === id) S.timelinePrefs.threadCharId = null;
+  const newCkChecked = ckCurrentlyChecked('ck', sec).filter(v => v !== id);
+  const newEkChecked = ckCurrentlyChecked('ek', sec).filter(v => v !== id);
   renderLibSec(sec); renderCk(sec, newCkChecked); renderEditCk(sec, newEkChecked); renderBoard(); updateLibClearBtn();
   if (sec === 'characters') {
     renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
@@ -293,10 +300,10 @@ function openLibEditModal(sec, idx) {
 // get their own opener (sharing the same modal DOM) rather than overloading
 // openLibEditModal, which assumes a SECS-configured {name, notes} array.
 function openPovEditModal(idx) {
-  const name = S.povCustomNames[idx]; if (name === undefined) return;
+  const entry = S.povCustom[idx]; if (!entry) return;
   libEditSec = 'povCustom'; libEditIdx = idx;
   document.getElementById('lib-edit-hdr').textContent = 'Edit POV Name';
-  document.getElementById('lib-edit-name').value = name;
+  document.getElementById('lib-edit-name').value = entry.name;
   document.getElementById('lib-edit-notes-wrap').style.display = 'none';
   document.getElementById('lib-edit-modal').classList.add('open');
   setTimeout(() => document.getElementById('lib-edit-name').focus(), 60);
@@ -305,6 +312,9 @@ function closeLibEditModal() {
   document.getElementById('lib-edit-modal').classList.remove('open');
   libEditSec = null; libEditIdx = null;
 }
+// Renaming no longer needs to propagate anywhere: scene refs, selections, and
+// checklist values all hold this item's id, which a rename never changes —
+// every render resolves the current name fresh from S[sec] (schema v3 §4.2).
 function saveLibEdit() {
   if (libEditSec === 'povCustom') { savePovEdit(); return; }
   if (libEditSec === null || libEditIdx === null) return;
@@ -315,117 +325,87 @@ function saveLibEdit() {
   const newNotes = document.getElementById('lib-edit-notes').value.trim();
   if (!newName) { document.getElementById('lib-edit-name').focus(); return; }
   // Same collision as confirmAdd: renaming a character onto an existing
-  // custom POV name would create the same characters/povCustomNames overlap.
-  const povCollision = sec === 'characters' && S.povCustomNames.includes(newName);
+  // custom POV name would create the same characters/povCustom overlap.
+  const povCollision = sec === 'characters' && S.povCustom.some(p => p.name === newName);
   if (newName !== oldName && (povCollision || S[sec].some((x, i) => i !== libEditIdx && x.name === newName))) {
     document.getElementById('lib-edit-name').select(); return;
   }
   pushHistory('Edit "' + oldName + '"');
   item.name  = newName;
   item.notes = newNotes;
-  if (newName !== oldName) {
-    S.scenes.forEach(scene => {
-      const i = (scene[sec] || []).indexOf(oldName);
-      if (i !== -1) scene[sec][i] = newName;
-      if (sec === 'characters' && Array.isArray(scene.povs)) {
-        const pi = scene.povs.indexOf(oldName);
-        if (pi !== -1) scene.povs[pi] = newName;
-      }
-    });
-    if (S.selections[sec].has(oldName)) {
-      S.selections[sec].delete(oldName);
-      S.selections[sec].add(newName);
-    }
-    if (sec === 'characters' && S.selections.povs.has(oldName)) {
-      S.selections.povs.delete(oldName);
-      S.selections.povs.add(newName);
-    }
-  }
-  const renameInList = arr => arr.map(v => v === oldName ? newName : v);
-  const newCkChecked = renameInList(ckCurrentlyChecked('ck', sec));
-  const newEkChecked = renameInList(ckCurrentlyChecked('ek', sec));
   closeLibEditModal();
-  renderLibSec(sec); renderCk(sec, newCkChecked); renderEditCk(sec, newEkChecked); renderBoard();
+  renderLibSec(sec); renderCk(sec, ckCurrentlyChecked('ck', sec)); renderEditCk(sec, ckCurrentlyChecked('ek', sec)); renderBoard();
   if (sec === 'characters') {
-    renderPovCk('sc', renameInList(ckCurrentlyChecked('sc', 'povs')));
-    renderPovCk('ed', renameInList(ckCurrentlyChecked('ed', 'povs')));
+    renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
+    renderPovCk('ed', ckCurrentlyChecked('ed', 'povs'));
     renderPovLibSec();
   }
   recordDataEdit();
   saveState();
 }
-// Rename a custom POV name (mirrors the "characters" branch of saveLibEdit()
-// above field-for-field, since S.povCustomNames is a plain string array with
-// no notes and isn't one of the SECS-configured library arrays).
+// Rename a custom POV name (mirrors saveLibEdit() above field-for-field,
+// since S.povCustom is not one of the SECS-configured library arrays).
 function savePovEdit() {
   const idx = libEditIdx;
-  const oldName = S.povCustomNames[idx]; if (oldName === undefined) return;
+  const entry = S.povCustom[idx]; if (!entry) return;
+  const oldName = entry.name;
   const newName = document.getElementById('lib-edit-name').value.trim();
   if (!newName) { document.getElementById('lib-edit-name').focus(); return; }
   const nameTaken = newName !== oldName && (
     S.characters.some(c => c.name === newName) ||
-    S.povCustomNames.some((n, i) => i !== idx && n === newName)
+    S.povCustom.some((p, i) => i !== idx && p.name === newName)
   );
   if (nameTaken) { document.getElementById('lib-edit-name').select(); return; }
   pushHistory('Edit POV name "' + oldName + '"');
-  S.povCustomNames[idx] = newName;
-  if (newName !== oldName) {
-    S.scenes.forEach(scene => {
-      if (!Array.isArray(scene.povs)) return;
-      const pi = scene.povs.indexOf(oldName);
-      if (pi !== -1) scene.povs[pi] = newName;
-    });
-    if (S.selections.povs.has(oldName)) {
-      S.selections.povs.delete(oldName);
-      S.selections.povs.add(newName);
-    }
-  }
-  const renameInList = arr => arr.map(v => v === oldName ? newName : v);
+  entry.name = newName;
   closeLibEditModal();
-  renderPovCk('sc', renameInList(ckCurrentlyChecked('sc', 'povs')));
-  renderPovCk('ed', renameInList(ckCurrentlyChecked('ed', 'povs')));
+  renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
+  renderPovCk('ed', ckCurrentlyChecked('ed', 'povs'));
   renderPovLibSec(); renderBoard();
   recordDataEdit();
   saveState();
 }
 // Delete a custom POV name — mirrors removeItem() above field-for-field,
-// scoped to S.povCustomNames/scene.povs instead of a SECS array.
-function removePovCustomName(name) {
-  pushHistory('Remove POV name "' + name + '"');
-  S.povCustomNames = S.povCustomNames.filter(n => n !== name);
-  S.scenes.forEach(sc => { sc.povs = (sc.povs || []).filter(v => v !== name); });
-  S.selections.povs.delete(name);
-  renderPovCk('sc', ckCurrentlyChecked('sc', 'povs').filter(v => v !== name));
-  renderPovCk('ed', ckCurrentlyChecked('ed', 'povs').filter(v => v !== name));
+// scoped to S.povCustom/scene.povs instead of a SECS array.
+function removePovCustomId(id) {
+  const entry = S.povCustom.find(p => p.id === id); if (!entry) return;
+  pushHistory('Remove POV name "' + entry.name + '"');
+  S.povCustom = S.povCustom.filter(p => p.id !== id);
+  S.scenes.forEach(sc => { sc.povs = (sc.povs || []).filter(v => v !== id); });
+  S.selections.povs.delete(id);
+  renderPovCk('sc', ckCurrentlyChecked('sc', 'povs').filter(v => v !== id));
+  renderPovCk('ed', ckCurrentlyChecked('ed', 'povs').filter(v => v !== id));
   renderPovLibSec(); renderBoard(); updateLibClearBtn();
   recordDataEdit();
   saveState();
 }
 
-let libDelSec = null, libDelName = null;
+let libDelSec = null, libDelId = null;
 let secDelId = null;
-function openLibDelModal(sec, name) {
-  libDelSec = sec; libDelName = name;
+function openLibDelModal(sec, id) {
+  const item = S[sec].find(x => x.id === id); if (!item) return;
+  libDelSec = sec; libDelId = id;
   const cfg = SECS.find(s => s.key === sec);
   const label = cfg.label.replace(/s$/, '');
-  document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (${label}) from the entire file? This cannot be undone.`;
+  document.getElementById('libdel-msg').textContent = `Permanently delete "${item.name}" (${label}) from the entire file? This cannot be undone.`;
   document.getElementById('libdel-modal').classList.add('open');
 }
 // Shares the libdel-modal DOM with openLibDelModal above; kept separate
 // because 'povCustom' isn't a SECS key, so the cfg/label lookup above
 // doesn't apply.
-function openPovDelModal(name) {
-  libDelSec = 'povCustom'; libDelName = name;
-  document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (POV) from the entire file? This cannot be undone.`;
+function openPovDelModal(id) {
+  const entry = S.povCustom.find(p => p.id === id); if (!entry) return;
+  libDelSec = 'povCustom'; libDelId = id;
+  document.getElementById('libdel-msg').textContent = `Permanently delete "${entry.name}" (POV) from the entire file? This cannot be undone.`;
   document.getElementById('libdel-modal').classList.add('open');
 }
-function closeLibDelModal() { document.getElementById('libdel-modal').classList.remove('open'); libDelSec = null; libDelName = null; }
+function closeLibDelModal() { document.getElementById('libdel-modal').classList.remove('open'); libDelSec = null; libDelId = null; }
 function confirmLibDel() {
-  if (!libDelSec || !libDelName) return;
-  const s = libDelSec, n = libDelName;
+  if (!libDelSec || libDelId === null) return;
+  const s = libDelSec, id = libDelId;
   closeLibDelModal();
-  if (s === 'povCustom') { removePovCustomName(n); return; }
-  removeItem(s, n);
+  if (s === 'povCustom') { removePovCustomId(id); return; }
+  removeItem(s, id);
 }
 
 // ── CARD DETAILS TOGGLE ───────────────────────────────────────────────────────
@@ -484,13 +464,19 @@ function addScene() {
   if (!title) { errEl.textContent = 'Please enter a scene title.'; titleEl.focus(); return; }
   if (S.scenes.some(s => s.title.toLowerCase() === title.toLowerCase())) { errEl.textContent = 'Title already exists.'; titleEl.select(); return; }
   const row = {};
-  SECS.forEach(({ key }) => { row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => c.value); });
+  SECS.forEach(({ key }) => { row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => parseInt(c.value, 10)); });
   const sectionId = S.sections.length ? (parseInt(document.getElementById('sc-section').value) || null) : null;
   const wordCount = parseWordCount(document.getElementById('sc-wordcount').value);
   const povs = ckCurrentlyChecked('sc', 'povs');
   pushHistory('Add scene "' + truncStr(title, 22) + '"');
   trackSceneAdded();
-  const newScene = { id: S.nextId++, title, summary, notes, ...row, sectionId, wordCount, povs };
+  const newId = S.nextId++;
+  const newScene = {
+    id: newId, title, summary, notes, ...row, sectionId, wordCount, povs,
+    storylineId: S.storylines[0].id, alsoStorylineIds: [], anchor: null,
+    durationMin: null, offscreen: false, reveals: [], requires: [],
+  };
+  S.chronOrder.push(newId);
   if (pendingInsert !== null) {
     const { afterId, sectionId: piSecId } = pendingInsert; pendingInsert = null;
     if (afterId !== null) {
@@ -557,8 +543,16 @@ function deleteScene(id) {
   if (!confirm(`Delete "${sc.title}"?`)) return;
   pushHistory('Delete scene "' + truncStr(sc.title, 22) + '"');
   trackSceneDeleted();
+  // Capture chronOrder's position of this scene before it's filtered out —
+  // that's the re-anchor target for any marker pointing at it (ThruLine's
+  // deleteScene rule: re-anchor to the next scene in that order, or null=end).
+  const chronIdx = S.chronOrder.indexOf(id);
   S.scenes = S.scenes.filter(s => s.id !== id);
   S.selIds.delete(id);
+  S.chronOrder = S.chronOrder.filter(cid => cid !== id);
+  S.constraints = S.constraints.filter(c => c.a !== id && c.b !== id);
+  const nextChronId = (chronIdx !== -1 && S.chronOrder[chronIdx] !== undefined) ? S.chronOrder[chronIdx] : null;
+  S.markers.forEach(m => { if (m.beforeSceneId === id) m.beforeSceneId = nextChronId; });
   if (S.editingId === id) cancelEdit();
   renderBoard();
   renderPovLibSec();
@@ -615,13 +609,14 @@ function isEditFormDirty() {
     const sectionId = parseInt(document.getElementById('ed-section').value) || null;
     if (sectionId !== (sc.sectionId ?? null)) return true;
   }
+  const numSort = (a, b) => a - b;
   for (const { key } of SECS) {
-    const checked  = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value).sort();
-    const original = [...(sc[key] || [])].sort();
+    const checked  = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => parseInt(c.value, 10)).sort(numSort);
+    const original = [...(sc[key] || [])].sort(numSort);
     if (JSON.stringify(checked) !== JSON.stringify(original)) return true;
   }
-  const checkedPovs  = ckCurrentlyChecked('ed', 'povs').sort();
-  const originalPovs = [...(sc.povs || [])].sort();
+  const checkedPovs  = ckCurrentlyChecked('ed', 'povs').sort(numSort);
+  const originalPovs = [...(sc.povs || [])].sort(numSort);
   if (JSON.stringify(checkedPovs) !== JSON.stringify(originalPovs)) return true;
   return false;
 }
@@ -695,7 +690,7 @@ function confirmSaveEdit() {
   sc.wordCount = parseWordCount(document.getElementById('ed-wordcount').value);
   sc.povs = ckCurrentlyChecked('ed', 'povs');
   if (S.sections.length) sc.sectionId = sectionId;
-  SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value); });
+  SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => parseInt(c.value, 10)); });
   // If section changed, move scene to end of new section so numbering stays sequential
   if (S.sections.length && sectionId !== oldSecId) {
     const idx = S.scenes.indexOf(sc);
@@ -798,7 +793,7 @@ function renderLibSec(sec) {
   if (!S[sec].length) { list.innerHTML = '<div class="eh">None yet</div>'; return; }
   S[sec].forEach((item, idx) => {
     const name = item.name;
-    const isOn = S.selections[sec].has(name);
+    const isOn = S.selections[sec].has(item.id);
     const li = document.createElement('div');
     li.className = 'li' + (isOn ? ' on ' + cfg.secCls : '');
     li.dataset.idx = idx; li.dataset.sec = sec;
@@ -811,9 +806,9 @@ function renderLibSec(sec) {
     edit.addEventListener('mousedown', e => e.stopPropagation());
     edit.addEventListener('click',     e => { e.stopPropagation(); openLibEditModal(sec, idx); });
     del.addEventListener('mousedown',  e => e.stopPropagation());
-    del.addEventListener('click',      e => { e.stopPropagation(); openLibDelModal(sec, name); });
+    del.addEventListener('click',      e => { e.stopPropagation(); openLibDelModal(sec, item.id); });
     li.appendChild(dh); li.appendChild(dot); li.appendChild(nm); li.appendChild(edit); li.appendChild(del);
-    li.addEventListener('click', () => toggleLibItem(sec, name));
+    li.addEventListener('click', () => toggleLibItem(sec, item.id));
     dh.addEventListener('mousedown', e => startLibDrag(e, sec, idx));
     list.appendChild(li);
   });
@@ -842,11 +837,10 @@ function renderCkList(prefix, sec, checked=[]) {
     return;
   }
   S[sec].forEach(libItem => {
-    const name = libItem.name;
     const item = document.createElement('label'); item.className = 'ck-drop-item';
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = name; cb.checked = checked.includes(name);
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = String(libItem.id); cb.checked = checked.includes(libItem.id);
     cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, lbl); });
-    const sp = document.createElement('span'); sp.textContent = name;
+    const sp = document.createElement('span'); sp.textContent = libItem.name;
     item.appendChild(cb); item.appendChild(sp); box.appendChild(item);
   });
   if (wrap) updateCkDropLabel(wrap, lbl);
@@ -880,7 +874,19 @@ function sceneDisplayNum(sceneId) {
   return buildSceneNumMap().get(sceneId) ?? 1;
 }
 
-function renderCard(container, scene, idx, numMap) {
+// Built once per render pass (renderBoard) and shared by every card, rather
+// than each card independently re-scanning the libraries to resolve its own
+// tag ids — a Map<id, entity> per category, `povs` unioning characters and
+// custom POVs (schema v3 §4: "build once per render pass, never .find() in a
+// loop").
+function buildLibMaps() {
+  const maps = {};
+  SECS.forEach(({ key }) => { maps[key] = new Map(S[key].map(x => [x.id, x])); });
+  maps.povs = new Map([...S.characters.map(c => [c.id, c]), ...S.povCustom.map(p => [p.id, p])]);
+  return maps;
+}
+
+function renderCard(container, scene, idx, numMap, libMaps) {
   const isd = drag.on && drag.ids.includes(scene.id);
   const sel = S.selIds.has(scene.id);
   const dpb = drag.on && drag.dropId === scene.id && drag.before;
@@ -911,14 +917,22 @@ function renderCard(container, scene, idx, numMap) {
     const row  = document.createElement('div'); row.className  = 'crow';
     const lbl  = document.createElement('div'); lbl.className  = 'clbl'; lbl.textContent = label;
     const tags = document.createElement('div'); tags.className = 'ctags';
-    scene[key].forEach(v => { const t = document.createElement('span'); t.className = 'tag ' + tag; t.textContent = v; tags.appendChild(t); });
+    // A stale id (entry removed since) is treated as absent, never crashes —
+    // same rule as the validSecIds pattern used for sectionId elsewhere.
+    scene[key].forEach(id => {
+      const entity = libMaps[key].get(id); if (!entity) return;
+      const t = document.createElement('span'); t.className = 'tag ' + tag; t.textContent = entity.name; tags.appendChild(t);
+    });
     row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
   });
   if (scene.povs && scene.povs.length) {
     const row  = document.createElement('div'); row.className  = 'crow';
     const lbl  = document.createElement('div'); lbl.className  = 'clbl'; lbl.textContent = 'POV';
     const tags = document.createElement('div'); tags.className = 'ctags';
-    scene.povs.forEach(v => { const t = document.createElement('span'); t.className = 'tag tp'; t.textContent = v; tags.appendChild(t); });
+    scene.povs.forEach(id => {
+      const entity = libMaps.povs.get(id); if (!entity) return;
+      const t = document.createElement('span'); t.className = 'tag tp'; t.textContent = entity.name; tags.appendChild(t);
+    });
     row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
   }
   card.appendChild(bar); card.appendChild(badge); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
@@ -942,10 +956,11 @@ function renderBoard() {
   // each card independently rebuilding the same ordered scene list just to
   // look up its own number.
   const numMap = buildSceneNumMap();
+  const libMaps = buildLibMaps();
 
   if (!hasSecs) {
     // Original flat layout
-    S.scenes.forEach((scene, idx) => renderCard(board, scene, idx, numMap));
+    S.scenes.forEach((scene, idx) => renderCard(board, scene, idx, numMap, libMaps));
   } else {
     // Section group layout
     const validSecIds = new Set(S.sections.map(s => s.id));
@@ -996,7 +1011,7 @@ function renderBoard() {
       group.scenes.forEach(scene => {
         const wrap = document.createElement('div'); wrap.className = 'card-wrap';
         body.appendChild(wrap);
-        renderCard(wrap, scene, S.scenes.indexOf(scene), numMap);
+        renderCard(wrap, scene, S.scenes.indexOf(scene), numMap, libMaps);
         addInsertZone(wrap, scene.id, group.id);
       });
       // For empty sections, show a single insert zone so the column is still usable
@@ -1123,65 +1138,67 @@ function renderSectionSelects() {
 
 // ── POV (Point of View) ────────────────────────────────────────────────────────
 // Multi-select checklist, exactly like Characters/Locations/etc, but sourced
-// from the Character library UNION S.povCustomNames (not S.characters alone)
-// — a scene's POV doesn't have to be tagged as a Character in that scene, or
+// from the Character library UNION S.povCustom (not S.characters alone) — a
+// scene's POV doesn't have to be tagged as a Character in that scene, or
 // exist in the Character library at all, since a scene (often a full
-// chapter here) can have several POV characters at once.
-function povNames() {
-  return [...S.characters.map(c => c.name), ...S.povCustomNames];
+// chapter here) can have several POV characters at once. Ids are shared
+// (S.nextEntId), so a character id and a povCustom id are never ambiguous.
+function povEntities() {
+  return [...S.characters.map(c => ({ id: c.id, name: c.name })), ...S.povCustom.map(p => ({ id: p.id, name: p.name }))];
 }
-// Names actually assigned as POV on at least one scene — the Library panel's
-// read-only POV section shows only these, so every entry is meaningful to
-// click (a name with zero scenes would just highlight nothing).
-function usedPovNames() {
+// Entities actually assigned as POV on at least one scene — the Library
+// panel's read-only POV section shows only these, so every entry is
+// meaningful to click (one with zero scenes would just highlight nothing).
+function usedPovEntities() {
   const used = new Set();
-  S.scenes.forEach(sc => (sc.povs || []).forEach(n => used.add(n)));
-  return povNames().filter(n => used.has(n));
+  S.scenes.forEach(sc => (sc.povs || []).forEach(id => used.add(id)));
+  return povEntities().filter(e => used.has(e.id));
 }
 // Display/drag order for the POV row. Character-derived and custom POV
-// names come from two different lists (S.characters order, S.povCustomNames
+// entities come from two different lists (S.characters order, S.povCustom
 // order) with no order of their own as a merged set, so dragging needs its
 // own list — S.povOrder — rather than reordering either source list
 // directly (which would also reorder the Characters section, or desync
-// from usedPovNames()'s filter). Append-only: a name that stops being used
+// from usedPovEntities()'s filter). Append-only: an id that stops being used
 // keeps its stored position for if it's ever used again, instead of losing
 // it the moment it's temporarily filtered out.
-function orderedUsedPovNames() {
-  const used = usedPovNames();
-  const newOnes = used.filter(n => !S.povOrder.includes(n));
+function orderedUsedPovEntities() {
+  const used = usedPovEntities();
+  const usedIds = used.map(e => e.id);
+  const newOnes = usedIds.filter(id => !S.povOrder.includes(id));
   if (newOnes.length) {
     S.povOrder = [...S.povOrder, ...newOnes];
     recordDataEdit();
     saveState();
   }
-  const usedSet = new Set(used);
-  return S.povOrder.filter(n => usedSet.has(n));
+  const usedSet = new Set(usedIds);
+  const byId = new Map(used.map(e => [e.id, e]));
+  return S.povOrder.filter(id => usedSet.has(id)).map(id => byId.get(id));
 }
-function togglePovHighlight(name) {
+function togglePovHighlight(id) {
   const s = S.selections.povs;
-  if (s.has(name)) s.delete(name); else s.add(name);
+  if (s.has(id)) s.delete(id); else s.add(id);
   renderPovLibSec(); renderBoard(); updateLibClearBtn();
 }
 function renderPovLibSec() {
   const list = document.getElementById('il-povs'); if (!list) return;
   list.innerHTML = '';
-  const names = orderedUsedPovNames();
-  if (!names.length) { list.innerHTML = '<div class="eh">None yet</div>'; return; }
-  names.forEach((name, idx) => {
-    const isOn = S.selections.povs.has(name);
-    // A name is either a Character (edit/delete lives in the Characters
+  const entries = orderedUsedPovEntities();
+  if (!entries.length) { list.innerHTML = '<div class="eh">None yet</div>'; return; }
+  entries.forEach((entry, idx) => {
+    const isOn = S.selections.povs.has(entry.id);
+    // An entity is either a Character (edit/delete lives in the Characters
     // panel — editing it here would create a second place to rename the
     // same character, and deleting it can't just mean "delete the
-    // character") or a custom POV-only name (editable/deletable in place).
-    // povNames() guarantees these two sets never overlap.
-    const customIdx = S.povCustomNames.indexOf(name);
+    // character") or a custom POV-only entry (editable/deletable in place).
+    const customIdx = S.povCustom.findIndex(p => p.id === entry.id);
     const isCustom = customIdx !== -1;
     const li = document.createElement('div');
     li.className = 'li' + (isOn ? ' on sec-p' : '');
     li.dataset.idx = idx; li.dataset.sec = 'povs';
     const dh  = document.createElement('span'); dh.className = 'dh'; dh.textContent = '⠿';
     const dot = document.createElement('span'); dot.className = 'dot dp';
-    const nm  = document.createElement('span'); nm.className = 'iname'; nm.textContent = name;
+    const nm  = document.createElement('span'); nm.className = 'iname'; nm.textContent = entry.name;
     const edit = document.createElement('button'); edit.className = 'iedit' + (isCustom ? '' : ' disabled'); edit.textContent = '✎';
     const del  = document.createElement('button'); del.className  = 'idel'  + (isCustom ? '' : ' disabled'); del.textContent  = '×';
     edit.title = isCustom ? 'Edit' : 'Edit/delete in Character list';
@@ -1190,7 +1207,7 @@ function renderPovLibSec() {
     del.addEventListener('mousedown',  e => e.stopPropagation());
     if (isCustom) {
       edit.addEventListener('click', e => { e.stopPropagation(); openPovEditModal(customIdx); });
-      del.addEventListener('click',  e => { e.stopPropagation(); openPovDelModal(name); });
+      del.addEventListener('click',  e => { e.stopPropagation(); openPovDelModal(entry.id); });
     } else {
       // Disabled: absorb the click (so it doesn't also toggle highlight via
       // the li's own listener below) without opening anything.
@@ -1198,28 +1215,12 @@ function renderPovLibSec() {
       del.addEventListener('click',  e => e.stopPropagation());
     }
     li.appendChild(dh); li.appendChild(dot); li.appendChild(nm); li.appendChild(edit); li.appendChild(del);
-    li.addEventListener('click', () => togglePovHighlight(name));
+    li.addEventListener('click', () => togglePovHighlight(entry.id));
     dh.addEventListener('mousedown', e => startLibDrag(e, 'povs', idx));
     list.appendChild(li);
   });
 }
-// Any name in `checked` that isn't currently a valid option (a character
-// since removed from the library, or a name saved before this feature
-// existed) is folded into S.povCustomNames on the spot, so it becomes a
-// normal, consistently-reusable option instead of a dead/lost selection.
-// This can run on a pure "view" path (opening Edit mode on an old scene, with
-// no mutation the caller itself saves), so persist it here rather than
-// leaving the fold live-only-in-memory until some unrelated later edit —
-// otherwise a reload right after opening such a scene silently drops it.
 function renderPovCk(prefix, checked=[]) {
-  let foldedNew = false;
-  checked.forEach(name => {
-    if (!S.characters.some(c => c.name === name) && !S.povCustomNames.includes(name)) {
-      S.povCustomNames.push(name);
-      foldedNew = true;
-    }
-  });
-  if (foldedNew) { recordDataEdit(); saveState(); }
   const wrap = document.getElementById(prefix + '-povs-wrap');
   const box  = document.getElementById(prefix + '-povs'); if (!box) return;
   box.innerHTML = '';
@@ -1228,19 +1229,19 @@ function renderPovCk(prefix, checked=[]) {
   addBtn.textContent = '+ Add POV Name…';
   addBtn.addEventListener('click', e => { e.stopPropagation(); openPovAddFromCk(prefix); });
   box.appendChild(addBtn);
-  const names = povNames();
-  if (!names.length) {
+  const entries = povEntities();
+  if (!entries.length) {
     const empty = document.createElement('div'); empty.className = 'ck-drop-empty';
     empty.textContent = 'No POV names yet';
     box.appendChild(empty);
     if (wrap) updateCkDropLabel(wrap, 'POV names');
     return;
   }
-  names.forEach(name => {
+  entries.forEach(entry => {
     const item = document.createElement('label'); item.className = 'ck-drop-item';
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = name; cb.checked = checked.includes(name);
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = String(entry.id); cb.checked = checked.includes(entry.id);
     cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, 'POV names'); });
-    const sp = document.createElement('span'); sp.textContent = name;
+    const sp = document.createElement('span'); sp.textContent = entry.name;
     item.appendChild(cb); item.appendChild(sp); box.appendChild(item);
   });
   if (wrap) updateCkDropLabel(wrap, 'POV names');
@@ -1261,13 +1262,14 @@ function confirmPovAdd() {
   const inp = document.getElementById('pov-add-input');
   const name = inp.value.trim();
   if (!name) { inp.focus(); return; }
-  if (S.characters.some(c => c.name === name) || S.povCustomNames.includes(name)) { inp.select(); return; }
+  if (S.characters.some(c => c.name === name) || S.povCustom.some(p => p.name === name)) { inp.select(); return; }
   pushHistory('Add POV name "' + name + '"');
-  S.povCustomNames.push(name);
+  const id = S.nextEntId++;
+  S.povCustom.push({ id, name });
   const scChecked = ckCurrentlyChecked('sc', 'povs');
   const edChecked = ckCurrentlyChecked('ed', 'povs');
-  if (povAddReturnPrefix === 'sc') scChecked.push(name);
-  if (povAddReturnPrefix === 'ed') edChecked.push(name);
+  if (povAddReturnPrefix === 'sc') scChecked.push(id);
+  if (povAddReturnPrefix === 'ed') edChecked.push(id);
   renderPovCk('sc', scChecked); renderPovCk('ed', edChecked);
   closePovAddModal();
   recordDataEdit();
@@ -1720,18 +1722,18 @@ function endLibDrag() {
     const isPov = ld.sec === 'povs';
     pushHistory('Reorder ' + (isPov ? 'POV' : ld.sec));
     if (isPov) {
-      // The rendered list is orderedUsedPovNames(), a filtered view of the
-      // full S.povOrder — splice by the *names* at these visible positions
-      // rather than raw indices, so names currently hidden (unused) keep
-      // their stored position instead of getting shuffled by an index that
-      // doesn't account for them.
-      const visible = orderedUsedPovNames();
-      const fromName = visible[ld.fromIdx], toName = visible[ld.dropIdx];
+      // The rendered list is orderedUsedPovEntities(), a filtered view of the
+      // full S.povOrder — splice by the *ids* at these visible positions
+      // rather than raw indices, so ids currently hidden (unused) keep their
+      // stored position instead of getting shuffled by an index that doesn't
+      // account for them.
+      const visible = orderedUsedPovEntities();
+      const fromId = visible[ld.fromIdx].id, toId = visible[ld.dropIdx].id;
       const arr = S.povOrder;
-      arr.splice(arr.indexOf(fromName), 1);
-      let ti = arr.indexOf(toName);
+      arr.splice(arr.indexOf(fromId), 1);
+      let ti = arr.indexOf(toId);
       if (!ld.before) ti++;
-      arr.splice(ti, 0, fromName);
+      arr.splice(ti, 0, fromId);
       renderPovLibSec();
     } else {
       const arr = S[ld.sec];
