@@ -2009,6 +2009,14 @@ document.addEventListener('mouseup', e => {
 // this is easy to trigger by accident. An edit that's merely open but
 // unchanged has nothing to lose, so it's still dismissed silently.
 document.addEventListener('mousedown', e => {
+  // Timeline mode reparents #form-edit out of #cp into #tl-panel's Inspector
+  // tab (timeline.js), so the #cp-scoped "outside" check below can no longer
+  // recognize a click inside it as "inside" — every click on the reparented
+  // form would wrongly read as "outside the panel" and cancel the edit.
+  // Timeline mode already has its own equivalent (tlSelectScene/
+  // runWithDiscardGuard, wired to clicks on empty chron/manuscript track
+  // space), so this board-only handler just steps aside entirely.
+  if (typeof timelineMode !== 'undefined' && timelineMode) return;
   const tabNew = document.getElementById('tab-new');
   if (!tabNew) return;
   const editActive = S.editingId !== null;

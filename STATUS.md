@@ -1253,7 +1253,59 @@ migrated Pride and Prejudice sample:
   still flagged and a thread active — storyline lane colors, wires, and flag/hover
   states stayed distinct and readable in all five.
 
+**Post-M7 — bugs found via a real converted ThruLine dataset.** M7's own checklist
+testing used small, synthetic fixtures (a 2-3 scene test project, the existing Pride
+and Prejudice / Count of Monte Cristo samples, whose chronological and manuscript
+orders are nearly identical) — none of which exercised a Timeline view with real
+scroll or a manuscript order that diverges sharply from chronological order. A
+one-off Python script (not committed) converted ThruLine's own
+`Frankenstein.thruline.json` test fixture (`../Timeline`) into a SceneSetter v3
+project — 27 scenes, 3 storylines, a genuine frame-narrative structure (Walton's
+letters open the book; Victor's life is a flashback) — and importing it surfaced
+three real bugs the smaller fixtures never touched:
+
+1. **Wires zone was a hardcoded 48px sliver** (`styles.css`), not proportional to
+   the stage like ThruLine's own `#wiresZone{flex:1}` — ThruLine's chron/manuscript
+   sections size to their content (`flex:0 0 auto`) and the wires zone absorbs all
+   remaining space; SceneSetter instead gave chron/manuscript fixed flex-grow shares
+   and squeezed wires into a tiny fixed pixel band, making already-thin curves nearly
+   invisible. Fixed by mirroring ThruLine's approach: `#tl-chron-body`/`#tl-ms-scroll`
+   now content-size (capped at 55%/30% of stage height so a many-storyline project
+   can't starve the wires zone), `#tl-wires-zone` takes the remainder (`flex:1`,
+   `min-height:100px`). Lane rows were already fixed-height in `timeline.js`
+   (`laneH=92`, not computed from available space), so this didn't require any JS
+   changes. The user explicitly declined ThruLine's separate draggable resize handle
+   for this split — not needed once wires have proper room.
+2. **The "divider" between the two strips did nothing.** There was no actual divider
+   element — just `#tl-wires-zone`'s own bottom border, which read as a dead resize
+   handle. Resolved as a side effect of fix 1: once the zone visibly hosts real wire
+   curves, the border reads as a section boundary rather than a broken control.
+3. **Clicking any field in the Timeline Inspector emptied the panel** (`editor.js`,
+   `styles.css`). Two compounding bugs: (a) `#cp .p-body{display:flex;flex-direction:
+   column}` stopped matching once `#form-edit` was reparented into
+   `#tl-inspector-body` for Timeline mode, so `.cp-form-hdr` (Cancel/Save) and
+   `.cp-form-fields` fell back to flex-direction's row default and rendered side by
+   side instead of stacked — fixed by re-declaring the same rule scoped to
+   `#tl-inspector-body`. (b) Independently, editor.js's board-only "cancel edit on
+   click outside `#cp`" `mousedown` handler didn't know about the reparented form
+   either — since it's no longer inside `#cp`, *every* click on it (even squarely
+   inside a real field) read as "outside" and silently cancelled the edit. Fixed by
+   making that handler step aside entirely while `timelineMode` is true (Timeline
+   mode already has its own equivalent via `tlSelectScene`/`runWithDiscardGuard`).
+   Bug (a) alone produced the squeezed layout; bug (b) alone would have broken
+   clicking-into-fields even with perfect layout — confirmed by reproducing each
+   independently (a direct `.click()` call doesn't fire `mousedown` and didn't
+   trigger bug (b); a real simulated click did, regardless of exactly where in the
+   form it landed).
+
+All three fixes verified live: hover highlighting, chron drag, true-scale mode, and
+Conflicts flag-mode wire coloring all re-confirmed working with the new layout;
+Inspector field clicks and typing confirmed non-destructive on a genuinely fresh
+browser origin (stale HTTP caching in the preview tool made this unusually hard to
+verify — see the caching note earlier in this doc; a mid-session server/port restart
+was needed to rule out false negatives from cached JS).
+
 ### Not yet done
-Nothing — M1–M7 are all complete. Still not merged to `main` — stays on
-`thruLine_v1` per explicit instruction; main and all other branches are untouched by
-this work.
+Nothing outstanding from the M7 checklist itself. Still not merged to `main` —
+stays on `thruLine_v1` per explicit instruction; main and all other branches are
+untouched by this work.

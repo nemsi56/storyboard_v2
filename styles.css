@@ -866,7 +866,14 @@ body.tl-mode #sbhdr{display:none}
 .tl-zoom-ctl{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.5px;color:var(--sub);font-weight:700;text-transform:uppercase}
 .tl-zoom-ctl input[type=range]{width:90px}
 
-#tl-chron-body{flex:6 1 0;min-height:0;display:flex;overflow:hidden}
+/* Content-sized (ThruLine's own chronSection/manuscriptSection are flex:0 0
+   auto too) rather than a fixed flex-grow share of the stage — lane rows are
+   already fixed-height (timeline.js's laneH=92, not computed from available
+   space), so this doesn't affect lane rendering, and it leaves the wires zone
+   below (flex:1) whatever room chron/manuscript don't need instead of a
+   hardcoded 48px sliver. Capped so a many-storyline project can't starve the
+   wires zone down to its min-height. */
+#tl-chron-body{flex:0 0 auto;max-height:55%;min-height:0;display:flex;overflow:hidden}
 #tl-lane-labels{flex:0 0 132px;display:flex;flex-direction:column;border-right:none;overflow-y:hidden}
 .tl-lane-label{position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:4px 10px;border-right:2px solid var(--s1);border-bottom:1px dashed var(--s1);font-size:11px;color:var(--sub);font-weight:600}
 .tl-lane-label .tl-sw{width:18px;height:3px;border-radius:2px}
@@ -884,11 +891,13 @@ body.tl-mode #sbhdr{display:none}
 .tl-lane-row{position:absolute;left:0;right:0;border-bottom:1px dashed var(--s1)}
 .tl-lane-row.tl-drop-target{outline:2px dashed var(--acc);outline-offset:-2px}
 
-#tl-wires-zone{flex:0 0 48px;position:relative;border-bottom:1px solid var(--s1)}
+#tl-wires-zone{flex:1;min-height:100px;position:relative;border-bottom:1px solid var(--s1)}
 #tl-wires{position:absolute;inset:0;pointer-events:none;z-index:5}
 
-#tl-ms-scroll{flex:2.6 1 0;min-height:0;overflow-x:auto;overflow-y:hidden;margin-left:132px;background:var(--bg1)}
-#tl-ms-row{display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start;min-width:100%;padding:10px 10px 8px;height:100%;box-sizing:border-box}
+/* Content-sized like #tl-chron-body above — a single row of cards, not
+   dependent on leftover flex space (see #tl-ms-row's height:auto below). */
+#tl-ms-scroll{flex:0 0 auto;max-height:30%;min-height:0;overflow-x:auto;overflow-y:hidden;margin-left:132px;background:var(--bg1)}
+#tl-ms-row{display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start;min-width:100%;padding:10px 10px 8px;height:auto;box-sizing:border-box}
 .tl-sep{flex:0 0 auto;align-self:stretch;width:0;border-left:1px dashed var(--o0);margin:4px 2px 0;position:relative}
 .tl-sep-label{position:absolute;top:-15px;left:3px;font-size:8.5px;letter-spacing:.06em;color:var(--sub);white-space:nowrap;font-weight:700}
 
@@ -945,6 +954,16 @@ body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){op
    (timeline.js's _tlDoSelectScene) — no !important override, or the "select a
    scene" placeholder could never actually hide the (would-be-empty) form. */
 #tl-inspector-body{padding:0}
+/* #form-edit is reparented here from #cp (timeline.js's _tlCaptureFormEditHome/
+   _tlDoSelectScene) — #cp .p-body supplies its display:flex;flex-direction:column
+   box model normally, but that ancestor-scoped rule stops matching once the node
+   moves outside #cp, so it needs the same rule re-declared scoped to this
+   container (mirrors #cp .p-body / #lp .p-body below). Without it, .cp-form-hdr
+   and .cp-form-fields fall back to flex-direction's row default and render side
+   by side instead of stacked, with .cp-form-fields collapsing to a narrow column
+   that doesn't cover the visible panel — clicks in the resulting dead space fall
+   through to the timeline canvas underneath and deselect the scene. */
+#tl-inspector-body .p-body{padding:0;display:flex;flex-direction:column;overflow:hidden}
 #tl-inspector-body .cp-form-hdr{padding:12px 12px 8px}
 #tl-inspector-body .cp-form-fields{padding:0 12px 12px}
 
