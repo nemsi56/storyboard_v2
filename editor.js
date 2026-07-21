@@ -584,6 +584,14 @@ function openEditMode(id) {
     document.getElementById('ed-section').value = sc.sectionId || '';
   }
   SECS.forEach(({ key }) => renderEditCk(key, sc[key] || []));
+  renderStorylineSelect(sc.storylineId);
+  renderAlsoStorylineCk(sc.storylineId, sc.alsoStorylineIds || []);
+  document.getElementById('ed-anchor-date').value = sc.anchor ? sc.anchor.date : '';
+  document.getElementById('ed-anchor-time').value = (sc.anchor && sc.anchor.time) ? sc.anchor.time : '';
+  document.getElementById('ed-duration').value = sc.durationMin || '';
+  document.getElementById('ed-offscreen').checked = !!sc.offscreen;
+  renderRevealCk('ed-reveals', sc.reveals || []);
+  renderRevealCk('ed-requires', sc.requires || []);
   document.getElementById('tab-edit').disabled = false;
   document.getElementById('tab-edit').classList.remove('dim');
   switchTab('edit');
@@ -618,6 +626,19 @@ function isEditFormDirty() {
   const checkedPovs  = ckCurrentlyChecked('ed', 'povs').sort(numSort);
   const originalPovs = [...(sc.povs || [])].sort(numSort);
   if (JSON.stringify(checkedPovs) !== JSON.stringify(originalPovs)) return true;
+  if ((parseInt(document.getElementById('ed-storyline').value, 10) || null) !== sc.storylineId) return true;
+  const checkedAlso  = ckBoxChecked('ed-also-sl').sort(numSort);
+  const originalAlso = [...(sc.alsoStorylineIds || [])].sort(numSort);
+  if (JSON.stringify(checkedAlso) !== JSON.stringify(originalAlso)) return true;
+  if (JSON.stringify(readAnchorFromForm()) !== JSON.stringify(sc.anchor || null)) return true;
+  if (parseWordCount(document.getElementById('ed-duration').value) !== (sc.durationMin || null)) return true;
+  if (document.getElementById('ed-offscreen').checked !== !!sc.offscreen) return true;
+  const checkedReveals  = ckBoxChecked('ed-reveals').sort(numSort);
+  const originalReveals = [...(sc.reveals || [])].sort(numSort);
+  if (JSON.stringify(checkedReveals) !== JSON.stringify(originalReveals)) return true;
+  const checkedRequires  = ckBoxChecked('ed-requires').sort(numSort);
+  const originalRequires = [...(sc.requires || [])].sort(numSort);
+  if (JSON.stringify(checkedRequires) !== JSON.stringify(originalRequires)) return true;
   return false;
 }
 // ── DISCARD CONFIRMATION (unsaved New/Edit scene) ─────────────────────────────
@@ -691,6 +712,18 @@ function confirmSaveEdit() {
   sc.povs = ckCurrentlyChecked('ed', 'povs');
   if (S.sections.length) sc.sectionId = sectionId;
   SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => parseInt(c.value, 10)); });
+  sc.storylineId = parseInt(document.getElementById('ed-storyline').value, 10) || S.storylines[0].id;
+  sc.alsoStorylineIds = ckBoxChecked('ed-also-sl').filter(id => id !== sc.storylineId);
+  sc.anchor = readAnchorFromForm();
+  sc.durationMin = parseWordCount(document.getElementById('ed-duration').value);
+  sc.offscreen = document.getElementById('ed-offscreen').checked;
+  sc.reveals = ckBoxChecked('ed-reveals');
+  sc.requires = ckBoxChecked('ed-requires');
+  // A revealsLib entry referenced by no scene in either list is garbage-
+  // collected on save (schema v3 §7) — keeps the library from accumulating
+  // orphans left by minting a reveal and then never tagging/untagging it.
+  const usedRevealIds = new Set(S.scenes.flatMap(s => [...(s.reveals || []), ...(s.requires || [])]));
+  S.revealsLib = S.revealsLib.filter(r => usedRevealIds.has(r.id));
   // If section changed, move scene to end of new section so numbering stays sequential
   if (S.sections.length && sectionId !== oldSecId) {
     const idx = S.scenes.indexOf(sc);
@@ -724,6 +757,115 @@ function switchTab(t) {
   document.getElementById('tab-edit').classList.toggle('on', t === 'edit');
   document.getElementById('form-new').style.display  = t === 'new'  ? '' : 'none';
   document.getElementById('form-edit').style.display = t === 'edit' ? '' : 'none';
+}
+
+// ── TIMING / REVEALS (Edit Scene form only, schema v3 §7) ─────────────────────
+// Generic "read the checked ids out of this checklist box" helper — like
+// ckCurrentlyChecked, but for boxes not named by the ck-/ek- prefix
+// convention (the Timing/Reveals groups' ids are already fully qualified).
+function ckBoxChecked(boxId) {
+  const box = document.getElementById(boxId);
+  return box ? [...box.querySelectorAll('input:checked')].map(c => parseInt(c.value, 10)) : [];
+}
+// A date is required for a non-null anchor; a time typed with no date is
+// meaningless (nothing to anchor it to), so it's dropped along with the rest
+// of the anchor rather than kept as an orphan value.
+function readAnchorFromForm() {
+  const date = document.getElementById('ed-anchor-date').value || null;
+  if (!date) return null;
+  return { date, time: document.getElementById('ed-anchor-time').value || null };
+}
+function renderStorylineSelect(selectedId) {
+  const sel = document.getElementById('ed-storyline'); if (!sel) return;
+  sel.innerHTML = '';
+  S.storylines.forEach(st => {
+    const opt = document.createElement('option'); opt.value = String(st.id); opt.textContent = st.name;
+    sel.appendChild(opt);
+  });
+  sel.value = String(selectedId);
+}
+function renderAlsoStorylineCk(primaryId, checked=[]) {
+  const wrap = document.getElementById('ed-also-sl-wrap');
+  const box  = document.getElementById('ed-also-sl'); if (!box) return;
+  box.innerHTML = '';
+  const others = S.storylines.filter(st => st.id !== primaryId);
+  if (!others.length) {
+    const empty = document.createElement('div'); empty.className = 'ck-drop-empty';
+    empty.textContent = 'No other storylines';
+    box.appendChild(empty);
+    if (wrap) updateCkDropLabel(wrap, 'other storylines');
+    return;
+  }
+  others.forEach(st => {
+    const item = document.createElement('label'); item.className = 'ck-drop-item';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = String(st.id); cb.checked = checked.includes(st.id);
+    cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, 'other storylines'); });
+    const sp = document.createElement('span'); sp.textContent = st.name;
+    item.appendChild(cb); item.appendChild(sp); box.appendChild(item);
+  });
+  if (wrap) updateCkDropLabel(wrap, 'other storylines');
+}
+// Shared by both "This scene reveals" (ed-reveals) and "Requires knowing"
+// (ed-requires) — both list the same S.revealsLib, and the inline mint adds
+// to that one shared library regardless of which checklist it was opened
+// from, so minting from either re-renders both to keep them in sync.
+function renderRevealCk(boxId, checked=[]) {
+  const wrap = document.getElementById(boxId + '-wrap');
+  const box  = document.getElementById(boxId); if (!box) return;
+  box.innerHTML = '';
+  const mintRow = document.createElement('div'); mintRow.className = 'ck-drop-mint';
+  const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'New reveal…'; inp.maxLength = 80;
+  const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = '+ Add';
+  const mint = () => {
+    const label = inp.value.trim(); if (!label) { inp.focus(); return; }
+    pushHistory('Add reveal "' + truncStr(label, 22) + '"');
+    const id = S.nextEntId++;
+    S.revealsLib.push({ id, label });
+    recordDataEdit(); saveState();
+    inp.value = '';
+    const revChecked = ckBoxChecked('ed-reveals').concat(boxId === 'ed-reveals' ? [id] : []);
+    const reqChecked = ckBoxChecked('ed-requires').concat(boxId === 'ed-requires' ? [id] : []);
+    renderRevealCk('ed-reveals', revChecked);
+    renderRevealCk('ed-requires', reqChecked);
+  };
+  btn.addEventListener('click', e => { e.stopPropagation(); mint(); });
+  inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); mint(); } });
+  inp.addEventListener('click', e => e.stopPropagation());
+  mintRow.appendChild(inp); mintRow.appendChild(btn);
+  box.appendChild(mintRow);
+  if (!S.revealsLib.length) {
+    const empty = document.createElement('div'); empty.className = 'ck-drop-empty';
+    empty.textContent = 'No reveals yet';
+    box.appendChild(empty);
+    if (wrap) updateCkDropLabel(wrap, 'reveals');
+    return;
+  }
+  S.revealsLib.forEach(r => {
+    const item = document.createElement('label'); item.className = 'ck-drop-item';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = String(r.id); cb.checked = checked.includes(r.id);
+    cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, 'reveals'); });
+    const sp = document.createElement('span'); sp.textContent = r.label;
+    item.appendChild(cb); item.appendChild(sp); box.appendChild(item);
+  });
+  if (wrap) updateCkDropLabel(wrap, 'reveals');
+}
+function toggleFormGroup(groupId) {
+  document.getElementById(groupId).classList.toggle('collapsed');
+}
+if (document.getElementById('ed-timing-toggle')) {
+  document.getElementById('ed-timing-toggle').addEventListener('click', () => toggleFormGroup('ed-timing-group'));
+  document.getElementById('ed-reveals-toggle').addEventListener('click', () => toggleFormGroup('ed-reveals-group'));
+  document.getElementById('ed-anchor-clear').addEventListener('click', () => {
+    document.getElementById('ed-anchor-date').value = '';
+    document.getElementById('ed-anchor-time').value = '';
+  });
+  // Changing the primary storyline must both refresh "Also part of" (the new
+  // primary can't also appear there) and drop it from whatever was checked —
+  // the same invariant applied on every load (state.js, schema v3 §2.5).
+  document.getElementById('ed-storyline').addEventListener('change', e => {
+    const primaryId = parseInt(e.target.value, 10);
+    renderAlsoStorylineCk(primaryId, ckBoxChecked('ed-also-sl').filter(id => id !== primaryId));
+  });
 }
 
 // ── SUMMARY MODAL ─────────────────────────────────────────────────────────────
@@ -910,6 +1052,8 @@ function renderCard(container, scene, idx, numMap, libMaps) {
   editbtn.addEventListener('mousedown', e => e.stopPropagation());
   editbtn.addEventListener('click', e => { e.stopPropagation(); openEditMode(scene.id); });
   const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${numMap.get(scene.id) ?? 1}`;
+  const off  = scene.offscreen ? document.createElement('div') : null;
+  if (off) { off.className = 'off-badge'; off.textContent = 'Offscreen'; }
   const tit  = document.createElement('div'); tit.className  = 'ctit'; tit.textContent = scene.title;
   const meta = document.createElement('div'); meta.className = 'cmeta';
   SECS.forEach(({ key, label, tag }) => {
@@ -936,7 +1080,7 @@ function renderCard(container, scene, idx, numMap, libMaps) {
     row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
   }
   card.appendChild(bar); card.appendChild(badge); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
-  card.appendChild(num); card.appendChild(tit); card.appendChild(meta);
+  card.appendChild(num); if (off) card.appendChild(off); card.appendChild(tit); card.appendChild(meta);
   card.addEventListener('mousedown', e => onCardDown(e, scene.id));
   container.appendChild(card);
 }
@@ -1102,17 +1246,19 @@ function updateSecPins() {
 }
 
 function updateCount() {
-  let n;
+  let shown;
   if (S.sections.length === 0 || secFilterIds.size === 0) {
-    n = S.scenes.length;
+    shown = S.scenes;
   } else {
     const validSecIds = new Set(S.sections.map(s => s.id));
-    n = S.scenes.filter(s => {
+    shown = S.scenes.filter(s => {
       const secId = validSecIds.has(s.sectionId) ? s.sectionId : 'unassigned';
       return secFilterIds.has(secId);
-    }).length;
+    });
   }
-  document.getElementById('sbcnt').textContent = `Showing ${n} scene${n !== 1 ? 's' : ''}`;
+  const n = shown.length;
+  const off = shown.filter(s => s.offscreen).length;
+  document.getElementById('sbcnt').textContent = `Showing ${n} scene${n !== 1 ? 's' : ''}` + (off > 0 ? ` (${off} offscreen)` : '');
 }
 
 // ── SECTION SELECTS (forms + filter) ──────────────────────────────────────────
