@@ -1045,7 +1045,7 @@ Integrates the ThruLine app's timeline/conflict-engine feature into SceneSetter,
 this section tracks implementation progress against its M1–M7 milestone list). Reference
 implementation lives in `../Timeline` (repo `thruLine`, branch `updates_v1`); code is ported
 and adapted from there, not re-implemented from prose. Branched from `main` at `5aa46e5`
-(post `feature/updates_v7` merge). M1–M4 complete as of this writing; M5–M7 not started.
+(post `feature/updates_v7` merge). M1–M5 complete as of this writing; M6–M7 not started.
 
 **M1+M2 — Schema v3 migration + full identity refactor** (`state.js`, `editor.js`,
 `charts.js`, `reports.js`, `projects.js`): `DATA_VERSION` → `'3'`. Library entities, custom
@@ -1094,6 +1094,27 @@ place of ThruLine's dividers (sections already existed here and fill that role).
 **Spec deviation:** Alt+T was already bound to "Add Theme" in this codebase (the spec
 assumed it was free), so Timeline view uses **Alt+K** instead.
 
+**M5 — Chron drag + markers** (`timeline.js`, `editor.js`, `editor-init.js`, `state.js`):
+ports ThruLine's `_chronDrag` family (`../Timeline/js/chron.js`) into a `_tlDrag` state
+machine — same candidate/threshold-4px/active two-phase pattern editor.js already uses for
+board card drag, wired once globally rather than per-render. Horizontal drag reorders
+`chronOrder` (ordinal axis only; true-scale shows a one-time "Switch to Ordinal to reorder
+by time" toast and disables it); vertical drag re-lanes (sets `storylineId`, strips it from
+`alsoStorylineIds` per the §2.5 invariant). No-op drops commit nothing; real moves push
+"Move scene (time)"/"Move scene (lane)" undo labels. Markers: right-click empty track space
+→ "Add marker here" (anchors to the nearest scene to the right in `chronOrder`); click a
+marker label → rename/delete popover. Ported verbatim ThruLine's July-2026
+`closeMarkerContextMenu()` pattern (every close path removes both the menu element and its
+document listener) to avoid the two-right-clicks-stray-menu bug it fixed there. Drag-cancel,
+marker-popover-close, and marker-context-menu-close all join `ESCAPE_ACTIONS` (editor.js)
+ahead of the timeline deselect entry, rather than a second keydown listener.
+**Bug found and fixed along the way:** `undo()`/`redo()` (`state.js`) call `renderBoard()`
+unconditionally, which no-ops into `renderChart()` on its own when chart view is open — but
+the timeline view is a wholly separate render tree with no such hook, so undoing/redoing a
+chron drag while timeline mode was open silently desynced the DOM from the data (confirmed:
+the underlying `S`/`chronOrder` state reverted correctly, only the on-screen card position
+didn't move). Fixed by calling `renderTimeline()` from both when `timelineMode` is active.
+
 ### Known non-obvious fixes worth knowing about if you touch this code
 - `updateViewToggleUI()` briefly existed in both `charts.js` and `timeline.js` — consolidated
   into `timeline.js`'s unified 4-way version and the `<script>` order swapped
@@ -1104,10 +1125,15 @@ assumed it was free), so Timeline view uses **Alt+K** instead.
   any later duplicate is dropped after ref-rewriting unless a scene ref still points at its
   own (non-canonical) id.
 - Manual browser testing repeatedly hit a preview-tool caching quirk where navigating to the
-  same URL (even a fresh "Open" project flow) served a stale cached HTML/CSS document
+  same URL (even a fresh "Open" project flow) served a stale cached HTML/CSS/JS document
   despite the server returning fresh content on `curl`/`fetch(..., {cache:'no-store'})` —
-  worked around every time by appending a cache-busting query string on navigation. Not an
-  app bug; noted here so a future session doesn't chase it as one.
+  worked around by appending a cache-busting query string on navigation (and, for `<script>`
+  tags specifically, by rewriting `<link>`/re-fetching, since a busted HTML url alone didn't
+  bust the script urls it references). Confirmed this exact way for the M5 undo/redo fix
+  above: the stale cached `state.js` initially made the fix look like it hadn't worked at
+  all (old `undo()` in memory, no `renderTimeline()` call) until isolated by comparing
+  `undo.toString()` against the on-disk source. Not an app bug; noted here so a future
+  session doesn't chase it as one.
 
 ### Verification
 Manually verified in-browser against both migrated sample projects (Pride and Prejudice,
@@ -1122,10 +1148,15 @@ garbage-collection case (tag on scene A, require on scene B, untag both, confirm
 library entry is gone); Timeline view's mode entry/exit, panel-state round-trip, scene
 selection (reparenting the real edit form, not a copy), storyline add/rename/delete, zoom,
 thread overlay, and menu/shortcut disabling all confirmed across the ivory and slate themes.
-Console clean throughout.
+Chron-strip horizontal drag (reorders `chronOrder`, board/manuscript order left untouched,
+correct undo label) and vertical drag (re-lanes, correct undo label) both confirmed with
+real synthetic mouse drag events; marker add (via direct context-menu-button invocation —
+the automated right-click itself didn't reach the app, confirmed by dispatching a real
+`contextmenu` event instead, which worked, so this is a test-tool limitation, not a bug),
+rename, and delete all confirmed. Console clean throughout.
 
 ### Not yet done
-- M5 (chron drag + markers), M6 (conflict engine + panel + warn-dots), M7 (polish + full
-  §13 verification across all five themes) — see `SCENESETTER_V3_TIMELINE_SPEC.md`.
+- M6 (conflict engine + panel + warn-dots), M7 (polish + full §13 verification across all
+  five themes) — see `SCENESETTER_V3_TIMELINE_SPEC.md`.
 - Not merged to `main` — stays on `thruLine_v1` per explicit instruction; main and all other
   branches are untouched by this work.

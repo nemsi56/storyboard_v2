@@ -448,19 +448,25 @@ function renderChronStrip() {
 
     card.addEventListener('mouseenter', () => highlightScene(s.id, true));
     card.addEventListener('mouseleave', () => highlightScene(s.id, false));
-    card.addEventListener('click', e => { e.stopPropagation(); tlSelectScene(s.id); });
+    card.addEventListener('click', e => {
+      e.stopPropagation();
+      if (_tlDragOccurred) { _tlDragOccurred = false; return; } // a drag just ended here
+      tlSelectScene(s.id);
+    });
     card.addEventListener('mousedown', e => onChronCardDown(e, s.id));
 
     track.appendChild(card);
   });
 
+  renderChronMarkers(markersLayer, xMap);
   renderChronThread();
   updateAxisAvailability();
 }
 
-// Drag arrives in M5 — mousedown must still be handled (not left undefined)
-// since renderChronStrip() wires it unconditionally on every card.
-function onChronCardDown(e, sceneId) {}
+function onChronCardDown(e, sceneId) {
+  if (e.button !== 0) return;
+  _tlDrag = { sceneId, active: false, startX: e.clientX, startY: e.clientY, ghostEl: null, insertLineEl: null, targetBeforeId: undefined, targetStorylineId: null };
+}
 
 function renderManuscriptRibbon() {
   const row = document.getElementById('tl-ms-row');
@@ -595,9 +601,342 @@ function renderChronThread() {
   });
 }
 
+// ── CHRON STRIP DRAG (ported from ../Timeline/js/chron.js's _chronDrag family,
+// schema v3 §6.5) — candidate/threshold-4px/active two-phase pattern, matching
+// the mouse-event pattern editor.js already uses for board card drag. ────────
+let _tlDrag = null; // null when not dragging
+let _tlDragActive = false; // guards undo (editor.js keydown) and hover (highlightScene) mid-drag
+let _tlDragOccurred = false; // suppresses the click that always follows a drag's mouseup
+let _tlTrueScaleToastShown = false;
+
+function isTlDragActive() { return !!(_tlDrag && _tlDrag.active); }
+function cancelTlDrag() { if (_tlDrag) _tlDragCancel(); }
+
+function _tlDragBegin(e) {
+  const d = _tlDrag;
+  d.active = true;
+  _tlDragActive = true;
+  clearHighlight(); // the mouseleave the drag itself triggers won't fire while dragActive guards it below
+
+  const track = document.getElementById('tl-track');
+  const srcEl = track.querySelector('.tl-scene[data-scene-id="' + d.sceneId + '"]');
+  if (srcEl) srcEl.classList.add('tl-drag-source');
+
+  const scene = S.scenes.find(x => x.id === d.sceneId);
+  if (!scene) { _tlDragCancel(); return; }
+  const st = S.storylines.find(x => x.id === scene.storylineId);
+
+  const ghost = document.createElement('div');
+  ghost.className = 'tl-scene tl-drag-ghost';
+  ghost.style.width = '96px';
+  ghost.style.setProperty('--c', st ? slColor(st.paletteIndex) : 'var(--acc)');
+  const t = document.createElement('div'); t.className = 'tl-t'; t.textContent = scene.title;
+  ghost.appendChild(t);
+  track.appendChild(ghost);
+  d.ghostEl = ghost;
+
+  const line = document.createElement('div');
+  line.className = 'tl-insert-line';
+  line.style.display = 'none';
+  track.appendChild(line);
+  d.insertLineEl = line;
+
+  // Horizontal reorder is ordinal-mode only (§6.5) — true-scale still allows
+  // the vertical lane move, with a one-time toast and a plain cursor.
+  if (S.timelinePrefs.axis === 'true') {
+    document.body.style.cursor = 'default';
+    _tlShowTrueScaleToast();
+  }
+}
+
+function _tlShowTrueScaleToast() {
+  if (_tlTrueScaleToastShown) return;
+  _tlTrueScaleToastShown = true;
+  const toast = document.createElement('div');
+  toast.className = 'tl-toast';
+  toast.textContent = 'Switch to Ordinal to reorder by time';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2200);
+}
+
+// Nearest scene to the right of the cursor ACROSS ALL LANES by x — the drop
+// slot is a position in chronOrder, not per-lane. Reads real card rects (not
+// the xMap) so it's correct regardless of ordinal overlap.
+function _tlFindDropBeforeId(localX, excludeId) {
+  const track = document.getElementById('tl-track');
+  const trackRect = track.getBoundingClientRect();
+  const cards = [...track.querySelectorAll('.tl-scene:not(.tl-drag-ghost)')];
+  let best = null, bestX = Infinity;
+  cards.forEach(el => {
+    const id = el.dataset.sceneId;
+    if (!id || id === excludeId) return;
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2 - trackRect.left;
+    if (cx >= localX && cx < bestX) { bestX = cx; best = id; }
+  });
+  return best; // null = insert at the end of chronOrder
+}
+
+function _tlInsertionX(track, trackRect, beforeId, excludeId) {
+  if (beforeId) {
+    const el = track.querySelector('.tl-scene[data-scene-id="' + beforeId + '"]');
+    if (el) { const r = el.getBoundingClientRect(); return r.left - trackRect.left - 4; }
+  }
+  const cards = [...track.querySelectorAll('.tl-scene:not(.tl-drag-ghost)')];
+  let maxRight = 0;
+  cards.forEach(el => {
+    if (el.dataset.sceneId === excludeId) return;
+    const r = el.getBoundingClientRect();
+    const rx = r.right - trackRect.left;
+    if (rx > maxRight) maxRight = rx;
+  });
+  return maxRight + 4;
+}
+
+function _tlLaneAtClientY(clientY) {
+  const rows = [...document.querySelectorAll('.tl-lane-row')];
+  if (!rows.length) return null;
+  for (const row of rows) {
+    const r = row.getBoundingClientRect();
+    if (clientY >= r.top && clientY <= r.bottom) return row.dataset.storylineId;
+  }
+  const firstR = rows[0].getBoundingClientRect();
+  if (clientY < firstR.top) return rows[0].dataset.storylineId;
+  return rows[rows.length - 1].dataset.storylineId;
+}
+
+function _tlDragMove(e) {
+  const d = _tlDrag;
+  const track = document.getElementById('tl-track');
+  const trackRect = track.getBoundingClientRect();
+  const localX = e.clientX - trackRect.left;
+  const localY = e.clientY - trackRect.top;
+  d.ghostEl.style.left = localX + 'px';
+  d.ghostEl.style.top = localY + 'px';
+
+  if (S.timelinePrefs.axis !== 'true') {
+    const beforeId = _tlFindDropBeforeId(localX, String(d.sceneId));
+    d.targetBeforeId = beforeId;
+    d.insertLineEl.style.left = _tlInsertionX(track, trackRect, beforeId, String(d.sceneId)) + 'px';
+    d.insertLineEl.style.display = '';
+  } else {
+    d.targetBeforeId = undefined; // true-scale reorder disabled
+    d.insertLineEl.style.display = 'none';
+  }
+
+  const laneStId = _tlLaneAtClientY(e.clientY);
+  d.targetStorylineId = laneStId;
+  document.querySelectorAll('.tl-lane-row').forEach(row => {
+    row.classList.toggle('tl-drop-target', row.dataset.storylineId === laneStId);
+  });
+}
+
+function _tlDragCleanupVisual() {
+  if (_tlDrag) {
+    if (_tlDrag.ghostEl) _tlDrag.ghostEl.remove();
+    if (_tlDrag.insertLineEl) _tlDrag.insertLineEl.remove();
+    const srcEl = document.querySelector('.tl-scene[data-scene-id="' + _tlDrag.sceneId + '"]');
+    if (srcEl) srcEl.classList.remove('tl-drag-source');
+  }
+  document.querySelectorAll('.tl-lane-row.tl-drop-target').forEach(r => r.classList.remove('tl-drop-target'));
+  document.body.style.cursor = '';
+}
+
+function _tlDragCancel() {
+  _tlDragCleanupVisual();
+  _tlDragActive = false;
+  _tlDrag = null;
+}
+
+function _tlDragFinish() {
+  const d = _tlDrag;
+  _tlDragCleanupVisual();
+  _tlDragActive = false;
+  _tlDrag = null;
+  _tlDragOccurred = true; // suppress the click that follows this mouseup
+
+  const scene = S.scenes.find(x => x.id === d.sceneId);
+  if (!scene) return;
+
+  let newChronOrder = null;
+  if (S.timelinePrefs.axis !== 'true' && d.targetBeforeId !== undefined) {
+    const without = S.chronOrder.filter(id => id !== d.sceneId);
+    const beforeIdNum = d.targetBeforeId ? parseInt(d.targetBeforeId, 10) : null;
+    let idx = beforeIdNum !== null ? without.indexOf(beforeIdNum) : -1;
+    if (idx === -1) idx = without.length;
+    const candidate = without.slice();
+    candidate.splice(idx, 0, d.sceneId);
+    const same = candidate.length === S.chronOrder.length && candidate.every((id, i) => id === S.chronOrder[i]);
+    if (!same) newChronOrder = candidate;
+  }
+
+  const targetStorylineId = d.targetStorylineId ? parseInt(d.targetStorylineId, 10) : null;
+  const relane = !!(targetStorylineId && targetStorylineId !== scene.storylineId);
+
+  if (!newChronOrder && !relane) return; // no-op drag: nothing moved, no commit
+
+  const label = newChronOrder ? 'Move scene (time)' : 'Move scene (lane)';
+  pushHistory(label);
+  if (newChronOrder) S.chronOrder = newChronOrder;
+  if (relane) {
+    scene.storylineId = targetStorylineId;
+    // §2.5 invariant: alsoStorylineIds never contains storylineId.
+    scene.alsoStorylineIds = (scene.alsoStorylineIds || []).filter(id => id !== targetStorylineId);
+  }
+  recordDataEdit();
+  saveState();
+  renderTimeline();
+}
+
+// ── MARKERS (ported from ../Timeline/js/chron.js, schema v3 §6.7) ────────────
+let _tlMarkerPopoverId = null;
+
+function tlMarkerX(marker, xMap) {
+  const order = S.chronOrder;
+  if (!marker.beforeSceneId) {
+    const lastId = order[order.length - 1];
+    const lx = xMap.get(lastId);
+    return lx === undefined ? 100 : Math.min(100, lx + (100 - lx) / 2 + 5);
+  }
+  const idx = order.indexOf(marker.beforeSceneId);
+  if (idx === -1) return 0;
+  const afterX = xMap.get(marker.beforeSceneId);
+  if (idx === 0) return afterX === undefined ? 0 : Math.max(0, afterX / 2);
+  const prevId = order[idx - 1];
+  const beforeX = xMap.get(prevId);
+  if (beforeX === undefined || afterX === undefined) return 0;
+  return (beforeX + afterX) / 2;
+}
+
+function renderChronMarkers(layer, xMap) {
+  layer.innerHTML = '';
+  (S.markers || []).forEach(m => {
+    const x = tlMarkerX(m, xMap);
+    const line = document.createElement('div');
+    line.className = 'tl-marker-line';
+    line.style.left = x + '%';
+    line.style.pointerEvents = 'auto';
+    line.dataset.markerId = m.id;
+
+    const label = document.createElement('div');
+    label.className = 'tl-marker-label';
+    label.textContent = m.label;
+    label.style.pointerEvents = 'auto';
+    label.addEventListener('click', e => { e.stopPropagation(); openMarkerPopover(m, label); });
+    line.appendChild(label);
+    layer.appendChild(line);
+  });
+}
+
+function openMarkerPopover(marker, anchorEl) {
+  closeMarkerPopover();
+  _tlMarkerPopoverId = marker.id;
+  const pop = document.createElement('div');
+  pop.className = 'tl-popover';
+  pop.id = 'tl-marker-popover';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = marker.label;
+  pop.appendChild(input);
+
+  const row = document.createElement('div');
+  row.className = 'tl-popover-row';
+  const delBtn = document.createElement('button');
+  delBtn.className = 'tl-danger';
+  delBtn.textContent = 'Delete';
+  delBtn.addEventListener('click', () => {
+    pushHistory('Delete marker');
+    S.markers = S.markers.filter(mk => mk.id !== marker.id);
+    recordDataEdit(); saveState();
+    closeMarkerPopover();
+    renderTimeline();
+  });
+  row.appendChild(delBtn);
+  pop.appendChild(row);
+
+  input.addEventListener('change', () => {
+    const val = input.value.trim();
+    if (!val) return;
+    pushHistory('Rename marker');
+    const mk = S.markers.find(x => x.id === marker.id);
+    if (mk) mk.label = val;
+    recordDataEdit(); saveState();
+    renderTimeline();
+  });
+
+  document.body.appendChild(pop);
+  const rect = anchorEl.getBoundingClientRect();
+  pop.style.left = rect.left + 'px';
+  pop.style.top = (rect.bottom + 4) + 'px';
+
+  setTimeout(() => document.addEventListener('click', _tlMarkerPopoverOutsideClick), 0);
+}
+function _tlMarkerPopoverOutsideClick(e) {
+  const pop = document.getElementById('tl-marker-popover');
+  if (pop && !pop.contains(e.target)) closeMarkerPopover();
+}
+function closeMarkerPopover() {
+  const pop = document.getElementById('tl-marker-popover');
+  if (pop) pop.remove();
+  _tlMarkerPopoverId = null;
+  document.removeEventListener('click', _tlMarkerPopoverOutsideClick);
+}
+// Every close path (outside click, re-open, Escape, the action button itself)
+// removes both the menu element and its document listener — the July-2026
+// ThruLine fix this ports verbatim, so two successive right-clicks never
+// leave a stray menu/listener behind.
+function closeMarkerContextMenu() {
+  const menu = document.getElementById('tl-marker-context-menu');
+  if (menu) menu.remove();
+  document.removeEventListener('click', _tlContextMenuOutsideClick);
+}
+function chronTrackContextMenu(e) {
+  e.preventDefault();
+  closeMarkerPopover();
+  closeMarkerContextMenu();
+  const track = document.getElementById('tl-track');
+  const rect = track.getBoundingClientRect();
+  const clickX = ((e.clientX - rect.left) / rect.width) * 100;
+
+  const menu = document.createElement('div');
+  menu.className = 'tl-popover';
+  menu.id = 'tl-marker-context-menu';
+  const addBtn = document.createElement('button');
+  addBtn.textContent = 'Add marker here';
+  addBtn.addEventListener('click', () => {
+    const xMap = chronX(S.timelinePrefs.axis);
+    let beforeSceneId = null;
+    for (const id of S.chronOrder) {
+      const sx = xMap.get(id);
+      if (sx !== undefined && sx >= clickX) { beforeSceneId = id; break; }
+    }
+    pushHistory('Add marker');
+    const id = S.nextEntId++;
+    S.markers.push({ id, label: 'New marker', beforeSceneId });
+    recordDataEdit(); saveState();
+    closeMarkerContextMenu();
+    renderTimeline();
+  });
+  menu.appendChild(addBtn);
+  document.body.appendChild(menu);
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+
+  setTimeout(() => document.addEventListener('click', _tlContextMenuOutsideClick), 0);
+}
+function _tlContextMenuOutsideClick(e) {
+  const menu = document.getElementById('tl-marker-context-menu');
+  if (menu && !menu.contains(e.target)) {
+    menu.remove();
+    document.removeEventListener('click', _tlContextMenuOutsideClick);
+  }
+}
+
 // ── HOVER + WIRES (ported from ../Timeline/js/wires.js, schema v3 §6.2/§9) ────
 function highlightScene(sceneId, on) {
   if (typeof drag !== 'undefined' && drag.on) return;
+  if (_tlDragActive) return;
   document.body.classList.toggle('hovering', on);
   document.querySelectorAll('[data-scene-id="' + sceneId + '"]').forEach(el => el.classList.toggle('tl-hi', on));
   redrawWires();
@@ -768,4 +1107,32 @@ if (document.getElementById('timeline-host')) {
   if (typeof ResizeObserver !== 'undefined') {
     new ResizeObserver(scheduleTlRerender).observe(document.getElementById('tl-stage'));
   }
+
+  // Chron strip drag + markers (§6.5, §6.7) — global listeners wired ONCE,
+  // not per-render, since #tl-track is a persistent DOM node reused across
+  // renderChronStrip() calls (attaching inside it would stack duplicates).
+  const track = document.getElementById('tl-track');
+  if (track) {
+    track.addEventListener('contextmenu', chronTrackContextMenu);
+    track.addEventListener('click', e => {
+      if (_tlDragOccurred) { _tlDragOccurred = false; return; } // drag dropped on empty track space
+      if (e.target === track) tlSelectScene(null);
+    });
+  }
+  window.addEventListener('mousemove', e => {
+    if (!_tlDrag) return;
+    // Self-heal: mirrors editor.js's board-drag e.buttons===0 check.
+    if (e.buttons === 0) { _tlDragCancel(); return; }
+    if (!_tlDrag.active) {
+      const dx = e.clientX - _tlDrag.startX, dy = e.clientY - _tlDrag.startY;
+      if (Math.hypot(dx, dy) < 4) return; // still under the click/drag threshold
+      _tlDragBegin(e);
+    }
+    _tlDragMove(e);
+  });
+  window.addEventListener('mouseup', () => {
+    if (!_tlDrag) return;
+    if (!_tlDrag.active) { _tlDrag = null; return; } // never crossed threshold: plain click
+    _tlDragFinish();
+  });
 }

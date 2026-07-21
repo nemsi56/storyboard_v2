@@ -164,7 +164,10 @@
   $('tl-tab-inspector').addEventListener('click', function(){ tlSwitchTab('inspector'); });
   $('tl-tab-conflicts').addEventListener('click', function(){ tlSwitchTab('conflicts'); });
   $('tl-conflicts-badge').addEventListener('click', function(){ tlSwitchTab('conflicts'); });
-  $('tl-chron-scroll').addEventListener('click', function(e){ if (e.target === $('tl-chron-scroll') || e.target.id === 'tl-track') tlSelectScene(null); });
+  // #tl-track itself (not the scroll container) has its own click listener,
+  // wired once in timeline.js alongside the drag machinery — it needs the
+  // _tlDragOccurred check a listener here wouldn't have, so it isn't duplicated.
+  $('tl-chron-scroll').addEventListener('click', function(e){ if (e.target === $('tl-chron-scroll')) tlSelectScene(null); });
   $('tl-ms-scroll').addEventListener('click', function(e){ if (e.target === $('tl-ms-scroll') || e.target.id === 'tl-ms-row') tlSelectScene(null); });
 
   // Add-item popup

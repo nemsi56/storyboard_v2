@@ -462,6 +462,11 @@ function undo() {
   hist.future.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
   buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovCk("sc", []); renderPovCk("ed", []); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  // renderBoard() no-ops into renderChart() on its own when chart view is
+  // open, but the timeline view is a wholly separate render tree — without
+  // this, undo/redo silently desyncs its DOM from the data the moment either
+  // fires while timeline mode is open.
+  if (typeof timelineMode !== 'undefined' && timelineMode && typeof renderTimeline === 'function') renderTimeline();
   recordDataEdit();
   saveState();
 }
@@ -472,6 +477,11 @@ function redo() {
   hist.past.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
   buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovCk("sc", []); renderPovCk("ed", []); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  // renderBoard() no-ops into renderChart() on its own when chart view is
+  // open, but the timeline view is a wholly separate render tree — without
+  // this, undo/redo silently desyncs its DOM from the data the moment either
+  // fires while timeline mode is open.
+  if (typeof timelineMode !== 'undefined' && timelineMode && typeof renderTimeline === 'function') renderTimeline();
   recordDataEdit();
   saveState();
 }

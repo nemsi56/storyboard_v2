@@ -2065,6 +2065,12 @@ const ESCAPE_ACTIONS = [
   { isOpen: () => document.getElementById('sec-filter-drop')?.classList.contains('open'), close: closeSecFilter },
   { isOpen: () => !!document.querySelector('#menu-bar .mi.open'), close: closeAllMenus },
   { isOpen: () => typeof chartMode !== 'undefined' && chartMode, close: closeChartView },
+  // Chron-strip drag cancel, then marker popover/context menu, take priority
+  // over everything else in timeline mode (§6.5, §6.7) — mirrors ThruLine's
+  // "cancel drag -> close popover/modal -> clear selection" Escape ordering.
+  { isOpen: () => typeof isTlDragActive === 'function' && isTlDragActive(), close: () => cancelTlDrag() },
+  { isOpen: () => !!document.getElementById('tl-marker-popover'), close: closeMarkerPopover },
+  { isOpen: () => !!document.getElementById('tl-marker-context-menu'), close: closeMarkerContextMenu },
   // Timeline mode's own deselect (§6.6) takes priority over the board's scene-
   // form Escape entry below while active, since selecting a scene there opens
   // the very same #form-edit — deselecting must also clear the chron/ribbon
@@ -2096,11 +2102,11 @@ document.addEventListener('keydown', e => {
     // Undo/redo must not hijack a text field's own native undo (typing in a
     // scene's title/summary/notes and pressing Ctrl+Z should fix the typo,
     // not revert an unrelated board action), and must not fire while a card/
-    // library/section-list drag is in progress — the app's undo rebuilds
-    // S.scenes and re-renders the board out from under an active drag, and
-    // the eventual mouseup would then commit a reorder against post-undo
-    // state and clobber the redo stack.
-    if (!inInput && !drag.on && !ld.on && !sld.on) {
+    // library/section-list/chron-strip drag is in progress — the app's undo
+    // rebuilds S.scenes and re-renders out from under an active drag, and the
+    // eventual mouseup would then commit a reorder against post-undo state and
+    // clobber the redo stack.
+    if (!inInput && !drag.on && !ld.on && !sld.on && !(typeof isTlDragActive === 'function' && isTlDragActive())) {
       if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (typeof undo === 'function') undo(); return; }
       if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); if (typeof redo === 'function') redo(); return; }
     }
