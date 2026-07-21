@@ -153,6 +153,9 @@ function initStoryboard() {
   syncAndOrUI();
   buildLibPanel(); renderAllLib(); renderAllCk();
   renderSecPanel(); renderSectionSelects(); renderPovCk('sc', []); renderPovCk('ed', []);
+  // Primed once on load so the very first renderBoard() below (which shows
+  // warn-dots) isn't stuck with an empty conflicts cache for the first 150ms.
+  if (typeof conflictsCacheRefreshNow === 'function') conflictsCacheRefreshNow();
   renderBoard(); updateLibClearBtn(); updateUndoRedo();
   document.getElementById('board').classList.add('hide-details');
   document.getElementById('det-toggle').checked = false;

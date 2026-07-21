@@ -1059,11 +1059,16 @@ function renderCard(container, scene, idx, numMap, libMaps) {
   let hlCls = '';
   if (searchQ)         { if (sceneMatchesSearch(scene)) hlCls = 'hl-s'; }
   else                 { if (sceneMatchesLib(scene))    hlCls = 'hl';   }
+  const warned = typeof sceneHasWarning === 'function' && sceneHasWarning(scene.id);
   const card = document.createElement('div');
-  card.className = ['sc', isd?'isd':'', sel?'sel':'', hlCls, dpb?'dpb':'', dpa?'dpa':''].filter(Boolean).join(' ');
+  card.className = ['sc', isd?'isd':'', sel?'sel':'', hlCls, dpb?'dpb':'', dpa?'dpa':'', warned?'sc-warn':''].filter(Boolean).join(' ');
   card.dataset.id = scene.id;
   const bar    = document.createElement('div');    bar.className    = 'sc-bar';
   const badge  = document.createElement('div');    badge.className  = 'sbadge'; badge.textContent = '✓';
+  // Board cards show a warn-dot regardless of which view is active (§8) — the
+  // only conflict-engine UI board mode gets; the Conflicts tab itself lives in
+  // the timeline's right panel.
+  const warnDot = document.createElement('div'); warnDot.className = 'warn-dot';
   const delbtn = document.createElement('button'); delbtn.className = 'cdel';   delbtn.title = 'Delete'; delbtn.textContent = '×';
   const hasInfo = !!(scene.summary || scene.notes);
   const sumbtn = document.createElement('button'); sumbtn.className = 'csum' + (hasInfo ? ' hs' : ''); sumbtn.title = hasInfo ? 'View summary / notes' : ''; sumbtn.textContent = 'ⓘ'; if (!hasInfo) sumbtn.style.visibility = 'hidden';
@@ -1102,7 +1107,7 @@ function renderCard(container, scene, idx, numMap, libMaps) {
     });
     row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
   }
-  card.appendChild(bar); card.appendChild(badge); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
+  card.appendChild(bar); card.appendChild(badge); card.appendChild(warnDot); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
   card.appendChild(num); if (off) card.appendChild(off); card.appendChild(tit); card.appendChild(meta);
   card.addEventListener('mousedown', e => onCardDown(e, scene.id));
   container.appendChild(card);
@@ -2071,6 +2076,7 @@ const ESCAPE_ACTIONS = [
   { isOpen: () => typeof isTlDragActive === 'function' && isTlDragActive(), close: () => cancelTlDrag() },
   { isOpen: () => !!document.getElementById('tl-marker-popover'), close: closeMarkerPopover },
   { isOpen: () => !!document.getElementById('tl-marker-context-menu'), close: closeMarkerContextMenu },
+  { isOpen: () => typeof isFlagModeActive === 'function' && isFlagModeActive(), close: () => clearFlagMode() },
   // Timeline mode's own deselect (§6.6) takes priority over the board's scene-
   // form Escape entry below while active, since selecting a scene there opens
   // the very same #form-edit — deselecting must also clear the chron/ribbon

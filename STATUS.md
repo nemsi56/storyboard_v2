@@ -1045,7 +1045,7 @@ Integrates the ThruLine app's timeline/conflict-engine feature into SceneSetter,
 this section tracks implementation progress against its M1–M7 milestone list). Reference
 implementation lives in `../Timeline` (repo `thruLine`, branch `updates_v1`); code is ported
 and adapted from there, not re-implemented from prose. Branched from `main` at `5aa46e5`
-(post `feature/updates_v7` merge). M1–M5 complete as of this writing; M6–M7 not started.
+(post `feature/updates_v7` merge). M1–M6 complete as of this writing; M7 not started.
 
 **M1+M2 — Schema v3 migration + full identity refactor** (`state.js`, `editor.js`,
 `charts.js`, `reports.js`, `projects.js`): `DATA_VERSION` → `'3'`. Library entities, custom
@@ -1115,6 +1115,24 @@ chron drag while timeline mode was open silently desynced the DOM from the data 
 the underlying `S`/`chronOrder` state reverted correctly, only the on-screen card position
 didn't move). Fixed by calling `renderTimeline()` from both when `timelineMode` is active.
 
+**M6 — Conflict engine + panel + warn-dots** (new `conflicts.js`, `state.js`, `editor.js`,
+`editor.html`, `projects.js`, `timeline.js`, `styles.css`): ports `../Timeline/js/
+conflicts.js`'s pure `computeConflicts()` mechanically — fingerprints, the four check
+families (anchor-vs-chronOrder monotonicity, constraint violations + cycle DFS, bilocation,
+reveal-order/missing), the debounced 150ms recompute (hooked into `saveState()`), and flag
+mode. Two adaptations beyond the mechanical port: reader-order inputs use `manuscriptOrder()`
+filtered to `!offscreen` (this codebase has no stored `msOrder`), and bilocation is rebuilt
+around schema v3's multi-location scenes (ThruLine's single `locationId` doesn't exist here)
+— a conflict now requires both scenes to have at least one location tagged and their
+location *sets* to be completely disjoint, rather than a simple inequality. UI: a
+"Conflicts (N)" badge in the timeline strip header opens the right panel's Conflicts tab
+(severity dot, message, "show scenes" flag-mode toggle, "mark intentional" dismiss, a grayed
+"Dismissed" section with "restore warning"); warn-dots render on chron-strip cards, ribbon
+cards, and — new — board cards (`.sc-warn .warn-dot`, top-right corner, red), the last of
+these so a conflict is discoverable without ever opening the timeline. `pruneDismissed()`
+(ported from ThruLine's `saveProject()`) runs synchronously inside `saveState()` before every
+write, so a dismissed fingerprint the data no longer produces never survives a save.
+
 ### Known non-obvious fixes worth knowing about if you touch this code
 - `updateViewToggleUI()` briefly existed in both `charts.js` and `timeline.js` — consolidated
   into `timeline.js`'s unified 4-way version and the `<script>` order swapped
@@ -1155,8 +1173,23 @@ the automated right-click itself didn't reach the app, confirmed by dispatching 
 `contextmenu` event instead, which worked, so this is a test-tool limitation, not a bug),
 rename, and delete all confirmed. Console clean throughout.
 
+Conflict engine verified live against real data mutations (not fixtures): built the
+bilocation case (shared character, disjoint locations, overlapping anchored intervals,
+including one participant marked offscreen — confirmed it still flags per §9) and the
+reveal-order case both ways (a reveal tagged on an *offscreen* scene correctly does NOT
+satisfy a later requirement; retagging it on an on-screen scene produces a "reveal used
+before shown" conflict with a correctly-numbered message; reordering the board so the
+revealing scene comes first — not touching `chronOrder` — clears it, confirming
+manuscript order, not chronology, drives the reveal check). "Show scenes" flag mode
+confirmed on both chron and ribbon cards simultaneously; hovering a different card while
+flagged does not dim the flagged one (the specificity fix holds); "mark intentional"
+dismisses (badge/panel update, `S.dismissed` persisted) and Escape clears flag mode.
+Fixing the underlying data and re-saving pruned the dismissed fingerprint automatically.
+Board warn-dot (`.sc-warn`) confirmed rendering independent of which view is open. Console
+clean throughout.
+
 ### Not yet done
-- M6 (conflict engine + panel + warn-dots), M7 (polish + full §13 verification across all
-  five themes) — see `SCENESETTER_V3_TIMELINE_SPEC.md`.
+- M7 (polish + full §13 verification across all five themes) — see
+  `SCENESETTER_V3_TIMELINE_SPEC.md`.
 - Not merged to `main` — stays on `thruLine_v1` per explicit instruction; main and all other
   branches are untouched by this work.

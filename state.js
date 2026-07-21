@@ -67,6 +67,9 @@ function saveState() {
   try {
     if (!S.projectUid) S.projectUid = genProjUid();
     S.revision = (S.revision || 0) + 1;
+    // A dismissed fingerprint the data no longer produces (the underlying
+    // conflict was fixed) is pruned before it's ever written to disk.
+    if (typeof pruneDismissed === 'function') pruneDismissed();
     localStorage.setItem(projKey(currentProjectId), JSON.stringify({
       v: DATA_VERSION,
       characters: S.characters, locations: S.locations, themes: S.themes, misc: S.misc,

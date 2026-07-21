@@ -291,8 +291,7 @@ function renderTimeline() {
   document.querySelectorAll('#tl-axis-switch .tl-axis-btn').forEach(b => {
     b.classList.toggle('on', b.dataset.axis === S.timelinePrefs.axis);
   });
-  const badge = document.getElementById('tl-conflicts-badge');
-  if (badge && typeof computeConflicts !== 'function') badge.textContent = 'Conflicts (0)';
+  if (typeof renderConflictsBadge === 'function') renderConflictsBadge();
 }
 
 function chronTrackWidth(trackEl) {
@@ -1058,6 +1057,7 @@ function tlSwitchTab(tab) {
   document.getElementById('tl-tab-conflicts').classList.toggle('on', tab === 'conflicts');
   document.getElementById('tl-inspector-body').style.display = tab === 'inspector' ? '' : 'none';
   document.getElementById('tl-conflicts-body').style.display = tab === 'conflicts' ? '' : 'none';
+  if (tab === 'conflicts' && typeof renderConflictsPanel === 'function') renderConflictsPanel();
 }
 
 // Auto-unique "Untitled scene"/"Untitled scene N" (case-insensitive, matching
