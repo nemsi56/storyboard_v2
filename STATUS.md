@@ -1,6 +1,6 @@
 # Current Status
 
-As of July 17, 2026:
+As of July 21, 2026:
 
 ## Notes
 strip_AI branch: removed all AI features (Analyze Story menu item, AI panel with Analysis/Chat tabs, ai.js, chat.js, and related state/CSS) so the app ships without them for now — to be reintroduced later. Also hardened the app: CSP meta tags on all pages, stricter JSON import validation, and cleanup of leftover AI localStorage keys.
@@ -1037,3 +1037,95 @@ palette fallback on open. No console errors in any case.
 
 ### Not yet done
 - Not merged to `main` — pushed to `origin/feature/updates_v7`, PR not yet opened.
+
+## thruLine_v1 branch — SceneSetter v3: entity ids + Timeline feature (in progress)
+
+Integrates the ThruLine app's timeline/conflict-engine feature into SceneSetter, per
+`SCENESETTER_V3_TIMELINE_SPEC.md` (also in this repo — read that first for the full design;
+this section tracks implementation progress against its M1–M7 milestone list). Reference
+implementation lives in `../Timeline` (repo `thruLine`, branch `updates_v1`); code is ported
+and adapted from there, not re-implemented from prose. Branched from `main` at `5aa46e5`
+(post `feature/updates_v7` merge). M1–M4 complete as of this writing; M5–M7 not started.
+
+**M1+M2 — Schema v3 migration + full identity refactor** (`state.js`, `editor.js`,
+`charts.js`, `reports.js`, `projects.js`): `DATA_VERSION` → `'3'`. Library entities, custom
+POVs, and every scene reference array move from name-based to a shared integer id space
+(`S.nextEntId`), with `migrateV2toV3()` running on load/import/sample-seed. New top-level
+timeline fields (`storylines`, `chronOrder`, `revealsLib`, `constraints`, `markers`,
+`dismissed`, `timelinePrefs`) are seeded with defaults during migration. The spec's two
+milestones were combined into one implementation pass — the identity refactor isn't
+separable from the migration in practice, since name-based rename-propagation code can't
+coexist with id-based scene refs. Rename-propagation loops in `editor.js` are deleted
+outright (renaming is now instant and identity-stable); `charts.js` trace lanes and
+`reports.js` builders resolve ids to names per render instead of string-matching.
+**Bug found and fixed along the way:** `STORAGE_KEY` was derived from `DATA_VERSION`
+(`'storyboard_v' + DATA_VERSION`), which would have silently broken the legacy
+single-project bootstrap (`migrateExistingData()`) the moment `DATA_VERSION` changed —
+decoupled it into a frozen fossil key (`'storyboard_v2'`).
+
+**M3 — Scene form Timing/Reveals groups + offscreen semantics** (`editor.html`,
+`editor.js`, `styles.css`): the Edit Scene form gains two collapsible groups per spec §7 —
+Timing (storyline select, "also part of" checklist, anchor date/time + clear button,
+duration, offscreen checkbox) and Reveals (two checklists over a shared `revealsLib`, with
+an inline mint-and-check add). Both extend `isEditFormDirty()`/`confirmSaveEdit()`
+field-for-field; a `revealsLib` entry referenced by no scene in either list is
+garbage-collected on save. Board cards get an "Offscreen" badge and the scene count reads
+"(N offscreen)" — the only other behavior change; charts/reports/word-count treat offscreen
+scenes exactly as before, per spec.
+
+**M4 — Timeline view shell** (new `timeline.js`, `editor.html`, `editor.js`, `editor-init.js`,
+`charts.js`, `projects.js`, `styles.css`): a fourth view-toggle mode (cards/snake/circle/
+timeline). ThruLine's chronology geometry engine (`../Timeline/js/time.js`), wires overlay,
+and hover mechanism (`../Timeline/js/wires.js`) are ported wholesale into `timeline.js`,
+adapted from `project`/`P` to `S`. Entering timeline mode hides the three left panels via a
+body-level class (their own collapse state is untouched, restored exactly on exit) and
+reparents the single `#form-edit` node into the right panel's Inspector tab rather than
+duplicating it — leaving moves it back. Board-only menu items (zoom, panel toggles,
+Create→library) grey out and their keyboard shortcuts no-op in timeline mode; Create→New
+Scene instead creates immediately with schema-v3 defaults and an auto-unique title, opening
+it in the Inspector. Every mode switch and scene reselection reuses the existing
+discard-confirm modal via a new optional `afterDiscard` callback on
+`openDiscardConfirm()`/`confirmDiscard()`. Chronology strip: storyline lanes (add/
+rename-inline/delete with scene reassignment + a last-lane guard), ordinal/true-scale
+positioning, zoom slider, character thread overlay. Manuscript ribbon: a new pure
+`manuscriptOrder()` function in `editor.js` (mirroring `renderBoard()`'s grouping exactly)
+drives display order and numbering, with section-color stripes as read-only separators in
+place of ThruLine's dividers (sections already existed here and fill that role).
+**Spec deviation:** Alt+T was already bound to "Add Theme" in this codebase (the spec
+assumed it was free), so Timeline view uses **Alt+K** instead.
+
+### Known non-obvious fixes worth knowing about if you touch this code
+- `updateViewToggleUI()` briefly existed in both `charts.js` and `timeline.js` — consolidated
+  into `timeline.js`'s unified 4-way version and the `<script>` order swapped
+  (`timeline.js` before `charts.js`) so `charts.js`'s own startup code can call it safely
+  without a load-order `ReferenceError`.
+- The migration's library-entity dedup (schema v3 §3.2 step 2) matches the spec precisely:
+  when a v2 library array has duplicate names, the *first* entry keeps the name→id mapping;
+  any later duplicate is dropped after ref-rewriting unless a scene ref still points at its
+  own (non-canonical) id.
+- Manual browser testing repeatedly hit a preview-tool caching quirk where navigating to the
+  same URL (even a fresh "Open" project flow) served a stale cached HTML/CSS document
+  despite the server returning fresh content on `curl`/`fetch(..., {cache:'no-store'})` —
+  worked around every time by appending a cache-busting query string on navigation. Not an
+  app bug; noted here so a future session doesn't chase it as one.
+
+### Verification
+Manually verified in-browser against both migrated sample projects (Pride and Prejudice,
+The Count of Monte Cristo) after each milestone: v2→v3 migration produces correct ids/
+counters/`chronOrder`; renaming a character with its scene open shows zero dirty-flag and
+propagates instantly everywhere (card tags, checklists, chart trace, reports); deleting a
+character who is a POV survives as a custom POV entry; `validateV3Import()` rejects dangling
+refs, malformed anchors, bad `chronOrder`, invalid `timelinePrefs.axis`, and duplicate
+cross-collection ids with specific messages, and accepts a real exported v3 project;
+Timing/Reveals fields round-trip through save/reload/undo, including the reveals
+garbage-collection case (tag on scene A, require on scene B, untag both, confirm the
+library entry is gone); Timeline view's mode entry/exit, panel-state round-trip, scene
+selection (reparenting the real edit form, not a copy), storyline add/rename/delete, zoom,
+thread overlay, and menu/shortcut disabling all confirmed across the ivory and slate themes.
+Console clean throughout.
+
+### Not yet done
+- M5 (chron drag + markers), M6 (conflict engine + panel + warn-dots), M7 (polish + full
+  §13 verification across all five themes) — see `SCENESETTER_V3_TIMELINE_SPEC.md`.
+- Not merged to `main` — stays on `thruLine_v1` per explicit instruction; main and all other
+  branches are untouched by this work.

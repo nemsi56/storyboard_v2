@@ -397,6 +397,36 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
   resurrect after a delete) and hardened JSON import along the way — see `STATUS.md` for the
   full narrative. *(`feature/updates_v7` branch)*
 
+## 8. Timeline / Entity-ID Integration
+
+Folds the `thruLine` app's chronology view, mapping wires, and conflict engine into
+SceneSetter as a fourth board view, on top of a schema migration that gives library
+entities stable ids. Full design in `SCENESETTER_V3_TIMELINE_SPEC.md`; narrative
+implementation log in `STATUS.md`. Milestones M1–M7 per the spec's own numbering:
+
+- `[x]*` **M1+M2 — Schema v3 migration + entity-id identity refactor.** `DATA_VERSION` v3;
+  library entities/POVs/scene refs move to a shared integer id space; rename-propagation
+  loops deleted (rename is now instant, id-based); charts/reports resolve ids to names per
+  render. Combined into one pass — inseparable from the migration in practice.
+- `[x]*` **M3 — Scene form Timing/Reveals groups + offscreen semantics.** Storyline/anchor/
+  duration/offscreen fields and a Reveals checklist pair (with orphan garbage-collection on
+  save) added to the Edit Scene form; board cards get an "Offscreen" badge and count.
+- `[x]*` **M4 — Timeline view shell.** Fourth view-toggle mode; chronology strip (storyline
+  lanes, ordinal/true-scale positioning, zoom, character thread overlay) + manuscript ribbon
+  + wires overlay, ported from `../Timeline/js/{time,wires}.js`; right panel reparents the
+  real Edit Scene form into an Inspector tab instead of duplicating it; board-only menu
+  items/shortcuts disabled while active. Uses **Alt+K** (not the spec's assumed Alt+T,
+  already taken by Add Theme in this codebase).
+- `[ ]` **M5 — Chron drag + markers.** Horizontal reorder (`chronOrder`) and vertical
+  re-lane drag in the chronology strip; right-click markers.
+- `[ ]` **M6 — Conflict engine + panel + warn-dots.** Ported from `../Timeline/js/
+  conflicts.js`; bilocation/constraint/reveal-order/anchor-monotonicity checks, a Conflicts
+  tab in the right panel, warn-dots on board/strip/ribbon cards.
+- `[ ]` **M7 — Polish + full verification.** Full §13 checklist across all five themes.
+
+*(`thruLine_v1` branch — not merged to `main`; explicitly scoped to stay off `main` and
+every other branch until it's ready.)*
+
 ---
 
 ## Branch status
@@ -412,6 +442,7 @@ merged to `main` · `[~]` explicitly deferred (considered, decided against for n
 | `feature/updates_v5` | Merged to `main` (PR #14) — Scene/Scene Board divider and header polish (prominent divider color, "Scene Board" title removed, scene-count-vs-filter bug fix), the Cards/Snake/Circle view switch replacing the old chart toggle button and menu item, removal of the snake chart's redundant section legend, solid-badge scene numbers, POV drag-reorder, a "Learn about your data and backups" link on the backup banner, and Help Mode tooltip coverage for the entire chart toolbar (plus an overflow-clipping fix). See `STATUS.md` for the full narrative. |
 | `feature/updates_v6` | Merged to `main` (PR #15) — merged the splash page and Overview page into one redesigned `index.html` (dark palette, animated hero, zigzag feature rows with scroll-reveal, "browser window" screenshot framing), deleted the standalone Overview page, and added word-count/POV data to both sample projects so Word Count sizing and the POV report/trace features have something to demonstrate out of the box. See `STATUS.md` for the full narrative. |
 | `feature/updates_v7` | Pushed to `origin`, **not yet merged to `main`** — version-tracked sample-project refresh: a browser that already seeded the samples before v6's word-count/POV update now gets it automatically on its next Projects-page visit, but only for a sample it never edited; deleting a sample records its `sampleKey` so a version bump never brings it back. Plus a follow-up full-app audit's fixes: the rename/delete sample-matching bug above, `importProjectJSON()` hardening (section-color format validation, `sectionId` type check, duplicate-library-name rejection), an export-filename edge case, and dead-code cleanup (`hdr-spacer` duplicate id, retired theme-dropdown CSS/JS). See `STATUS.md` for the full narrative. |
+| `thruLine_v1` | In progress, **not merged to `main`** — Timeline/entity-id integration (§8 above): M1-M4 of 7 done (schema v3 migration + identity refactor, Timing/Reveals scene-form fields, Timeline view shell with chronology/manuscript/wires/lanes). See `STATUS.md` for the full narrative. |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
 on the branch noted for that item until it's merged into `main`. Items marked `[x]` (no
