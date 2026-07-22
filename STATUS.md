@@ -1342,6 +1342,19 @@ bottommost; the offscreen scene from the Frankenstein set (id 25, "A Pursuit Acr
 the World") now gets a wire connecting its chron and manuscript cards, matching the
 26-scenes-had-wires → 27 count after the fix.
 
+**Frankenstein promoted to a permanent third sample project** (`frankenstein.json`,
+`projects.js`) rather than staying a one-off scratch file — its Timeline-heavy shape
+(frame narrative, multiple storylines, a real reveal-order conflict) makes it a
+better everyday demo of what M1–M7 actually built than the two v2-derived samples,
+whose chronological and manuscript orders are nearly identical. `ensureSampleProjects()`
+previously assumed every sample file was v2 and always ran `migrateV2toV3()`; it now
+accepts v3-native sample files as-is (v2 has nothing to migrate storylines/reveals/
+anchors *from*), gated on `d.v`. `SAMPLES_VERSION` bumped 2→3 so existing installs
+pick up the new sample on their next Projects-page visit. Verified end-to-end on a
+genuinely fresh browser origin: Frankenstein auto-seeds with the `SAMPLE` badge
+alongside the other two, with no manual import step, and opens with all 27 scenes/3
+storylines/wires/conflicts intact.
+
 ### Not yet done
 Nothing outstanding from the M7 checklist itself. Still not merged to `main` —
 stays on `thruLine_v1` per explicit instruction; main and all other branches are
