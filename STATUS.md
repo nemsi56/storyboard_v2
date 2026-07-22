@@ -1456,3 +1456,134 @@ content in that scenario, not a new failure mode.
 Nothing outstanding from the M7 checklist itself. Still not merged to `main` —
 stays on `thruLine_v1` per explicit instruction; main and all other branches are
 untouched by this work.
+
+## thruLine_v1 branch — Braid view (post-M7 addition)
+
+Ports ThruLine's Braid view — a read-only "structure chart" (reading order on x,
+story time on y, a cubic-bezier reading path that dashes upward for flashbacks) —
+from `../Timeline`'s `updates_v1` branch, commit `5142a2b` ("M8: Braid view + light
+theme repaint fix"), `js/braid.js`. This was explicitly out of scope for the M1–M7
+spec (`SCENESETTER_V3_TIMELINE_SPEC.md` §14 listed it under "do not build," since
+that spec had a fixed milestone list) — added now as deliberate new scope, same
+"port and adapt from `../Timeline`" pattern as M4–M6.
+
+**Architecture decision:** ThruLine has three mutually-exclusive editor view modes
+(Side-by-Side / Manuscript / Braid); SceneSetter's Timeline view only ever
+corresponds to "Side-by-Side" (chron strip + manuscript ribbon + wires shown
+together, no mode switch existed). Rather than add a 5th top-level Cards/Snake/
+Circle/Timeline view mode, Braid is a **toggle nested inside Timeline view** — a
+small "Strip / Braid" segmented control in the Timeline header swaps the whole
+stage body between the existing layout and the new chart, full-stage.
+
+**Touched files:** `timeline.js` (all render logic, `renderBraid()` +
+`_tlBraidThickenPaths()` + `setTlViewMode()` — lands inside this file rather than
+a separate `braid.js`, matching how chron/wires/manuscript were ported here too),
+`editor.html` (`#tl-view-switch` toggle, `#tl-braid-scroll`/`#tl-braid-svg`),
+`editor-init.js` (toggle + empty-space-click wiring), `styles.css` (Braid section).
+
+### How it works
+- `tlBraidMode` (bool, module-level in `timeline.js`) is ephemeral like
+  `chartMode` — not persisted, resets to Strip on every project open.
+- `renderBraid()` is called unconditionally from `renderTimeline()` (alongside the
+  existing chron/manuscript/wires calls) and no-ops via its own early return when
+  Braid isn't the active sub-mode or `#tl-braid-scroll` reports zero size — same
+  pattern the other render functions already use for elements that may not be
+  visible. `redrawWires()` gets a matching early return when `tlBraidMode` is true,
+  since Strip's wires are meaningless while Braid is showing.
+- Reuses every piece of existing cross-view machinery rather than reinventing it:
+  `slColor()`, `fmtAnchor()`, `highlightScene()`/`clearHighlight()` (generic
+  `[data-scene-id="…"]` selector — needed zero changes for a new element type),
+  `sceneHasWarning()`, flag-mode's `toggleFlagMode()`/`setFlagMode()` (also generic
+  selector — braid nodes pick up `.tl-flag` automatically), and `tlSelectScene()`
+  (`_tlDoSelectScene()` extended to include `.tl-braid-node` in its selection
+  query).
+- Two real adaptations beyond a mechanical port, both because SceneSetter's data
+  model differs from ThruLine's: (1) `manuscriptOrder()` (this app's `msOrder`
+  equivalent) includes offscreen scenes, unlike ThruLine's own `msOrder` which
+  never did — the reading-order x-axis explicitly filters `!s.offscreen` to match
+  ThruLine's visible behavior. (2) ThruLine's "dividers" (a separate act-break
+  concept) don't exist here — sections fill that role already (per spec §14), so
+  the vertical boundary ticks along the chart's top edge are computed by walking
+  the filtered `manuscriptOrder()` for `sectionId` changes (the same pattern
+  `renderManuscriptRibbon()`'s `lastSecKey` loop already uses) and colored with
+  each section's own `.color` instead of ThruLine's single literal accent hex.
+- The flashback-accent color (dark theme `#e0a458` / light theme `#b07a35`,
+  ThruLine's literal per-theme hex, §9.5) picks its variant off the same
+  `TL_DARK_THEMES` set `slColor()` itself already uses, rather than duplicating
+  ThruLine's own light/dark test.
+- Class names follow this app's `tl-`-prefixed convention throughout
+  (`tl-braid-node`, `tl-hi`, `tl-sel`, `tl-flag`, `tl-warn`) rather than ThruLine's
+  bare `braidNode`/`hi`/`sel`/`flag`.
+
+### Verified live (not just read)
+On the Frankenstein sample (27 scenes, 3 storylines, a genuine frame-narrative
+flashback structure) and Pride and Prejudice (18 scenes, 5 sections/acts):
+offscreen scene correctly absent from the x-axis (26/27 nodes) while still present
+in chron/manuscript when toggled back to Strip; a real flashback segment rendered
+dashed in the theme-correct accent color, confirmed by reading the computed
+`stroke` value directly (`#e0a458` in slate, `#e0a458`→ hex match, not just
+eyeballed); node click selects (`.tl-braid-node.tl-sel`, ring in `var(--acc)`,
+confirmed via computed style) and opens the Inspector with the right scene;
+toggling "show scenes" flag mode on a real conflict turned the two involved nodes
+red at full opacity and dimmed the rest to 0.25 (confirmed via computed styles,
+not just visually); switching theme (slate) while Braid was open repainted
+storyline colors and the flashback accent correctly — turns out no explicit
+refresh hook was needed here (unlike ThruLine, which had to fix this): SceneSetter's
+`saveState()` already schedules a debounced `renderTimeline()` via
+`scheduleConflictsRecompute()`, which now includes `renderBraid()` for free; window
+resize reflowed `rowH` with no stale render; toggling back to Strip restored
+chron+manuscript+wires and the axis switch/thread picker exactly, with the prior
+selection preserved; 4 divider ticks rendered at Pride and Prejudice's 4 act
+boundaries, each in that section's own color, confirmed by reading the actual
+computed stroke values. Console clean throughout; no `innerHTML` used anywhere in
+the new code (matches the existing `textContent`/`createElementNS` XSS-safe
+pattern).
+
+### Not yet done
+Not merged to `main` — stays on `thruLine_v1` per the same explicit instruction
+covering the rest of this branch's work.
+
+## thruLine_v1 branch — Chron strip lane-row/offscreen polish
+
+Two small Strip-view fixes reported directly from a screenshot after the Braid
+work above: lane-row borders that appeared to "stop" partway across the row, and
+offscreen scenes' labeling/differentiation.
+
+### Lane-row border vs. wires
+Investigated first as a possible layout bug — `getBoundingClientRect()` on every
+`.tl-lane-row` confirmed each one genuinely spans the full track width (e.g.
+3050px on the Frankenstein sample), so nothing was actually being clipped. The
+apparent "stop" was an optical illusion: the row's `border-top: 2px solid
+var(--lane-c)` is the same kind of thin colored stroke as the wire curves that
+cross through the same area, so wherever several wires happened to overlap the
+border, the eye read it as the border disappearing — which is also exactly the
+user's separate complaint that the borders "look too much like the wires."
+Fixed by replacing the flat border with a soft two-layer gradient
+(`background-image`, `--lane-c` fading to transparent over 18px from both the
+top and bottom edge into the row's own tint) — an area fill has no crisp edge to
+confuse with a wire's stroke, so the same change addressed both complaints.
+`timeline.js`/`renderChronStrip()` was untouched; this was CSS-only
+(`.tl-lane-row` in `styles.css`).
+
+### Offscreen tile differentiation
+- Chron cards (`.tl-scene`) never actually got the `.tl-offscreen` class despite
+  CSS already having a (dead) rule for it — offscreen was only signaled by
+  appending `' · off'` to the date/meta line. Manuscript cards (`.tl-ms-card`)
+  had a real `.tl-off-chip` div, but its text was the bare word `off`.
+- Both card types now get `.tl-offscreen` (chron cards newly, ribbon cards as
+  before) plus a `.tl-off-chip` reading **"Offscreen"** (not `off`/`OFFSCREEN`
+  — dropped the chip's `text-transform:uppercase` so the label reads exactly as
+  written); the chron card's old inline `' · off'` append is gone.
+- Both card types get dotted left/right side borders
+  (`border-left/right:2px dotted var(--o0)`) so an offscreen tile is
+  recognizable independent of its chip text.
+
+### Verified live
+On the real offscreen scene in the Frankenstein sample ("A Pursuit Across the
+World"): both its chron card and its manuscript card show the dotted side
+borders and the "Offscreen" chip (confirmed via computed styles, not just
+visually); each `.tl-lane-row`'s `background-image` confirmed present and keyed
+to that lane's own color. Console clean.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.

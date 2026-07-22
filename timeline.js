@@ -179,6 +179,7 @@ function fmtGap(ms) {
 
 // ── MODE STATE ─────────────────────────────────────────────────────────────────
 let timelineMode = false;
+let tlBraidMode = false; // Strip vs. Braid, ephemeral like chartMode — resets on project open
 let tlSelectedId = null;
 let tlActiveTab = 'inspector'; // in-memory only, not persisted (§6.6)
 let _tlFormEditHome = null; // { parent, next } captured once, restored on leave
@@ -230,6 +231,13 @@ function _openTimelineViewImpl() {
   document.getElementById('tl-inspector-body').appendChild(document.getElementById('form-edit'));
   tlSwitchTab('inspector');
   tlSelectedId = null;
+  tlBraidMode = false;
+  document.getElementById('tl-stage').classList.remove('tl-braid-active');
+  document.querySelectorAll('#tl-view-switch .tl-axis-btn').forEach(b => {
+    b.classList.toggle('on', b.dataset.view === 'strip');
+  });
+  document.getElementById('tl-axis-switch').style.display = '';
+  document.getElementById('tl-thread-wrap').style.display = '';
   updateViewToggleUI();
   updateMenuForMode();
   setTimelineMenuLabel();
@@ -266,6 +274,23 @@ function updateViewToggleUI() {
   document.getElementById('chart-type-timeline').classList.toggle('on', timelineMode);
 }
 
+// Strip (chron strip + manuscript ribbon + wires) vs. Braid (read-only structure
+// chart, §9.5) — a toggle nested inside Timeline view, not a 5th top-level view mode.
+// Axis toggle and thread picker don't apply in Braid (per spec) and are hidden while
+// it's active.
+function setTlViewMode(mode) {
+  tlBraidMode = (mode === 'braid');
+  document.getElementById('tl-stage').classList.toggle('tl-braid-active', tlBraidMode);
+  document.querySelectorAll('#tl-view-switch .tl-axis-btn').forEach(b => {
+    b.classList.toggle('on', b.dataset.view === mode);
+  });
+  const axisSwitch = document.getElementById('tl-axis-switch');
+  const threadWrap = document.getElementById('tl-thread-wrap');
+  if (axisSwitch) axisSwitch.style.display = tlBraidMode ? 'none' : '';
+  if (threadWrap) threadWrap.style.display = tlBraidMode ? 'none' : '';
+  renderTimeline();
+}
+
 // ── MENU STATE PER MODE (§6.1) ─────────────────────────────────────────────────
 function updateMenuForMode() {
   const boardZoomIds = ['zoomin-btn', 'zoomout-btn', 'zoomreset-btn'];
@@ -284,6 +309,7 @@ function renderTimeline() {
   renderChronStrip();
   renderManuscriptRibbon();
   redrawWires();
+  renderBraid();
   renderThreadPicker();
   updateAxisAvailability();
   const zoomEl = document.getElementById('tl-zoom');
@@ -440,7 +466,7 @@ function renderChronStrip() {
     const lane = laneIndex.get(s.storylineId); if (lane === undefined) return;
 
     const card = document.createElement('div');
-    card.className = 'tl-scene';
+    card.className = 'tl-scene' + (s.offscreen ? ' tl-offscreen' : '');
     card.dataset.sceneId = s.id;
     card.style.width = cardW + 'px';
     card.style.left = x + '%';
@@ -454,8 +480,8 @@ function renderChronStrip() {
     const title = document.createElement('div'); title.className = 'tl-t'; title.textContent = s.title; card.appendChild(title);
     const meta = document.createElement('div'); meta.className = 'tl-m';
     meta.textContent = fmtAnchor(s.anchor) || '—';
-    if (s.offscreen) meta.textContent += ' · off';
     card.appendChild(meta);
+    if (s.offscreen) { const chip = document.createElement('div'); chip.className = 'tl-off-chip'; chip.textContent = 'Offscreen'; card.appendChild(chip); }
 
     const convDots = renderConvDots(s, storylineById);
     if (convDots) card.appendChild(convDots);
@@ -523,7 +549,7 @@ function buildRibbonCard(s, num, storylineById) {
   const warnDot = document.createElement('div'); warnDot.className = 'tl-warn-dot'; card.appendChild(warnDot);
   const ch = document.createElement('div'); ch.className = 'tl-ch'; ch.textContent = 'Sc ' + num; card.appendChild(ch);
   const title = document.createElement('div'); title.className = 'tl-t'; title.textContent = s.title; card.appendChild(title);
-  if (s.offscreen) { const chip = document.createElement('div'); chip.className = 'tl-off-chip'; chip.textContent = 'off'; card.appendChild(chip); }
+  if (s.offscreen) { const chip = document.createElement('div'); chip.className = 'tl-off-chip'; chip.textContent = 'Offscreen'; card.appendChild(chip); }
 
   const convDots = renderConvDots(s, storylineById);
   if (convDots) card.appendChild(convDots);
@@ -965,6 +991,7 @@ function redrawWires() {
   const svg = document.getElementById('tl-wires');
   const stage = document.getElementById('tl-stage');
   if (!svg || !stage || !timelineMode) return;
+  if (tlBraidMode) { svg.textContent = ''; return; } // Strip-only concern; Braid draws its own paths
   svg.setAttribute('width', stage.clientWidth);
   svg.setAttribute('height', stage.clientHeight);
   svg.textContent = '';
@@ -1021,6 +1048,272 @@ function redrawWires() {
   svg.appendChild(frag);
 }
 
+// ── BRAID VIEW (§9.5) — read-only structure chart ──────────────────────────────
+// Ported from ../Timeline/js/braid.js, adapted: SceneSetter's manuscriptOrder()
+// includes offscreen scenes (ThruLine's msOrder never did), so the reading-order
+// axis explicitly filters them out here; "dividers" become section boundaries
+// (this app has sections instead of ThruLine's separate divider concept), colored
+// by each section's own .color instead of one literal accent hex.
+const BRAID_COL_X0 = 110, BRAID_COL_DX = 93, BRAID_ROW_Y0 = 70;
+const BRAID_LEFT = 60, BRAID_RIGHT_PAD = 210, BRAID_LABEL_FLIP_ZONE = 160;
+const BRAID_MIN_ROWH = 26, BRAID_MAX_ROWH = 52;
+const BRAID_FLASHBACK_COLOR = { dark: '#e0a458', light: '#b07a35' };
+
+function braidColX(i) { return BRAID_COL_X0 + i * BRAID_COL_DX; }
+function braidRowY(chronIndex, rowH) { return BRAID_ROW_Y0 + chronIndex * rowH; }
+
+function renderBraid() {
+  const scroll = document.getElementById('tl-braid-scroll');
+  const svg = document.getElementById('tl-braid-svg');
+  if (!scroll || !svg || !timelineMode) return;
+
+  const msScenes = manuscriptOrder().filter(s => !s.offscreen);
+  const msOrder = msScenes.map(s => s.id);
+  const chronOrder = S.chronOrder || [];
+  const N = chronOrder.length;
+
+  svg.textContent = '';
+  if (!tlBraidMode) return;
+
+  if (!msOrder.length || N < 1) {
+    svg.setAttribute('width', scroll.clientWidth || 1);
+    svg.setAttribute('height', scroll.clientHeight || 1);
+    return;
+  }
+
+  const sceneById = new Map(S.scenes.map(s => [s.id, s]));
+  const storylineById = new Map(S.storylines.map(st => [st.id, st]));
+  const validSecIds = new Set(S.sections.map(s => s.id));
+
+  const chronIndex = new Map();
+  chronOrder.forEach((id, i) => chronIndex.set(id, i));
+  const msIndex = new Map();
+  msOrder.forEach((id, i) => msIndex.set(id, i));
+
+  const stageH = scroll.clientHeight || 400;
+  let rowH = N > 1 ? (stageH - 140) / (N - 1) : BRAID_MAX_ROWH;
+  rowH = Math.max(BRAID_MIN_ROWH, Math.min(BRAID_MAX_ROWH, rowH));
+
+  const contentW = Math.max(scroll.clientWidth || 0, braidColX(msOrder.length - 1) + BRAID_RIGHT_PAD);
+  const contentH = Math.max(scroll.clientHeight || 0, braidRowY(N - 1, rowH) + 60);
+  const chartRight = braidColX(msOrder.length - 1) + 110;
+
+  // Explicit width/height ATTRIBUTES, not just CSS — an <svg> is a replaced
+  // element and silently falls back to the 300x150 UA default without them
+  // (same pitfall #tl-wires already works around).
+  svg.setAttribute('width', contentW);
+  svg.setAttribute('height', contentH);
+
+  const theme = document.documentElement.dataset.theme || 'ivory';
+  const flashbackColor = BRAID_FLASHBACK_COLOR[TL_DARK_THEMES.has(theme) ? 'dark' : 'light'];
+
+  // ---- gridlines: one per chronOrder rank ----
+  for (let r = 0; r < N; r++) {
+    const gl = document.createElementNS(SVGNS, 'line');
+    gl.setAttribute('x1', BRAID_LEFT); gl.setAttribute('x2', chartRight);
+    gl.setAttribute('y1', braidRowY(r, rowH)); gl.setAttribute('y2', braidRowY(r, rowH));
+    gl.setAttribute('stroke-width', 1);
+    gl.style.stroke = 'var(--s1)';
+    svg.appendChild(gl);
+  }
+
+  // ---- top edge: "READING ORDER →" label + "Sc n" tick per column ----
+  const topLabel = document.createElementNS(SVGNS, 'text');
+  topLabel.setAttribute('x', BRAID_LEFT); topLabel.setAttribute('y', 20);
+  topLabel.setAttribute('font-size', 10); topLabel.setAttribute('font-weight', 'bold'); topLabel.setAttribute('letter-spacing', '1.5px');
+  topLabel.style.fill = 'var(--o0)';
+  topLabel.textContent = 'READING ORDER →';
+  svg.appendChild(topLabel);
+
+  const numMap = buildSceneNumMap();
+  msOrder.forEach((id, i) => {
+    const tick = document.createElementNS(SVGNS, 'text');
+    tick.setAttribute('x', braidColX(i)); tick.setAttribute('y', 38);
+    tick.setAttribute('font-size', 10); tick.setAttribute('text-anchor', 'middle');
+    tick.style.fill = 'var(--sub)';
+    tick.textContent = 'Sc ' + (numMap.get(id) ?? (i + 1));
+    svg.appendChild(tick);
+  });
+
+  // ---- left edge: rotated "STORY TIME ↓" ----
+  const leftY = braidRowY((N - 1) / 2, rowH);
+  const leftLabel = document.createElementNS(SVGNS, 'text');
+  leftLabel.setAttribute('x', 18); leftLabel.setAttribute('y', leftY);
+  leftLabel.setAttribute('font-size', 10); leftLabel.setAttribute('font-weight', 'bold'); leftLabel.setAttribute('letter-spacing', '1.5px');
+  leftLabel.setAttribute('text-anchor', 'middle'); leftLabel.setAttribute('transform', 'rotate(-90 18 ' + leftY + ')');
+  leftLabel.style.fill = 'var(--o0)';
+  leftLabel.textContent = 'STORY TIME ↓';
+  svg.appendChild(leftLabel);
+
+  // ---- markers (§7.4): horizontal dashed lines at the y midway between the
+  // chronOrder ranks they separate ----
+  const markersLayer = document.createElementNS(SVGNS, 'g');
+  svg.appendChild(markersLayer);
+  (S.markers || []).forEach(m => {
+    let y;
+    if (!m.beforeSceneId) {
+      y = braidRowY(N - 1, rowH) + rowH / 2;
+    } else {
+      const idx = chronIndex.get(m.beforeSceneId);
+      if (idx === undefined) return;
+      y = (idx === 0) ? braidRowY(0, rowH) - rowH / 2 : (braidRowY(idx - 1, rowH) + braidRowY(idx, rowH)) / 2;
+    }
+    const line = document.createElementNS(SVGNS, 'line');
+    line.setAttribute('x1', BRAID_LEFT); line.setAttribute('x2', chartRight);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('stroke-width', 1); line.setAttribute('stroke-dasharray', '5 4');
+    line.style.stroke = 'var(--o0)';
+    markersLayer.appendChild(line);
+
+    const label = document.createElementNS(SVGNS, 'text');
+    label.setAttribute('x', BRAID_LEFT + 4); label.setAttribute('y', y - 4);
+    label.setAttribute('font-size', 9); label.setAttribute('letter-spacing', '.6px'); label.setAttribute('font-weight', 'bold');
+    label.style.fill = 'var(--o0)';
+    label.textContent = m.label;
+    markersLayer.appendChild(label);
+  });
+
+  // ---- section boundaries (sections replace ThruLine's "dividers"): short
+  // vertical ticks along the top edge between the relevant reading-order
+  // columns, colored by the section's own .color ----
+  const dividersLayer = document.createElementNS(SVGNS, 'g');
+  svg.appendChild(dividersLayer);
+  let lastSecKey;
+  msScenes.forEach((s, i) => {
+    const secKey = validSecIds.has(s.sectionId) ? s.sectionId : null;
+    if (i > 0 && secKey !== lastSecKey) {
+      const x = (braidColX(i - 1) + braidColX(i)) / 2;
+      const sec = S.sections.find(x => x.id === secKey);
+      const tick = document.createElementNS(SVGNS, 'line');
+      tick.setAttribute('x1', x); tick.setAttribute('x2', x);
+      tick.setAttribute('y1', 46); tick.setAttribute('y2', 58);
+      tick.setAttribute('stroke-width', 2);
+      tick.style.stroke = (sec && sec.color) || 'var(--acc)';
+      dividersLayer.appendChild(tick);
+    }
+    lastSecKey = secKey;
+  });
+
+  // ---- reading path: cubic bezier per consecutive msOrder pair, drawn before nodes ----
+  const pathsLayer = document.createElementNS(SVGNS, 'g');
+  svg.appendChild(pathsLayer);
+  const pathEls = [];
+  for (let i = 0; i < msOrder.length - 1; i++) {
+    const aId = msOrder[i], bId = msOrder[i + 1];
+    const aIdx = chronIndex.get(aId), bIdx = chronIndex.get(bId);
+    if (aIdx === undefined || bIdx === undefined) continue;
+    const ax = braidColX(i), ay = braidRowY(aIdx, rowH);
+    const bx = braidColX(i + 1), by = braidRowY(bIdx, rowH);
+    const mx = (ax + bx) / 2;
+    const isFlashback = bIdx < aIdx; // upward = backward in story time
+    const path = document.createElementNS(SVGNS, 'path');
+    path.setAttribute('d', 'M ' + ax + ' ' + ay + ' C ' + mx + ' ' + ay + ', ' + mx + ' ' + by + ', ' + bx + ' ' + by);
+    path.setAttribute('fill', 'none'); path.setAttribute('stroke-width', 2.5);
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('data-from', aId); path.setAttribute('data-to', bId);
+    path.setAttribute('data-flash', isFlashback ? 'true' : 'false');
+    if (isFlashback) {
+      path.style.stroke = flashbackColor;
+      path.setAttribute('stroke-dasharray', '7 5');
+      path.setAttribute('opacity', 0.9);
+    } else {
+      path.style.stroke = 'var(--sub)';
+      path.setAttribute('opacity', 0.55);
+    }
+    pathsLayer.appendChild(path);
+    pathEls.push(path);
+  }
+
+  // ---- nodes + labels ----
+  const nodesLayer = document.createElementNS(SVGNS, 'g');
+  svg.appendChild(nodesLayer);
+
+  const flagActive = typeof isFlagModeActive === 'function' && isFlagModeActive();
+  const flaggedIds = flagActive && typeof getFlaggedSceneIds === 'function' ? (getFlaggedSceneIds() || []) : [];
+
+  msOrder.forEach((id, i) => {
+    const s = sceneById.get(id);
+    if (!s) return;
+    const idx = chronIndex.get(id);
+    if (idx === undefined) return;
+    const x = braidColX(i), y = braidRowY(idx, rowH);
+    const st = storylineById.get(s.storylineId);
+    const color = st ? slColor(st.paletteIndex) : 'var(--acc)';
+
+    const g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('class', 'tl-braid-node');
+    g.dataset.sceneId = String(id);
+    if (String(id) === String(tlSelectedId)) g.classList.add('tl-sel');
+    if (typeof sceneHasWarning === 'function' && sceneHasWarning(id)) g.classList.add('tl-warn');
+    if (flagActive && flaggedIds.includes(id)) g.classList.add('tl-flag');
+
+    const circle = document.createElementNS(SVGNS, 'circle');
+    circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', 11);
+    circle.setAttribute('stroke-width', 3);
+    circle.style.fill = 'var(--cbg)';
+    circle.style.stroke = color;
+    g.appendChild(circle);
+
+    const num = document.createElementNS(SVGNS, 'text');
+    num.setAttribute('x', x); num.setAttribute('y', y);
+    num.setAttribute('font-size', 10); num.setAttribute('font-weight', 'bold'); num.setAttribute('text-anchor', 'middle');
+    num.setAttribute('dominant-baseline', 'central'); num.setAttribute('pointer-events', 'none');
+    num.style.fill = 'var(--tx)';
+    num.textContent = String(numMap.get(id) ?? (i + 1));
+    g.appendChild(num);
+
+    if (g.classList.contains('tl-warn')) {
+      const warn = document.createElementNS(SVGNS, 'circle');
+      warn.setAttribute('cx', x + 9); warn.setAttribute('cy', y - 9); warn.setAttribute('r', 4);
+      warn.setAttribute('stroke-width', 2); warn.setAttribute('pointer-events', 'none');
+      warn.style.fill = 'var(--rd)';
+      warn.style.stroke = 'var(--cbg)';
+      g.appendChild(warn);
+    }
+
+    const lastColX = braidColX(msOrder.length - 1);
+    const flip = (lastColX - x) < BRAID_LABEL_FLIP_ZONE;
+    const labelX = flip ? x - 18 : x + 18;
+    const anchor = flip ? 'end' : 'start';
+
+    const title = document.createElementNS(SVGNS, 'text');
+    title.setAttribute('x', labelX); title.setAttribute('y', y - 2);
+    title.setAttribute('font-size', 11); title.setAttribute('text-anchor', anchor); title.setAttribute('pointer-events', 'none');
+    title.style.fill = 'var(--tx)';
+    title.textContent = s.title;
+    g.appendChild(title);
+
+    const timeLabel = document.createElementNS(SVGNS, 'text');
+    timeLabel.setAttribute('x', labelX); timeLabel.setAttribute('y', y + 11);
+    timeLabel.setAttribute('font-size', 9.5); timeLabel.setAttribute('text-anchor', anchor); timeLabel.setAttribute('pointer-events', 'none');
+    timeLabel.style.fill = 'var(--sub)';
+    timeLabel.textContent = fmtAnchor(s.anchor) || '—';
+    g.appendChild(timeLabel);
+
+    g.style.cursor = 'pointer';
+    g.addEventListener('mouseenter', () => { highlightScene(id, true); _tlBraidThickenPaths(pathEls, id, true); });
+    g.addEventListener('mouseleave', () => { highlightScene(id, false); _tlBraidThickenPaths(pathEls, id, false); });
+    g.addEventListener('click', e => { e.stopPropagation(); tlSelectScene(id); });
+
+    nodesLayer.appendChild(g);
+  });
+}
+
+function _tlBraidThickenPaths(pathEls, sceneId, on) {
+  pathEls.forEach(p => {
+    const from = p.getAttribute('data-from'), to = p.getAttribute('data-to');
+    if (String(from) !== String(sceneId) && String(to) !== String(sceneId)) return;
+    if (on) {
+      p.setAttribute('stroke-width', 4);
+      p.setAttribute('opacity', 1);
+    } else {
+      const isFlash = p.getAttribute('data-flash') === 'true';
+      p.setAttribute('stroke-width', 2.5);
+      p.setAttribute('opacity', isFlash ? 0.9 : 0.55);
+    }
+  });
+}
+
 let _tlWiresRafPending = false;
 function _tlOnStripScroll() {
   if (_tlWiresRafPending) return;
@@ -1049,7 +1342,7 @@ function tlSelectScene(sceneId, opts) {
 }
 function _tlDoSelectScene(sceneId, opts) {
   tlSelectedId = sceneId;
-  document.querySelectorAll('.tl-scene, .tl-ms-card').forEach(el => {
+  document.querySelectorAll('.tl-scene, .tl-ms-card, .tl-braid-node').forEach(el => {
     el.classList.toggle('tl-sel', el.dataset.sceneId === String(sceneId));
   });
   const emptyEl = document.getElementById('tl-inspector-empty');

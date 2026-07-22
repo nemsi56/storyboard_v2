@@ -172,6 +172,9 @@
   // _tlDragOccurred check a listener here wouldn't have, so it isn't duplicated.
   $('tl-chron-scroll').addEventListener('click', function(e){ if (e.target === $('tl-chron-scroll')) tlSelectScene(null); });
   $('tl-ms-scroll').addEventListener('click', function(e){ if (e.target === $('tl-ms-scroll') || e.target.id === 'tl-ms-row') tlSelectScene(null); });
+  $('tl-view-strip').addEventListener('click', function(){ setTlViewMode('strip'); });
+  $('tl-view-braid').addEventListener('click', function(){ setTlViewMode('braid'); });
+  $('tl-braid-scroll').addEventListener('click', function(e){ if (e.target === $('tl-braid-scroll') || e.target.id === 'tl-braid-svg') tlSelectScene(null); });
 
   // Add-item popup
   $('ap-cancel').addEventListener('click', closeAddPopup);

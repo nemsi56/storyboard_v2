@@ -852,7 +852,7 @@ body.tl-mode #sbhdr{display:none}
 #timeline-host{flex:1;min-width:0;display:flex;overflow:hidden}
 #tl-stage{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
 #tl-chron-hdr{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:8px 14px;border-bottom:1px solid var(--s1);background:var(--bg1)}
-#tl-axis-switch{display:flex;border:1px solid var(--s1);border-radius:7px;overflow:hidden}
+#tl-view-switch,#tl-axis-switch{display:flex;border:1px solid var(--s1);border-radius:7px;overflow:hidden}
 .tl-axis-btn{background:var(--s0);color:var(--sub);border:none;padding:6px 10px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer}
 .tl-axis-btn.on{background:var(--acc);color:var(--ontx)}
 .tl-axis-btn:disabled{opacity:.4;cursor:default}
@@ -908,7 +908,21 @@ body.tl-mode #sbhdr{display:none}
 
 #tl-chron-scroll{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden}
 #tl-track{position:relative;min-width:100%}
-.tl-lane-row{position:absolute;left:0;right:0;border-bottom:1px dashed var(--s1);border-top:2px solid var(--lane-c,transparent);background:color-mix(in srgb,var(--lane-c,transparent) 5%,transparent);box-sizing:border-box}
+/* Soft gradient glows (not hard lines) at each row's top/bottom edge, fading the
+   lane color into the row's own tint — a flat 2px solid border here read as a
+   third kind of stroke competing visually with the wire curves that cross this
+   same area (both are thin, colored, roughly the same hue family), making the
+   two easy to mistake for each other. A soft fade has no crisp edge to confuse
+   with a wire's stroke. */
+.tl-lane-row{
+  position:absolute;left:0;right:0;box-sizing:border-box;
+  border-bottom:1px dashed var(--s1);
+  background-color:color-mix(in srgb,var(--lane-c,transparent) 5%,transparent);
+  background-image:
+    linear-gradient(to bottom,color-mix(in srgb,var(--lane-c,transparent) 65%,transparent),transparent 18px),
+    linear-gradient(to top,color-mix(in srgb,var(--lane-c,transparent) 65%,transparent),transparent 18px);
+  background-repeat:no-repeat;
+}
 .tl-lane-row.tl-drop-target{outline:2px dashed var(--acc);outline-offset:-2px}
 
 #tl-wires-zone{flex:1;min-height:100px;position:relative;border-bottom:1px solid var(--s1)}
@@ -939,7 +953,8 @@ body.tl-mode #sbhdr{display:none}
 .tl-ms-card .tl-ch{font-size:9px;letter-spacing:.6px;color:var(--o0);font-weight:700}
 .tl-ms-card.tl-offscreen{opacity:.4}
 .tl-scene.tl-offscreen{opacity:1}
-.tl-scene .tl-off-chip,.tl-ms-card .tl-off-chip{font-size:8px;font-weight:700;color:var(--sub);text-transform:uppercase}
+.tl-scene.tl-offscreen,.tl-ms-card.tl-offscreen{border-left:2px dotted var(--o0);border-right:2px dotted var(--o0)}
+.tl-scene .tl-off-chip,.tl-ms-card .tl-off-chip{font-size:8px;font-weight:700;color:var(--sub)}
 
 .tl-warn-dot{position:absolute;top:-5px;right:-5px;width:9px;height:9px;border-radius:50%;background:var(--rd);border:2px solid var(--sbg);display:none}
 .tl-scene.tl-warn .tl-warn-dot,.tl-ms-card.tl-warn .tl-warn-dot{display:block}
@@ -954,6 +969,24 @@ body.hovering .tl-ms-card:not(.tl-hi):not(.tl-flag){opacity:.28}
 .tl-scene.tl-sel,.tl-ms-card.tl-sel{box-shadow:0 0 0 2px var(--acc);border-color:var(--acc)}
 .tl-scene.tl-flag,.tl-ms-card.tl-flag{box-shadow:0 0 0 2px var(--rd),0 4px 14px rgba(0,0,0,.3);border-color:var(--rd);opacity:1}
 body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){opacity:.25}
+
+/* ==================================================================
+   Braid view — read-only structure chart, toggled inside Timeline view
+   ================================================================== */
+#tl-braid-scroll{display:none;flex:1;min-height:0;overflow:auto}
+#tl-stage.tl-braid-active #tl-chron-body,
+#tl-stage.tl-braid-active #tl-wires-zone,
+#tl-stage.tl-braid-active #tl-ms-scroll,
+#tl-stage.tl-braid-active #tl-wires{display:none}
+#tl-stage.tl-braid-active #tl-braid-scroll{display:block}
+#tl-braid-svg{display:block}
+
+.tl-braid-node circle{transition:stroke-width .15s}
+.tl-braid-node.tl-hi circle{stroke-width:5}
+.tl-braid-node.tl-sel circle{stroke:var(--acc) !important;stroke-width:4}
+.tl-braid-node.tl-flag circle{stroke:var(--rd) !important}
+body.hovering .tl-braid-node:not(.tl-hi){opacity:.28}
+body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
 
 #tl-panel{flex:0 0 300px;background:var(--bg1);border-left:1px solid var(--s1);display:flex;flex-direction:column;min-height:0}
 .tl-panel-tabs{display:flex;border-bottom:1px solid var(--s1);flex:0 0 auto}
