@@ -874,7 +874,7 @@ body.tl-mode #sbhdr{display:none}
    hardcoded 48px sliver. Capped so a many-storyline project can't starve the
    wires zone down to its min-height. */
 #tl-chron-body{flex:0 0 auto;max-height:55%;min-height:0;display:flex;overflow:hidden}
-#tl-lane-labels{flex:0 0 132px;display:flex;flex-direction:column;border-right:none;overflow-y:hidden}
+#tl-lane-labels{position:relative;flex:0 0 132px;display:flex;flex-direction:column;border-right:none;overflow-y:hidden}
 /* flex-shrink:0 is load-bearing: #tl-lane-labels is a flex column, and without
    this, flex's default shrink-to-fit squeezes every label below its declared
    height the moment total lane height exceeds #tl-chron-body's available
@@ -895,7 +895,15 @@ body.tl-mode #sbhdr{display:none}
 .tl-lane-del{position:absolute;top:3px;right:4px;background:none;border:none;color:var(--o0);cursor:pointer;font-size:12px;padding:1px 3px;line-height:1;opacity:0;transition:opacity .1s}
 .tl-lane-label:hover .tl-lane-del{opacity:1}
 .tl-lane-del:hover{color:var(--rd)}
-#tl-add-storyline-btn{margin-top:auto;background:none;border:1px dashed var(--s1);border-radius:6px;color:var(--sub);font-size:11px;font-weight:600;font-family:inherit;padding:6px;cursor:pointer;margin:6px 8px 8px}
+/* Taken out of #tl-lane-labels' normal flex flow entirely (was previously
+   just the last flex child, sitting right after the labels — despite the
+   unused margin-top:auto below, which the later margin:6px 8px 8px shorthand
+   in the same original rule always overrode) — with flex-shrink:0 above now
+   keeping every label at its true height, a project with enough storylines
+   to fill #tl-lane-labels' available space would push this button past the
+   clipped bottom edge and make it permanently unreachable. Pinned as a
+   floating overlay instead, so it's always visible regardless of lane count. */
+#tl-add-storyline-btn{position:absolute;left:8px;right:8px;bottom:8px;background:var(--bg1);border:1px dashed var(--s1);border-radius:6px;color:var(--sub);font-size:11px;font-weight:600;font-family:inherit;padding:6px;cursor:pointer;box-shadow:0 -4px 8px -2px var(--bg1)}
 #tl-add-storyline-btn:hover{border-color:var(--acc);color:var(--acc)}
 
 #tl-chron-scroll{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden}

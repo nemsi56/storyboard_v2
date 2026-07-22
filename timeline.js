@@ -389,9 +389,17 @@ function renderChronStrip() {
 
   const laneCount = S.storylines.length || 1;
   const laneH = 92, cardW = 96;
-  track.style.height = (laneCount * laneH) + 'px';
+  // BTN_RESERVE: #tl-add-storyline-btn floats pinned to #tl-lane-labels'
+  // bottom edge (styles.css) — without reserving this room in both
+  // containers' own height, it always overlaps the last lane's label, since
+  // #tl-chron-body sizes strictly to its content (flex:0 0 auto) and never
+  // grows just because the window has room to spare. Added to both track and
+  // laneLabels equally so the reserved space doesn't reintroduce a mismatch
+  // between the two (each lane is still positioned identically at i*laneH).
+  const BTN_RESERVE = 40;
+  track.style.height = (laneCount * laneH + BTN_RESERVE) + 'px';
   track.style.width = chronTrackWidth(track) + 'px';
-  laneLabels.style.height = (laneCount * laneH) + 'px';
+  laneLabels.style.height = (laneCount * laneH + BTN_RESERVE) + 'px';
 
   const laneIndex = new Map(S.storylines.map((st, i) => [st.id, i]));
   const storylineById = new Map(S.storylines.map(st => [st.id, st]));

@@ -1432,6 +1432,26 @@ question was about discoverability, not a bug — noted as a possible future
 affordance (a "+ Marker" button beside "+ Storyline") but not built, since it
 wasn't asked for.
 
+**Post-M7, round 5 — round 4's `flex-shrink:0` fix broke the "+ Storyline" button**,
+caught immediately by the user asking "where is it now?" `#tl-add-storyline-btn`
+was always just the last child of `#tl-lane-labels`' flex column (an unused
+`margin-top:auto` was always overridden by a later `margin:6px 8px 8px` shorthand
+in the same rule, so it never actually auto-pushed to the bottom) — before round
+4, flex-shrink was silently compressing the labels to make room for it; after
+disabling that shrink, the button simply got pushed past `#tl-lane-labels`'
+clipped bottom edge and became permanently unreachable the moment total lane
+height filled the available space (not a rare case — happened on the very next
+load of the 3-storyline Frankenstein project). Fixed by taking the button out of
+the flex flow entirely: pinned as a floating `position:absolute` overlay at the
+container's bottom edge, and reserved 40px (`BTN_RESERVE` in `timeline.js`) in
+both the track's and the label column's own height so it no longer overlaps the
+last lane's label either. The reserve is added identically to both containers, so
+it doesn't reintroduce round 4's label/row divergence. Verified: no overlap at
+normal and moderately small window heights (700–900px); at a deliberately extreme
+500px-tall window, the button does clip — but that's `#tl-chron-body`'s
+pre-existing `max-height:55%` cap clipping the same way it would clip actual lane
+content in that scenario, not a new failure mode.
+
 ### Not yet done
 Nothing outstanding from the M7 checklist itself. Still not merged to `main` —
 stays on `thruLine_v1` per explicit instruction; main and all other branches are
