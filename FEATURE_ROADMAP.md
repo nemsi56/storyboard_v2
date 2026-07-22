@@ -429,11 +429,25 @@ implementation log in `STATUS.md`. Milestones M1–M7 per the spec's own numberi
   all five themes, against both a fresh project and a migrated sample. Found and fixed
   a real bug along the way: the M3 Timing/Reveals dropdown buttons ("Also part of,"
   "This scene reveals," "Requires knowing") were never wired to `toggleCkDrop()` in
-  `editor-init.js`, so they didn't open on click. See `STATUS.md` for the full
-  narrative.
+  `editor-init.js`, so they didn't open on click.
+- `[x]*` **Post-M7 hardening**, prompted by importing a real, structurally rich
+  ThruLine dataset (Frankenstein — multiple storylines, a frame narrative, a genuine
+  reveal-order conflict) that the smaller M7 test fixtures never exercised. Found and
+  fixed four more real bugs: the Timeline Inspector's Cancel/Save row collapsing
+  beside the Title field and every field click silently cancelling the edit (two
+  compounding causes — a reparented-element CSS rule and a board-only click-outside
+  handler that didn't know about Timeline mode); the wires zone hardcoded to 48px
+  instead of taking the stage's remaining space; wires not drawing for offscreen
+  scenes at all; and wire endpoints pinned to the strip boundary instead of the
+  actual card position, so any card outside the bottommost storyline lane looked
+  disconnected. The converted Frankenstein project was then kept as a permanent
+  third sample (`frankenstein.json`), since its Timeline-heavy shape makes it a
+  better everyday demo than the two v2-derived samples. See `STATUS.md` for the
+  full narrative of all of the above.
 
-*(`thruLine_v1` branch — all M1–M7 milestones complete; not merged to `main`,
-explicitly scoped to stay off `main` and every other branch until it's ready.)*
+*(`thruLine_v1` branch — all M1–M7 milestones complete, plus post-M7 hardening;
+not merged to `main`, explicitly scoped to stay off `main` and every other branch
+until it's ready.)*
 
 ---
 
@@ -450,7 +464,7 @@ explicitly scoped to stay off `main` and every other branch until it's ready.)*
 | `feature/updates_v5` | Merged to `main` (PR #14) — Scene/Scene Board divider and header polish (prominent divider color, "Scene Board" title removed, scene-count-vs-filter bug fix), the Cards/Snake/Circle view switch replacing the old chart toggle button and menu item, removal of the snake chart's redundant section legend, solid-badge scene numbers, POV drag-reorder, a "Learn about your data and backups" link on the backup banner, and Help Mode tooltip coverage for the entire chart toolbar (plus an overflow-clipping fix). See `STATUS.md` for the full narrative. |
 | `feature/updates_v6` | Merged to `main` (PR #15) — merged the splash page and Overview page into one redesigned `index.html` (dark palette, animated hero, zigzag feature rows with scroll-reveal, "browser window" screenshot framing), deleted the standalone Overview page, and added word-count/POV data to both sample projects so Word Count sizing and the POV report/trace features have something to demonstrate out of the box. See `STATUS.md` for the full narrative. |
 | `feature/updates_v7` | Pushed to `origin`, **not yet merged to `main`** — version-tracked sample-project refresh: a browser that already seeded the samples before v6's word-count/POV update now gets it automatically on its next Projects-page visit, but only for a sample it never edited; deleting a sample records its `sampleKey` so a version bump never brings it back. Plus a follow-up full-app audit's fixes: the rename/delete sample-matching bug above, `importProjectJSON()` hardening (section-color format validation, `sectionId` type check, duplicate-library-name rejection), an export-filename edge case, and dead-code cleanup (`hdr-spacer` duplicate id, retired theme-dropdown CSS/JS). See `STATUS.md` for the full narrative. |
-| `thruLine_v1` | Complete (M1-M7 of 7), **not merged to `main`** — Timeline/entity-id integration (§8 above): schema v3 migration + identity refactor, Timing/Reveals scene-form fields, Timeline view shell with chronology/manuscript/wires/lanes, chron drag + markers, conflict engine + panel + warn-dots, and a full M7 verification pass (with one real bug found and fixed — a dead Timing/Reveals dropdown wiring gap). See `STATUS.md` for the full narrative. |
+| `thruLine_v1` | Complete (M1-M7 of 7) + post-M7 hardening, **not merged to `main`** — Timeline/entity-id integration (§8 above): schema v3 migration + identity refactor, Timing/Reveals scene-form fields, Timeline view shell with chronology/manuscript/wires/lanes, chron drag + markers, conflict engine + panel + warn-dots, a full M7 verification pass, and four more bugs found + fixed via a real converted ThruLine dataset (Timeline Inspector layout/click bugs, wires-zone sizing, offscreen scenes not getting wires, wire endpoints not tracking the actual card position) — that dataset (Frankenstein) was then kept as a third permanent sample project. See `STATUS.md` for the full narrative. |
 
 Items marked `[x]*` above are complete and verified in the browser preview, but only exist
 on the branch noted for that item until it's merged into `main`. Items marked `[x]` (no
