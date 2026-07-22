@@ -1587,3 +1587,400 @@ to that lane's own color. Console clean.
 
 ### Not yet done
 Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Timeline Inspector panel polish (fields, dirty-state buttons, click-off guard, delete, collapsible)
+
+A round of usability fixes for the Timeline Inspector, all user-requested directly
+against the running app rather than a spec.
+
+**Touched files:** `editor.html` (field ids, `#tl-panel` restructured for
+collapse, new delete-scene footer), `styles.css` (field hiding, caret size,
+disabled-button styling, panel/strip CSS, delete-button styling),
+`timeline.js` (footer/button-state helpers, click-off-panel discard guard,
+close-mode button reset), `editor-init.js` (new button wiring, delegated
+dirty-check listener), `editor.js` (`deleteScene()` extended for Timeline).
+
+### What changed
+- **Hidden fields**: Themes, Misc Items, Word Count, POV, and Notes are hidden
+  in the Inspector's Edit Scene form via `body.tl-mode #ed-*-field{display:none}`
+  — the fields themselves (and their ids) are untouched, so board's own Edit
+  Scene tab (the same shared `#form-edit` node) still shows all of them
+  normally; only Timeline's CSS scope hides them.
+- **Collapsible-group carets**: `.ffg-car` (the ▾ beside "Timing"/"Reveals")
+  went from 9px to 11px, matching `.ffg-hdr`'s own font-size exactly.
+- **Cancel/Save Changes dim when clean**: both buttons get a real `disabled`
+  attribute, toggled by a new `refreshTlSaveCancelState()` (guarded on
+  `timelineMode`, so it can never touch board's identical-id buttons) that
+  reads the existing `isEditFormDirty()`. A delegated `input`/`change`/`click`
+  listener on `#form-edit` (in `editor-init.js`) keeps it live against every
+  field, checkbox-dropdown toggle, and the Anchor "Clear" button; leaving
+  Timeline mode explicitly clears both buttons' `disabled` attribute so it can
+  never leak into the board's own form.
+- **Freeze on scroll**: turned out to already exist — `.cp-form-hdr` was
+  already `flex-shrink:0` above the independently-scrolling `.cp-form-fields`
+  (both inside and outside Timeline), confirmed by scripting a scroll and
+  checking the header's `getBoundingClientRect()` didn't move. No change
+  needed.
+- **Click-off-panel discard guard**: mirrors the board view's global "cancel
+  edit on click outside `#cp`" `mousedown` listener, previously Timeline-only
+  covered the empty-space clicks on the chron/manuscript/braid scroll
+  containers (each already routed through `tlSelectScene()`'s
+  `runWithDiscardGuard`). The new listener catches everything else outside
+  `#tl-panel` — header controls, zoom, tabs, blank stage chrome — that had no
+  guard at all before. It explicitly skips scene cards and the three scroll
+  containers so it doesn't pre-empt their own more-specific reselect action
+  with a generic "just deselect."
+- **Delete Scene**: a new footer button (visible only on the Inspector tab
+  with a scene open) calls the existing `deleteScene()` — unchanged rather than
+  duplicated, since it was already schema-v3-aware (chronOrder/marker/
+  constraint cleanup) and already shows a native `confirm()` "certainty alert."
+  `deleteScene()` gained one small Timeline-specific addition, the same idiom
+  M5's undo/redo fix used: call `renderTimeline()` and reset the Inspector
+  selection (`_tlDoSelectScene(null,{})`) when `timelineMode` is active, since
+  `renderBoard()` alone doesn't touch Timeline's separate render tree and would
+  otherwise leave a stale, orphaned form open on a just-deleted scene.
+- **Collapsible panel**: `#tl-panel` now uses the same `.panel`/`.p-strip`/
+  `.p-content` structure as the Library/Sections/Scene panels, reusing the
+  existing generic `togglePanel()`. Required switching `#tl-panel` from
+  `flex:0 0 300px` to `width:300px;flex-shrink:0`, since a flex-basis wins over
+  `width` in the sizing algorithm and would have silently blocked the shared
+  `.panel.collapsed{width:28px!important}` rule from taking effect. The
+  collapsed strip's divider was flipped to `border-left` (from the other
+  panels' `border-right`), since this panel sits at the right edge of the
+  window instead of the left.
+
+### Verified live
+On the Frankenstein sample: confirmed via computed styles that the five fields
+are actually `display:none` in Timeline but unaffected on board; confirmed
+Cancel/Save `disabled` is `true` on a freshly-opened clean scene and flips to
+`false` the instant a field changes (dispatched a real `input` event, not just
+inspected code); clicking a header control (the zoom slider) while dirty opened
+the same discard-confirm dialog board view uses, and clicking a *different*
+scene card while dirty did too — confirming Discard on the latter correctly
+switched to the newly-clicked card rather than just deselecting; deleted a real
+scene (patched `window.confirm` to simulate acceptance, since this environment
+auto-suppresses native dialogs as `false` — confirmed that suppression itself
+is what made the *first*, unpatched click correctly do nothing) and confirmed
+the scene count dropped, the chron/manuscript views both dropped its cards, and
+the Inspector reset to the empty state; collapsed and re-expanded the panel via
+both the collapse button and the strip button, confirming the stage reclaims
+the freed width and the panel returns to exactly 300px. Console clean
+throughout except the environment's own expected native-dialog-suppression
+notice.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Strip/Braid/Thread polish round
+
+Another round of direct, user-driven fixes across Strip view, Braid view, the
+Timeline header, and the character thread feature.
+
+**Touched files:** `editor.html`, `styles.css`, `timeline.js`, `editor-init.js`.
+
+### Strip view (Inspector panel)
+- `.ffg-car` (the Timing/Reveals ▾) went from 11px to 16px — matching the
+  header's own font-size still read visually smaller than the letters, since
+  the glyph itself doesn't fill its em box the way text does.
+- The Inspector panel's collapse button (◀) moved to the *left* of the
+  "Inspector" label (previously matched `#cp`'s own convention of trailing
+  the tabs; this panel diverges on purpose per direct request).
+- Inspector/Conflicts now reuse the app's real `.tabs`/`.tab` classes (the
+  same folder-tab look as New Scene/Edit Scene) instead of a bespoke flat
+  underline style — the old `.tl-panel-tabs`/`.tl-panel-tab` CSS rules were
+  removed outright (superseded), keeping only the ids for JS state.
+
+### Braid view
+- Removed the per-column "Sc n" tick row under "READING ORDER →" — each node
+  already shows its own number, so the tick row was pure duplication.
+- The Y-axis label changed from "STORY TIME ↓" to "CHRONOLOGY", with the ↓
+  pulled out of the rotated text run into its own unrotated `<text>` element
+  positioned just past the label's own end — the arrow previously rotated
+  along with the string and ended up pointing sideways instead of down.
+  Placement math: `getBBox()` on the (still-attached) rotated label reads its
+  *pre-rotation* horizontal width; halving that gives the offset from `leftY`
+  to the label's rotated bottom edge, which a `rotate(-90 …)` puts at the
+  string's first character (confirmed both by the rotation math and by
+  reading the rendered element's actual coordinates live).
+- Era-marker labels ("1793 — GENEVA & INGOLSTADT" etc.) moved out of the SVG
+  into a new HTML overlay (`#tl-braid-markers-hud`, absolutely-positioned
+  divs) so they can stay pinned to the visible left edge during horizontal
+  scroll (`tlBraidUpdateMarkerHud()`, wired to the scroll container's own
+  `scroll` event) — the dashed boundary *line* stays in the SVG and scrolls
+  normally, only the label needed to stay legible. A plain CSS
+  `position:sticky` wasn't reliable here since each label's vertical position
+  comes from an individually-set `top`, not normal document flow, so this
+  recomputes the offset directly against `scrollLeft` instead.
+
+### Timeline header
+Removed the "+ Scene" button entirely — "Create → New Scene" (menu item and
+Alt+N) already detects `timelineMode` and calls the exact same `tlCreateScene()`
+the button called (`menuNewScene()`, `editor.js`), so nothing was lost; verified
+scene creation still works via the menu.
+
+### Character thread trace
+- The trace line now draws with a light dash-dot-dash pattern
+  (`stroke-dasharray:"7 3 1.5 3"`, thinner stroke, `.7` opacity) instead of a
+  bold solid line, and `#tl-thread-svg`'s z-index moved above `.tl-scene`'s
+  (4 vs. 2) so the line now floats over the cards rather than hiding behind
+  them — the lighter stroke keeps a floated line from blocking card content.
+- `#tl-thread-sel` gets a glow (`box-shadow`, accent color) whenever a
+  character is actively traced, toggled by a new `updateTlThreadSelActive()`
+  called from both `renderThreadPicker()` (render pipeline) and
+  `setTlThread()` (immediate, on the user's own selection change).
+
+### Verified live
+On the Frankenstein sample: caret/tab/collapse-button placement confirmed via
+computed styles and screenshots at both normal and narrow window widths;
+Braid's "CHRONOLOGY ↓" confirmed via each text element's actual `x`/`y`/
+`transform` attributes (arrow unrotated, positioned past the rotated label's
+real end); scrolled the Braid chart 400px right and confirmed the era-marker
+labels stayed pinned to the left edge while the dashed lines and nodes scrolled
+normally; confirmed no `#tl-add-scene-btn` remains and that Create → New Scene
+still creates a scene correctly (27 → 28, undone back to 27); selected a
+character thread and confirmed via computed styles the trace path's dasharray/
+opacity/z-index and the selector's glow `box-shadow`, then cleared the
+selection and confirmed the glow class comes off. Console clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Braid legend/label fixes, thread line revision, Strip row captions, auto-fit zoom
+
+Another direct-feedback round, the biggest piece being a redesign of the
+Timeline zoom slider's semantics.
+
+**Touched files:** `editor.html`, `styles.css`, `timeline.js`, `editor-init.js`,
+`state.js`, `projects.js`, `frankenstein.json`.
+
+### Braid fixes
+- The era-marker HUD (previous round's fix) was pinned at `scrollLeft+12` —
+  close enough to the rotated "CHRONOLOGY" axis label (which sits at x≈18) to
+  land directly on top of it whenever a marker fell near vertical center at
+  `scrollLeft:0`. Moved to `scrollLeft + BRAID_LEFT + 4` (where the dashed
+  marker line itself starts, past the axis label's own margin) — same
+  frozen-on-scroll behavior, no more collision.
+- The ↓ arrow (added last round, below "CHRONOLOGY") wasn't visually centered
+  — the unicode glyph's own side bearings aren't symmetric in every font.
+  Replaced with a hand-drawn stem + triangle (`<line>` + `<polygon>`), both
+  built from `18±4` around the same x=18 the label itself is centered on —
+  confirmed via the actual rendered coordinates, not just visually.
+- Added `#tl-braid-legend`: a swatch + name per storyline, always visible
+  above the scrollable chart (not inside it, so it can't scroll away). Reuses
+  the Flow Chart's own `.chart-legend-item`/`-swatch`/`-name` classes rather
+  than a new bespoke style.
+
+### Strip view: row captions
+Added two centered captions inside `#tl-wires-zone` (already `position:
+relative`, previously empty): "Chronology — when it happened" pinned to its
+top edge (just below the storyline lanes) and "Narrative — what the reader
+gets" pinned to its bottom edge (just above the manuscript ribbon). Both
+`pointer-events:none`, hidden automatically along with the rest of Strip's
+chrome while Braid is active (`#tl-wires-zone` already display:none there).
+
+### Thread trace line — revised
+Last round changed this to a dash-dot-dash line; this round replaces that
+with the user's refined direction: solid, thicker (`stroke-width` 1.6→5), and
+more translucent (`opacity` .7→.4) so card text stays readable underneath it;
+the per-scene dot grew from r=3.5→7 and also dropped its solid border for the
+same translucent fill (`opacity` .4).
+
+### Timeline zoom — auto-fit at the low end
+The zoom slider used to be a direct 70-200px/scene control. It's now a 0-100
+*position* (`S.timelinePrefs.zoomPos`, replacing the old persisted
+`pxPerScene` field in `state.js`/`projects.js`/`frankenstein.json`) that maps
+piecewise: **0** = fit every scene into the chron strip's current width with
+no overlap and no horizontal scroll, recomputed live against the real
+container width and scene count (`tlZoomFitPx()`) rather than a frozen
+number, so it stays fit-to-window across resizes and scene add/delete;
+**50** (the new midpoint) = the feature's original fixed minimum, 70px/scene;
+**100** = the original fixed maximum, 200px/scene — so the slider's upper half
+reproduces the exact density range that existed before this change.
+`tlCurrentPxPerScene()` is the single function every layout call site now
+reads through (`chronTrackWidth()`, the chron strip's own card width, the
+manuscript ribbon's card width) instead of reading `S.timelinePrefs.pxPerScene`
+directly.
+- Chron strip cards were a flat 96px regardless of zoom (only the *pitch*
+  between them changed) — at the new auto-fit low end that let fixed-width
+  cards overlap even once their pitch had shrunk well below 96px. Card width
+  is now `Math.max(28, Math.min(96, pxPerScene-10))` — unchanged (96px) for
+  the whole pre-existing 70-200 range, only shrinking further once the slider
+  is pushed into new auto-fit territory below the midpoint.
+- The manuscript ribbon's card width had a hard 70px floor (`Math.max(70,
+  pxPerScene-14)`) that would have kept cards wider than their own pitch under
+  auto-fit for the same reason; floor lowered to 28px.
+- `tlZoomFitPx()` itself is floored at 38px (`TL_ZOOM_MIN_CARD_PX+10`) — past
+  the point where even the smallest readable card can't fit everyone in the
+  current width, `chronTrackWidth()`'s own `Math.max(containerW, …)` takes
+  over and allows horizontal scroll for the excess, rather than shrinking
+  cards into unreadable overlap just to avoid a scrollbar. Confirmed live:
+  at a narrow window (27-scene Frankenstein sample, ~850px available) the
+  floor kept the track wider than the viewport (scroll still needed); at a
+  wide window (1600px) the track resolved to *exactly* the container's
+  width with zero scroll and zero overlap.
+- Double-clicking the slider knob resets to 50 (today's typical density) —
+  wired as a plain `dblclick` listener, confirmed live.
+- `state.js`/`projects.js` updated in every place `timelinePrefs` is
+  seeded, loaded/validated (both the tolerant `loadState()` path and the
+  strict `validateV3Import()` used by JSON import), and default-constructed;
+  `frankenstein.json`'s stored prefs updated from `pxPerScene` to `zoomPos`
+  directly rather than left to fall back to the default on next load.
+  Confirmed: a re-exported-shaped project with the new field passes
+  `validateV3Import()` cleanly; one with the old `pxPerScene` field is
+  rejected with a clear, specific message (expected — a genuine schema
+  change, not a bug, and this branch has never been merged/exported to real
+  users yet).
+
+### Verified live
+On the Frankenstein sample: read the actual rendered arrow/stem coordinates
+to confirm true geometric centering (not just eyeballing); confirmed the
+marker HUD no longer overlaps the axis label at `scrollLeft:0`; confirmed the
+Braid legend lists all three storylines with their real colors; confirmed
+both row captions render and read correctly; confirmed the thread line's
+actual `stroke-width`/`opacity`/`stroke-dasharray` (now `null`) and circle
+`r`/`opacity` via computed attributes; confirmed `zoomPos` round-trips through
+`setTlZoom()`/`tlZoomSliderToPx()` correctly (50→70px exactly, matching the
+old fixed minimum); confirmed auto-fit (`zoomPos:0`) genuinely eliminates
+horizontal scroll once the window is wide enough for the scene count, and
+gracefully falls back to a (still non-overlapping) scroll when it isn't.
+Console clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Zoom slider tick, freeze fix, panel arrows, Braid arrow/legend/zoom
+
+Follow-up fixes from live feedback on the previous round, including two real
+bugs (the freeze not actually engaging, and the arrow-centering fix from last
+round still being off) rather than just new polish.
+
+**Touched files:** `editor.html`, `styles.css`, `timeline.js`.
+
+### Strip view
+- **Cancel/Save Changes + Title weren't actually frozen.** The prior round's
+  claim that `.cp-form-hdr{flex-shrink:0}` was sufficient turned out to be a
+  false negative — that test's form was short enough that nothing ever
+  overflowed *either* container, so it never exercised the real failure mode.
+  The actual bug: `#tl-inspector-body` had no bounded height of its own, so
+  `#form-edit` (a plain block child) just grew to fit its full content, never
+  giving `.cp-form-fields` anything to overflow *inside itself* — instead
+  `#tl-inspector-body`'s own `overflow-y:auto` (from the shared
+  `.tl-panel-body` rule) was the one actually engaging, scrolling the whole
+  form, header included. Fixed by making `#tl-inspector-body` itself
+  `display:flex;flex-direction:column;overflow:hidden` and giving
+  `#form-edit` (`.p-body`) `flex:1;min-height:0` so it's bounded to exactly
+  the available height — confirmed live by comparing `scrollHeight`/
+  `clientHeight` on both containers before and after, and by scrolling 300px
+  and checking the header's `getBoundingClientRect()` truly doesn't move.
+- **Title field frozen too** — `position:sticky;top:0` on the Edit form's
+  first `.ff` (Title), scoped to `#tl-inspector-body` only, so the board's own
+  Scene panel (same shared `#form-edit` node) is untouched.
+- **Zoom slider center tick** — a small `.tl-zoom-tick` mark at the wrapper's
+  horizontal midpoint, marking the slider's 50 position (the feature's
+  original fixed density) visually.
+- **Thread line/dot**: color changed from the accent to a literal neutral
+  grey (`#888c93`, deliberately not a theme var — the ask was for *neutral*,
+  not theme-tinted), and opacity dropped further (.4→.32) for "slightly more
+  translucent."
+- **Panel arrow direction was backwards.** `#tl-panel` sits at the *right*
+  edge of the window, but its collapse/expand triangles used the Library/
+  Sections panels' own left-edge convention verbatim (▶ to expand, ◀ to
+  collapse) — correct for a left-mounted panel, backwards for a right-mounted
+  one. Swapped: ◀ now expands (points into the workspace), ▶ now collapses
+  (points toward the panel's own edge).
+
+### Braid view
+- **The arrow was still off-center after last round's fix** — the previous
+  version *computed* an assumed center (x=18, the rotation pivot) rather than
+  measuring the actual rendered result, and that assumption was wrong: for
+  rotated text, the `x` attribute positions the **baseline**, not the visual
+  center, and glyphs sit asymmetrically around a baseline — confirmed live by
+  reading the label's real `getBoundingClientRect()` center (14px) against
+  the assumed pivot (18px), a 4px gap that exactly matches what was visible
+  in the screenshot. Fixed by measuring the label's actual rendered box
+  (`getBoundingClientRect()`, post-rotation, converted into the SVG's own
+  coordinate space via the svg element's own rect) instead of assuming
+  geometry, and centering the hand-drawn arrow on that measured value —
+  verified the arrow's own coordinates now match the label's measured center
+  exactly, not just visually.
+- **Legend swatches are now rings, not bars** — a new `.tl-braid-legend-swatch`
+  (a circle with a colored border and `--cbg` fill) replacing the reused
+  Flow-Chart bar swatch, matching the chart's own node styling instead.
+- **Zoom now actually does something in Braid** — previously the slider was
+  visible but inert there (Braid's column spacing was a hardcoded constant,
+  93px, never read from the zoom preference at all). Added a Braid-specific
+  mirror of the Strip zoom mapping (`tlBraidZoomFitDx()`/`tlBraidColDx()`,
+  same shared `S.timelinePrefs.zoomPos`, same 0=fit/50=original-default/
+  100=max shape, just against Braid's own container width and column count).
+  `braidColX()` now reads a module-level `_braidColDx` recomputed once per
+  `renderBraid()` call rather than a fixed constant, so every call site
+  (gridlines, nodes, paths, dividers, label-flip check) picks it up with no
+  further changes needed. **Caught and fixed one bug while verifying this**:
+  the initial fit formula had a stray `+ BRAID_ZOOM_MID_DX` term that made
+  `zoomPos:0` overshoot the container width instead of matching it exactly
+  (1593px content in a 1500px viewport) — found by directly comparing
+  `#tl-braid-scroll`'s `scrollWidth` against its `clientWidth`, fixed by
+  aligning the fit formula exactly with `renderBraid()`'s own `contentW`
+  calculation, and reverified: `scrollWidth === clientWidth` exactly at
+  `zoomPos:0` once the window has room, same graceful degrade-to-scroll as
+  Strip when it doesn't.
+
+### Verified live
+On the Frankenstein sample, after a genuine page reload (not just a
+re-render) to rule out stale-script false positives: all of the above
+re-confirmed via computed styles, actual element coordinates, and
+scrollWidth/clientWidth comparisons rather than visual impression alone.
+Console clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Thread color, zoom-tick contrast, Title/Summary spacing, Inspector menu item
+
+**Touched files:** `editor.html`, `styles.css`, `timeline.js`, `editor.js`,
+`editor-init.js`.
+
+### Strip view
+- Thread line/dot color changed from neutral grey to a literal very light red
+  (`#e57373`), opacity unchanged (.32, still translucent).
+- Zoom slider tick was hard to see, especially on dark themes — went from 1px/
+  `var(--o0)` to 2px/`var(--tx)` (the theme's own high-contrast ink color) plus
+  a 1px `var(--bg0)` halo, so it reads clearly against the native track's own
+  grey on both light and dark themes.
+- **Title field had an unintended white box.** Last round's sticky-Title fix
+  gave the sticky element `background:var(--cbg)` (the card/input tone,
+  noticeably lighter than the panel) so scrolled content couldn't peek through
+  underneath it — that choice is what created the "unnecessary white bg."
+  Switched to `var(--bg1)` (the panel's own ambient tone) so it blends in
+  seamlessly; confirmed via computed `backgroundColor` that it now matches
+  `#tl-panel`'s own background exactly. Also dropped the padding-top/negative-
+  margin trick from that fix (unneeded — `.cp-form-fields` already has zero
+  top padding, so there was nothing above the sticky element left to cover).
+- **Summary now has breathing room and a divider above it** —
+  `#ed-summary-field` (a new id on that field's wrapper, Timeline-scoped) gets
+  `border-top` + `margin-top`/`padding-top`, matching the same divider
+  convention the Timing/Reveals `.ffg` groups already use.
+
+### Timeline view
+Added "Show/Hide Inspector Panel" to the View menu, right after "Show/Hide
+Timeline View" (Inspector is Timeline's own panel, so it's grouped with that
+rather than the board's Library/Sections/Scene panel toggles above it — whose
+inverse relationship it mirrors exactly: `updateMenuForMode()` now disables
+this new item whenever `timelineMode` is false, the same way it already
+disables the board panel toggles whenever `timelineMode` is true).
+`updateTlPanelMenuState()` flips its label between "Show"/"Hide" same as
+`updatePanelMenuStates()` does for the others, called both after the toggle
+and whenever the View menu opens. Reuses the existing `togglePanel('tl-panel')`
+— no new collapse mechanism needed.
+
+### Verified live
+On the Frankenstein sample: thread line's actual `stroke`/`opacity` attributes
+confirmed; zoom tick's computed background/box-shadow confirmed on both ivory
+and slate; Title's computed background confirmed to exactly match the panel's
+own (no more visible box); Summary's `border-top` confirmed present; the new
+menu item toggles the panel, updates its own label correctly, and is properly
+enabled only in Timeline mode / disabled in board mode (checked both
+directions). Console clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.

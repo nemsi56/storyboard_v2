@@ -188,7 +188,7 @@ function migrateV2toV3(d) {
   d.constraints = [];
   d.markers = [];
   d.dismissed = [];
-  d.timelinePrefs = { axis: 'ordinal', threadCharId: null, pxPerScene: 110 };
+  d.timelinePrefs = { axis: 'ordinal', threadCharId: null, zoomPos: 62 };
 
   // chronOrder = manuscript order at migration time: Unassigned group first
   // (in d.scenes array order), then each section in d.sections array order —
@@ -309,7 +309,10 @@ function loadState(storageKey) {
     S.timelinePrefs = {
       axis: tp.axis === 'true' ? 'true' : 'ordinal',
       threadCharId: Number.isInteger(tp.threadCharId) && S.characters.some(c => c.id === tp.threadCharId) ? tp.threadCharId : null,
-      pxPerScene: Number.isInteger(tp.pxPerScene) && tp.pxPerScene >= 70 && tp.pxPerScene <= 200 ? tp.pxPerScene : 110,
+      // Slider position (0-100), not a literal pixel value — tlCurrentPxPerScene()
+      // (timeline.js) derives the actual spacing from this live every render, so
+      // it can auto-fit to the current window width instead of a frozen number.
+      zoomPos: Number.isInteger(tp.zoomPos) && tp.zoomPos >= 0 && tp.zoomPos <= 100 ? tp.zoomPos : 62,
     };
 
     // Every-load invariant repair (schema v3 §3.3, port of ThruLine's
@@ -371,7 +374,7 @@ const S = {
   markers: [],
   chronOrder: [],
   dismissed: [],
-  timelinePrefs: { axis: 'ordinal', threadCharId: null, pxPerScene: 110 },
+  timelinePrefs: { axis: 'ordinal', threadCharId: null, zoomPos: 62 },
 };
 
 // ── HISTORY (undo / redo) ─────────────────────────────────────────────────────

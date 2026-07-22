@@ -962,6 +962,6 @@
   "timelinePrefs": {
     "axis": "ordinal",
     "threadCharId": null,
-    "pxPerScene": 110
+    "zoomPos": 62
   }
 }

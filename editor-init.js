@@ -73,6 +73,11 @@
   });
   $('menu-chart').addEventListener('click', function(){ toggleChartView(); closeAllMenus(); });
   $('menu-timeline').addEventListener('click', function(){ toggleTimelineView(); closeAllMenus(); });
+  $('menu-show-inspector').addEventListener('click', function(){
+    togglePanel('tl-panel');
+    setTimeout(updateTlPanelMenuState, 50);
+    closeAllMenus();
+  });
 
   // Help menu
   $('mi-help-overview').addEventListener('click', function(){ window.open('index.html','_blank'); closeAllMenus(); });
@@ -162,7 +167,7 @@
   $('tl-axis-true').addEventListener('click', function(){ setTlAxis('true'); });
   $('tl-thread-sel').addEventListener('change', function(){ setTlThread(this.value); });
   $('tl-zoom').addEventListener('input', function(){ setTlZoom(this.value); });
-  $('tl-add-scene-btn').addEventListener('click', tlCreateScene);
+  $('tl-zoom').addEventListener('dblclick', function(){ this.value = 50; setTlZoom(50); });
   $('tl-add-storyline-btn').addEventListener('click', addStoryline);
   $('tl-tab-inspector').addEventListener('click', function(){ tlSwitchTab('inspector'); });
   $('tl-tab-conflicts').addEventListener('click', function(){ tlSwitchTab('conflicts'); });
@@ -175,6 +180,18 @@
   $('tl-view-strip').addEventListener('click', function(){ setTlViewMode('strip'); });
   $('tl-view-braid').addEventListener('click', function(){ setTlViewMode('braid'); });
   $('tl-braid-scroll').addEventListener('click', function(e){ if (e.target === $('tl-braid-scroll') || e.target.id === 'tl-braid-svg') tlSelectScene(null); });
+  $('tl-braid-scroll').addEventListener('scroll', tlBraidUpdateMarkerHud);
+  $('tl-panel-strip-btn').addEventListener('click', function(){ togglePanel('tl-panel'); });
+  $('tl-panel-collapse-btn').addEventListener('click', function(){ togglePanel('tl-panel'); });
+  $('tl-delete-scene-btn').addEventListener('click', tlDeleteSelectedScene);
+  // Cancel/Save Changes dim to "nothing to do" while the form is clean (Timeline
+  // only — refreshTlSaveCancelState() itself no-ops outside timelineMode). Any
+  // field change, checkbox-dropdown toggle, or the Anchor "Clear" button needs
+  // to re-run the dirty check; a delegated input+change+click listener on the
+  // shared form catches all of them without touching board's own wiring at all.
+  ['input','change','click'].forEach(function(evt){
+    $('form-edit').addEventListener(evt, function(){ setTimeout(refreshTlSaveCancelState, 0); });
+  });
 
   // Add-item popup
   $('ap-cancel').addEventListener('click', closeAddPopup);

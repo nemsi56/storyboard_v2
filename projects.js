@@ -140,7 +140,7 @@ function resetState() {
   S.povOrder = [];
   S.storylines = []; S.revealsLib = []; S.constraints = []; S.markers = [];
   S.chronOrder = []; S.dismissed = [];
-  S.timelinePrefs = { axis: 'ordinal', threadCharId: null, pxPerScene: 110 };
+  S.timelinePrefs = { axis: 'ordinal', threadCharId: null, zoomPos: 62 };
   SECS.forEach(({ key }) => S.selections[key].clear());
   S.selections.povs.clear();
   S.selIds.clear(); S.editingId = null;
@@ -268,7 +268,7 @@ function createAndOpenProject(name) {
     povCustom:[], povOrder:[],
     storylines: [{ id: 1, name: 'Main', paletteIndex: 0 }],
     revealsLib:[], constraints:[], markers:[], chronOrder:[], dismissed:[],
-    timelinePrefs: { axis:'ordinal', threadCharId:null, pxPerScene:110 },
+    timelinePrefs: { axis:'ordinal', threadCharId:null, zoomPos:62 },
     projectUid: genProjUid(), revision: 0,
   }));
   if (_page === 'projects') {
@@ -602,8 +602,8 @@ function validateV3Import(d) {
     if (tp.threadCharId != null && (!Number.isInteger(tp.threadCharId) || !charIds.has(tp.threadCharId))) {
       return 'Invalid project structure. "timelinePrefs.threadCharId" must be null or resolve to a character.';
     }
-    if (!Number.isInteger(tp.pxPerScene) || tp.pxPerScene < 70 || tp.pxPerScene > 200) {
-      return 'Invalid project structure. "timelinePrefs.pxPerScene" must be an integer 70-200.';
+    if (!Number.isInteger(tp.zoomPos) || tp.zoomPos < 0 || tp.zoomPos > 100) {
+      return 'Invalid project structure. "timelinePrefs.zoomPos" must be an integer 0-100.';
     }
   }
 

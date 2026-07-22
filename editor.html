@@ -88,6 +88,7 @@
       <div class="di-sep"></div>
       <button class="di" id="menu-chart"><span id="menu-chart-text">Show Scene Flow Chart</span><span class="di-sc">Alt+V</span></button>
       <button class="di" id="menu-timeline"><span id="menu-timeline-text">Show Timeline View</span><span class="di-sc">Alt+K</span></button>
+      <button class="di" id="menu-show-inspector"><span id="menu-insp-text">Hide Inspector Panel</span></button>
     </div>
   </div>
   <!-- Help -->
@@ -219,15 +220,15 @@
         </div>
         <div class="cp-form-fields">
           <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
-          <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+          <div class="ff" id="ed-summary-field"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
           <div class="ff" id="ed-sec-wrap" style="display:none"><label>Section</label><select id="ed-section" class="ff-sel"><option value="">Unassigned</option></select></div>
           <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ek-characters-wrap"><button class="ck-drop-btn" type="button" id="ek-characters-btn">No characters selected</button><div class="ck-drop-list" id="ek-characters"></div></div></div>
           <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ek-locations-wrap"><button class="ck-drop-btn" type="button" id="ek-locations-btn">No locations selected</button><div class="ck-drop-list" id="ek-locations"></div></div></div>
-          <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ek-themes-wrap"><button class="ck-drop-btn" type="button" id="ek-themes-btn">No themes selected</button><div class="ck-drop-list" id="ek-themes"></div></div></div>
-          <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ek-misc-wrap"><button class="ck-drop-btn" type="button" id="ek-misc-btn">No misc items selected</button><div class="ck-drop-list" id="ek-misc"></div></div></div>
-          <div class="ff"><label>Word Count</label><input type="number" id="ed-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
-          <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="ed-povs-wrap"><button class="ck-drop-btn" type="button" id="ed-povs-btn">No POV selected</button><div class="ck-drop-list" id="ed-povs"></div></div></div>
-          <div class="ff"><label>Notes</label><textarea id="ed-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+          <div class="ff" id="ed-themes-field"><label>Themes</label><div class="ck-drop-wrap" id="ek-themes-wrap"><button class="ck-drop-btn" type="button" id="ek-themes-btn">No themes selected</button><div class="ck-drop-list" id="ek-themes"></div></div></div>
+          <div class="ff" id="ed-misc-field"><label>Misc Items</label><div class="ck-drop-wrap" id="ek-misc-wrap"><button class="ck-drop-btn" type="button" id="ek-misc-btn">No misc items selected</button><div class="ck-drop-list" id="ek-misc"></div></div></div>
+          <div class="ff" id="ed-wordcount-field"><label>Word Count</label><input type="number" id="ed-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
+          <div class="ff" id="ed-povs-field"><label>POV</label><div class="ck-drop-wrap" id="ed-povs-wrap"><button class="ck-drop-btn" type="button" id="ed-povs-btn">No POV selected</button><div class="ck-drop-list" id="ed-povs"></div></div></div>
+          <div class="ff" id="ed-notes-field"><label>Notes</label><textarea id="ed-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
 
           <div class="ffg" id="ed-timing-group">
             <button type="button" class="ffg-hdr" id="ed-timing-toggle" aria-expanded="true">Timing <span class="ffg-car">▾</span></button>
@@ -355,8 +356,7 @@
           <span id="tl-status"></span>
           <div class="tl-hdr-spacer"></div>
           <button id="tl-conflicts-badge">Conflicts (0)</button>
-          <button id="tl-add-scene-btn">+ Scene</button>
-          <div class="tl-zoom-ctl">Zoom <input type="range" id="tl-zoom" min="70" max="200" step="10" value="110"></div>
+          <div class="tl-zoom-ctl">Zoom <span class="tl-zoom-wrap"><input type="range" id="tl-zoom" min="0" max="100" step="1" value="62" title="Double-click to reset to the midpoint"><span class="tl-zoom-tick" aria-hidden="true"></span></span></div>
         </div>
         <div id="tl-chron-body">
           <div id="tl-lane-labels">
@@ -364,20 +364,33 @@
           </div>
           <div id="tl-chron-scroll"><div id="tl-track"></div></div>
         </div>
-        <div id="tl-wires-zone"></div>
+        <div id="tl-wires-zone">
+          <div class="tl-row-caption tl-row-caption-top">Chronology — when it happened</div>
+          <div class="tl-row-caption tl-row-caption-bottom">Narrative — what the reader gets</div>
+        </div>
         <div id="tl-ms-scroll"><div id="tl-ms-row"></div></div>
-        <div id="tl-braid-scroll"><svg id="tl-braid-svg"></svg></div>
+        <div id="tl-braid-legend"></div>
+        <div id="tl-braid-scroll"><svg id="tl-braid-svg"></svg><div id="tl-braid-markers-hud"></div></div>
       </div>
-      <div id="tl-panel">
-        <div class="tl-panel-tabs">
-          <button class="tl-panel-tab on" id="tl-tab-inspector">Inspector</button>
-          <button class="tl-panel-tab" id="tl-tab-conflicts">Conflicts</button>
-        </div>
-        <div class="tl-panel-body" id="tl-inspector-body">
-          <div id="tl-inspector-empty" class="tl-panel-empty">Select a scene to edit it here.</div>
-        </div>
-        <div class="tl-panel-body" id="tl-conflicts-body" style="display:none">
-          <div class="tl-panel-empty">Conflict checking arrives in a later update.</div>
+      <div class="panel" id="tl-panel">
+        <button class="p-strip" id="tl-panel-strip-btn" aria-label="Expand Inspector panel">
+          <span class="sl" aria-hidden="true">Inspector</span><span aria-hidden="true">◀</span>
+        </button>
+        <div class="p-content">
+          <div class="tabs tl-panel-tabs">
+            <button class="cbtn tab-cbtn" id="tl-panel-collapse-btn" title="Collapse" aria-label="Collapse Inspector panel">▶</button>
+            <button class="tab tl-panel-tab on" id="tl-tab-inspector">Inspector</button>
+            <button class="tab tl-panel-tab" id="tl-tab-conflicts">Conflicts</button>
+          </div>
+          <div class="tl-panel-body" id="tl-inspector-body">
+            <div id="tl-inspector-empty" class="tl-panel-empty">Select a scene to edit it here.</div>
+          </div>
+          <div class="tl-panel-body" id="tl-conflicts-body" style="display:none">
+            <div class="tl-panel-empty">Conflict checking arrives in a later update.</div>
+          </div>
+          <div id="tl-inspector-footer" style="display:none">
+            <button id="tl-delete-scene-btn">Delete Scene</button>
+          </div>
         </div>
       </div>
     </div>

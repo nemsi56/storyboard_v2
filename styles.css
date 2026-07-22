@@ -174,6 +174,11 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #asb:active,#saveedit:active{transform:scale(.98)}
 #canceledit,#new-cancel{background:var(--s0);color:var(--sub);border:1px solid var(--s1);border-radius:8px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .14s}
 #canceledit:hover,#new-cancel:hover{background:var(--s1)}
+/* Timeline-only: disabled attribute is set/cleared by timeline.js based on
+   isEditFormDirty() (nothing to Save/Cancel while the form is clean); board's
+   own Edit Scene form never sets this attribute on these same shared buttons,
+   so this never affects board behavior. */
+#canceledit:disabled,#saveedit:disabled{opacity:.4;cursor:default;pointer-events:none}
 .lib-rename-inp{flex:1;min-width:0;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:1px 5px;color:var(--tx);font-size:12px;font-family:inherit;outline:none}
 .lib-hint{font-style:italic;font-size:11px;color:var(--sub);text-align:center;margin:0 0 8px;line-height:1.4;padding:0 4px;flex-shrink:0}
 .ck-drop-wrap{position:relative}
@@ -192,7 +197,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .ffg{border-top:1px solid var(--s1);margin-top:10px;padding-top:6px}
 .ffg-hdr{display:flex;align-items:center;gap:6px;width:100%;background:none;border:none;padding:6px 2px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--sub);cursor:pointer;font-family:inherit}
 .ffg-hdr:hover{color:var(--tx)}
-.ffg-car{font-size:9px;transition:transform .13s}
+.ffg-car{font-size:16px;line-height:1;transition:transform .13s}
 .ffg.collapsed .ffg-car{transform:rotate(-90deg)}
 .ffg.collapsed .ffg-body{display:none}
 .anchor-row{display:flex;gap:6px}
@@ -849,6 +854,15 @@ body.tl-mode #lp,body.tl-mode #sp,body.tl-mode #cp,
 body.tl-mode #lp-resize,body.tl-mode #sp-resize,body.tl-mode #cp-resize,
 body.tl-mode #sbhdr{display:none}
 
+/* The reparented Edit Scene form carries several fields that don't apply to
+   Timeline's own workflow (word count/POV are chart/report concerns; themes,
+   misc items, and notes are board-editing detail) — hidden here rather than
+   removed from the form, since the same #form-edit node is shared with the
+   board's own Edit Scene tab where all of these stay relevant. */
+body.tl-mode #ed-themes-field,body.tl-mode #ed-misc-field,
+body.tl-mode #ed-wordcount-field,body.tl-mode #ed-povs-field,
+body.tl-mode #ed-notes-field{display:none}
+
 #timeline-host{flex:1;min-width:0;display:flex;overflow:hidden}
 #tl-stage{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
 #tl-chron-hdr{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:8px 14px;border-bottom:1px solid var(--s1);background:var(--bg1)}
@@ -857,7 +871,10 @@ body.tl-mode #sbhdr{display:none}
 .tl-axis-btn.on{background:var(--acc);color:var(--ontx)}
 .tl-axis-btn:disabled{opacity:.4;cursor:default}
 #tl-thread-wrap{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--sub);font-weight:600}
-#tl-thread-sel{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 8px;color:var(--tx);font-size:12px;font-family:inherit;cursor:pointer}
+#tl-thread-sel{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 8px;color:var(--tx);font-size:12px;font-family:inherit;cursor:pointer;transition:box-shadow .16s,border-color .16s}
+/* Active = a character is currently traced (S.timelinePrefs.threadCharId set) —
+   toggled by renderThreadPicker()/setTlThread(). */
+#tl-thread-sel.tl-thread-active{border-color:var(--acc);box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 35%,transparent),0 0 8px color-mix(in srgb,var(--acc) 55%,transparent)}
 #tl-status{font-size:11px;color:var(--sub)}
 .tl-hdr-spacer{flex:1}
 #tl-conflicts-badge{background:var(--s0);border:1px solid var(--s1);border-radius:14px;padding:5px 12px;font-size:11px;font-weight:700;color:var(--sub);cursor:pointer;font-family:inherit}
@@ -865,6 +882,15 @@ body.tl-mode #sbhdr{display:none}
 #tl-add-scene-btn{background:var(--acc);color:var(--ontx);border:none;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
 .tl-zoom-ctl{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.5px;color:var(--sub);font-weight:700;text-transform:uppercase}
 .tl-zoom-ctl input[type=range]{width:90px}
+.tl-zoom-wrap{position:relative;display:inline-flex;align-items:center}
+/* Marks the slider's midpoint (50) — the feature's original fixed minimum,
+   see tlZoomSliderToPx() — approximate against the native track's small end
+   margins, not pixel-exact, but close enough to read as "the middle." */
+/* var(--tx) (not --o0) plus a background-colored halo — --tx is this theme's
+   own high-contrast "ink" color (inverts appropriately dark/light per theme),
+   and the halo keeps it visible against the native slider track's own middle
+   grey on dark themes specifically, where --o0 alone read as too low-contrast. */
+.tl-zoom-tick{position:absolute;left:50%;top:50%;width:2px;height:9px;background:var(--tx);box-shadow:0 0 0 1px var(--bg0);transform:translate(-50%,-50%);pointer-events:none}
 
 /* Content-sized (ThruLine's own chronSection/manuscriptSection are flex:0 0
    auto too) rather than a fixed flex-grow share of the stage — lane rows are
@@ -926,6 +952,9 @@ body.tl-mode #sbhdr{display:none}
 .tl-lane-row.tl-drop-target{outline:2px dashed var(--acc);outline-offset:-2px}
 
 #tl-wires-zone{flex:1;min-height:100px;position:relative;border-bottom:1px solid var(--s1)}
+.tl-row-caption{position:absolute;left:0;right:0;text-align:center;font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--o0);pointer-events:none;z-index:1}
+.tl-row-caption-top{top:4px}
+.tl-row-caption-bottom{bottom:4px}
 /* #tl-wires is a direct child of #tl-stage (not nested in #tl-wires-zone) so its
    coordinate space covers chron+gap+manuscript together, like ThruLine's own
    #wires (a direct child of #stage). redrawWires() anchors each wire to the
@@ -973,13 +1002,25 @@ body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){op
 /* ==================================================================
    Braid view — read-only structure chart, toggled inside Timeline view
    ================================================================== */
-#tl-braid-scroll{display:none;flex:1;min-height:0;overflow:auto}
+#tl-braid-scroll{display:none;flex:1;min-height:0;overflow:auto;position:relative}
 #tl-stage.tl-braid-active #tl-chron-body,
 #tl-stage.tl-braid-active #tl-wires-zone,
 #tl-stage.tl-braid-active #tl-ms-scroll,
 #tl-stage.tl-braid-active #tl-wires{display:none}
 #tl-stage.tl-braid-active #tl-braid-scroll{display:block}
 #tl-braid-svg{display:block}
+/* Storyline-color legend, always visible at the top of the chart (not inside
+   the scrollable area) — reuses the Flow Chart's own .chart-legend-item/
+   -swatch/-name classes for a consistent look rather than a bespoke style. */
+#tl-braid-legend{display:none;flex-shrink:0;flex-wrap:wrap;align-items:center;row-gap:4px;column-gap:14px;padding:6px 16px;background:var(--bg1);border-bottom:1px solid var(--s1);font-size:11px;color:var(--sub)}
+#tl-stage.tl-braid-active #tl-braid-legend{display:flex}
+.tl-braid-legend-swatch{display:inline-block;flex-shrink:0;width:11px;height:11px;border-radius:50%;background:var(--cbg);border:2px solid var(--o0);box-sizing:border-box}
+/* Era-marker labels live in an HTML overlay, not the SVG, so they can be
+   horizontally re-pinned to the viewport's left edge on scroll
+   (tlBraidUpdateMarkerHud()) — the dashed marker LINE stays in the SVG and
+   scrolls normally; only the label needs to stay readable while scrolled right. */
+#tl-braid-markers-hud{position:absolute;top:0;left:0;right:0;pointer-events:none}
+.tl-braid-marker-label{position:absolute;font-size:9px;letter-spacing:.6px;font-weight:700;color:var(--o0);white-space:nowrap;background:var(--bg1);padding:1px 4px;border-radius:3px}
 
 .tl-braid-node circle{transition:stroke-width .15s}
 .tl-braid-node.tl-hi circle{stroke-width:5}
@@ -988,11 +1029,22 @@ body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){op
 body.hovering .tl-braid-node:not(.tl-hi){opacity:.28}
 body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
 
-#tl-panel{flex:0 0 300px;background:var(--bg1);border-left:1px solid var(--s1);display:flex;flex-direction:column;min-height:0}
-.tl-panel-tabs{display:flex;border-bottom:1px solid var(--s1);flex:0 0 auto}
-.tl-panel-tab{flex:1;background:none;border:none;color:var(--sub);padding:10px;font-size:11.5px;letter-spacing:.4px;font-weight:600;font-family:inherit;cursor:pointer;border-bottom:2px solid transparent}
-.tl-panel-tab.on{color:var(--tx);border-bottom-color:var(--acc)}
+/* width (not flex-basis) so the shared .panel.collapsed{width:28px!important}
+   rule (see the Library/Sections/Scene panels above) can actually override it —
+   a flex-basis wins over width in the flex sizing algorithm, which would have
+   silently no-opped the collapse. */
+#tl-panel{width:300px;flex-shrink:0;background:var(--bg1);border-left:1px solid var(--s1);display:flex;flex-direction:column;min-height:0}
+/* tl-panel sits at the right edge of the window (unlike Library/Sections on the
+   left), so its collapsed strip's divider belongs on its left side, not right. */
+#tl-panel.panel .p-strip{border-right:none;border-left:2px solid var(--s1)}
+/* Inspector/Conflicts reuse the .tabs/.tab classes (New Scene/Edit Scene's own
+   folder-tab look) rather than a bespoke style — .tl-panel-tabs/.tl-panel-tab
+   only carry the ids JS toggles .on against now, no visual rules of their own. */
+#tl-panel-collapse-btn{border-left:none;border-right:1px solid var(--bdr)}
 .tl-panel-body{flex:1;overflow-y:auto;min-height:0}
+#tl-inspector-footer{flex:0 0 auto;padding:10px 12px;border-top:1px solid var(--s1)}
+#tl-delete-scene-btn{width:100%;background:none;border:1px solid var(--rd);border-radius:8px;padding:9px;color:var(--rd);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .14s,color .14s}
+#tl-delete-scene-btn:hover{background:var(--rd);color:var(--ontx)}
 .tl-panel-empty{color:var(--sub);font-size:12px;text-align:center;padding:40px 14px;font-style:italic}
 /* Conflicts tab (schema v3 §8) */
 #tl-conflicts-body{padding:12px}
@@ -1012,7 +1064,14 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
 /* Visibility while reparented here is driven entirely by inline style.display
    (timeline.js's _tlDoSelectScene) — no !important override, or the "select a
    scene" placeholder could never actually hide the (would-be-empty) form. */
-#tl-inspector-body{padding:0}
+/* display:flex (not the shared .tl-panel-body's own overflow-y:auto) — #form-edit
+   needs a bounded height so ITS internal split (.cp-form-hdr fixed, .cp-form-fields
+   scrolling) is what actually overflows. Without an explicit height here,
+   #form-edit only ever grows to fit its content, .cp-form-fields never runs out
+   of room to overflow, and #tl-inspector-body's own overflow-y:auto becomes the
+   one that engages instead — scrolling the whole form, header included, right
+   past the point where Cancel/Save Changes were supposed to stay put. */
+#tl-inspector-body{padding:0;display:flex;flex-direction:column;overflow:hidden}
 /* #form-edit is reparented here from #cp (timeline.js's _tlCaptureFormEditHome/
    _tlDoSelectScene) — #cp .p-body supplies its display:flex;flex-direction:column
    box model normally, but that ancestor-scoped rule stops matching once the node
@@ -1021,10 +1080,25 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
    and .cp-form-fields fall back to flex-direction's row default and render side
    by side instead of stacked, with .cp-form-fields collapsing to a narrow column
    that doesn't cover the visible panel — clicks in the resulting dead space fall
-   through to the timeline canvas underneath and deselect the scene. */
-#tl-inspector-body .p-body{padding:0;display:flex;flex-direction:column;overflow:hidden}
+   through to the timeline canvas underneath and deselect the scene. flex:1;
+   min-height:0 is the piece above this comment depends on. */
+#tl-inspector-body .p-body{padding:0;display:flex;flex-direction:column;overflow:hidden;flex:1;min-height:0}
 #tl-inspector-body .cp-form-hdr{padding:12px 12px 8px}
 #tl-inspector-body .cp-form-fields{padding:0 12px 12px}
+/* Title stays visible while the rest of the form scrolls — sticky to the
+   scrolling .cp-form-fields' own top (which sits flush, since that container
+   has zero top padding), not the header (kept there since the shared
+   #form-edit node is also used, unmodified, by the board's own Scene panel).
+   Background is --bg1 (the panel's own ambient tone), not --cbg (the card/
+   input tone, noticeably lighter) — --cbg read as an unwanted extra "white
+   box" wrapped around the label, distinct from both the surrounding panel
+   and the title field's own --s0 input background. No padding-top/negative-
+   margin trick needed either — .cp-form-fields already has zero top padding,
+   so the sticky element already sits flush with nothing to cover above it. */
+#tl-inspector-body .cp-form-fields > .ff:first-child{position:sticky;top:0;z-index:2;background:var(--bg1);margin-bottom:4px}
+/* Divider + breathing room above Summary — it previously sat right against
+   Title's own margin-bottom with no visual separation. */
+#tl-inspector-body #ed-summary-field{border-top:1px solid var(--s1);margin-top:4px;padding-top:10px}
 
 /* one-time drag toasts / popovers reused in M5, styled now so M5 doesn't need
    another CSS pass */

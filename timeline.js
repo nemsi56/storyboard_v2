@@ -220,6 +220,22 @@ function closeTimelineView(force) {
   else runWithDiscardGuard(_closeTimelineViewImpl);
 }
 
+// ── DISCARD GUARD FOR CLICKS OUTSIDE THE PANEL (mirrors editor.js's board-only
+// "cancel edit on click outside #cp" handler) ─────────────────────────────────
+// Chron/manuscript/braid cards and the scroll containers' own empty-space
+// clicks already route through tlSelectScene()'s runWithDiscardGuard (correct,
+// specific afterDiscard per click) — skipped here so this generic handler
+// doesn't pre-empt them with a less specific "just deselect" action. Everything
+// else outside #tl-panel (header controls, zoom, tabs, blank stage chrome) had
+// no guard at all before this, unlike the board view's equivalent.
+document.addEventListener('mousedown', e => {
+  if (!timelineMode) return;
+  if (e.target.closest('#tl-panel')) return;
+  if (e.target.closest('.tl-scene, .tl-ms-card, .tl-braid-node, #tl-chron-scroll, #tl-ms-scroll, #tl-braid-scroll')) return;
+  if (document.querySelector('.cfm-modal.open') || document.getElementById('tl-marker-popover') || document.getElementById('tl-marker-context-menu')) return;
+  tlSelectScene(null);
+});
+
 function _openTimelineViewImpl() {
   if (typeof closeChartView === 'function') closeChartView();
   timelineMode = true;
@@ -254,6 +270,10 @@ function _closeTimelineViewImpl() {
     if (_tlFormEditHome.next) _tlFormEditHome.parent.insertBefore(form, _tlFormEditHome.next);
     else _tlFormEditHome.parent.appendChild(form);
   }
+  // Timeline may have left these disabled (clean-form state) — board's own
+  // Edit Scene form never sets this attribute, so nothing else clears it.
+  document.getElementById('canceledit').disabled = false;
+  document.getElementById('saveedit').disabled = false;
   cancelEdit();
   updateViewToggleUI();
   updateMenuForMode();
@@ -300,6 +320,17 @@ function updateMenuForMode() {
     const el = document.getElementById(id);
     if (el) el.disabled = timelineMode;
   });
+  // Inverse of the above — Inspector is Timeline's own panel, so this only
+  // makes sense while Timeline mode is active.
+  const inspectorToggle = document.getElementById('menu-show-inspector');
+  if (inspectorToggle) inspectorToggle.disabled = !timelineMode;
+}
+function updateTlPanelMenuState() {
+  const el = document.getElementById('menu-insp-text');
+  if (!el) return;
+  const panel = document.getElementById('tl-panel');
+  const collapsed = panel && panel.classList.contains('collapsed');
+  el.textContent = collapsed ? 'Show Inspector Panel' : 'Hide Inspector Panel';
 }
 
 // ── RENDER PIPELINE ────────────────────────────────────────────────────────────
@@ -313,18 +344,68 @@ function renderTimeline() {
   renderThreadPicker();
   updateAxisAvailability();
   const zoomEl = document.getElementById('tl-zoom');
-  if (zoomEl && document.activeElement !== zoomEl) zoomEl.value = S.timelinePrefs.pxPerScene;
+  if (zoomEl && document.activeElement !== zoomEl) zoomEl.value = S.timelinePrefs.zoomPos;
   document.querySelectorAll('#tl-axis-switch .tl-axis-btn').forEach(b => {
     b.classList.toggle('on', b.dataset.axis === S.timelinePrefs.axis);
   });
   if (typeof renderConflictsBadge === 'function') renderConflictsBadge();
 }
 
+// ── ZOOM (§7.6) ────────────────────────────────────────────────────────────────
+// The slider is a 0-100 position, not a literal pixel value: 0 is "fit every
+// scene into the current width with no overlap and no scroll" (recomputed live
+// against the actual container width/scene count, so it stays fit-to-window
+// across resizes and scene add/delete), 50 is the feature's original fixed
+// minimum (70px/scene), and 100 is the original fixed maximum (200px/scene) —
+// so anyone used to the old 70-200 range sees identical density in the upper
+// half of the slider.
+const TL_ZOOM_MID_PX = 70, TL_ZOOM_MAX_PX = 200, TL_ZOOM_MIN_CARD_PX = 28;
+function tlZoomFitPx() {
+  const scroll = document.getElementById('tl-chron-scroll');
+  const n = (S.chronOrder && S.chronOrder.length) || 1;
+  const containerW = (scroll && scroll.clientWidth) || 800;
+  const PADDING = 80;
+  // Floored at MIN_CARD_PX+10 (never asks for spacing tighter than the
+  // smallest readable card) — past that point chronTrackWidth's own
+  // Math.max(containerW, …) below takes over and allows horizontal scroll
+  // instead of forcing cards to overlap just to avoid it.
+  return Math.max(TL_ZOOM_MIN_CARD_PX + 10, (containerW - PADDING) / n);
+}
+function tlZoomSliderToPx(pos) {
+  const fitPx = tlZoomFitPx();
+  if (pos <= 50) return fitPx + (pos / 50) * (TL_ZOOM_MID_PX - fitPx);
+  return TL_ZOOM_MID_PX + ((pos - 50) / 50) * (TL_ZOOM_MAX_PX - TL_ZOOM_MID_PX);
+}
+function tlCurrentPxPerScene() {
+  return tlZoomSliderToPx(S.timelinePrefs.zoomPos);
+}
+
+// Braid's own version of the same zoom mapping — same shared slider
+// (S.timelinePrefs.zoomPos), same 0=fit/50=default/100=max shape, just against
+// Braid's own container and column count instead of the chron strip's.
+const BRAID_ZOOM_MID_DX = 93, BRAID_ZOOM_MAX_DX = 200, BRAID_ZOOM_MIN_DX = 40;
+function tlBraidZoomFitDx(colCount) {
+  const scroll = document.getElementById('tl-braid-scroll');
+  const containerW = (scroll && scroll.clientWidth) || 800;
+  // Matches renderBraid()'s own contentW formula exactly (braidColX(n-1) +
+  // BRAID_RIGHT_PAD) so fitDx produces contentW === containerW precisely,
+  // not just approximately.
+  const usable = containerW - BRAID_COL_X0 - BRAID_RIGHT_PAD;
+  const gaps = Math.max(1, colCount - 1);
+  return Math.max(BRAID_ZOOM_MIN_DX, usable / gaps);
+}
+function tlBraidColDx(colCount) {
+  const pos = S.timelinePrefs.zoomPos;
+  const fitDx = tlBraidZoomFitDx(colCount);
+  if (pos <= 50) return fitDx + (pos / 50) * (BRAID_ZOOM_MID_DX - fitDx);
+  return BRAID_ZOOM_MID_DX + ((pos - 50) / 50) * (BRAID_ZOOM_MAX_DX - BRAID_ZOOM_MID_DX);
+}
+
 function chronTrackWidth(trackEl) {
   const scrollEl = trackEl.parentElement;
   const containerW = (scrollEl && scrollEl.clientWidth) || trackEl.clientWidth || 0;
   const n = (S.chronOrder && S.chronOrder.length) || 0;
-  const pxPerScene = S.timelinePrefs.pxPerScene || 110;
+  const pxPerScene = tlCurrentPxPerScene();
   const PADDING = 80;
   return Math.max(containerW, n * pxPerScene + PADDING);
 }
@@ -414,7 +495,12 @@ function renderChronStrip() {
   });
 
   const laneCount = S.storylines.length || 1;
-  const laneH = 92, cardW = 96;
+  // Was a flat 96px regardless of zoom — at the new auto-fit low end of the
+  // zoom slider that let fixed-width cards overlap even though their pitch
+  // had shrunk below it. Capped at 96 (today's look, unchanged down to
+  // ~pxPerScene 106) and floored at 28 (still shrinks further than that only
+  // once the slider is pushed into auto-fit territory).
+  const laneH = 92, cardW = Math.max(TL_ZOOM_MIN_CARD_PX, Math.min(96, tlCurrentPxPerScene() - 10));
   // BTN_RESERVE: #tl-add-storyline-btn floats pinned to #tl-lane-labels'
   // bottom edge (styles.css) — without reserving this room in both
   // containers' own height, it always overlaps the last lane's label, since
@@ -446,7 +532,10 @@ function renderChronStrip() {
   threadSvg.style.width = '100%'; threadSvg.style.height = '100%';
   threadSvg.setAttribute('width', chronTrackWidth(track));
   threadSvg.setAttribute('height', laneCount * laneH);
-  threadSvg.style.zIndex = '1'; threadSvg.style.pointerEvents = 'none';
+  // Above .tl-scene (z-index:2) so the trace line floats over the cards
+  // instead of hiding behind them — pointer-events:none keeps it from
+  // blocking card clicks/hover despite sitting on top visually.
+  threadSvg.style.zIndex = '4'; threadSvg.style.pointerEvents = 'none';
   track.appendChild(threadSvg);
 
   const markersLayer = document.createElement('div');
@@ -530,7 +619,10 @@ function renderManuscriptRibbon() {
     row.appendChild(buildRibbonCard(s, numMap.get(s.id) ?? 1, storylineById));
   });
 
-  const cardW = Math.max(70, (S.timelinePrefs.pxPerScene || 110) - 14);
+  // Floor dropped from 70 to 28 (TL_ZOOM_MIN_CARD_PX) — a flat 70px floor
+  // would have kept forcing ribbon cards wider than the actual pitch once the
+  // zoom slider's auto-fit low end computes a spacing smaller than that.
+  const cardW = Math.max(TL_ZOOM_MIN_CARD_PX, tlCurrentPxPerScene() - 14);
   row.querySelectorAll('.tl-ms-card').forEach(el => { el.style.width = cardW + 'px'; });
 }
 
@@ -582,9 +674,9 @@ function setTlAxis(mode) {
   renderTimeline();
 }
 
-function setTlZoom(px) {
-  px = Math.max(70, Math.min(200, parseInt(px, 10) || 110));
-  S.timelinePrefs.pxPerScene = px;
+function setTlZoom(pos) {
+  pos = Math.max(0, Math.min(100, parseInt(pos, 10) || 0));
+  S.timelinePrefs.zoomPos = pos;
   saveState();
   renderTimeline();
 }
@@ -598,12 +690,18 @@ function renderThreadPicker() {
     sel.appendChild(opt);
   });
   sel.value = [...sel.options].some(o => o.value === cur) ? cur : '';
+  updateTlThreadSelActive();
+}
+function updateTlThreadSelActive() {
+  const sel = document.getElementById('tl-thread-sel'); if (!sel) return;
+  sel.classList.toggle('tl-thread-active', !!S.timelinePrefs.threadCharId);
 }
 function setTlThread(charIdStr) {
   const id = charIdStr ? parseInt(charIdStr, 10) : null;
   S.timelinePrefs.threadCharId = id;
   saveState();
   renderChronThread();
+  updateTlThreadSelActive();
 }
 
 function renderChronThread() {
@@ -629,14 +727,21 @@ function renderChronThread() {
     const p = pts[i - 1], q = pts[i], mx = (p.x + q.x) / 2;
     d += ' C ' + mx + ' ' + p.y + ', ' + mx + ' ' + q.y + ', ' + q.x + ' ' + q.y;
   }
+  // Thick and solid, but translucent — this line floats ABOVE the cards (see
+  // the z-index bump on #tl-thread-svg in renderChronStrip()), so it needs to
+  // stay see-through enough to read the card text underneath it. A literal
+  // (not theme-var) very light red — the accent color is already
+  // load-bearing elsewhere (selection, active controls).
+  const THREAD_COLOR = '#e57373';
   const path = document.createElementNS(SVGNS, 'path');
   path.setAttribute('d', d); path.setAttribute('fill', 'none');
-  path.setAttribute('stroke', 'var(--acc)'); path.setAttribute('stroke-width', '2.5'); path.setAttribute('opacity', '.8');
+  path.setAttribute('stroke', THREAD_COLOR); path.setAttribute('stroke-width', '5');
+  path.setAttribute('opacity', '.32');
   svg.appendChild(path);
   pts.forEach(p => {
     const c = document.createElementNS(SVGNS, 'circle');
-    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', '4');
-    c.setAttribute('fill', 'var(--acc)'); c.setAttribute('stroke', 'var(--sbg)'); c.setAttribute('stroke-width', '2');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', '7');
+    c.setAttribute('fill', THREAD_COLOR); c.setAttribute('opacity', '.32');
     svg.appendChild(c);
   });
 }
@@ -1054,13 +1159,32 @@ function redrawWires() {
 // axis explicitly filters them out here; "dividers" become section boundaries
 // (this app has sections instead of ThruLine's separate divider concept), colored
 // by each section's own .color instead of one literal accent hex.
-const BRAID_COL_X0 = 110, BRAID_COL_DX = 93, BRAID_ROW_Y0 = 70;
+const BRAID_COL_X0 = 110, BRAID_ROW_Y0 = 70;
 const BRAID_LEFT = 60, BRAID_RIGHT_PAD = 210, BRAID_LABEL_FLIP_ZONE = 160;
 const BRAID_MIN_ROWH = 26, BRAID_MAX_ROWH = 52;
 const BRAID_FLASHBACK_COLOR = { dark: '#e0a458', light: '#b07a35' };
+// Recomputed once per renderBraid() call from the shared zoom slider
+// (tlBraidColDx()) — module-level so braidColX() doesn't need every call site
+// updated to thread a parameter through.
+let _braidColDx = BRAID_ZOOM_MID_DX;
 
-function braidColX(i) { return BRAID_COL_X0 + i * BRAID_COL_DX; }
+function braidColX(i) { return BRAID_COL_X0 + i * _braidColDx; }
 function braidRowY(chronIndex, rowH) { return BRAID_ROW_Y0 + chronIndex * rowH; }
+
+function renderBraidLegend() {
+  const el = document.getElementById('tl-braid-legend');
+  if (!el) return;
+  el.textContent = '';
+  S.storylines.forEach(st => {
+    const item = document.createElement('span'); item.className = 'chart-legend-item';
+    // A ring, not a filled dot — matches the node's own look (a colored
+    // stroke around a --cbg fill, per §9.5), not the Flow Chart's bar swatch.
+    const swatch = document.createElement('span'); swatch.className = 'tl-braid-legend-swatch'; swatch.style.borderColor = slColor(st.paletteIndex);
+    const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = st.name;
+    item.appendChild(swatch); item.appendChild(nameEl);
+    el.appendChild(item);
+  });
+}
 
 function renderBraid() {
   const scroll = document.getElementById('tl-braid-scroll');
@@ -1072,6 +1196,8 @@ function renderBraid() {
   const chronOrder = S.chronOrder || [];
   const N = chronOrder.length;
 
+  renderBraidLegend();
+
   svg.textContent = '';
   if (!tlBraidMode) return;
 
@@ -1080,6 +1206,8 @@ function renderBraid() {
     svg.setAttribute('height', scroll.clientHeight || 1);
     return;
   }
+
+  _braidColDx = tlBraidColDx(msOrder.length);
 
   const sceneById = new Map(S.scenes.map(s => [s.id, s]));
   const storylineById = new Map(S.storylines.map(st => [st.id, st]));
@@ -1117,7 +1245,9 @@ function renderBraid() {
     svg.appendChild(gl);
   }
 
-  // ---- top edge: "READING ORDER →" label + "Sc n" tick per column ----
+  // ---- top edge: "READING ORDER →" label. No per-column "Sc n" ticks — each
+  // node already shows its own number, so a duplicate tick row overhead the
+  // chart added nothing. ----
   const topLabel = document.createElementNS(SVGNS, 'text');
   topLabel.setAttribute('x', BRAID_LEFT); topLabel.setAttribute('y', 20);
   topLabel.setAttribute('font-size', 10); topLabel.setAttribute('font-weight', 'bold'); topLabel.setAttribute('letter-spacing', '1.5px');
@@ -1126,29 +1256,51 @@ function renderBraid() {
   svg.appendChild(topLabel);
 
   const numMap = buildSceneNumMap();
-  msOrder.forEach((id, i) => {
-    const tick = document.createElementNS(SVGNS, 'text');
-    tick.setAttribute('x', braidColX(i)); tick.setAttribute('y', 38);
-    tick.setAttribute('font-size', 10); tick.setAttribute('text-anchor', 'middle');
-    tick.style.fill = 'var(--sub)';
-    tick.textContent = 'Sc ' + (numMap.get(id) ?? (i + 1));
-    svg.appendChild(tick);
-  });
 
-  // ---- left edge: rotated "STORY TIME ↓" ----
+  // ---- left edge: rotated "CHRONOLOGY" label, with a separate, unrotated ↓
+  // placed just past its own bottom end (where the first letter lands after
+  // rotation) so the arrow itself reads pointing straight down on screen,
+  // rather than sideways as it would if it were part of the rotated string. ----
   const leftY = braidRowY((N - 1) / 2, rowH);
   const leftLabel = document.createElementNS(SVGNS, 'text');
   leftLabel.setAttribute('x', 18); leftLabel.setAttribute('y', leftY);
   leftLabel.setAttribute('font-size', 10); leftLabel.setAttribute('font-weight', 'bold'); leftLabel.setAttribute('letter-spacing', '1.5px');
   leftLabel.setAttribute('text-anchor', 'middle'); leftLabel.setAttribute('transform', 'rotate(-90 18 ' + leftY + ')');
   leftLabel.style.fill = 'var(--o0)';
-  leftLabel.textContent = 'STORY TIME ↓';
+  leftLabel.textContent = 'CHRONOLOGY';
   svg.appendChild(leftLabel);
+  // Measured from the label's own actual rendered box (getBoundingClientRect,
+  // post-rotation, real screen coordinates) rather than assumed from x=18 and
+  // getBBox() math — a rotated text element's visual centerline doesn't
+  // necessarily land exactly on its rotation pivot (the "x" attribute
+  // positions the BASELINE, and glyphs sit asymmetrically around it), which
+  // is what left the previous, computed-not-measured version still visibly
+  // off-center. Hand-drawn (stem + triangle) rather than the "↓" glyph, whose
+  // own side bearings aren't symmetric in every font either.
+  const labelRect = leftLabel.getBoundingClientRect();
+  const svgRect = svg.getBoundingClientRect();
+  const arrowX = labelRect.left + labelRect.width / 2 - svgRect.left;
+  const arrowTop = labelRect.bottom - svgRect.top + 8;
+  const stem = document.createElementNS(SVGNS, 'line');
+  stem.setAttribute('x1', arrowX); stem.setAttribute('x2', arrowX);
+  stem.setAttribute('y1', arrowTop); stem.setAttribute('y2', arrowTop + 9);
+  stem.setAttribute('stroke-width', 1.5);
+  stem.style.stroke = 'var(--o0)';
+  svg.appendChild(stem);
+  const head = document.createElementNS(SVGNS, 'polygon');
+  const headY = arrowTop + 9;
+  head.setAttribute('points', (arrowX - 4) + ',' + headY + ' ' + (arrowX + 4) + ',' + headY + ' ' + arrowX + ',' + (headY + 6));
+  head.style.fill = 'var(--o0)';
+  svg.appendChild(head);
 
-  // ---- markers (§7.4): horizontal dashed lines at the y midway between the
-  // chronOrder ranks they separate ----
+  // ---- markers (§7.4): dashed line in the SVG (scrolls normally); the label
+  // lives in the HTML #tl-braid-markers-hud overlay instead, so it can stay
+  // pinned to the viewport's left edge on horizontal scroll (see
+  // tlBraidUpdateMarkerHud()) rather than disappearing off-screen. ----
   const markersLayer = document.createElementNS(SVGNS, 'g');
   svg.appendChild(markersLayer);
+  const hud = document.getElementById('tl-braid-markers-hud');
+  if (hud) { hud.textContent = ''; hud.style.height = contentH + 'px'; }
   (S.markers || []).forEach(m => {
     let y;
     if (!m.beforeSceneId) {
@@ -1165,13 +1317,15 @@ function renderBraid() {
     line.style.stroke = 'var(--o0)';
     markersLayer.appendChild(line);
 
-    const label = document.createElementNS(SVGNS, 'text');
-    label.setAttribute('x', BRAID_LEFT + 4); label.setAttribute('y', y - 4);
-    label.setAttribute('font-size', 9); label.setAttribute('letter-spacing', '.6px'); label.setAttribute('font-weight', 'bold');
-    label.style.fill = 'var(--o0)';
-    label.textContent = m.label;
-    markersLayer.appendChild(label);
+    if (hud) {
+      const label = document.createElement('div');
+      label.className = 'tl-braid-marker-label';
+      label.style.top = (y - 12) + 'px';
+      label.textContent = m.label;
+      hud.appendChild(label);
+    }
   });
+  tlBraidUpdateMarkerHud();
 
   // ---- section boundaries (sections replace ThruLine's "dividers"): short
   // vertical ticks along the top edge between the relevant reading-order
@@ -1314,6 +1468,23 @@ function _tlBraidThickenPaths(pathEls, sceneId, on) {
   });
 }
 
+// Keeps each era-marker label pinned to the visible left edge of
+// #tl-braid-scroll as the user scrolls horizontally — a plain CSS
+// position:sticky is unreliable here since each label's parent is
+// individually positioned (top:Ypx) rather than sitting in normal flow, so
+// this recomputes the offset directly against the container's own scrollLeft.
+function tlBraidUpdateMarkerHud() {
+  const scroll = document.getElementById('tl-braid-scroll');
+  const hud = document.getElementById('tl-braid-markers-hud');
+  if (!scroll || !hud) return;
+  // Pinned at BRAID_LEFT (where the dashed marker line itself starts), not
+  // nearer the true edge (e.g. +12) — closer in used to land the label
+  // directly on top of the rotated "CHRONOLOGY" axis label at scrollLeft:0,
+  // since both sit in that same left margin.
+  const left = scroll.scrollLeft + BRAID_LEFT + 4;
+  hud.querySelectorAll('.tl-braid-marker-label').forEach(el => { el.style.left = left + 'px'; });
+}
+
 let _tlWiresRafPending = false;
 function _tlOnStripScroll() {
   if (_tlWiresRafPending) return;
@@ -1360,6 +1531,8 @@ function _tlDoSelectScene(sceneId, opts) {
     }
   }
   if (sceneId != null) scrollTlCounterpartIntoView(sceneId);
+  updateTlInspectorFooter();
+  refreshTlSaveCancelState();
 }
 
 function tlSwitchTab(tab) {
@@ -1369,6 +1542,32 @@ function tlSwitchTab(tab) {
   document.getElementById('tl-inspector-body').style.display = tab === 'inspector' ? '' : 'none';
   document.getElementById('tl-conflicts-body').style.display = tab === 'conflicts' ? '' : 'none';
   if (tab === 'conflicts' && typeof renderConflictsPanel === 'function') renderConflictsPanel();
+  updateTlInspectorFooter();
+}
+
+// Delete Scene footer button: visible only on the Inspector tab, with a scene
+// actually open (mirrors the form's own visibility rule in _tlDoSelectScene).
+function updateTlInspectorFooter() {
+  const footer = document.getElementById('tl-inspector-footer');
+  if (!footer) return;
+  footer.style.display = (tlActiveTab === 'inspector' && tlSelectedId != null) ? '' : 'none';
+}
+
+// Cancel/Save Changes dim to "nothing to do" the moment the form is clean —
+// only while Timeline mode is driving these shared buttons; board's own Edit
+// Scene form never sets/clears this attribute, so it can't affect board.
+function refreshTlSaveCancelState() {
+  if (!timelineMode) return;
+  const dirty = S.editingId !== null && isEditFormDirty();
+  const cancelBtn = document.getElementById('canceledit');
+  const saveBtn = document.getElementById('saveedit');
+  if (cancelBtn) cancelBtn.disabled = !dirty;
+  if (saveBtn) saveBtn.disabled = !dirty;
+}
+
+function tlDeleteSelectedScene() {
+  if (S.editingId == null) return;
+  deleteScene(S.editingId);
 }
 
 // Auto-unique "Untitled scene"/"Untitled scene N" (case-insensitive, matching

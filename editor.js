@@ -124,6 +124,7 @@ function toggleMenu(name) {
       updateThemeMenuState();
       updatePanelMenuStates();
       updateZoomMenuState();
+      if (typeof updateTlPanelMenuState === 'function') updateTlPanelMenuState();
     }
   }
 }
@@ -558,6 +559,15 @@ function deleteScene(id) {
   S.markers.forEach(m => { if (m.beforeSceneId === id) m.beforeSceneId = nextChronId; });
   if (S.editingId === id) cancelEdit();
   renderBoard();
+  // renderBoard() no-ops uselessly against a hidden board while timeline mode
+  // is open (same gap M5's undo/redo fix closed for renderBoard's other
+  // callers) — Timeline is a separate render tree and also needs its own
+  // selection reset, since deleting the scene currently open in the Inspector
+  // would otherwise leave a stale/orphaned form showing there.
+  if (typeof timelineMode !== 'undefined' && timelineMode) {
+    if (typeof _tlDoSelectScene === 'function') _tlDoSelectScene(null, {});
+    if (typeof renderTimeline === 'function') renderTimeline();
+  }
   renderPovLibSec();
   recordDataEdit();
   saveState();
