@@ -1355,6 +1355,42 @@ genuinely fresh browser origin: Frankenstein auto-seeds with the `SAMPLE` badge
 alongside the other two, with no manual import step, and opens with all 27 scenes/3
 storylines/wires/conflicts intact.
 
+**Post-M7, round 3 — chron strip lane clarity, from a user report of lanes "not
+matching up with their names."** Investigated at length (multiple live reproductions
+of add-storyline/delete-storyline/vertical-relane sequences, a full code read of
+`_tlDrag`'s lane-drop targeting, `snapshot()`/`applySnapshot()`'s storylines
+handling, undo/redo's render calls) and could not reproduce any actual data or
+positioning bug — a systematic check comparing every one of Frankenstein's 27
+scenes' real DOM `top` against its mathematically-expected lane position (derived
+independently from `S.storylines`/`s.storylineId`) came back with zero mismatches
+on a fresh, untouched import. The likely explanation, arrived at only after making
+the same misreading myself first: with no color distinction between lanes and only
+a thin dashed line separating them, it's easy to lose track of which row a card
+belongs to when scanning a wide horizontally-scrolled strip — especially since a
+single storyline's cards can appear at very different horizontal positions (early
+vs. late scenes), which reads at a glance like "the same row's cards jumped to a
+different lane" when they haven't. Fixed the ambiguity at its root rather than
+chasing a bug that isn't there: `.tl-lane-row`/`.tl-lane-label` (`styles.css`,
+`timeline.js`) now both carry a `--lane-c` custom property (`slColor(storyline.
+paletteIndex)`, the same color already used for each card's own top border and the
+wires) as a colored top border plus a faint `color-mix` background tint, so a card's
+own color and its row's color are directly, visually comparable — confirmed
+correct in both light and dark themes, and non-interfering with hover/flag
+dimming.
+
+While investigating, also found and fixed a real, reproducible bug in the same
+area: chronology markers' labels (the "1793 — GENEVA & INGOLSTADT" year captions)
+were invisible on every project that has any — not a z-index/stacking issue (fixed
+that too, `.tl-markers-layer`'s z-index was `1`, below `.tl-scene`'s `2`, so a card
+sitting at a marker's x-position fully hid it) but a genuine overflow clip: the
+label sits `top:-15px` above its marker line, and the line's own `top:4px` put the
+label 11px above `#tl-track`'s own top edge — entirely inside the region
+`#tl-chron-scroll`'s `overflow-y:hidden` clips away, regardless of z-index (an
+overflow clip and a stacking order are different mechanisms; raising z-index alone
+didn't fix this). Changed the marker line's `top` to `20px`, leaving the label
+comfortably inside the track's visible bounds. Confirmed visible in both light and
+dark themes after the fix.
+
 ### Not yet done
 Nothing outstanding from the M7 checklist itself. Still not merged to `main` —
 stays on `thruLine_v1` per explicit instruction; main and all other branches are

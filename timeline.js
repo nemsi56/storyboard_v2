@@ -313,6 +313,7 @@ function renderStorylineLanes() {
     const label = document.createElement('div');
     label.className = 'tl-lane-label';
     label.style.height = laneH + 'px';
+    label.style.setProperty('--lane-c', slColor(st.paletteIndex));
     label.dataset.storylineId = st.id;
     const sw = document.createElement('span'); sw.className = 'tl-sw'; sw.style.background = slColor(st.paletteIndex);
     const nameWrap = document.createElement('span'); nameWrap.className = 'tl-lane-name'; nameWrap.textContent = st.name;
@@ -400,6 +401,7 @@ function renderChronStrip() {
     row.className = 'tl-lane-row';
     row.style.top = (i * laneH) + 'px';
     row.style.height = laneH + 'px';
+    row.style.setProperty('--lane-c', slColor(st.paletteIndex));
     row.dataset.storylineId = st.id;
     track.appendChild(row);
   });
@@ -415,7 +417,12 @@ function renderChronStrip() {
 
   const markersLayer = document.createElement('div');
   markersLayer.className = 'tl-markers-layer';
-  markersLayer.style.cssText = 'position:absolute;inset:0;z-index:1;pointer-events:none';
+  // z-index:3, above .tl-scene's z-index:2 — otherwise a card sitting at a
+  // marker's x-position (very likely, since markers commonly sit right before
+  // the first scene of a new time period) fully hides the marker's label
+  // behind its opaque background, since a stacking context's z-index is only
+  // meaningful relative to its own children, not decided by them.
+  markersLayer.style.cssText = 'position:absolute;inset:0;z-index:3;pointer-events:none';
   track.appendChild(markersLayer);
 
   const xMap = chronX(S.timelinePrefs.axis);

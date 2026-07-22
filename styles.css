@@ -875,7 +875,7 @@ body.tl-mode #sbhdr{display:none}
    wires zone down to its min-height. */
 #tl-chron-body{flex:0 0 auto;max-height:55%;min-height:0;display:flex;overflow:hidden}
 #tl-lane-labels{flex:0 0 132px;display:flex;flex-direction:column;border-right:none;overflow-y:hidden}
-.tl-lane-label{position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:4px 10px;border-right:2px solid var(--s1);border-bottom:1px dashed var(--s1);font-size:11px;color:var(--sub);font-weight:600}
+.tl-lane-label{position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:4px 10px;border-right:2px solid var(--s1);border-bottom:1px dashed var(--s1);border-top:2px solid var(--lane-c,transparent);background:color-mix(in srgb,var(--lane-c,transparent) 5%,transparent);box-sizing:border-box;font-size:11px;color:var(--sub);font-weight:600}
 .tl-lane-label .tl-sw{width:18px;height:3px;border-radius:2px}
 .tl-lane-label .tl-lane-name{color:var(--tx);cursor:text}
 .tl-lane-label .tl-lane-name input{width:100%;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:1px 4px;color:var(--tx);font-size:11px;font-family:inherit}
@@ -888,7 +888,7 @@ body.tl-mode #sbhdr{display:none}
 
 #tl-chron-scroll{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden}
 #tl-track{position:relative;min-width:100%}
-.tl-lane-row{position:absolute;left:0;right:0;border-bottom:1px dashed var(--s1)}
+.tl-lane-row{position:absolute;left:0;right:0;border-bottom:1px dashed var(--s1);border-top:2px solid var(--lane-c,transparent);background:color-mix(in srgb,var(--lane-c,transparent) 5%,transparent);box-sizing:border-box}
 .tl-lane-row.tl-drop-target{outline:2px dashed var(--acc);outline-offset:-2px}
 
 #tl-wires-zone{flex:1;min-height:100px;position:relative;border-bottom:1px solid var(--s1)}
@@ -981,7 +981,11 @@ body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){op
 .tl-popover .tl-popover-row{display:flex;justify-content:flex-end}
 .tl-popover button{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--tx);cursor:pointer;font-family:inherit}
 .tl-popover button.tl-danger{color:var(--rd)}
-.tl-marker-line{position:absolute;top:4px;bottom:0;width:0;border-left:1px dashed var(--o0);z-index:1}
+/* top:20px (not 4px) leaves room for the label's top:-15px offset above the
+   line — at 4px the label ended up 11px above the track's own top edge,
+   clipped away entirely by #tl-chron-scroll's overflow-y:hidden regardless
+   of z-index, since that's an overflow clip, not a stacking issue. */
+.tl-marker-line{position:absolute;top:20px;bottom:0;width:0;border-left:1px dashed var(--o0);z-index:1}
 .tl-marker-label{position:absolute;top:-15px;left:4px;font-size:9px;letter-spacing:1px;color:var(--o0);white-space:nowrap;cursor:pointer;font-weight:700}
 .tl-marker-label:hover{color:var(--tx)}
 .tl-gap-divider{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--o0);z-index:1;pointer-events:none}
