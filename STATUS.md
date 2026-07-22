@@ -1305,6 +1305,43 @@ browser origin (stale HTTP caching in the preview tool made this unusually hard 
 verify — see the caching note earlier in this doc; a mid-session server/port restart
 was needed to rule out false negatives from cached JS).
 
+**Post-M7, round 2 — wires still weren't actually connecting to cards.** After the
+wires-zone sizing fix above landed, the user reported (screenshot) that curves still
+looked disconnected from the chronology strip, and that offscreen scenes had no wire
+at all. Two more real bugs, both in `redrawWires()` (`timeline.js`):
+
+4. **`if (s.offscreen) return;`** — ported verbatim from ThruLine, where an offscreen
+   scene genuinely has no manuscript position (excluded from `msOrder` entirely — the
+   Frankenstein conversion had to synthesize `sc_chase`'s manuscript placement by
+   hand for exactly this reason, since ThruLine's own file omitted it from
+   `msOrder`). SceneSetter's model is different: `renderManuscriptRibbon()` gives
+   *every* scene a `.tl-ms-card`, offscreen ones just get a dimmed `.tl-offscreen`
+   treatment (spec §6.2), so they always have a real card to draw a wire to. Removed
+   the skip; the existing `if (!chronEl || !msEl) return;` guard already covers any
+   genuine no-card case.
+5. **`ay = 0` was hardcoded** — every wire's chronology-side endpoint was pinned to
+   the wires-zone's top edge regardless of where the actual card sat, instead of the
+   card's real bottom edge (ThruLine's original: `ar.bottom - stageRect.top`). This
+   happened to look fine only for cards in the bottommost chron lane, immediately
+   above the zone boundary; any card in an upper storyline lane had its wire start
+   from thin air at the boundary line instead of visibly touching the card, reading
+   as "the wire disappears in the chronology pane." Root cause: `#tl-wires` was
+   nested inside `#tl-wires-zone` (sized to just the zone's own small box) rather
+   than being a direct child of `#tl-stage` like ThruLine's `#wires` (sized to the
+   whole stage) — a coordinate space too small to reach cards outside the zone at
+   all. Fixed by moving the `<svg id="tl-wires">` element in `editor.html` to be a
+   direct child of `#tl-stage`, and rewriting the endpoint math in `redrawWires()`
+   to anchor on `stageRect` with `ar.bottom`/`br.top` (both endpoints — the
+   manuscript side was already reading `br.top` correctly by coincidence, since the
+   old zone's bottom edge and the manuscript strip's top edge are the same line, but
+   the chron side had no such coincidence to save it).
+
+Verified on a genuinely fresh origin (another stale-cache-driven server/port
+restart): wires now visibly touch card edges in every storyline lane, not just the
+bottommost; the offscreen scene from the Frankenstein set (id 25, "A Pursuit Across
+the World") now gets a wire connecting its chron and manuscript cards, matching the
+26-scenes-had-wires → 27 count after the fix.
+
 ### Not yet done
 Nothing outstanding from the M7 checklist itself. Still not merged to `main` —
 stays on `thruLine_v1` per explicit instruction; main and all other branches are

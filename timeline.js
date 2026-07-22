@@ -948,12 +948,12 @@ function clearHighlight() {
 
 function redrawWires() {
   const svg = document.getElementById('tl-wires');
-  const zone = document.getElementById('tl-wires-zone');
-  if (!svg || !zone || !timelineMode) return;
-  svg.setAttribute('width', zone.clientWidth);
-  svg.setAttribute('height', zone.clientHeight);
+  const stage = document.getElementById('tl-stage');
+  if (!svg || !stage || !timelineMode) return;
+  svg.setAttribute('width', stage.clientWidth);
+  svg.setAttribute('height', stage.clientHeight);
   svg.textContent = '';
-  if (!zone.clientWidth || !zone.clientHeight) return;
+  if (!stage.clientWidth || !stage.clientHeight) return;
 
   const hoveredEl = document.querySelector('.tl-scene.tl-hi, .tl-ms-card.tl-hi');
   const hoveredId = hoveredEl ? hoveredEl.dataset.sceneId : null;
@@ -964,10 +964,13 @@ function redrawWires() {
   document.querySelectorAll('.tl-scene[data-scene-id]').forEach(el => chronById.set(el.dataset.sceneId, el));
   document.querySelectorAll('.tl-ms-card[data-scene-id]').forEach(el => msById.set(el.dataset.sceneId, el));
 
-  const zoneRect = zone.getBoundingClientRect();
+  const stageRect = stage.getBoundingClientRect();
   const geo = [];
   S.scenes.forEach(s => {
-    if (s.offscreen) return; // offscreen scenes have no manuscript position
+    // Unlike ThruLine (where an offscreen scene has no msOrder entry at all),
+    // SceneSetter's manuscript ribbon renders every scene — offscreen ones
+    // just get the .tl-offscreen dimmed treatment (renderManuscriptRibbon) —
+    // so offscreen scenes are NOT skipped here; both cards always exist.
     const chronEl = chronById.get(String(s.id));
     const msEl = msById.get(String(s.id));
     if (!chronEl || !msEl) return;
@@ -979,9 +982,9 @@ function redrawWires() {
   const flaggedIds = flagActive && typeof getFlaggedSceneIds === 'function' ? (getFlaggedSceneIds() || []) : [];
   geo.forEach(g => {
     const s = g.scene, ar = g.ar, br = g.br;
-    const ax = ar.left + ar.width / 2 - zoneRect.left, ay = 0;
-    const bx = br.left + br.width / 2 - zoneRect.left, by = zoneRect.height;
-    const dy = Math.max(14, (by - ay) / 2);
+    const ax = ar.left + ar.width / 2 - stageRect.left, ay = ar.bottom - stageRect.top;
+    const bx = br.left + br.width / 2 - stageRect.left, by = br.top - stageRect.top;
+    const dy = Math.max(40, (by - ay) / 2);
     const st = storylineById.get(s.storylineId);
     let color = st ? slColor(st.paletteIndex) : 'var(--acc)';
     const isHi = hovering && String(s.id) === hoveredId;

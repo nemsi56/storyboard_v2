@@ -892,6 +892,12 @@ body.tl-mode #sbhdr{display:none}
 .tl-lane-row.tl-drop-target{outline:2px dashed var(--acc);outline-offset:-2px}
 
 #tl-wires-zone{flex:1;min-height:100px;position:relative;border-bottom:1px solid var(--s1)}
+/* #tl-wires is a direct child of #tl-stage (not nested in #tl-wires-zone) so its
+   coordinate space covers chron+gap+manuscript together, like ThruLine's own
+   #wires (a direct child of #stage). redrawWires() anchors each wire to the
+   card's real edge (ar.bottom/br.top) rather than the gap's top/bottom, which
+   only lines up with the zone boundary for cards in the bottommost chron lane
+   — every other lane's wire would visually stop short of the actual card. */
 #tl-wires{position:absolute;inset:0;pointer-events:none;z-index:5}
 
 /* Content-sized like #tl-chron-body above — a single row of cards, not
