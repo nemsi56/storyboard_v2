@@ -1391,6 +1391,47 @@ didn't fix this). Changed the marker line's `top` to `20px`, leaving the label
 comfortably inside the track's visible bounds. Confirmed visible in both light and
 dark themes after the fix.
 
+**Post-M7, round 4 — the lane-label round 3 fix was necessary but not sufficient;
+the real bug was elsewhere.** After round 3's color-coding shipped, the user kept
+reporting the same "lanes don't match their names" symptom, this time with a much
+higher-resolution screenshot and, eventually, their actual exported project file
+(imported and checked byte-for-byte against the running code — data was 100%
+correct, zero mismatches, in a from-scratch session; confirmed a stale-cache theory
+was wrong too, since the user had already re-tested in a private/incognito window).
+The eventual breakthrough was a screenshot zoomed in enough to show the *label
+column itself* visibly shorter than the row band it should exactly cover — a
+question of label-vs-row alignment, not card-vs-lane color. Verified precisely:
+`.tl-lane-label` elements were rendering at ~78px instead of their declared 92px,
+while `.tl-lane-row` elements (and the cards within them) stayed exactly at 92px.
+Root cause: `#tl-lane-labels` is a flex column, and `.tl-lane-label` — a flex
+item — has no `flex-shrink:0`, so flex's default shrink-to-fit silently compresses
+every label below its declared height the instant total lane height
+(`laneCount×92`) exceeds `#tl-chron-body`'s available space (`max-height:55%` from
+round 2's wires-zone fix, or just a shorter window). The track's own rows and cards
+are absolutely positioned — immune to flex shrinking — so they stay exactly at
+`i×92`, while the labels compress and *cumulatively drift*: label 1 lines up by
+coincidence (both start at the container's top), label 2 is off by the shrink
+amount, label 3 by double that, and so on — worse with every subsequent lane, which
+matches the reports precisely. This is why it eluded round 3's testing: the color
+verification checked card color/position against `S.storylines` math (always
+correct), never label position against row position, and every test window used
+happened to be tall enough to give labels their full 92px, so the shrink literally
+never triggered in that testing. Fixed with one line — `flex-shrink:0` on
+`.tl-lane-label` — so any excess now clips via `#tl-lane-labels`'
+`overflow-y:hidden`, exactly like the track's rows already clip via
+`#tl-chron-scroll`'s own `overflow-y:hidden`: the same failure mode on both sides
+instead of a silent divergence between them. Verified via direct
+`getBoundingClientRect()` comparison (label top/height now exactly matches its
+row's, at both a normal window size and a deliberately squeezed 1000×500) and
+visually — confirmed labels and rows now clip together at the same boundary under
+pressure rather than drifting apart.
+
+Also confirmed (unprompted, while helping diagnose): the right-click-on-empty-
+track-space "Add marker here" flow still works correctly; the user's separate
+question was about discoverability, not a bug — noted as a possible future
+affordance (a "+ Marker" button beside "+ Storyline") but not built, since it
+wasn't asked for.
+
 ### Not yet done
 Nothing outstanding from the M7 checklist itself. Still not merged to `main` —
 stays on `thruLine_v1` per explicit instruction; main and all other branches are

@@ -875,7 +875,19 @@ body.tl-mode #sbhdr{display:none}
    wires zone down to its min-height. */
 #tl-chron-body{flex:0 0 auto;max-height:55%;min-height:0;display:flex;overflow:hidden}
 #tl-lane-labels{flex:0 0 132px;display:flex;flex-direction:column;border-right:none;overflow-y:hidden}
-.tl-lane-label{position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:4px 10px;border-right:2px solid var(--s1);border-bottom:1px dashed var(--s1);border-top:2px solid var(--lane-c,transparent);background:color-mix(in srgb,var(--lane-c,transparent) 5%,transparent);box-sizing:border-box;font-size:11px;color:var(--sub);font-weight:600}
+/* flex-shrink:0 is load-bearing: #tl-lane-labels is a flex column, and without
+   this, flex's default shrink-to-fit squeezes every label below its declared
+   height the moment total lane height exceeds #tl-chron-body's available
+   space (e.g. a shorter window, or a max-height:55% squeeze from a lot of
+   wire/manuscript content). The chron track's own rows/cards are absolutely
+   positioned, immune to that shrink, so they stay at their true 92px spacing
+   — the labels would silently drift out of alignment with their rows,
+   worse with each subsequent lane, while the rows themselves stayed put.
+   With shrink disabled, any excess instead clips via #tl-lane-labels'
+   overflow-y:hidden, exactly like the track's own rows already do via
+   #tl-chron-scroll's overflow-y:hidden — same failure mode on both sides
+   instead of a silent divergence between them. */
+.tl-lane-label{position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:4px 10px;border-right:2px solid var(--s1);border-bottom:1px dashed var(--s1);border-top:2px solid var(--lane-c,transparent);background:color-mix(in srgb,var(--lane-c,transparent) 5%,transparent);box-sizing:border-box;flex-shrink:0;font-size:11px;color:var(--sub);font-weight:600}
 .tl-lane-label .tl-sw{width:18px;height:3px;border-radius:2px}
 .tl-lane-label .tl-lane-name{color:var(--tx);cursor:text}
 .tl-lane-label .tl-lane-name input{width:100%;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:1px 4px;color:var(--tx);font-size:11px;font-family:inherit}
