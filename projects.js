@@ -863,12 +863,13 @@ function importProjectJSON(inputEl) {
   inputEl.value = '';
 }
 
-// Bump whenever pride-and-prejudice.json / count-of-monte-cristo.json change enough
-// that existing (untouched) sample projects should be refreshed with the new content —
-// e.g. the wordCount/povs addition this constant was introduced for. A user who's still
-// on an older version gets the refresh automatically on their next Projects-page visit;
-// no manual localStorage reset needed.
-const SAMPLES_VERSION = 2;
+// Bump whenever pride-and-prejudice.json / count-of-monte-cristo.json /
+// frankenstein.json change enough that existing (untouched) sample projects
+// should be refreshed with the new content — e.g. the wordCount/povs addition
+// this constant was introduced for. A user who's still on an older version
+// gets the refresh automatically on their next Projects-page visit; no manual
+// localStorage reset needed.
+const SAMPLES_VERSION = 3;
 
 function ensureSampleProjects() {
   // Seeded/refreshed up to SAMPLES_VERSION already? Nothing to do. Tracked by a version
@@ -902,6 +903,7 @@ function ensureSampleProjects() {
   const samplesToLoad = [
     { key: 'pride-and-prejudice', name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' },
     { key: 'count-of-monte-cristo', name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' },
+    { key: 'frankenstein', name: 'Frankenstein; or, The Modern Prometheus', file: 'frankenstein.json' },
   ];
 
   const loadPromises = samplesToLoad.map(sample => {
@@ -912,11 +914,15 @@ function ensureSampleProjects() {
         return response.json();
       })
       .then(d => {
-        // Sample JSON files on disk stay v2 (schema v3 spec §3.1.3) — migrate
-        // through the same path a v2 import would take, rather than hand-
-        // editing the sample files.
-        if (!d || d.v !== '2') return false;
-        migrateV2toV3(d);
+        // Older sample JSON files on disk stay v2 (schema v3 spec §3.1.3) and
+        // migrate through the same path a v2 import would take, rather than
+        // hand-editing them — but frankenstein.json is v3-native (converted
+        // from ThruLine's own test fixture specifically to exercise
+        // storylines/reveals/anchors/conflicts, which v2 has no concept of),
+        // so it's seeded as-is.
+        if (!d) return false;
+        if (d.v === '2') migrateV2toV3(d);
+        else if (d.v !== '3') return false;
         delete d.projectName;
         const index = loadProjectIndex();
         // sampleKey identifies the same entry across a rename; name is the fallback

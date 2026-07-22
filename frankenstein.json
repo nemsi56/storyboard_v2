@@ -1,0 +1,967 @@
+{
+  "v": "3",
+  "projectName": "Frankenstein; or, The Modern Prometheus",
+  "characters": [
+    {
+      "id": 4,
+      "name": "Victor Frankenstein",
+      "notes": ""
+    },
+    {
+      "id": 5,
+      "name": "The Creature",
+      "notes": ""
+    },
+    {
+      "id": 6,
+      "name": "Robert Walton",
+      "notes": ""
+    },
+    {
+      "id": 7,
+      "name": "Elizabeth Lavenza",
+      "notes": ""
+    },
+    {
+      "id": 8,
+      "name": "Henry Clerval",
+      "notes": ""
+    },
+    {
+      "id": 9,
+      "name": "William Frankenstein",
+      "notes": ""
+    },
+    {
+      "id": 10,
+      "name": "Justine Moritz",
+      "notes": ""
+    },
+    {
+      "id": 11,
+      "name": "Alphonse Frankenstein",
+      "notes": ""
+    },
+    {
+      "id": 12,
+      "name": "The De Lacey Family",
+      "notes": ""
+    }
+  ],
+  "locations": [
+    {
+      "id": 13,
+      "name": "Geneva",
+      "notes": ""
+    },
+    {
+      "id": 14,
+      "name": "Ingolstadt",
+      "notes": ""
+    },
+    {
+      "id": 15,
+      "name": "The De Laceys' Cottage",
+      "notes": ""
+    },
+    {
+      "id": 16,
+      "name": "Montanvert Glacier",
+      "notes": ""
+    },
+    {
+      "id": 17,
+      "name": "Orkney Islands",
+      "notes": ""
+    },
+    {
+      "id": 18,
+      "name": "Ireland",
+      "notes": ""
+    },
+    {
+      "id": 19,
+      "name": "The Arctic Ice",
+      "notes": ""
+    }
+  ],
+  "themes": [],
+  "misc": [],
+  "scenes": [
+    {
+      "id": 1,
+      "title": "Walton's Letters Begin",
+      "summary": "An English explorer writes to his sister of his ambitions for the North Pole.",
+      "notes": "",
+      "characters": [
+        6
+      ],
+      "locations": [
+        19
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1799-07-01",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 2,
+      "title": "A Stranger on the Ice",
+      "summary": "Walton's crew sights a huge figure driving a dog-sledge across the frozen sea.",
+      "notes": "",
+      "characters": [
+        6
+      ],
+      "locations": [
+        19
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1799-08-05",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 3,
+      "title": "The Crew Rescues Victor",
+      "summary": "A second traveler is found half-dead on the ice, raving about a daemon he must destroy.",
+      "notes": "",
+      "characters": [
+        6,
+        4
+      ],
+      "locations": [
+        19
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [
+        2
+      ],
+      "anchor": {
+        "date": "1799-08-06",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": [
+        20
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Victor Begins His Tale",
+      "summary": "Recovering by Walton's fire, Victor agrees to tell the whole of his miserable history.",
+      "notes": "",
+      "characters": [
+        6,
+        4
+      ],
+      "locations": [
+        19
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [
+        2
+      ],
+      "anchor": {
+        "date": "1799-08-07",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 5,
+      "title": "A Happy Childhood in Geneva",
+      "summary": "Victor grows up adored, with Elizabeth as his adopted sister and dearest companion.",
+      "notes": "",
+      "characters": [
+        4,
+        7,
+        11
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1793-01-10",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 6,
+      "title": "Victor Departs for Ingolstadt",
+      "summary": "Eager and ambitious, Victor leaves home to study natural philosophy.",
+      "notes": "",
+      "characters": [
+        4,
+        11,
+        7
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1793-09-01",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 7,
+      "title": "The Creation",
+      "summary": "On a dreary night in November, Victor's creature opens its eyes.",
+      "notes": "",
+      "characters": [
+        4,
+        5
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1793-11-10",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 8,
+      "title": "Abandonment and Flight",
+      "summary": "Horrified by his own work, Victor flees his apartment and the creature disappears.",
+      "notes": "",
+      "characters": [
+        4,
+        5
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1793-11-11",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 9,
+      "title": "Justine Accused",
+      "summary": "William is dead, and the evidence \u2014 planted evidence \u2014 points to Justine.",
+      "notes": "",
+      "characters": [
+        4,
+        10,
+        7
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1794-05-25",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 10,
+      "title": "The Execution of Justine",
+      "summary": "Victor says nothing, and an innocent woman is put to death for his creature's crime.",
+      "notes": "",
+      "characters": [
+        4,
+        10
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1794-06-10",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 11,
+      "title": "Confrontation on the Glacier",
+      "summary": "Wandering in grief, Victor comes face to face with what he made \u2014 and it can speak.",
+      "notes": "",
+      "characters": [
+        4,
+        5
+      ],
+      "locations": [
+        16
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [
+        3
+      ],
+      "anchor": {
+        "date": "1794-08-01",
+        "time": "14:00"
+      },
+      "durationMin": 240,
+      "offscreen": false,
+      "reveals": [
+        20
+      ],
+      "requires": []
+    },
+    {
+      "id": 12,
+      "title": "The Creature's Awakening",
+      "summary": "Alone and untaught, the creature discovers cold, hunger, fire, and the cruelty of strangers.",
+      "notes": "",
+      "characters": [
+        5
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1793-11-12",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 13,
+      "title": "Watching the De Laceys",
+      "summary": "From a hovel wall, the creature studies a poor family and slowly learns their language.",
+      "notes": "",
+      "characters": [
+        5,
+        12
+      ],
+      "locations": [
+        15
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1794-02-01",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 14,
+      "title": "Paradise Lost and the Found Journal",
+      "summary": "Books teach the creature what he is \u2014 and what Victor thought of him.",
+      "notes": "",
+      "characters": [
+        5
+      ],
+      "locations": [
+        15
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1794-04-01",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 15,
+      "title": "Rejected by the De Laceys",
+      "summary": "The creature finally reveals himself to the family he has come to love, and is driven away in terror.",
+      "notes": "",
+      "characters": [
+        5,
+        12
+      ],
+      "locations": [
+        15
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1794-05-01",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 16,
+      "title": "The Creature Kills William",
+      "summary": "A chance meeting with a beautiful, frightened child ends in murder \u2014 and a plan for vengeance.",
+      "notes": "",
+      "characters": [
+        5,
+        9
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1794-05-20",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [
+        21
+      ],
+      "requires": []
+    },
+    {
+      "id": 17,
+      "title": "The Creature's Demand",
+      "summary": "Having told his story, the creature makes one demand: a companion of his own.",
+      "notes": "",
+      "characters": [
+        4,
+        5
+      ],
+      "locations": [
+        16
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [
+        2
+      ],
+      "anchor": {
+        "date": "1794-08-01",
+        "time": "18:00"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 18,
+      "title": "Victor Reluctantly Agrees",
+      "summary": "Against every instinct, Victor promises to build a mate for his creation.",
+      "notes": "",
+      "characters": [
+        4,
+        5
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1794-08-15",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 19,
+      "title": "Building the Mate in Orkney",
+      "summary": "In an isolated cottage on a remote island, Victor resumes his terrible work.",
+      "notes": "",
+      "characters": [
+        4
+      ],
+      "locations": [
+        17
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1795-07-01",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 20,
+      "title": "The Unfinished Bride Destroyed",
+      "summary": "Watched through a window by the creature, Victor tears the half-made female to pieces.",
+      "notes": "",
+      "characters": [
+        4,
+        5
+      ],
+      "locations": [
+        17
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1795-08-20",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [
+        22
+      ],
+      "requires": []
+    },
+    {
+      "id": 21,
+      "title": "Clerval Found Dead",
+      "summary": "Victor's dearest friend is murdered, and Victor himself is accused.",
+      "notes": "",
+      "characters": [
+        4,
+        8,
+        5
+      ],
+      "locations": [
+        18
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1795-09-01",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 22,
+      "title": "The Wedding of Victor and Elizabeth",
+      "summary": "After years of dread, Victor marries the woman he loves, armed and watching the shadows.",
+      "notes": "",
+      "characters": [
+        4,
+        7
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1796-01-10",
+        "time": "14:00"
+      },
+      "durationMin": 480,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 23,
+      "title": "Elizabeth Murdered",
+      "summary": "Victor guards the wrong door. The creature keeps his promise.",
+      "notes": "",
+      "characters": [
+        4,
+        7,
+        5
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1796-01-10",
+        "time": "23:00"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": [
+        22
+      ]
+    },
+    {
+      "id": 24,
+      "title": "Alphonse Dies of Grief",
+      "summary": "The last of Victor's family is undone by sorrow.",
+      "notes": "",
+      "characters": [
+        11,
+        4
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1796-02-01",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 25,
+      "title": "A Pursuit Across the World",
+      "summary": "Victor follows his creature north, through forests and ice, living only for revenge.",
+      "notes": "",
+      "characters": [
+        4,
+        5
+      ],
+      "locations": [],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": null,
+      "durationMin": null,
+      "offscreen": true,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 26,
+      "title": "Victor Finishes His Tale and Dies",
+      "summary": "His story told and his strength spent, Victor succumbs aboard Walton's ice-bound ship.",
+      "notes": "",
+      "characters": [
+        6,
+        4
+      ],
+      "locations": [
+        19
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [
+        2
+      ],
+      "anchor": {
+        "date": "1799-09-01",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 27,
+      "title": "The Creature's Farewell",
+      "summary": "The creature appears one last time, mourns his maker, and vanishes into the darkness to die.",
+      "notes": "",
+      "characters": [
+        5,
+        6
+      ],
+      "locations": [
+        19
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": null,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [
+        3
+      ],
+      "anchor": {
+        "date": "1799-09-02",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    }
+  ],
+  "nextId": 28,
+  "andOr": "OR",
+  "theme": "ivory",
+  "sections": [],
+  "nextSecId": 1,
+  "lastDataEditAt": "2026-07-21T21:54:11.000Z",
+  "lastExportedAt": "2026-07-21T21:54:11.000Z",
+  "editsSinceExport": 0,
+  "projectUid": "puid_frankenstein_conv_1784670851455",
+  "revision": 0,
+  "nextEntId": 27,
+  "povCustom": [],
+  "povOrder": [],
+  "storylines": [
+    {
+      "id": 1,
+      "name": "Walton's Voyage",
+      "paletteIndex": 0
+    },
+    {
+      "id": 2,
+      "name": "Victor's Account",
+      "paletteIndex": 1
+    },
+    {
+      "id": 3,
+      "name": "The Creature's Account",
+      "paletteIndex": 2
+    }
+  ],
+  "revealsLib": [
+    {
+      "id": 20,
+      "label": "the Creature is alive, intelligent, and can speak"
+    },
+    {
+      "id": 21,
+      "label": "the Creature confesses to killing William"
+    },
+    {
+      "id": 22,
+      "label": "the Creature's wedding-night threat"
+    }
+  ],
+  "constraints": [],
+  "markers": [
+    {
+      "id": 23,
+      "label": "1793 \u2014 GENEVA & INGOLSTADT",
+      "beforeSceneId": 5
+    },
+    {
+      "id": 24,
+      "label": "1793\u201394 \u2014 THE CREATURE'S FIRST YEAR",
+      "beforeSceneId": 12
+    },
+    {
+      "id": 25,
+      "label": "1795\u201396 \u2014 THE RECKONING",
+      "beforeSceneId": 19
+    },
+    {
+      "id": 26,
+      "label": "1799 \u2014 WALTON'S EXPEDITION",
+      "beforeSceneId": 1
+    }
+  ],
+  "chronOrder": [
+    5,
+    6,
+    7,
+    8,
+    12,
+    13,
+    14,
+    15,
+    16,
+    9,
+    10,
+    11,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    1,
+    2,
+    3,
+    4,
+    26,
+    27
+  ],
+  "dismissed": [],
+  "timelinePrefs": {
+    "axis": "ordinal",
+    "threadCharId": null,
+    "pxPerScene": 110
+  }
+}
