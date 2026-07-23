@@ -2504,3 +2504,30 @@ Not merged anywhere. The remaining un-screenshotted items (anchor-row wrap, ribb
 a truly fresh load, Mac shortcut labels) should get a quick visual pass in a normal browser
 session (outside this dev-preview tool's caching quirk) before considering this round fully
 closed out.
+
+## thruLine_v2 branch — Ribbon polish, Mac shortcuts (part 3): Inspector/Conflicts panel background, frozen Conflicts header
+
+Two small direct-feedback fixes on top of the last round.
+
+### Inspector/Conflicts panel background
+`#tl-panel` used `var(--bg1)` while its own active tab (`.tab.on`) is `var(--bg2)` —
+a mismatch the New/Edit Scene pane (`#cp`) doesn't have, since `#cp` is `var(--bg2)` too,
+consistently matching its own tabs. Changed `#tl-panel` to `var(--bg2)` to match; also
+updated the Inspector's frozen Title field (`#tl-inspector-body .cp-form-fields > .ff:first-child`),
+which hardcoded `var(--bg1)` for the same reason and would otherwise have gone stale
+against the panel's new background.
+
+### Frozen "CONFLICTS (N)" header
+`.conflictCountHdr` now sits `position:sticky;top:0` at the top of `#tl-conflicts-body`,
+same pattern as the Inspector's already-frozen Title field. Moved the container's
+top padding onto the header itself (`#tl-conflicts-body{padding:0 12px 12px}`, header
+gets `padding:12px 0 10px`) so it sits flush against the scroll edge instead of leaving
+a gap — same trick the Inspector's own sticky header already uses, for the same reason.
+
+### Verified live
+Both confirmed on a fresh load this time (no caching issues this round) — computed
+`background-color` on `#tl-panel` matches `--bg2` exactly, and the header visibly stays
+pinned while scrolling the conflict list beneath it.
+
+### Not yet done
+Not merged anywhere.

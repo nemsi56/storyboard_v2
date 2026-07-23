@@ -1090,7 +1090,10 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
    rule (see the Library/Sections/Scene panels above) can actually override it —
    a flex-basis wins over width in the flex sizing algorithm, which would have
    silently no-opped the collapse. */
-#tl-panel{width:300px;flex-shrink:0;background:var(--bg1);border-left:1px solid var(--s1);display:flex;flex-direction:column;min-height:0}
+/* bg2 (not bg1) — matches .tab.on's own background so the active Inspector/
+   Conflicts tab reads as attached to its body, same relationship the New/
+   Edit Scene pane already has (#cp is bg2 too, under the same .tab.on). */
+#tl-panel{width:300px;flex-shrink:0;background:var(--bg2);border-left:1px solid var(--s1);display:flex;flex-direction:column;min-height:0}
 /* tl-panel sits at the right edge of the window (unlike Library/Sections on the
    left), so its collapsed strip's divider belongs on its left side, not right. */
 #tl-panel.panel .p-strip{border-right:none;border-left:2px solid var(--s1)}
@@ -1104,8 +1107,12 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
 #tl-delete-scene-btn:hover{background:var(--rd);color:var(--ontx)}
 .tl-panel-empty{color:var(--sub);font-size:12px;text-align:center;padding:40px 14px;font-style:italic}
 /* Conflicts tab (schema v3 §8) */
-#tl-conflicts-body{padding:12px}
-.conflictCountHdr{font-size:11px;letter-spacing:.06em;color:var(--sub);font-weight:700;text-transform:uppercase;margin:0 0 10px}
+/* No top padding on the container itself (unlike its other three sides) —
+   the count header below takes over that spacing as its own padding so it
+   can sit flush against the scroll edge and stick there, same trick as
+   #tl-inspector-body's frozen Title field above. */
+#tl-conflicts-body{padding:0 12px 12px}
+.conflictCountHdr{position:sticky;top:0;z-index:2;background:var(--bg2);font-size:11px;letter-spacing:.06em;color:var(--sub);font-weight:700;text-transform:uppercase;padding:12px 0 10px;margin:0 0 10px;border-bottom:1px solid var(--s1)}
 .conflictList{display:flex;flex-direction:column;gap:8px}
 .conflictGroupHeader{font-size:10.5px;letter-spacing:.06em;color:var(--sub);font-weight:700;text-transform:uppercase;margin:10px 0 2px}
 .conflictRow{background:var(--s0);border:1px solid var(--s1);border-radius:8px;padding:8px 10px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
@@ -1163,7 +1170,7 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
    with Summary itself, leaving the frozen Title area with no visible
    boundary the moment the user scrolls past it. Living on Title's own box
    means it's frozen right along with it. */
-#tl-inspector-body .cp-form-fields > .ff:first-child{position:sticky;top:0;z-index:2;background:var(--bg1);margin-bottom:4px;border-bottom:1px solid var(--s1);padding-bottom:10px}
+#tl-inspector-body .cp-form-fields > .ff:first-child{position:sticky;top:0;z-index:2;background:var(--bg2);margin-bottom:4px;border-bottom:1px solid var(--s1);padding-bottom:10px}
 
 .tl-popover{position:fixed;z-index:300;background:var(--cbg);border:1px solid var(--s1);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;width:200px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
 .tl-popover input[type=text]{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:6px 8px;color:var(--tx);font-family:inherit}
