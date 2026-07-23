@@ -2531,3 +2531,33 @@ pinned while scrolling the conflict list beneath it.
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v2 branch — Deferred idea: offscreen scenes hidden outside Chronology
+
+Discussed, not implemented. The user asked whether offscreen scenes could be scoped to
+live *only* in the Chronology rows — excluded entirely (not just visually dimmed) from
+Cards view, Flow charts, and the Narrative row, including their scene numbering, and
+reappearing/recounted the moment "Offscreen" is unchecked.
+
+Assessed rather than built: this isn't a single-point fix. The app has no one shared
+"scenes in display order" function — five separate places independently rebuild that same
+ordering and would all need the identical `.filter(s => !s.offscreen)` to stay consistent:
+`buildSceneNumMap()`/`manuscriptOrder()` (editor.js, the shared numbering *and* the
+Narrative row's order), `renderBoard()`'s own scene-gathering (editor.js, Cards view),
+`updateCount()` (editor.js, the "Showing N scenes" header), `orderedScenes()` (charts.js,
+Flow view), and `rptFilterScenes()` (reports.js, **not mentioned by the user** but sharing
+the same numbering — skipping it would leave every offscreen scene mislabeled "Scene 1" in
+every report, a real regression, not just an inconsistency). The Chronology row itself needs
+no changes at all — it already iterates `S.scenes` directly, independent of all five.
+
+Two open questions surfaced that need the user's call before implementing: whether Reports
+should follow the same exclusion rule (recommended, for one consistent numbering scheme
+app-wide), and what the Board's "Showing N scenes (M offscreen)" header should say once
+offscreen scenes are no longer counted in N (drop the note entirely, or keep a passive
+"(+M offscreen)"). Also worth knowing going in: since scenes are normally created from the
+Board, checking "Offscreen" on one immediately removes it from the Board — Timeline/Loom's
+Chronology row becomes the only place left to find and un-check it, which is an intended
+consequence of the request, not a side effect.
+
+Not implemented — the user asked to defer, this section exists so the assessment isn't
+lost if it comes up again.
