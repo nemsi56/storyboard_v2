@@ -3,6 +3,17 @@
 (function(){
   var $ = function(id){ return document.getElementById(id); };
 
+  // Menu-bar/tooltip shortcut labels are authored as Ctrl/Alt (Windows/Linux
+  // convention) — the actual keydown handler (editor.js) already accepts
+  // Cmd (metaKey) interchangeably with Ctrl, so this is purely a display fix:
+  // swap each labeled shortcut to its Mac convention (⌘/⌥) on a Mac, reading
+  // the replacement from a data-sc-mac/data-title-mac attribute right on the
+  // same element rather than parsing/rewriting the displayed text.
+  if (/Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '')) {
+    document.querySelectorAll('[data-sc-mac]').forEach(function(el){ el.textContent = el.dataset.scMac; });
+    document.querySelectorAll('[data-title-mac]').forEach(function(el){ el.title = el.dataset.titleMac; });
+  }
+
   // Header
   $('proj-back-btn').addEventListener('click', backToProjects);
   $('help-btn').addEventListener('click', toggleHelp);

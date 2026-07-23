@@ -1,0 +1,985 @@
+{
+  "v": "3",
+  "projectName": "The Longfellow Job",
+  "characters": [
+    {
+      "id": 4,
+      "name": "Nadia Cross",
+      "notes": "The mastermind. Plans everything twice."
+    },
+    {
+      "id": 5,
+      "name": "Theo Vance",
+      "notes": "Safecracker. Doesn't trust anyone who doesn't shake hands."
+    },
+    {
+      "id": 6,
+      "name": "Priya Malhotra",
+      "notes": "Wheelman. Ex-rally driver."
+    },
+    {
+      "id": 7,
+      "name": "Elliot Byrne",
+      "notes": "Museum registrar. Playing both sides."
+    },
+    {
+      "id": 8,
+      "name": "Dr. Sylvia Reyes",
+      "notes": "Museum curator. Owns the Diadem's provenance research."
+    },
+    {
+      "id": 9,
+      "name": "Marcus Kade",
+      "notes": "Fence. Elliot's real employer."
+    },
+    {
+      "id": 10,
+      "name": "Detective Ruiz",
+      "notes": ""
+    }
+  ],
+  "locations": [
+    {
+      "id": 11,
+      "name": "Longfellow Museum",
+      "notes": ""
+    },
+    {
+      "id": 12,
+      "name": "The Depot",
+      "notes": "Crew's warehouse HQ."
+    },
+    {
+      "id": 13,
+      "name": "Reyes Residence",
+      "notes": ""
+    },
+    {
+      "id": 14,
+      "name": "Vance's Workshop",
+      "notes": ""
+    },
+    {
+      "id": 15,
+      "name": "Riverside Docks",
+      "notes": ""
+    },
+    {
+      "id": 16,
+      "name": "Interrogation Room",
+      "notes": ""
+    }
+  ],
+  "themes": [
+    {
+      "id": 17,
+      "name": "Loyalty",
+      "notes": ""
+    },
+    {
+      "id": 18,
+      "name": "Greed",
+      "notes": ""
+    },
+    {
+      "id": 19,
+      "name": "Trust",
+      "notes": ""
+    }
+  ],
+  "misc": [
+    {
+      "id": 20,
+      "name": "The Emerald Diadem",
+      "notes": "The target."
+    },
+    {
+      "id": 21,
+      "name": "The Blueprint",
+      "notes": "Museum floor plan, stolen early."
+    },
+    {
+      "id": 22,
+      "name": "The Silent Alarm Override",
+      "notes": ""
+    }
+  ],
+  "scenes": [
+    {
+      "id": 115,
+      "title": "Nadia Grabs the Diadem",
+      "summary": "Nadia lifts the Diadem free of its cradle. No alarm. No sound at all.",
+      "notes": "Cold open — presented first in the manuscript even though it happens chronologically in the middle of the heist (Nov 14, 23:10). Path view should show this as a flashback jump when the story then cuts back to \"six weeks earlier.\"",
+      "characters": [
+        4
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [],
+      "misc": [
+        20
+      ],
+      "sectionId": null,
+      "wordCount": 400,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "23:10"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 100,
+      "title": "Nadia Recruits Theo",
+      "summary": "Nadia lays a folder on the workbench: floor plans, guard rotations, a way in. Theo asks who's driving.",
+      "notes": "",
+      "characters": [
+        4,
+        5
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [
+        17
+      ],
+      "misc": [],
+      "sectionId": 1,
+      "wordCount": 640,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-09-30",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 101,
+      "title": "Priya Signs On",
+      "summary": "Priya test-drives the getaway route twice before she'll say yes.",
+      "notes": "",
+      "characters": [
+        4,
+        6
+      ],
+      "locations": [
+        12
+      ],
+      "themes": [
+        17
+      ],
+      "misc": [],
+      "sectionId": 1,
+      "wordCount": 420,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-10-02",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 103,
+      "title": "Theo Studies the Blueprint",
+      "summary": "Theo pins the floor plan to the wall and starts timing the guard loop with a stopwatch.",
+      "notes": "Deliberately unanchored — interpolated between its neighbors in True scale.",
+      "characters": [
+        5
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [],
+      "misc": [
+        21
+      ],
+      "sectionId": 1,
+      "wordCount": 510,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": null,
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 102,
+      "title": "The Blueprint is Stolen",
+      "summary": "Elliot photographs the museum's restricted floor plan on his phone and walks it out in his coat pocket.",
+      "notes": "",
+      "characters": [
+        7
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [],
+      "misc": [
+        21
+      ],
+      "sectionId": 1,
+      "wordCount": 580,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-10-10",
+        "time": "22:00"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": [
+        26
+      ]
+    },
+    {
+      "id": 105,
+      "title": "The Alarm Override Discovered",
+      "summary": "Buried in the blueprint's margins: a manual override for the west-wing silent alarm.",
+      "notes": "",
+      "characters": [
+        5
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [],
+      "misc": [
+        22
+      ],
+      "sectionId": 1,
+      "wordCount": 390,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-10-20",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [
+        24
+      ],
+      "requires": []
+    },
+    {
+      "id": 104,
+      "title": "Elliot's Secret Meeting",
+      "summary": "At the docks, Elliot hands Marcus a copy of the blueprint. \"The crew thinks I work for them,\" he says.",
+      "notes": "Placed after scene 105 in chronOrder despite its earlier date — deliberate anchor-vs-order contradiction.",
+      "characters": [
+        7,
+        9
+      ],
+      "locations": [
+        15
+      ],
+      "themes": [
+        18
+      ],
+      "misc": [],
+      "sectionId": 1,
+      "wordCount": 700,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-10-15",
+        "time": "20:30"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [
+        25
+      ],
+      "requires": []
+    },
+    {
+      "id": 106,
+      "title": "Nadia Signals the Team",
+      "summary": "\"Tonight,\" Nadia says, and for once nobody argues.",
+      "notes": "",
+      "characters": [
+        4,
+        5,
+        6
+      ],
+      "locations": [
+        12
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 300,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "21:00"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 107,
+      "title": "Reyes Hosts a Late Gala",
+      "summary": "Dr. Reyes toasts the Diadem's new security case, unaware it's already obsolete.",
+      "notes": "",
+      "characters": [
+        8
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 340,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "21:15"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 108,
+      "title": "Elliot Disables the Cameras",
+      "summary": "Elliot loops the west-wing feed using the override he \"discovered\" weeks ago.",
+      "notes": "",
+      "characters": [
+        7
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 360,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [
+        1
+      ],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "21:30"
+      },
+      "durationMin": 20,
+      "offscreen": false,
+      "reveals": [],
+      "requires": [
+        24
+      ]
+    },
+    {
+      "id": 109,
+      "title": "Elliot Meets Marcus at the Docks",
+      "summary": "At the exact moment the west-wing feed loops, Elliot is supposedly three miles away, briefing his real boss.",
+      "notes": "Same instant as scene 108, different location, shares Elliot — deliberate bilocation conflict.",
+      "characters": [
+        7,
+        9
+      ],
+      "locations": [
+        15
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "21:30"
+      },
+      "durationMin": 15,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 110,
+      "title": "Priya Waits in the Getaway Car",
+      "summary": "Priya idles two blocks out, counting streetlights to stay awake.",
+      "notes": "",
+      "characters": [
+        6
+      ],
+      "locations": [
+        15
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 260,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "21:35"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 111,
+      "title": "Theo Cracks the Vault",
+      "summary": "Theo's fingers find the tumblers by feel alone. Twenty-two minutes, start to finish.",
+      "notes": "",
+      "characters": [
+        5
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 810,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "22:00"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 112,
+      "title": "Nadia Finds the Combination",
+      "summary": "Taped under the display placard, in Reyes's own handwriting: the combination Elliot promised would be there.",
+      "notes": "",
+      "characters": [
+        4
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [],
+      "misc": [
+        20
+      ],
+      "sectionId": 2,
+      "wordCount": 560,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "22:20"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [
+        26
+      ],
+      "requires": []
+    },
+    {
+      "id": 113,
+      "title": "Reyes Notices Something Wrong",
+      "summary": "The west-wing monitor hasn't changed in twenty minutes. Dr. Reyes frowns and heads that way.",
+      "notes": "",
+      "characters": [
+        8
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 300,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "22:45"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 114,
+      "title": "Theo Freezes at the Vault",
+      "summary": "Footsteps in the hall. Theo goes still with the case half-open in his hands.",
+      "notes": "Meant to line up with scene 113 (\"same-time\" constraint) but five minutes off — deliberately violated, then dismissed as intentional.",
+      "characters": [
+        5
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 280,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "22:50"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 116,
+      "title": "Reyes Wakes the Guards",
+      "summary": "Reyes hits the manual panic button by the loading dock — the one system Elliot never touched.",
+      "notes": "",
+      "characters": [
+        8
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 380,
+      "povs": [
+        23
+      ],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "23:10"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 117,
+      "title": "Elliot Chooses a Side",
+      "summary": "Marcus asks Elliot, one last time, which way he's really pointed. Elliot doesn't answer fast enough.",
+      "notes": "Third leg of the three-storyline simultaneous anchor (with 115 and 116); also carries a reveal that's never actually shown anywhere.",
+      "characters": [
+        7,
+        9
+      ],
+      "locations": [
+        15
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 450,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "23:10"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": [
+        27
+      ]
+    },
+    {
+      "id": 118,
+      "title": "The Alarm Trips",
+      "summary": "Two floors up, a klaxon finally, belatedly, goes off.",
+      "notes": "",
+      "characters": [
+        8
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "23:12"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 119,
+      "title": "The Getaway",
+      "summary": "Priya doesn't wait for the door to close all the way.",
+      "notes": "Meant to land 15 minutes after the alarm (scene 118) per constraint — actually only 8, deliberately violated.",
+      "characters": [
+        4,
+        5,
+        6
+      ],
+      "locations": [
+        15
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 500,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-14",
+        "time": "23:20"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 120,
+      "title": "Reyes Calls the Police",
+      "summary": "Dr. Reyes gives her statement twice because her hands won't stop shaking the first time.",
+      "notes": "",
+      "characters": [
+        8
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 3,
+      "wordCount": 260,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-15",
+        "time": "00:10"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 121,
+      "title": "Detective Ruiz Surveys the Scene",
+      "summary": "Ruiz photographs the empty display case and asks who, exactly, discovered that alarm override.",
+      "notes": "",
+      "characters": [
+        10,
+        8
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [],
+      "misc": [],
+      "sectionId": 3,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-15",
+        "time": "09:00"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 122,
+      "title": "Marcus Fences the Diadem",
+      "summary": "The sale happens in a city none of the crew will ever visit.",
+      "notes": "",
+      "characters": [
+        9
+      ],
+      "locations": [],
+      "themes": [],
+      "misc": [
+        20
+      ],
+      "sectionId": 3,
+      "wordCount": null,
+      "povs": [],
+      "storylineId": 3,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-18",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": true,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 123,
+      "title": "The Crew Splits the Take",
+      "summary": "Three even shares on the table. Nadia counts hers twice anyway.",
+      "notes": "",
+      "characters": [
+        4,
+        5,
+        6
+      ],
+      "locations": [
+        12
+      ],
+      "themes": [
+        18,
+        19
+      ],
+      "misc": [],
+      "sectionId": 3,
+      "wordCount": 520,
+      "povs": [],
+      "storylineId": 1,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-16",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 124,
+      "title": "Reyes Confronts Elliot",
+      "summary": "\"I trained you,\" Reyes says, and Elliot has no good answer for that either.",
+      "notes": "",
+      "characters": [
+        8,
+        7
+      ],
+      "locations": [
+        16
+      ],
+      "themes": [
+        19
+      ],
+      "misc": [],
+      "sectionId": 3,
+      "wordCount": 610,
+      "povs": [],
+      "storylineId": 2,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "2024-11-17",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    }
+  ],
+  "nextId": 125,
+  "andOr": "OR",
+  "theme": "ivory",
+  "sections": [
+    {
+      "id": 1,
+      "name": "Act One — The Setup",
+      "color": "#b07a35"
+    },
+    {
+      "id": 2,
+      "name": "Act Two — The Job",
+      "color": "#3d6c9e"
+    },
+    {
+      "id": 3,
+      "name": "Act Three — The Fallout",
+      "color": "#7b5ea7"
+    }
+  ],
+  "nextSecId": 4,
+  "povCustom": [
+    {
+      "id": 23,
+      "name": "The Museum Night Guard"
+    }
+  ],
+  "povOrder": [],
+  "storylines": [
+    {
+      "id": 1,
+      "name": "The Crew",
+      "paletteIndex": 0
+    },
+    {
+      "id": 2,
+      "name": "The Mark",
+      "paletteIndex": 1
+    },
+    {
+      "id": 3,
+      "name": "The Setup",
+      "paletteIndex": 2
+    }
+  ],
+  "revealsLib": [
+    {
+      "id": 24,
+      "label": "the museum's west-wing silent alarm has a manual override"
+    },
+    {
+      "id": 25,
+      "label": "Elliot secretly works for Marcus Kade, not the crew"
+    },
+    {
+      "id": 26,
+      "label": "the vault combination is taped under the Diadem's own display placard"
+    },
+    {
+      "id": 27,
+      "label": "Nadia's real name is Elena Marsh"
+    }
+  ],
+  "constraints": [
+    {
+      "id": 31,
+      "type": "before",
+      "a": 101,
+      "b": 100
+    },
+    {
+      "id": 32,
+      "type": "before",
+      "a": 100,
+      "b": 101
+    },
+    {
+      "id": 33,
+      "type": "before",
+      "a": 102,
+      "b": 103
+    },
+    {
+      "id": 34,
+      "type": "offset",
+      "a": 118,
+      "b": 119,
+      "offsetMin": 15
+    },
+    {
+      "id": 35,
+      "type": "same-time",
+      "a": 113,
+      "b": 114
+    }
+  ],
+  "markers": [
+    {
+      "id": 28,
+      "label": "SIX WEEKS EARLIER — THE SETUP",
+      "beforeSceneId": 100
+    },
+    {
+      "id": 29,
+      "label": "NOV 14 — HEIST NIGHT",
+      "beforeSceneId": 106
+    },
+    {
+      "id": 30,
+      "label": "THE MORNING AFTER — THE FALLOUT",
+      "beforeSceneId": 120
+    }
+  ],
+  "chronOrder": [
+    100,
+    101,
+    103,
+    102,
+    105,
+    104,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    123,
+    124,
+    122
+  ],
+  "dismissed": [
+    "constraint:113,114:35"
+  ],
+  "nextEntId": 36,
+  "lastDataEditAt": "2026-07-23T00:00:00.000Z",
+  "lastExportedAt": "2026-07-23T00:00:00.000Z",
+  "editsSinceExport": 0,
+  "projectUid": "puid_longfellow_job_showcase",
+  "revision": 0,
+  "timelinePrefs": {
+    "axis": "ordinal",
+    "threadCharId": 7,
+    "zoomPos": 50
+  }
+}

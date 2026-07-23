@@ -262,10 +262,12 @@ function setFlagMode(fingerprint) {
   _tlFlaggedFingerprint = fingerprint;
   document.body.classList.add('flagging');
   document.querySelectorAll('.tl-flag').forEach(el => el.classList.remove('tl-flag'));
-  (getFlaggedSceneIds() || []).forEach(id => {
+  const ids = getFlaggedSceneIds() || [];
+  ids.forEach(id => {
     document.querySelectorAll('[data-scene-id="' + id + '"]').forEach(el => el.classList.add('tl-flag'));
   });
   if (typeof redrawWires === 'function') redrawWires();
+  if (typeof scrollTlConflictIntoView === 'function') scrollTlConflictIntoView(ids);
 }
 function clearFlagMode() {
   _tlFlaggedFingerprint = null;
@@ -276,6 +278,24 @@ function clearFlagMode() {
 function toggleFlagMode(fingerprint) {
   if (_tlFlaggedFingerprint === fingerprint) clearFlagMode();
   else setFlagMode(fingerprint);
+}
+// Entry point for the Conflicts panel specifically (row click / "show
+// scenes") — card selection and "show scenes" flag mode used to be two
+// independent highlight states that could both be active at once (select a
+// card, then click an unrelated conflict row), which made "just clear
+// everything" take more than one click since each state needed its own
+// clearing action. Routing every panel-driven flag toggle through a card
+// deselect first makes the two mutually exclusive, matching how they're
+// already unified in the other direction (_tlDoSelectScene already clears
+// flag mode when a card gets selected).
+function tlToggleFlagFromPanel(fingerprint) {
+  const run = () => {
+    const wasSame = _tlFlaggedFingerprint === fingerprint;
+    if (typeof _tlDoSelectScene === 'function') _tlDoSelectScene(null, {});
+    if (!wasSame) setFlagMode(fingerprint);
+    renderConflictsPanel();
+  };
+  if (typeof runWithDiscardGuard === 'function') runWithDiscardGuard(run); else run();
 }
 
 // ── CONFLICTS BADGE (strip header) ────────────────────────────────────────────
@@ -375,7 +395,7 @@ function buildConflictRow(c, isDismissed) {
   } else {
     const showBtn = document.createElement('button');
     showBtn.className = 'linkBtn'; showBtn.textContent = 'show scenes';
-    showBtn.addEventListener('click', e => { e.stopPropagation(); toggleFlagMode(c.fingerprint); renderConflictsPanel(); });
+    showBtn.addEventListener('click', e => { e.stopPropagation(); tlToggleFlagFromPanel(c.fingerprint); });
     actions.appendChild(showBtn);
 
     const dismissBtn = document.createElement('button');
@@ -395,7 +415,7 @@ function buildConflictRow(c, isDismissed) {
 
   // Clicking the row body (not the action links) also toggles flag mode.
   if (!isDismissed) {
-    row.addEventListener('click', () => { toggleFlagMode(c.fingerprint); renderConflictsPanel(); });
+    row.addEventListener('click', () => tlToggleFlagFromPanel(c.fingerprint));
   }
   return row;
 }

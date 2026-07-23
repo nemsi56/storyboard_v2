@@ -200,10 +200,16 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .ffg-car{font-size:16px;line-height:1;transition:transform .13s}
 .ffg.collapsed .ffg-car{transform:rotate(-90deg)}
 .ffg.collapsed .ffg-body{display:none}
-.anchor-row{display:flex;gap:6px}
-.anchor-row input[type=date],.anchor-row input[type=time]{flex:1;min-width:0;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:7px 8px;color:var(--tx);font-size:12px;font-family:inherit;outline:none}
+/* flex-wrap:wrap (not nowrap) — at #tl-panel's 300px width (narrower still
+   in #cp's 258px), date + time + the Clear button can't all fit on one line
+   without shrinking the date/time inputs below their native rendering
+   width, which clips the year/AM-PM instead of just reflowing. A native
+   date/time input can't shrink gracefully like text can, so give them a
+   real min-width and let the Clear button wrap to its own line instead. */
+.anchor-row{display:flex;flex-wrap:wrap;gap:6px}
+.anchor-row input[type=date],.anchor-row input[type=time]{flex:1 1 118px;min-width:118px;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:7px 8px;color:var(--tx);font-size:12px;font-family:inherit;outline:none}
 .anchor-row input[type=date]:focus,.anchor-row input[type=time]:focus{border-color:var(--acc)}
-.anchor-row button{background:var(--s0);color:var(--sub);border:1px solid var(--s1);border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit;cursor:pointer}
+.anchor-row button{flex:0 0 auto;background:var(--s0);color:var(--sub);border:1px solid var(--s1);border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit;cursor:pointer}
 .anchor-row button:hover{background:var(--s1)}
 .ff-ck-row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tx);cursor:pointer;line-height:1.4;margin-top:2px}
 .ff-ck-row input{accent-color:var(--acc);cursor:pointer;flex-shrink:0}
@@ -1009,6 +1015,10 @@ body.tl-mode #ed-notes-field{display:none}
    first/last card rendered right under the arrow, hiding real content. */
 #tl-ms-row{position:relative;display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start;min-width:100%;padding:10px 38px 22px;height:auto;box-sizing:border-box}
 .tl-sep{flex:0 0 auto;align-self:stretch;width:0;border-left:1px dashed var(--o0);margin:4px 2px 0;position:relative}
+/* Same positioning as .tl-sep, minus the dashed divider line — used only for
+   the row's very first section, which has nothing before it to divide from
+   but still needs its name shown (see renderManuscriptRibbon). */
+.tl-sep-lead{flex:0 0 auto;align-self:stretch;width:0;margin:4px 2px 0;position:relative}
 .tl-sep-label{position:absolute;bottom:-15px;left:3px;font-size:8.5px;letter-spacing:.06em;color:var(--sub);white-space:nowrap;font-weight:700}
 
 .tl-scene,.tl-ms-card{

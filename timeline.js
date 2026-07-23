@@ -356,14 +356,9 @@ document.addEventListener('mousedown', e => {
   if (e.target.closest('#tl-panel')) return;
   if (e.target.closest('.tl-scene, .tl-ms-card, .tl-braid-node, #tl-chron-scroll, #tl-ms-scroll, #tl-braid-scroll')) return;
   if (document.querySelector('.cfm-modal.open') || document.getElementById('tl-marker-popover') || document.getElementById('tl-marker-context-menu')) return;
+  // Clears both card selection and (via _tlDoSelectScene) flag mode — the
+  // panel's own row-click "show scenes" state — in one action.
   tlSelectScene(null);
-  // A conflict "shown" via the panel's own row click (flag mode) is a
-  // separate state from card selection — clicking off should clear it too,
-  // same as it clears a card-driven selection above.
-  if (typeof isFlagModeActive === 'function' && isFlagModeActive()) {
-    clearFlagMode();
-    if (typeof renderConflictsPanel === 'function' && tlActiveTab === 'conflicts') renderConflictsPanel();
-  }
 });
 
 function _openTimelineViewImpl() {
@@ -756,9 +751,22 @@ function renderManuscriptRibbon() {
   const validSecIds = new Set(S.sections.map(s => s.id));
 
   let lastSecKey = undefined;
-  scenes.forEach(s => {
+  scenes.forEach((s, i) => {
     const secKey = validSecIds.has(s.sectionId) ? s.sectionId : null;
-    if (secKey !== lastSecKey && lastSecKey !== undefined) {
+    if (i === 0) {
+      // The very first group never gets a divider (nothing precedes it to
+      // divide from) — but it still needs its name shown, or the first
+      // section's label never appears anywhere on the row at all. A
+      // label-only marker (no dashed line) reuses the same .tl-sep-label
+      // positioning as the real dividers below.
+      const sec = S.sections.find(x => x.id === secKey);
+      if (sec) {
+        const lead = document.createElement('div'); lead.className = 'tl-sep-lead';
+        const lbl = document.createElement('div'); lbl.className = 'tl-sep-label'; lbl.textContent = sec.name; lbl.style.color = sec.color || '';
+        lead.appendChild(lbl);
+        row.appendChild(lead);
+      }
+    } else if (secKey !== lastSecKey) {
       const sep = document.createElement('div'); sep.className = 'tl-sep';
       const sec = S.sections.find(x => x.id === secKey);
       if (sec) { const lbl = document.createElement('div'); lbl.className = 'tl-sep-label'; lbl.textContent = sec.name; lbl.style.color = sec.color || ''; sep.appendChild(lbl); }
@@ -781,8 +789,6 @@ function buildRibbonCard(s, num, storylineById) {
   card.dataset.sceneId = s.id;
   const st = storylineById.get(s.storylineId);
   card.style.setProperty('--c', st ? slColor(st.paletteIndex) : 'var(--acc)');
-  const sec = S.sections.find(x => x.id === s.sectionId);
-  if (sec && sec.color) card.style.boxShadow = 'inset 3px 0 0 ' + sec.color;
   if (s.id === tlSelectedId) card.classList.add('tl-sel');
   if (typeof getFlaggedSceneIds === 'function' && (getFlaggedSceneIds() || []).includes(s.id)) card.classList.add('tl-flag');
   if (typeof sceneHasWarning === 'function' && sceneHasWarning(s.id)) card.classList.add('tl-warn');
@@ -1853,6 +1859,30 @@ function tlScrollByPage(scrollId, dir) {
 function scrollTlCounterpartIntoView(sceneId) {
   _tlScrollCardIntoView(document.getElementById('tl-chron-scroll'), document.querySelector('.tl-scene[data-scene-id="' + sceneId + '"]'));
   _tlScrollCardIntoView(document.getElementById('tl-ms-scroll'), document.querySelector('.tl-ms-card[data-scene-id="' + sceneId + '"]'));
+}
+// Conflicts (§8) can involve two scenes that are nowhere near each other on
+// screen — unlike a single selected scene (scrollTlCounterpartIntoView,
+// which only scrolls if the card isn't already visible), showing a conflict
+// always centers so the reader isn't left hunting for whichever card wasn't
+// already on screen. Centers on the midpoint between every involved card
+// still resolvable in each row (a single-scene conflict just centers that
+// one card).
+function _tlCenterOnScenes(scrollEl, sceneIds, selector) {
+  if (!scrollEl || !sceneIds || !sceneIds.length) return;
+  const cards = sceneIds
+    .map(id => scrollEl.querySelector(selector + '[data-scene-id="' + id + '"]'))
+    .filter(Boolean);
+  if (!cards.length) return;
+  const centers = cards.map(el => el.offsetLeft + el.offsetWidth / 2);
+  const mid = (Math.min(...centers) + Math.max(...centers)) / 2;
+  let target = mid - scrollEl.clientWidth / 2;
+  const maxScroll = scrollEl.scrollWidth - scrollEl.clientWidth;
+  target = Math.max(0, Math.min(maxScroll, target));
+  scrollEl.scrollTo({ left: target, behavior: 'smooth' });
+}
+function scrollTlConflictIntoView(sceneIds) {
+  _tlCenterOnScenes(document.getElementById('tl-chron-scroll'), sceneIds, '.tl-scene');
+  _tlCenterOnScenes(document.getElementById('tl-ms-scroll'), sceneIds, '.tl-ms-card');
 }
 function _tlScrollCardIntoView(scrollEl, cardEl) {
   if (!scrollEl || !cardEl) return;

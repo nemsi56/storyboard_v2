@@ -2401,3 +2401,106 @@ Not merged anywhere — brand new branch, nothing to merge yet. The synthetic
 test anchors above were only ever mutated in the browser's in-memory/
 localStorage project state to verify the fix, never written to any tracked
 sample-project file.
+
+## thruLine_v2 branch — Loom/Path direct-feedback round 2: Conflicts scroll/dedupe, ribbon polish, Mac shortcuts
+
+Another round of direct, user-driven fixes, found via a walkthrough of `longfellow-job.json`
+(the showcase sample from the previous round). **Touched files:** `timeline.js`,
+`conflicts.js`, `editor.html`, `editor-init.js`, `styles.css`, `longfellow-job.json`.
+
+### Conflicts panel: scroll-to-center + mutual exclusivity with card selection
+- Clicking a conflict ("show scenes" or the row itself) previously just toggled flag mode
+  with no scrolling — the involved cards could be off-screen with no indication where.
+  Added `scrollTlConflictIntoView()`/`_tlCenterOnScenes()` (timeline.js): centers the
+  midpoint between every involved card in both the Chronology and Narrative rows (a
+  single-scene conflict just centers that one card). Wired into `setFlagMode()` so both
+  panel entry points get it for free.
+- Selecting a card and then clicking an unrelated conflict row used to leave BOTH
+  highlight systems active at once (the card's selection ring + wire, and the flagged
+  conflict's dimmed/highlighted scenes) — genuinely two independent pieces of state that
+  each needed their own action to clear, which read as "a puzzle to deselect." Added
+  `tlToggleFlagFromPanel()` (conflicts.js): every panel-driven flag toggle now clears card
+  selection first, making the two mutually exclusive in both directions (selecting a card
+  already cleared flag mode from the prior round). Routed through `runWithDiscardGuard` so
+  ordering stays correct even if a dirty edit is in progress. The generic click-off-guard in
+  timeline.js had its own now-redundant flag-clearing block removed (`tlSelectScene(null)`
+  already handles both via `_tlDoSelectScene`'s unconditional `clearFlagMode()`).
+
+### Narrative ribbon border color
+`buildRibbonCard()` set an inline `style.boxShadow` for the scene's section color (a 3px
+left inset) *in addition to* the storyline-color top border every card already gets — since
+inline styles always beat CSS class rules regardless of specificity, this also silently
+broke the `.tl-sel`/`.tl-hi` box-shadow rings on ribbon cards with a section (the inline
+section-color shadow just overrode them outright). Removed; section boundaries are already
+shown via the `.tl-sep`/`.tl-sep-label` dividers, so no information was lost, and ribbon
+cards now visually read as "this scene's storyline" the same way chron-strip cards already
+did.
+
+### First section's label missing from the Narrative row
+`renderManuscriptRibbon()`'s divider logic only ever fired on a section *transition*
+(`secKey !== lastSecKey && lastSecKey !== undefined`) — the very first group had nothing
+before it to transition from, so its name never rendered anywhere on the row, even though
+every later section's name showed fine at its own transition. Added a label-only leading
+marker (`.tl-sep-lead`, same positioning as `.tl-sep-label` minus the dashed divider line)
+for just the first group.
+
+### Anchor date/time inputs clipped in the Inspector
+`.anchor-row` packed the date input, time input, and a "Clear" button into one
+`flex:1`-each row — at `#tl-panel`'s 300px width (258px in `#cp`), a native
+`<input type=date>`/`<input type=time>` can't shrink below its own rendering width the way
+text can, so the year/AM-PM read as cut off. Changed to `flex-wrap:wrap` with a real
+`min-width:118px` on both inputs (enough for a native date/time input to render in full)
+and `flex:0 0 auto` on the button — date and time now always get a full line to themselves,
+with Clear wrapping to its own line only when there isn't room, instead of every element
+getting force-shrunk together.
+
+### Mac keyboard shortcut labels
+The actual keydown handler (`editor.js`) already accepted Cmd (`metaKey`) interchangeably
+with Ctrl for every one of these — this was a display-only bug. Menu/tooltip shortcut
+labels are authored as Ctrl/Alt (Windows/Linux convention); added `data-sc-mac`/
+`data-title-mac` attributes alongside each one with the Mac-convention replacement (⌘/⌥),
+and a small Mac-detection block in `editor-init.js` (`/Mac|iPod|iPhone|iPad/` against
+`navigator.platform`/`navigator.userAgent`) that swaps them in on load. Alt shortcuts
+already worked correctly on Mac functionally (keyed off `e.code`, not `e.key`, from an
+earlier fix — Option+letter remaps `e.key` to an accented character on Mac) — only their
+displayed label was wrong.
+
+### "Why doesn't Path view show any jumps back in time?"
+Investigated rather than assumed a bug. Braid/Path's flashback detection
+(`bIdx < aIdx` between consecutive manuscript-order scenes' chron-order indices) is
+correct — `longfellow-job.json`'s reading order simply never jumped backward in
+chronology once offscreen scenes are excluded from the comparison (which is itself
+correct: an offscreen scene, like the sample's "Marcus Fences the Diadem," was never
+"read" in sequence, so it can't participate in a reading-order-vs-chron-order check).
+Not a code bug — the sample just didn't have one.
+
+Restructured the sample to actually have one, since the heist genre is a natural fit: the
+climax scene ("Nadia Grabs the Diadem," chronologically in the middle of the story) is now
+presented first in the manuscript as a cold open, with the rest of the story picking up at
+"six weeks earlier" — a genuine in-medias-res structure, and a direct, deliberate showcase
+of the flashback feature. Learned along the way that `manuscriptOrder()` groups strictly by
+`S.sections` order first, so moving a scene earlier within `S.scenes`'s own array order only
+changes its position *within* its existing section's block, never earlier than that block
+starts — the scene's `sectionId` had to be cleared to `null` (unassigned) to actually place
+it before every section, since unassigned scenes are the one group `manuscriptOrder()` puts
+first. Verified live: exactly one flashback edge (`115 → 100`, the cold open jumping back to
+the setup), rendered dashed in the flashback color, on a clean re-import of the corrected file.
+
+### Verified live
+The Conflicts-panel scroll/mutual-exclusivity fix, the Ordinal grouping from the prior
+round, and the Braid flashback fix were all confirmed directly in-browser (including a
+fresh re-import of the corrected sample file). The pure-CSS/HTML-only fixes (ribbon border
+removal, first-section label, anchor-row wrapping, Mac shortcut labels) were verified by
+code inspection, computed-style math, and — for the ribbon border and first-section label
+specifically — an earlier screenshot taken mid-session before this environment's dev server
+began serving stale files across normal navigations again (a recurring, environment-specific
+quirk already noted in the previous round's entry, not a product bug); repeated
+server/tab restarts and even a `document.write`-based full-document reload were used to
+work around it, with mixed success on the last couple of items specifically. Flagged
+directly to the user rather than claiming untested confidence.
+
+### Not yet done
+Not merged anywhere. The remaining un-screenshotted items (anchor-row wrap, ribbon border on
+a truly fresh load, Mac shortcut labels) should get a quick visual pass in a normal browser
+session (outside this dev-preview tool's caching quirk) before considering this round fully
+closed out.
