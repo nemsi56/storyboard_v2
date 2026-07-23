@@ -1,6 +1,6 @@
 # Current Status
 
-As of July 23, 2026:
+As of July 23, 2026 (`thruLine_v2` branch, forked from `thruLine_v1` at `fc40212`):
 
 ## Notes
 strip_AI branch: removed all AI features (Analyze Story menu item, AI panel with Analysis/Chat tabs, ai.js, chat.js, and related state/CSS) so the app ships without them for now — to be reintroduced later. Also hardened the app: CSP meta tags on all pages, stricter JSON import validation, and cleanup of leftover AI localStorage keys.
@@ -2331,3 +2331,73 @@ throughout.
 
 ### Not yet done
 Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v2 branch — Ordinal: same-anchor scenes share a vertical
+
+New branch, forked from `thruLine_v1`. The user asked whether two scenes on
+different storylines that happen simultaneously could render at the same
+x-position in the Chronology strip instead of always staggering, and
+specifically wanted it for **Ordinal** mode (a separate discussion covered
+why the same idea is much harder and riskier in True scale — the per-lane
+collision-avoidance pass there actively fights exact date alignment; not
+attempted here, and not requested).
+
+### Why Ordinal is a clean fit for this
+Unlike True scale, Ordinal has no per-lane collision-avoidance pass at all —
+it doesn't need one. Every scene normally gets its own evenly-spaced rank
+slot (`(index + 0.5) / n`), and a slot is unique to one position in
+`chronOrder`, so two scenes can never collide purely from Ordinal's own
+math. That means sharing an x across storylines is safe by construction
+(different lanes can't visually overlap regardless of x) — the only real
+constraint is that two scenes on the *same* storyline must never collapse
+into one slot, since that *is* a real on-screen collision.
+
+### How it works (`chronXOrdinal()`, timeline.js)
+Two scenes are considered "the same anchor" only if their anchor is fully
+identical — same date *and* same time when both are set (`_tlAnchorKey()`;
+an untimed all-day scene and a precisely-timed one on the same date are not
+treated as simultaneous). A scene with no anchor date never matches
+anything, including another unanchored scene.
+
+Walks `chronOrder` once, building groups: a scene joins the current group
+only if its anchor key matches the group's key *and* its storyline isn't
+already represented in that group; otherwise it starts a new group. This is
+deliberately adjacency-scoped, not a global "every same-date scene
+everywhere merges" rule — two scenes could share a date but sit far apart in
+`chronOrder` (interleaved with unrelated scenes that don't share it), and
+forcing them to the same x in that case would contradict the ordering those
+interleaved scenes imply. Each group then gets exactly one evenly-spaced
+slot, shared by every scene in it, so the total slot count is the number of
+*groups*, not the number of scenes (meaning everything gets very slightly
+more breathing room whenever any grouping happens at all).
+
+For a project with no matching anchors anywhere (the common case), every
+scene ends up in its own group of one — output is bit-for-bit identical to
+the old per-scene formula, so this is a no-op for existing projects unless
+they actually have matching anchors.
+
+### Verified live
+On the Frankenstein sample, gave three scenes on three different
+storylines the same anchor (date + null time) to test the adjacency and
+same-lane rules directly:
+- Two of them (`Abandonment and Flight` / Victor's Account, `The Creature's
+  Awakening` / The Creature's Account) were already adjacent in
+  `chronOrder` — confirmed numerically identical x (`15.58…` both) and
+  pixel-identical rendered card centers (570.2px both), i.e. exact vertical
+  alignment.
+- A third scene on the same anchor, but on the *same* storyline as one of
+  the two above and adjacent to it in `chronOrder`, correctly got its own
+  slot (`19.2…`, ~102px to the right) instead of colliding.
+- A fourth scene on the same anchor but far away in `chronOrder` (not
+  adjacent to the other three) correctly stayed in its own slot (`77.17…`)
+  rather than jumping to match a date it shares but isn't adjacent to.
+
+Confirmed via `chronX('ordinal')`'s returned map directly and via
+`getBoundingClientRect()` on the rendered cards, not just visually. Console
+clean.
+
+### Not yet done
+Not merged anywhere — brand new branch, nothing to merge yet. The synthetic
+test anchors above were only ever mutated in the browser's in-memory/
+localStorage project state to verify the fix, never written to any tracked
+sample-project file.

@@ -68,13 +68,54 @@ function chronXEdgeMarginPct() {
   const neededPx = TL_ARROW_REACH_PX + cardW / 2 + 4;
   return Math.min(20, (neededPx / w) * 100);
 }
+// Two scenes are "the same anchor" only if their anchor is fully identical
+// (date AND time, when both set) — a looser same-day-only match would treat
+// an untimed all-day scene and a precisely-timed one as simultaneous, which
+// isn't necessarily true. Returns null for an unanchored scene, which never
+// matches anything (including another unanchored scene) — two scenes with
+// no date aren't known to be simultaneous, so each keeps its own slot.
+function _tlAnchorKey(scene) {
+  const a = scene.anchor;
+  if (!a || !a.date) return null;
+  return a.date + '|' + (a.time || '');
+}
+// Ordinal has no per-lane collision pass (unlike True scale) because every
+// scene normally gets its own evenly-spaced rank slot, which by construction
+// can never collide — a slot is unique to one position in chronOrder, full
+// stop. Sharing a slot across storylines is exactly what this function does
+// for scenes with a matching anchor, which is safe for the same reason
+// (different lanes can't visually overlap regardless of x). The one thing
+// it must never do is collapse two scenes on the *same* storyline into one
+// slot — that's a real on-screen collision, not just a coordinate tie — so
+// grouping only merges a same-anchor run so long as no storyline repeats
+// within it; a repeat starts a fresh group instead.
 function chronXOrdinal() {
   const map = new Map();
   const order = S.chronOrder || [];
-  const n = order.length;
+  const sceneById = new Map(S.scenes.map(s => [s.id, s]));
   const margin = chronXEdgeMarginPct();
   const span = 100 - margin * 2;
-  order.forEach((id, i) => map.set(id, margin + ((i + 0.5) / n) * span));
+
+  const groups = [];
+  let current = null; // { key, lanes: Set, ids: [] }
+  order.forEach(id => {
+    const scene = sceneById.get(id);
+    const key = scene ? _tlAnchorKey(scene) : null;
+    const lane = scene ? scene.storylineId : undefined;
+    if (current && key !== null && key === current.key && !current.lanes.has(lane)) {
+      current.ids.push(id);
+      current.lanes.add(lane);
+    } else {
+      current = { key, lanes: new Set([lane]), ids: [id] };
+      groups.push(current);
+    }
+  });
+
+  const g = groups.length || 1;
+  groups.forEach((grp, i) => {
+    const x = margin + ((i + 0.5) / g) * span;
+    grp.ids.forEach(id => map.set(id, x));
+  });
   return map;
 }
 
