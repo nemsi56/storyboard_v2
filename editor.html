@@ -83,12 +83,13 @@
       <button class="di" id="menu-show-library"><span id="menu-lib-text">Hide Library Panel</span></button>
       <button class="di" id="menu-show-sections"><span id="menu-sec-text">Hide Sections Panel</span></button>
       <button class="di" id="menu-show-scene"><span id="menu-scn-text">Hide Scene Panel</span></button>
+      <button class="di" id="menu-show-inspector"><span id="menu-insp-text">Hide Inspector Panel</span></button>
       <div class="di-sep"></div>
       <button class="di" id="menu-show-all-panels"><span id="menu-all-text">Hide All Panels</span></button>
       <div class="di-sep"></div>
-      <button class="di" id="menu-chart"><span id="menu-chart-text">Show Scene Flow Chart</span><span class="di-sc">Alt+V</span></button>
-      <button class="di" id="menu-timeline"><span id="menu-timeline-text">Show Timeline View</span><span class="di-sc">Alt+K</span></button>
-      <button class="di" id="menu-show-inspector"><span id="menu-insp-text">Hide Inspector Panel</span></button>
+      <button class="di" id="menu-view-board">Card Board</button>
+      <button class="di" id="menu-view-chart">Scene Flow Chart<span class="di-sc">Alt+V</span></button>
+      <button class="di" id="menu-view-timeline">Timeline<span class="di-sc">Alt+K</span></button>
     </div>
   </div>
   <!-- Help -->
@@ -284,9 +285,14 @@
         </div>
         <div class="view-toggle-item">
           <span class="view-toggle-lbl">Timeline</span>
-          <button id="chart-type-timeline" class="chart-type-btn" title="Timeline view (Alt+K)" aria-label="Timeline view">
-            <svg viewBox="0 0 20 20" width="16" height="16"><circle cx="4" cy="6" r="2" fill="currentColor"/><circle cx="12" cy="6" r="2" fill="currentColor"/><line x1="6" y1="6" x2="10" y2="6" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="14" r="2" fill="currentColor"/><circle cx="16" cy="14" r="2" fill="currentColor"/><line x1="10" y1="14" x2="14" y2="14" stroke="currentColor" stroke-width="2"/></svg>
-          </button>
+          <div id="chart-type-timeline-toggle">
+            <button id="tl-view-loom" class="chart-type-btn" title="Loom view (Alt+K)" aria-label="Loom view">
+              <svg viewBox="0 0 18 18" width="15" height="15"><path d="M4 2 C4 9 14 9 14 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14 2 C14 9 4 9 4 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
+            <button id="tl-view-path" class="chart-type-btn" title="Path view" aria-label="Path view">
+              <svg viewBox="0 0 20 12" width="20" height="12"><path d="M2 2 L6 6 L10 3 L14 7 L17 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="2" cy="2" r="1.6" fill="currentColor"/><circle cx="6" cy="6" r="1.6" fill="currentColor"/><circle cx="10" cy="3" r="1.6" fill="currentColor"/><circle cx="14" cy="7" r="1.6" fill="currentColor"/><circle cx="17" cy="10" r="1.6" fill="currentColor"/></svg>
+            </button>
+          </div>
         </div>
       </div>
       <div class="sbhl">
@@ -342,10 +348,6 @@
       <div id="tl-stage">
         <svg id="tl-wires"></svg>
         <div id="tl-chron-hdr">
-          <div id="tl-view-switch">
-            <button class="tl-axis-btn on" id="tl-view-strip" data-view="strip">Strip</button>
-            <button class="tl-axis-btn" id="tl-view-braid" data-view="braid">Braid</button>
-          </div>
           <div id="tl-axis-switch">
             <button class="tl-axis-btn on" id="tl-axis-ordinal" data-axis="ordinal">Ordinal</button>
             <button class="tl-axis-btn" id="tl-axis-true" data-axis="true">True scale</button>
@@ -362,13 +364,21 @@
           <div id="tl-lane-labels">
             <button id="tl-add-storyline-btn" title="Add storyline">+ Storyline</button>
           </div>
-          <div id="tl-chron-scroll"><div id="tl-track"></div></div>
+          <div id="tl-chron-scroll-wrap">
+            <div id="tl-chron-scroll"><div id="tl-track"></div></div>
+            <button class="tl-scroll-arrow tl-scroll-arrow-left" id="tl-chron-arrow-left" aria-label="Scroll left">‹</button>
+            <button class="tl-scroll-arrow tl-scroll-arrow-right" id="tl-chron-arrow-right" aria-label="Scroll right">›</button>
+          </div>
         </div>
         <div id="tl-wires-zone">
           <div class="tl-row-caption tl-row-caption-top">Chronology — when it happened</div>
           <div class="tl-row-caption tl-row-caption-bottom">Narrative — what the reader gets</div>
         </div>
-        <div id="tl-ms-scroll"><div id="tl-ms-row"></div></div>
+        <div id="tl-ms-scroll-wrap">
+          <div id="tl-ms-scroll"><div id="tl-ms-row"></div></div>
+          <button class="tl-scroll-arrow tl-scroll-arrow-left" id="tl-ms-arrow-left" aria-label="Scroll left">‹</button>
+          <button class="tl-scroll-arrow tl-scroll-arrow-right" id="tl-ms-arrow-right" aria-label="Scroll right">›</button>
+        </div>
         <div id="tl-braid-legend"></div>
         <div id="tl-braid-scroll"><svg id="tl-braid-svg"></svg><div id="tl-braid-markers-hud"></div></div>
       </div>
@@ -478,6 +488,17 @@
     <div class="ap-btns">
       <button id="savecfm-cancel">Cancel</button>
       <button id="savecfm-ok">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Timeline Move Confirm Modal (chron drag reorder/re-lane) -->
+<div id="tl-move-cfm-modal" class="cfm-modal" role="dialog" aria-modal="true" aria-labelledby="tl-move-cfm-msg">
+  <div class="cfm-box">
+    <div id="tl-move-cfm-msg" class="cfm-msg"></div>
+    <div class="ap-btns">
+      <button id="tl-move-cfm-discard">Discard</button>
+      <button id="tl-move-cfm-save">Save</button>
     </div>
   </div>
 </div>

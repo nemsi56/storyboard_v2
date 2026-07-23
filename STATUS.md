@@ -1984,3 +1984,190 @@ directions). Console clean throughout.
 
 ### Not yet done
 Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — View-toggle unification (Loom/Path), View menu overhaul, Conflicts-panel filtering, section dividers
+
+The largest round yet: unifies the Cards/Snake/Circle/Timeline view switch
+that used to live only on the board into one control shared by all three
+views, renames Strip/Braid to **Loom**/**Path** with new icons as part of
+that same control, reworks the View menu's mode section into direct
+switch-to items, makes the Conflicts panel follow scene selection, and adds
+real vertical section dividers to Path (Braid).
+
+**Touched files:** `editor.html`, `styles.css`, `timeline.js`, `charts.js`,
+`editor.js`, `editor-init.js`, `conflicts.js`.
+
+### View-toggle unification
+`#view-toggle` (Cards/Flow/Timeline, previously reparented only between
+`#sbhdr` and `#chart-toolbar` via `openChartView()`/`closeChartView()`) now
+also reparents into `#tl-chron-hdr` on `_openTimelineViewImpl()` and back to
+`#sbhdr` on `_closeTimelineViewImpl()` — the exact same move-not-clone
+pattern Flow already used, so it keeps its listeners/state intact and now
+appears atop all three views identically, not just Cards and Flow.
+- Timeline's own item now spans two icon buttons, like Flow's Snake/Circle:
+  **Loom** (`#tl-view-loom`, replacing the old single Timeline icon and the
+  in-header "Strip" button) and **Path** (`#tl-view-path`, replacing
+  "Braid"). New icons: Loom is two crossed curved strands plus a straight
+  vertical (a woven-wires read); Path is a horizontal sine-wave squiggle
+  with four evenly-spaced beads sitting on it.
+- The old `#tl-view-switch` (Strip/Braid buttons inside `#tl-chron-hdr`) is
+  gone entirely — superseded by the shared control. `setTlViewFromToggle()`
+  is the new entry point Loom/Path call: opens Timeline first (guarded, via
+  `_openTimelineViewImpl`) if it isn't already active, then switches the
+  sub-view; if Timeline's already open, it just switches. `updateViewToggleUI()`
+  (the single source of truth for all the toggle's on/off states) grew two
+  more lines for Loom/Path instead of the old bare Timeline icon.
+
+### View menu overhaul
+- "Hide Inspector Panel" moved from the bottom of the menu (grouped with
+  Chart/Timeline toggles) up to directly below "Hide Scene Panel" — now
+  grouped with the other panel toggles it belongs with, still above the
+  "Hide All Panels" divider.
+- The old two-item "Show Scene Flow Chart" / "Show Timeline View" toggle
+  pair (dynamic Show/Hide text) is now three stacked, always-labeled items —
+  **Card Board**, **Scene Flow Chart**, **Timeline** — each a direct
+  switch-to action rather than a toggle, with the currently-active one
+  disabled/greyed (mirroring how the board's own panel-toggle items already
+  grey out during Timeline mode). `updateViewMenuActiveStates()` (new,
+  timeline.js) is the single source of truth, called from `openChartView()`/
+  `closeChartView()`, `_openTimelineViewImpl()`/`_closeTimelineViewImpl()`,
+  and whenever the View menu opens. `setChartMenuLabel()`/
+  `setTimelineMenuLabel()` (the old dynamic-label functions) are gone,
+  superseded by this.
+
+### Conflicts panel follows scene selection
+Selecting a scene now tees up the Conflicts tab with just that scene's own
+conflicts, ready the moment the user clicks over to it — `renderConflictsPanel()`
+filters `getActiveConflicts()`/`getDismissedConflicts()` by
+`c.sceneIds.includes(tlSelectedId)` unless showing everything. "Showing
+everything" is true when nothing's selected, or when the user explicitly
+clicks the red "Conflicts (N)" badge (`tlShowAllConflicts()`, a new function
+that sets `_tlConflictsFilterOverride` before switching to the tab) — any
+subsequent selection (including deselecting) clears that override via one
+new line in `_tlDoSelectScene()`, so the panel goes back to following
+whatever's selected. An empty filtered result reads "No conflicts involve
+this scene." instead of the generic "No conflicts found."
+
+### Path (Braid) view: vertical section dividers
+The existing short top-edge section-boundary ticks (added earlier this
+branch) are now full-height dashed vertical lines spanning the whole chart
+(`y1:42` to `contentH-16`), still colored per-section and still appended
+before the path/node layers so they read as background structure.
+
+### Narrative-row section label moved below
+`.tl-sep-label` (the section name shown on the manuscript ribbon's existing
+dividers) moved from `top:-15px` to `bottom:-15px`; `#tl-ms-row`'s bottom
+padding grew from 8px to 22px to give it room.
+
+### Other fixes from this round
+- Thread selector glow (`.tl-thread-active`) now uses the trace line's own
+  literal color (`#e57373`) instead of the accent, with a wider/stronger
+  glow.
+- Zoom slider now has a visible center tick (previous round); this round
+  fixes the actually-reported issues around it separately (see the two
+  entries above this one).
+- New `--lbl` CSS custom property per theme — equal to `--o0` on the three
+  light themes, a genuinely brighter literal color on slate/ocean
+  specifically — applied to `.tl-row-caption`, `.tl-braid-marker-label`,
+  `.tl-marker-label`, `.tl-gap-label`, and the Braid axis/arrow SVG labels
+  (`timeline.js`). Chrome-wide `--o0` usage elsewhere in the app (buttons,
+  hints, placeholders) was deliberately left alone — this was scoped to the
+  Timeline/Braid label text this conversation had been building.
+
+### Verified live
+On both the Frankenstein (no sections) and Pride and Prejudice (5 sections)
+samples: clicked Loom/Path/Cards/Snake from every other view to confirm the
+shared toggle reparents and switches correctly in both directions; opened
+the View menu and confirmed Inspector's new position, and that Card
+Board/Scene Flow Chart/Timeline show the correct one disabled in each of the
+three modes; selected an uninvolved scene and confirmed the Conflicts tab
+read "No conflicts involve this scene," selected the actually-involved scene
+and confirmed the real conflict appeared, then clicked the badge with the
+uninvolved scene still selected and confirmed it forced "show all," then
+selected a new scene and confirmed the override cleared — all via direct
+state/DOM inspection, not just visual read; confirmed Path's dividers are
+real full-height lines (`y1`/`y2` read out at the chart's actual top/bottom)
+in each section's own color; confirmed the Narrative-row label's computed
+`bottom`/`top` moved as intended; confirmed `--lbl` reads a genuinely
+different, brighter value than `--o0` specifically on slate; confirmed the
+thread selector's glow color matches the trace line's literal hex exactly.
+Console clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Loom scroll affordances, move-confirmation, contrast fixes, icon redraw
+
+**Touched files:** `editor.html`, `styles.css`, `timeline.js`, `editor.js`,
+`editor-init.js`.
+
+### Contrast/sizing fixes
+- Storyline lane label's scene count (".tl-lane-label i") was `var(--o0)` at
+  9px/400 weight — hard to read in both light and dark themes, since --o0 is
+  meant for faint chrome, not something worth reading. Switched to `var(--sub)`
+  (already theme-calibrated for readable secondary text) at 9.5px/600 weight.
+- "Also part of" dots (`.tl-conv-dot`) grew 6px→9px and gained a dark
+  `box-shadow` ring on top of the existing `--cbg` border — the border alone
+  wasn't enough separation from a light theme's own light card background.
+
+### Title/Summary divider — actually frozen now
+The divider added last round lived on Summary's own `border-top`, inside the
+*scrolling* region — it scrolled away with Summary, leaving the frozen Title
+area with no visible boundary a moment after any scroll. Moved to the sticky
+Title element's own `border-bottom` instead, confirmed via
+`getBoundingClientRect()` before/after a 200px scroll that it doesn't move.
+
+### Loom view: scroll affordances
+- Trackpad two-finger swipes past a row's horizontal scroll limit were
+  triggering the browser's own back/forward navigation gesture —
+  `overscroll-behavior-x: contain` added to `#tl-chron-scroll`, `#tl-ms-scroll`,
+  and `#tl-braid-scroll` stops the scroll from "escaping" the container.
+- Native scrollbars hidden on the chron and manuscript rows
+  (`scrollbar-width:none` + `::-webkit-scrollbar{display:none}`), replaced
+  with small bubble scroll-arrow buttons (`.tl-scroll-arrow`) for trackpad-less
+  users — one pair per row, absolutely positioned over a new wrapper element
+  (`#tl-chron-scroll-wrap`/`#tl-ms-scroll-wrap`, since buttons living *inside*
+  the scrolling element itself would scroll away with its content), shown only
+  on whichever side there's actually more to see
+  (`tlUpdateScrollArrows()`/`_tlUpdateScrollArrowPair()`, called after every
+  render and on scroll). Verified the visibility logic directly (both arrows
+  present in the middle of a scrollable row, only the trailing one at either
+  end) — real click-driven `behavior:'smooth'` scrolling doesn't animate in
+  this preview tool specifically (a documented environment quirk elsewhere in
+  this project too), so the actual scroll-by-page math was verified with a
+  temporary `behavior:'auto'` override instead, confirming the right button
+  moves `scrollLeft` by the correct page amount.
+
+### Move confirmation (chron drag)
+Dragging a scene in Loom (horizontal reorder or vertical re-lane) used to
+commit immediately on drop. `_tlDragFinish()` now stops short of committing —
+it stores the computed change (`_tlPendingMove`) and opens a new
+`#tl-move-cfm-modal` ("Save this move — changing '<title>' (when it
+happens/which storyline it belongs to)?") instead. **Save**
+(`tlConfirmMoveSave()`) applies exactly what `_tlDragFinish()` used to do
+inline (`pushHistory`, mutate, `recordDataEdit`, `saveState`, `renderTimeline`).
+**Discard** (`tlConfirmMoveDiscard()`) does nothing — the real card was never
+actually moved during the drag (only a ghost tracked the cursor), so simply
+not applying the pending change leaves `S` and the render exactly as they
+were. Wired into the shared modal machinery: added to `MODAL_IDS` (Alt-shortcut
+gating) and `ESCAPE_ACTIONS` (Escape discards, same as clicking the backdrop).
+Verified directly: simulated a drag-finish, confirmed `S.chronOrder`
+unchanged while the modal is open, confirmed Discard leaves it unchanged, and
+confirmed Save commits exactly the expected reorder (undoable via the normal
+undo stack).
+
+### Icon redraw (Loom/Path)
+Simplified per a hand sketch: Loom is now just two crossing curved strands (no
+third straight line), Path is a jagged zigzag with a bead at each vertex
+(replacing the smooth sine-wave/bead version from the previous round).
+
+### Verified live
+On the Frankenstein sample: computed styles for the lane-count color/weight
+and conv-dot size/shadow; Title/Summary divider position and freeze behavior;
+`overscroll-behavior-x`/`scrollbar-width` computed values; scroll-arrow
+visibility state at both a scrolled-to-start and scrolled-to-middle position;
+the full move-confirm flow (open → discard → re-open → save → undo). Console
+clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.

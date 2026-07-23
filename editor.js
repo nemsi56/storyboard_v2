@@ -125,6 +125,7 @@ function toggleMenu(name) {
       updatePanelMenuStates();
       updateZoomMenuState();
       if (typeof updateTlPanelMenuState === 'function') updateTlPanelMenuState();
+      if (typeof updateViewMenuActiveStates === 'function') updateViewMenuActiveStates();
     }
   }
 }
@@ -707,6 +708,7 @@ function maybeCancelSceneFormWithConfirm() {
   openDiscardConfirm(editDirty, newLive);
 }
 if (document.getElementById('discard-cfm-modal')) onBackdropClick('discard-cfm-modal', closeDiscardConfirm);
+if (document.getElementById('tl-move-cfm-modal')) onBackdropClick('tl-move-cfm-modal', () => tlConfirmMoveDiscard());
 function saveEdit() {
   const sc = S.scenes.find(s => s.id === S.editingId); if (!sc) return;
   const titleEl = document.getElementById('ed-title'), errEl = document.getElementById('ederr');
@@ -2053,7 +2055,7 @@ document.addEventListener('mousedown', e => {
 // IDs of the overlay modals/popups — used both by ESCAPE_ACTIONS below and to
 // stop Alt-letter shortcuts from firing underneath one (e.g. Alt+N opening a
 // New Scene form beneath an open "delete this?" confirmation).
-const MODAL_IDS = ['discard-cfm-modal', 'modal', 'add-popup', 'lib-edit-modal', 'libdel-modal', 'savecfm-modal', 'secdel-modal', 'rpt-modal', 'pov-add-modal'];
+const MODAL_IDS = ['discard-cfm-modal', 'modal', 'add-popup', 'lib-edit-modal', 'libdel-modal', 'savecfm-modal', 'secdel-modal', 'rpt-modal', 'pov-add-modal', 'tl-move-cfm-modal'];
 function anyModalOpen() {
   // showImportChoiceDialog() (projects.js) builds its overlay dynamically
   // rather than toggling a fixed element's class, so it isn't one of the
@@ -2094,6 +2096,7 @@ const ESCAPE_ACTIONS = [
   { isOpen: () => typeof isTlDragActive === 'function' && isTlDragActive(), close: () => cancelTlDrag() },
   { isOpen: () => !!document.getElementById('tl-marker-popover'), close: closeMarkerPopover },
   { isOpen: () => !!document.getElementById('tl-marker-context-menu'), close: closeMarkerContextMenu },
+  { isOpen: () => document.getElementById('tl-move-cfm-modal')?.classList.contains('open'), close: () => tlConfirmMoveDiscard() },
   { isOpen: () => typeof isFlagModeActive === 'function' && isFlagModeActive(), close: () => clearFlagMode() },
   // Timeline mode's own deselect (§6.6) takes priority over the board's scene-
   // form Escape entry below while active, since selecting a scene there opens

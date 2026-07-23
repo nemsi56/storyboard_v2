@@ -117,7 +117,7 @@ function openChartView() {
   document.getElementById('chart-toolbar').insertBefore(document.getElementById('sec-filter-wrap'), document.getElementById('chart-print-btn'));
   document.getElementById('chart-toolbar').insertBefore(document.getElementById('view-toggle'), document.getElementById('chart-wc-toggle'));
   updateViewToggleUI();
-  setChartMenuLabel();
+  updateViewMenuActiveStates();
   renderChart();
 }
 function closeChartView() {
@@ -132,12 +132,8 @@ function closeChartView() {
   document.getElementById('sbhdr').insertBefore(document.getElementById('sec-filter-wrap'), document.getElementById('srch-wrap'));
   document.getElementById('sbhdr').insertBefore(document.getElementById('view-toggle'), document.getElementById('sbhdr').firstChild);
   updateViewToggleUI();
-  setChartMenuLabel();
+  updateViewMenuActiveStates();
   renderBoard();
-}
-function setChartMenuLabel() {
-  const lbl = document.getElementById('menu-chart-text');
-  if (lbl) lbl.textContent = chartMode ? 'Hide Scene Flow Chart' : 'Show Scene Flow Chart';
 }
 function setChartType(type) {
   if (type !== 'snake' && type !== 'circle') return;

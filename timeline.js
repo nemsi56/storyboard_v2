@@ -249,14 +249,15 @@ function _openTimelineViewImpl() {
   tlSelectedId = null;
   tlBraidMode = false;
   document.getElementById('tl-stage').classList.remove('tl-braid-active');
-  document.querySelectorAll('#tl-view-switch .tl-axis-btn').forEach(b => {
-    b.classList.toggle('on', b.dataset.view === 'strip');
-  });
   document.getElementById('tl-axis-switch').style.display = '';
   document.getElementById('tl-thread-wrap').style.display = '';
+  // Cards/Snake/Circle/Timeline(Loom/Path) switch moves onto the Timeline
+  // header, same reparent-not-clone pattern openChartView() already uses for
+  // #chart-toolbar — keeps its listeners/state intact rather than duplicating them.
+  document.getElementById('tl-chron-hdr').insertBefore(document.getElementById('view-toggle'), document.getElementById('tl-chron-hdr').firstChild);
   updateViewToggleUI();
   updateMenuForMode();
-  setTimelineMenuLabel();
+  updateViewMenuActiveStates();
   renderTimeline();
 }
 function _closeTimelineViewImpl() {
@@ -264,6 +265,7 @@ function _closeTimelineViewImpl() {
   document.body.classList.remove('tl-mode');
   document.getElementById('timeline-host').style.display = 'none';
   document.getElementById('sbscrl').style.display = '';
+  document.getElementById('sbhdr').insertBefore(document.getElementById('view-toggle'), document.getElementById('sbhdr').firstChild);
   if (_tlFormEditHome) {
     const form = document.getElementById('form-edit');
     form.style.display = 'none';
@@ -277,21 +279,26 @@ function _closeTimelineViewImpl() {
   cancelEdit();
   updateViewToggleUI();
   updateMenuForMode();
-  setTimelineMenuLabel();
+  updateViewMenuActiveStates();
   renderBoard();
 }
-function setTimelineMenuLabel() {
-  const lbl = document.getElementById('menu-timeline-text');
-  if (lbl) lbl.textContent = timelineMode ? 'Hide Timeline View' : 'Show Timeline View';
+function updateViewMenuActiveStates() {
+  const boardBtn = document.getElementById('menu-view-board');
+  const chartBtn = document.getElementById('menu-view-chart');
+  const tlBtn = document.getElementById('menu-view-timeline');
+  const isChart = typeof chartMode !== 'undefined' && chartMode;
+  if (boardBtn) boardBtn.disabled = !isChart && !timelineMode;
+  if (chartBtn) chartBtn.disabled = isChart;
+  if (tlBtn) tlBtn.disabled = timelineMode;
 }
-
 // Cards/Snake/Circle/Timeline read as one 4-way switch (see #view-toggle).
 function updateViewToggleUI() {
   const cardsOn = !timelineMode && !(typeof chartMode !== 'undefined' && chartMode);
   document.getElementById('chart-type-cards').classList.toggle('on', cardsOn);
   document.getElementById('chart-type-snake').classList.toggle('on', !timelineMode && typeof chartMode !== 'undefined' && chartMode && chartType === 'snake');
   document.getElementById('chart-type-circle').classList.toggle('on', !timelineMode && typeof chartMode !== 'undefined' && chartMode && chartType === 'circle');
-  document.getElementById('chart-type-timeline').classList.toggle('on', timelineMode);
+  document.getElementById('tl-view-loom').classList.toggle('on', timelineMode && !tlBraidMode);
+  document.getElementById('tl-view-path').classList.toggle('on', timelineMode && tlBraidMode);
 }
 
 // Strip (chron strip + manuscript ribbon + wires) vs. Braid (read-only structure
@@ -301,14 +308,20 @@ function updateViewToggleUI() {
 function setTlViewMode(mode) {
   tlBraidMode = (mode === 'braid');
   document.getElementById('tl-stage').classList.toggle('tl-braid-active', tlBraidMode);
-  document.querySelectorAll('#tl-view-switch .tl-axis-btn').forEach(b => {
-    b.classList.toggle('on', b.dataset.view === mode);
-  });
+  updateViewToggleUI();
   const axisSwitch = document.getElementById('tl-axis-switch');
   const threadWrap = document.getElementById('tl-thread-wrap');
   if (axisSwitch) axisSwitch.style.display = tlBraidMode ? 'none' : '';
   if (threadWrap) threadWrap.style.display = tlBraidMode ? 'none' : '';
   renderTimeline();
+}
+// Loom/Path buttons live in the shared #view-toggle bar now (top of every
+// view), so clicking either one must also open Timeline mode first if it
+// isn't already active — mirrors charts.js's setChartType()'s own
+// already-open-vs-not branch.
+function setTlViewFromToggle(mode) {
+  if (timelineMode) { setTlViewMode(mode); }
+  else { runWithDiscardGuard(() => { _openTimelineViewImpl(); setTlViewMode(mode); }); }
 }
 
 // ── MENU STATE PER MODE (§6.1) ─────────────────────────────────────────────────
@@ -349,6 +362,7 @@ function renderTimeline() {
     b.classList.toggle('on', b.dataset.axis === S.timelinePrefs.axis);
   });
   if (typeof renderConflictsBadge === 'function') renderConflictsBadge();
+  tlUpdateScrollArrows();
 }
 
 // ── ZOOM (§7.6) ────────────────────────────────────────────────────────────────
@@ -920,7 +934,25 @@ function _tlDragFinish() {
 
   if (!newChronOrder && !relane) return; // no-op drag: nothing moved, no commit
 
+  // Nothing is committed yet — the real card was never actually moved during
+  // the drag (only a ghost element tracked the cursor), so simply not
+  // applying newChronOrder/relane below (Discard) leaves S and the render
+  // exactly as they were, no extra cleanup needed.
   const label = newChronOrder ? 'Move scene (time)' : 'Move scene (lane)';
+  const kind = newChronOrder ? 'when it happens' : 'which storyline it belongs to';
+  _tlPendingMove = { sceneId: d.sceneId, newChronOrder, relane, targetStorylineId, label };
+  document.getElementById('tl-move-cfm-msg').textContent =
+    'Save this move — changing "' + scene.title + '" (' + kind + ')?';
+  document.getElementById('tl-move-cfm-modal').classList.add('open');
+}
+
+let _tlPendingMove = null;
+function tlConfirmMoveSave() {
+  if (!_tlPendingMove) return;
+  const { sceneId, newChronOrder, relane, targetStorylineId, label } = _tlPendingMove;
+  closeTlMoveConfirm();
+  const scene = S.scenes.find(x => x.id === sceneId);
+  if (!scene) return;
   pushHistory(label);
   if (newChronOrder) S.chronOrder = newChronOrder;
   if (relane) {
@@ -931,6 +963,13 @@ function _tlDragFinish() {
   recordDataEdit();
   saveState();
   renderTimeline();
+}
+function tlConfirmMoveDiscard() {
+  closeTlMoveConfirm();
+}
+function closeTlMoveConfirm() {
+  document.getElementById('tl-move-cfm-modal').classList.remove('open');
+  _tlPendingMove = null;
 }
 
 // ── MARKERS (ported from ../Timeline/js/chron.js, schema v3 §6.7) ────────────
@@ -1251,7 +1290,7 @@ function renderBraid() {
   const topLabel = document.createElementNS(SVGNS, 'text');
   topLabel.setAttribute('x', BRAID_LEFT); topLabel.setAttribute('y', 20);
   topLabel.setAttribute('font-size', 10); topLabel.setAttribute('font-weight', 'bold'); topLabel.setAttribute('letter-spacing', '1.5px');
-  topLabel.style.fill = 'var(--o0)';
+  topLabel.style.fill = 'var(--lbl)';
   topLabel.textContent = 'READING ORDER →';
   svg.appendChild(topLabel);
 
@@ -1266,7 +1305,7 @@ function renderBraid() {
   leftLabel.setAttribute('x', 18); leftLabel.setAttribute('y', leftY);
   leftLabel.setAttribute('font-size', 10); leftLabel.setAttribute('font-weight', 'bold'); leftLabel.setAttribute('letter-spacing', '1.5px');
   leftLabel.setAttribute('text-anchor', 'middle'); leftLabel.setAttribute('transform', 'rotate(-90 18 ' + leftY + ')');
-  leftLabel.style.fill = 'var(--o0)';
+  leftLabel.style.fill = 'var(--lbl)';
   leftLabel.textContent = 'CHRONOLOGY';
   svg.appendChild(leftLabel);
   // Measured from the label's own actual rendered box (getBoundingClientRect,
@@ -1285,12 +1324,12 @@ function renderBraid() {
   stem.setAttribute('x1', arrowX); stem.setAttribute('x2', arrowX);
   stem.setAttribute('y1', arrowTop); stem.setAttribute('y2', arrowTop + 9);
   stem.setAttribute('stroke-width', 1.5);
-  stem.style.stroke = 'var(--o0)';
+  stem.style.stroke = 'var(--lbl)';
   svg.appendChild(stem);
   const head = document.createElementNS(SVGNS, 'polygon');
   const headY = arrowTop + 9;
   head.setAttribute('points', (arrowX - 4) + ',' + headY + ' ' + (arrowX + 4) + ',' + headY + ' ' + arrowX + ',' + (headY + 6));
-  head.style.fill = 'var(--o0)';
+  head.style.fill = 'var(--lbl)';
   svg.appendChild(head);
 
   // ---- markers (§7.4): dashed line in the SVG (scrolls normally); the label
@@ -1327,9 +1366,10 @@ function renderBraid() {
   });
   tlBraidUpdateMarkerHud();
 
-  // ---- section boundaries (sections replace ThruLine's "dividers"): short
-  // vertical ticks along the top edge between the relevant reading-order
-  // columns, colored by the section's own .color ----
+  // ---- section boundaries (sections replace ThruLine's "dividers"): full-height
+  // vertical dividers between the relevant reading-order columns, colored by
+  // the section's own .color, dashed and behind the path/nodes layers (appended
+  // before them) so they read as background structure, not foreground content. ----
   const dividersLayer = document.createElementNS(SVGNS, 'g');
   svg.appendChild(dividersLayer);
   let lastSecKey;
@@ -1340,9 +1380,10 @@ function renderBraid() {
       const sec = S.sections.find(x => x.id === secKey);
       const tick = document.createElementNS(SVGNS, 'line');
       tick.setAttribute('x1', x); tick.setAttribute('x2', x);
-      tick.setAttribute('y1', 46); tick.setAttribute('y2', 58);
-      tick.setAttribute('stroke-width', 2);
+      tick.setAttribute('y1', 42); tick.setAttribute('y2', contentH - 16);
+      tick.setAttribute('stroke-width', 1.5); tick.setAttribute('stroke-dasharray', '4 4');
       tick.style.stroke = (sec && sec.color) || 'var(--acc)';
+      tick.style.opacity = '.55';
       dividersLayer.appendChild(tick);
     }
     lastSecKey = secKey;
@@ -1489,7 +1530,28 @@ let _tlWiresRafPending = false;
 function _tlOnStripScroll() {
   if (_tlWiresRafPending) return;
   _tlWiresRafPending = true;
-  requestAnimationFrame(() => { _tlWiresRafPending = false; redrawWires(); });
+  requestAnimationFrame(() => { _tlWiresRafPending = false; redrawWires(); tlUpdateScrollArrows(); });
+}
+
+// Small bubble scroll-arrow affordance (native scrollbar is hidden on these
+// two rows) — shown only on whichever side there's actually more to see.
+function tlUpdateScrollArrows() {
+  _tlUpdateScrollArrowPair('tl-chron-scroll', 'tl-chron-arrow-left', 'tl-chron-arrow-right');
+  _tlUpdateScrollArrowPair('tl-ms-scroll', 'tl-ms-arrow-left', 'tl-ms-arrow-right');
+}
+function _tlUpdateScrollArrowPair(scrollId, leftId, rightId) {
+  const scroll = document.getElementById(scrollId);
+  const left = document.getElementById(leftId);
+  const right = document.getElementById(rightId);
+  if (!scroll || !left || !right) return;
+  const canScroll = scroll.scrollWidth - scroll.clientWidth > 1;
+  left.classList.toggle('visible', canScroll && scroll.scrollLeft > 1);
+  right.classList.toggle('visible', canScroll && scroll.scrollLeft < scroll.scrollWidth - scroll.clientWidth - 1);
+}
+function tlScrollByPage(scrollId, dir) {
+  const scroll = document.getElementById(scrollId);
+  if (!scroll) return;
+  scroll.scrollBy({ left: dir * scroll.clientWidth * 0.8, behavior: 'smooth' });
 }
 function scrollTlCounterpartIntoView(sceneId) {
   _tlScrollCardIntoView(document.getElementById('tl-chron-scroll'), document.querySelector('.tl-scene[data-scene-id="' + sceneId + '"]'));
@@ -1513,6 +1575,12 @@ function tlSelectScene(sceneId, opts) {
 }
 function _tlDoSelectScene(sceneId, opts) {
   tlSelectedId = sceneId;
+  // Any new selection (including deselecting to null) resets the Conflicts
+  // panel back to following the selection — only the explicit "Conflicts (N)"
+  // badge click (tlShowAllConflicts()) should force "show every conflict"
+  // past this point.
+  if (typeof _tlConflictsFilterOverride !== 'undefined') _tlConflictsFilterOverride = false;
+  if (typeof renderConflictsPanel === 'function' && tlActiveTab === 'conflicts') renderConflictsPanel();
   document.querySelectorAll('.tl-scene, .tl-ms-card, .tl-braid-node').forEach(el => {
     el.classList.toggle('tl-sel', el.dataset.sceneId === String(sceneId));
   });

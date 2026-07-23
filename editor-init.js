@@ -71,8 +71,9 @@
     setTimeout(updatePanelMenuStates, 50);
     closeAllMenus();
   });
-  $('menu-chart').addEventListener('click', function(){ toggleChartView(); closeAllMenus(); });
-  $('menu-timeline').addEventListener('click', function(){ toggleTimelineView(); closeAllMenus(); });
+  $('menu-view-board').addEventListener('click', function(){ closeTimelineView(); closeChartView(); closeAllMenus(); });
+  $('menu-view-chart').addEventListener('click', function(){ closeTimelineView(); if (!chartMode) openChartView(); closeAllMenus(); });
+  $('menu-view-timeline').addEventListener('click', function(){ if (!timelineMode) runWithDiscardGuard(_openTimelineViewImpl); closeAllMenus(); });
   $('menu-show-inspector').addEventListener('click', function(){
     togglePanel('tl-panel');
     setTimeout(updateTlPanelMenuState, 50);
@@ -162,7 +163,8 @@
   $('chart-print-btn').addEventListener('click', printChart);
 
   // Timeline view (schema v3 §6)
-  $('chart-type-timeline').addEventListener('click', toggleTimelineView);
+  $('tl-view-loom').addEventListener('click', function(){ setTlViewFromToggle('strip'); });
+  $('tl-view-path').addEventListener('click', function(){ setTlViewFromToggle('braid'); });
   $('tl-axis-ordinal').addEventListener('click', function(){ setTlAxis('ordinal'); });
   $('tl-axis-true').addEventListener('click', function(){ setTlAxis('true'); });
   $('tl-thread-sel').addEventListener('change', function(){ setTlThread(this.value); });
@@ -171,14 +173,16 @@
   $('tl-add-storyline-btn').addEventListener('click', addStoryline);
   $('tl-tab-inspector').addEventListener('click', function(){ tlSwitchTab('inspector'); });
   $('tl-tab-conflicts').addEventListener('click', function(){ tlSwitchTab('conflicts'); });
-  $('tl-conflicts-badge').addEventListener('click', function(){ tlSwitchTab('conflicts'); });
+  $('tl-conflicts-badge').addEventListener('click', tlShowAllConflicts);
   // #tl-track itself (not the scroll container) has its own click listener,
   // wired once in timeline.js alongside the drag machinery — it needs the
   // _tlDragOccurred check a listener here wouldn't have, so it isn't duplicated.
   $('tl-chron-scroll').addEventListener('click', function(e){ if (e.target === $('tl-chron-scroll')) tlSelectScene(null); });
   $('tl-ms-scroll').addEventListener('click', function(e){ if (e.target === $('tl-ms-scroll') || e.target.id === 'tl-ms-row') tlSelectScene(null); });
-  $('tl-view-strip').addEventListener('click', function(){ setTlViewMode('strip'); });
-  $('tl-view-braid').addEventListener('click', function(){ setTlViewMode('braid'); });
+  $('tl-chron-arrow-left').addEventListener('click', function(){ tlScrollByPage('tl-chron-scroll', -1); });
+  $('tl-chron-arrow-right').addEventListener('click', function(){ tlScrollByPage('tl-chron-scroll', 1); });
+  $('tl-ms-arrow-left').addEventListener('click', function(){ tlScrollByPage('tl-ms-scroll', -1); });
+  $('tl-ms-arrow-right').addEventListener('click', function(){ tlScrollByPage('tl-ms-scroll', 1); });
   $('tl-braid-scroll').addEventListener('click', function(e){ if (e.target === $('tl-braid-scroll') || e.target.id === 'tl-braid-svg') tlSelectScene(null); });
   $('tl-braid-scroll').addEventListener('scroll', tlBraidUpdateMarkerHud);
   $('tl-panel-strip-btn').addEventListener('click', function(){ togglePanel('tl-panel'); });
@@ -220,6 +224,8 @@
   // Discard Scene Confirm modal
   $('discard-cfm-cancel').addEventListener('click', closeDiscardConfirm);
   $('discard-cfm-ok').addEventListener('click', confirmDiscard);
+  $('tl-move-cfm-discard').addEventListener('click', tlConfirmMoveDiscard);
+  $('tl-move-cfm-save').addEventListener('click', tlConfirmMoveSave);
 
   // Summary modal
   $('mclose').addEventListener('click', closeModal);

@@ -288,17 +288,31 @@ function renderConflictsBadge() {
 }
 
 // ── CONFLICTS PANEL (right panel tab, §6.6/§8) ────────────────────────────────
+// Selecting a scene tees up its own conflicts here (so the tab is ready the
+// moment the user clicks it); the "Conflicts (N)" badge explicitly overrides
+// that back to showing everything. Any new selection (including deselecting)
+// clears the override — see _tlDoSelectScene (timeline.js).
+let _tlConflictsFilterOverride = false;
+function tlShowAllConflicts() {
+  _tlConflictsFilterOverride = true;
+  tlSwitchTab('conflicts');
+}
 function renderConflictsPanel() {
   const body = document.getElementById('tl-conflicts-body');
   if (!body) return;
   body.innerHTML = '';
-  const active = getActiveConflicts();
-  const dismissed = getDismissedConflicts();
+  const showAll = _tlConflictsFilterOverride || tlSelectedId == null;
+  let active = getActiveConflicts();
+  let dismissed = getDismissedConflicts();
+  if (!showAll) {
+    active = active.filter(c => c.sceneIds.includes(tlSelectedId));
+    dismissed = dismissed.filter(c => c.sceneIds.includes(tlSelectedId));
+  }
 
   if (!active.length && !dismissed.length) {
     const empty = document.createElement('div');
     empty.className = 'tl-panel-empty';
-    empty.textContent = 'No conflicts found.';
+    empty.textContent = showAll ? 'No conflicts found.' : 'No conflicts involve this scene.';
     body.appendChild(empty);
     return;
   }

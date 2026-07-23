@@ -1,10 +1,10 @@
 /* ══ 5 THEMES ═══════════════════════════════════════════════════════════════ */
 /* --bl=chars --gr=locs --clt=themes-cat --am=misc --pv=pov --acc=UI accent --yl=highlight --sbg=storyboard bg */
-[data-theme="slate"]  {--bg0:#0d1117;--bg1:#161b22;--bg2:#0d1117;--s0:#21262d;--s1:#30363d;--o0:#6e7681;--o1:#8d96a0;--tx:#e6edf3;--sub:#8d96a0;--acc:#b07ef8;--bl:#58a6ff;--gr:#3fb950;--clt:#b07ef8;--am:#f0883e;--pv:#f472b6;--yl:#e3b341;--rd:#f85149;--lv:#79c0ff;--bdr:#21262d;--cbg:#161b22;--cbdr:#30363d;--mbg:#0d1117;--mov:rgba(0,0,0,.76);--ontx:#000;--sbg:#070a0f;--tex-c:rgba(255,255,255,0.065)}
-[data-theme="ivory"]  {--bg0:#f8f6f2;--bg1:#f0ece6;--bg2:#faf9f6;--s0:#e4dfd8;--s1:#d4cfc8;--o0:#8a7e70;--o1:#5a4e40;--tx:#2c2416;--sub:#5c5044;--acc:#9b4a1a;--bl:#1a5a9b;--gr:#2d7a3a;--clt:#8b1a4a;--am:#b55810;--pv:#5d248f;--yl:#b06a00;--rd:#c0321a;--lv:#4a4a9b;--bdr:#d4cfc8;--cbg:#faf8f5;--cbdr:#c5bfb7;--mbg:#faf9f6;--mov:rgba(0,0,0,.42);--ontx:#fff;--sbg:#e8e3dc;--tex-c:rgba(0,0,0,0.05)}
-[data-theme="studio"] {--bg0:#f0f2f5;--bg1:#ffffff;--bg2:#f8f9fa;--s0:#e4e6ea;--s1:#d8dadd;--o0:#9da3aa;--o1:#6c737a;--tx:#1a1a2e;--sub:#495057;--acc:#7c3aed;--bl:#2563eb;--gr:#16a34a;--clt:#7c3aed;--am:#ea580c;--pv:#e4259e;--yl:#d97706;--rd:#dc2626;--lv:#6366f1;--bdr:#e4e6ea;--cbg:#ffffff;--cbdr:#e4e6ea;--mbg:#f8f9fa;--mov:rgba(0,0,0,.38);--ontx:#fff;--sbg:#e4e8ed;--tex-c:rgba(0,0,0,0.041)}
-[data-theme="ocean"]  {--bg0:#051820;--bg1:#072030;--bg2:#041418;--s0:#0e3848;--s1:#184858;--o0:#508090;--o1:#78a8b8;--tx:#c8e8f0;--sub:#90b8c8;--acc:#06b6d4;--bl:#93c5fd;--gr:#6ee7b7;--clt:#e879f9;--am:#fde68a;--pv:#f98b9d;--yl:#fde68a;--rd:#f87171;--lv:#a5b4fc;--bdr:#0e3848;--cbg:#072030;--cbdr:#0e3848;--mbg:#041418;--mov:rgba(0,0,0,.78);--ontx:#000;--sbg:#020c10;--tex-c:rgba(255,255,255,0.055)}
-[data-theme="sunset"] {--bg0:#fff8f0;--bg1:#fff0e0;--bg2:#fffaf4;--s0:#f0dfc8;--s1:#e8d0b0;--o0:#a08060;--o1:#705030;--tx:#2a1a08;--sub:#604020;--acc:#ea580c;--bl:#4338ca;--gr:#059669;--clt:#e11d48;--am:#d97706;--pv:#c722d3;--yl:#b45309;--rd:#dc2626;--lv:#7c3aed;--bdr:#e8d0b0;--cbg:#fff0e0;--cbdr:#e8d0b0;--mbg:#fffaf4;--mov:rgba(0,0,0,.4);--ontx:#fff;--sbg:#f0e5d4;--tex-c:rgba(0,0,0,0.041)}
+[data-theme="slate"]  {--bg0:#0d1117;--bg1:#161b22;--bg2:#0d1117;--s0:#21262d;--s1:#30363d;--o0:#6e7681;--o1:#8d96a0;--lbl:#9aa4b0;--tx:#e6edf3;--sub:#8d96a0;--acc:#b07ef8;--bl:#58a6ff;--gr:#3fb950;--clt:#b07ef8;--am:#f0883e;--pv:#f472b6;--yl:#e3b341;--rd:#f85149;--lv:#79c0ff;--bdr:#21262d;--cbg:#161b22;--cbdr:#30363d;--mbg:#0d1117;--mov:rgba(0,0,0,.76);--ontx:#000;--sbg:#070a0f;--tex-c:rgba(255,255,255,0.065)}
+[data-theme="ivory"]  {--bg0:#f8f6f2;--bg1:#f0ece6;--bg2:#faf9f6;--s0:#e4dfd8;--s1:#d4cfc8;--o0:#8a7e70;--o1:#5a4e40;--lbl:#8a7e70;--tx:#2c2416;--sub:#5c5044;--acc:#9b4a1a;--bl:#1a5a9b;--gr:#2d7a3a;--clt:#8b1a4a;--am:#b55810;--pv:#5d248f;--yl:#b06a00;--rd:#c0321a;--lv:#4a4a9b;--bdr:#d4cfc8;--cbg:#faf8f5;--cbdr:#c5bfb7;--mbg:#faf9f6;--mov:rgba(0,0,0,.42);--ontx:#fff;--sbg:#e8e3dc;--tex-c:rgba(0,0,0,0.05)}
+[data-theme="studio"] {--bg0:#f0f2f5;--bg1:#ffffff;--bg2:#f8f9fa;--s0:#e4e6ea;--s1:#d8dadd;--o0:#9da3aa;--o1:#6c737a;--lbl:#9da3aa;--tx:#1a1a2e;--sub:#495057;--acc:#7c3aed;--bl:#2563eb;--gr:#16a34a;--clt:#7c3aed;--am:#ea580c;--pv:#e4259e;--yl:#d97706;--rd:#dc2626;--lv:#6366f1;--bdr:#e4e6ea;--cbg:#ffffff;--cbdr:#e4e6ea;--mbg:#f8f9fa;--mov:rgba(0,0,0,.38);--ontx:#fff;--sbg:#e4e8ed;--tex-c:rgba(0,0,0,0.041)}
+[data-theme="ocean"]  {--bg0:#051820;--bg1:#072030;--bg2:#041418;--s0:#0e3848;--s1:#184858;--o0:#508090;--o1:#78a8b8;--lbl:#7bb3c4;--tx:#c8e8f0;--sub:#90b8c8;--acc:#06b6d4;--bl:#93c5fd;--gr:#6ee7b7;--clt:#e879f9;--am:#fde68a;--pv:#f98b9d;--yl:#fde68a;--rd:#f87171;--lv:#a5b4fc;--bdr:#0e3848;--cbg:#072030;--cbdr:#0e3848;--mbg:#041418;--mov:rgba(0,0,0,.78);--ontx:#000;--sbg:#020c10;--tex-c:rgba(255,255,255,0.055)}
+[data-theme="sunset"] {--bg0:#fff8f0;--bg1:#fff0e0;--bg2:#fffaf4;--s0:#f0dfc8;--s1:#e8d0b0;--o0:#a08060;--o1:#705030;--lbl:#a08060;--tx:#2a1a08;--sub:#604020;--acc:#ea580c;--bl:#4338ca;--gr:#059669;--clt:#e11d48;--am:#d97706;--pv:#c722d3;--yl:#b45309;--rd:#dc2626;--lv:#7c3aed;--bdr:#e8d0b0;--cbg:#fff0e0;--cbdr:#e8d0b0;--mbg:#fffaf4;--mov:rgba(0,0,0,.4);--ontx:#fff;--sbg:#f0e5d4;--tex-c:rgba(0,0,0,0.041)}
 
 
 /* ══ BASE ═══════════════════════════════════════════════════════════════════ */
@@ -765,7 +765,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-type-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:5px 12px;cursor:pointer;transition:background .12s,border-color .12s}
 .chart-type-btn:hover{border-color:var(--acc)}
 .chart-type-btn.on{background:var(--acc);color:var(--ontx);border-color:var(--acc)}
-#chart-type-toggle{display:flex;border:1px solid var(--s1);border-radius:6px;overflow:hidden}
+#chart-type-toggle,#chart-type-timeline-toggle{display:flex;border:1px solid var(--s1);border-radius:6px;overflow:hidden}
 /* Shorter than the base .chart-type-btn padding — frees enough headroom
    above the button (within the 46px row) for the CARDS/FLOW label floating
    over it (see .view-toggle-lbl) to clear the row's top edge instead of
@@ -866,7 +866,7 @@ body.tl-mode #ed-notes-field{display:none}
 #timeline-host{flex:1;min-width:0;display:flex;overflow:hidden}
 #tl-stage{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
 #tl-chron-hdr{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:8px 14px;border-bottom:1px solid var(--s1);background:var(--bg1)}
-#tl-view-switch,#tl-axis-switch{display:flex;border:1px solid var(--s1);border-radius:7px;overflow:hidden}
+#tl-axis-switch{display:flex;border:1px solid var(--s1);border-radius:7px;overflow:hidden}
 .tl-axis-btn{background:var(--s0);color:var(--sub);border:none;padding:6px 10px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer}
 .tl-axis-btn.on{background:var(--acc);color:var(--ontx)}
 .tl-axis-btn:disabled{opacity:.4;cursor:default}
@@ -874,7 +874,11 @@ body.tl-mode #ed-notes-field{display:none}
 #tl-thread-sel{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 8px;color:var(--tx);font-size:12px;font-family:inherit;cursor:pointer;transition:box-shadow .16s,border-color .16s}
 /* Active = a character is currently traced (S.timelinePrefs.threadCharId set) —
    toggled by renderThreadPicker()/setTlThread(). */
-#tl-thread-sel.tl-thread-active{border-color:var(--acc);box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 35%,transparent),0 0 8px color-mix(in srgb,var(--acc) 55%,transparent)}
+/* Same literal color as the trace line itself (#e57373, timeline.js's
+   THREAD_COLOR) rather than the accent — and more prominent than the accent
+   version was (wider ring, stronger glow), so the control reads as clearly
+   "on" at a glance. */
+#tl-thread-sel.tl-thread-active{border-color:#e57373;box-shadow:0 0 0 3px rgba(229,115,115,.45),0 0 12px rgba(229,115,115,.7)}
 #tl-status{font-size:11px;color:var(--sub)}
 .tl-hdr-spacer{flex:1}
 #tl-conflicts-badge{background:var(--s0);border:1px solid var(--s1);border-radius:14px;padding:5px 12px;font-size:11px;font-weight:700;color:var(--sub);cursor:pointer;font-family:inherit}
@@ -917,7 +921,10 @@ body.tl-mode #ed-notes-field{display:none}
 .tl-lane-label .tl-sw{width:18px;height:3px;border-radius:2px}
 .tl-lane-label .tl-lane-name{color:var(--tx);cursor:text}
 .tl-lane-label .tl-lane-name input{width:100%;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:1px 4px;color:var(--tx);font-size:11px;font-family:inherit}
-.tl-lane-label i{font-style:normal;font-size:9px;color:var(--o0);font-weight:400}
+/* --sub (not --o0) — --o0 is meant for faint/subtle chrome and read as too
+   low-contrast in both light and dark themes for a number that's actually
+   worth reading at a glance. */
+.tl-lane-label i{font-style:normal;font-size:9.5px;color:var(--sub);font-weight:600}
 .tl-lane-del{position:absolute;top:3px;right:4px;background:none;border:none;color:var(--o0);cursor:pointer;font-size:12px;padding:1px 3px;line-height:1;opacity:0;transition:opacity .1s}
 .tl-lane-label:hover .tl-lane-del{opacity:1}
 .tl-lane-del:hover{color:var(--rd)}
@@ -932,8 +939,27 @@ body.tl-mode #ed-notes-field{display:none}
 #tl-add-storyline-btn{position:absolute;left:8px;right:8px;bottom:8px;background:var(--bg1);border:1px dashed var(--s1);border-radius:6px;color:var(--sub);font-size:11px;font-weight:600;font-family:inherit;padding:6px;cursor:pointer;box-shadow:0 -4px 8px -2px var(--bg1)}
 #tl-add-storyline-btn:hover{border-color:var(--acc);color:var(--acc)}
 
-#tl-chron-scroll{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden}
+/* Wrap (not the scrolling element itself) carries the flex sizing and hosts
+   the scroll-arrow buttons positioned absolute on top — buttons living
+   inside the scrolling element itself would scroll away with its content. */
+#tl-chron-scroll-wrap{flex:1;min-width:0;position:relative}
+#tl-chron-scroll{width:100%;height:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}
+#tl-chron-scroll::-webkit-scrollbar{display:none}
 #tl-track{position:relative;min-width:100%}
+/* Small bubble scroll affordance for trackpad-less users, since the native
+   scrollbar is hidden above — shown only on the side there's actually more
+   to see (tlUpdateScrollArrows()), not permanently. */
+.tl-scroll-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);z-index:6;
+  width:26px;height:26px;border-radius:50%;border:1px solid var(--s1);
+  background:color-mix(in srgb,var(--bg1) 85%,transparent);color:var(--tx);
+  font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .15s;box-shadow:0 2px 6px rgba(0,0,0,.2);
+}
+.tl-scroll-arrow.visible{opacity:1;pointer-events:auto}
+.tl-scroll-arrow:hover{background:var(--acc);color:var(--ontx);border-color:var(--acc)}
+.tl-scroll-arrow-left{left:6px}
+.tl-scroll-arrow-right{right:6px}
 /* Soft gradient glows (not hard lines) at each row's top/bottom edge, fading the
    lane color into the row's own tint — a flat 2px solid border here read as a
    third kind of stroke competing visually with the wire curves that cross this
@@ -952,7 +978,7 @@ body.tl-mode #ed-notes-field{display:none}
 .tl-lane-row.tl-drop-target{outline:2px dashed var(--acc);outline-offset:-2px}
 
 #tl-wires-zone{flex:1;min-height:100px;position:relative;border-bottom:1px solid var(--s1)}
-.tl-row-caption{position:absolute;left:0;right:0;text-align:center;font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--o0);pointer-events:none;z-index:1}
+.tl-row-caption{position:absolute;left:0;right:0;text-align:center;font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--lbl);pointer-events:none;z-index:1}
 .tl-row-caption-top{top:4px}
 .tl-row-caption-bottom{bottom:4px}
 /* #tl-wires is a direct child of #tl-stage (not nested in #tl-wires-zone) so its
@@ -965,10 +991,12 @@ body.tl-mode #ed-notes-field{display:none}
 
 /* Content-sized like #tl-chron-body above — a single row of cards, not
    dependent on leftover flex space (see #tl-ms-row's height:auto below). */
-#tl-ms-scroll{flex:0 0 auto;max-height:30%;min-height:0;overflow-x:auto;overflow-y:hidden;margin-left:132px;background:var(--bg1)}
-#tl-ms-row{display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start;min-width:100%;padding:10px 10px 8px;height:auto;box-sizing:border-box}
+#tl-ms-scroll-wrap{flex:0 0 auto;max-height:30%;min-height:0;position:relative;margin-left:132px;background:var(--bg1)}
+#tl-ms-scroll{width:100%;height:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}
+#tl-ms-scroll::-webkit-scrollbar{display:none}
+#tl-ms-row{display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start;min-width:100%;padding:10px 10px 22px;height:auto;box-sizing:border-box}
 .tl-sep{flex:0 0 auto;align-self:stretch;width:0;border-left:1px dashed var(--o0);margin:4px 2px 0;position:relative}
-.tl-sep-label{position:absolute;top:-15px;left:3px;font-size:8.5px;letter-spacing:.06em;color:var(--sub);white-space:nowrap;font-weight:700}
+.tl-sep-label{position:absolute;bottom:-15px;left:3px;font-size:8.5px;letter-spacing:.06em;color:var(--sub);white-space:nowrap;font-weight:700}
 
 .tl-scene,.tl-ms-card{
   background:var(--cbg);border:1px solid var(--s1);border-radius:7px;
@@ -989,7 +1017,10 @@ body.tl-mode #ed-notes-field{display:none}
 .tl-scene.tl-warn .tl-warn-dot,.tl-ms-card.tl-warn .tl-warn-dot{display:block}
 
 .tl-conv-dots{position:absolute;bottom:-4px;right:-4px;display:flex;align-items:center;gap:2px}
-.tl-conv-dot{width:6px;height:6px;border-radius:50%;border:1px solid var(--sbg)}
+/* Bigger (6px→9px) and a dark ring on top of the existing --cbg border — the
+   --sbg border alone was too close in value to a light theme's own card
+   background to read as a distinct dot. */
+.tl-conv-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--cbg);box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .tl-conv-more{font-size:8px;color:var(--o0)}
 
 body.hovering .tl-scene:not(.tl-hi):not(.tl-flag),
@@ -1002,7 +1033,7 @@ body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){op
 /* ==================================================================
    Braid view — read-only structure chart, toggled inside Timeline view
    ================================================================== */
-#tl-braid-scroll{display:none;flex:1;min-height:0;overflow:auto;position:relative}
+#tl-braid-scroll{display:none;flex:1;min-height:0;overflow:auto;overscroll-behavior-x:contain;position:relative}
 #tl-stage.tl-braid-active #tl-chron-body,
 #tl-stage.tl-braid-active #tl-wires-zone,
 #tl-stage.tl-braid-active #tl-ms-scroll,
@@ -1020,7 +1051,7 @@ body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){op
    (tlBraidUpdateMarkerHud()) — the dashed marker LINE stays in the SVG and
    scrolls normally; only the label needs to stay readable while scrolled right. */
 #tl-braid-markers-hud{position:absolute;top:0;left:0;right:0;pointer-events:none}
-.tl-braid-marker-label{position:absolute;font-size:9px;letter-spacing:.6px;font-weight:700;color:var(--o0);white-space:nowrap;background:var(--bg1);padding:1px 4px;border-radius:3px}
+.tl-braid-marker-label{position:absolute;font-size:9px;letter-spacing:.6px;font-weight:700;color:var(--lbl);white-space:nowrap;background:var(--bg1);padding:1px 4px;border-radius:3px}
 
 .tl-braid-node circle{transition:stroke-width .15s}
 .tl-braid-node.tl-hi circle{stroke-width:5}
@@ -1095,10 +1126,12 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
    and the title field's own --s0 input background. No padding-top/negative-
    margin trick needed either — .cp-form-fields already has zero top padding,
    so the sticky element already sits flush with nothing to cover above it. */
-#tl-inspector-body .cp-form-fields > .ff:first-child{position:sticky;top:0;z-index:2;background:var(--bg1);margin-bottom:4px}
-/* Divider + breathing room above Summary — it previously sat right against
-   Title's own margin-bottom with no visual separation. */
-#tl-inspector-body #ed-summary-field{border-top:1px solid var(--s1);margin-top:4px;padding-top:10px}
+/* The divider belongs on the STICKY element's own bottom edge, not Summary's
+   top — a border-top on Summary (inside the scrolling region) scrolls away
+   with Summary itself, leaving the frozen Title area with no visible
+   boundary the moment the user scrolls past it. Living on Title's own box
+   means it's frozen right along with it. */
+#tl-inspector-body .cp-form-fields > .ff:first-child{position:sticky;top:0;z-index:2;background:var(--bg1);margin-bottom:4px;border-bottom:1px solid var(--s1);padding-bottom:10px}
 
 /* one-time drag toasts / popovers reused in M5, styled now so M5 doesn't need
    another CSS pass */
@@ -1113,10 +1146,10 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
    clipped away entirely by #tl-chron-scroll's overflow-y:hidden regardless
    of z-index, since that's an overflow clip, not a stacking issue. */
 .tl-marker-line{position:absolute;top:20px;bottom:0;width:0;border-left:1px dashed var(--o0);z-index:1}
-.tl-marker-label{position:absolute;top:-15px;left:4px;font-size:9px;letter-spacing:1px;color:var(--o0);white-space:nowrap;cursor:pointer;font-weight:700}
+.tl-marker-label{position:absolute;top:-15px;left:4px;font-size:9px;letter-spacing:1px;color:var(--lbl);white-space:nowrap;cursor:pointer;font-weight:700}
 .tl-marker-label:hover{color:var(--tx)}
 .tl-gap-divider{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--o0);z-index:1;pointer-events:none}
-.tl-gap-label{position:absolute;top:50%;left:4px;transform:translateY(-50%);font-size:9px;color:var(--o0);white-space:nowrap;font-weight:700}
+.tl-gap-label{position:absolute;top:50%;left:4px;transform:translateY(-50%);font-size:9px;color:var(--lbl);white-space:nowrap;font-weight:700}
 .tl-drag-ghost{position:absolute;z-index:50;pointer-events:none;opacity:.85;transform:translate(-50%,-50%);cursor:grabbing}
 .tl-ms-drag-ghost{position:fixed;z-index:300;pointer-events:none;opacity:.9;transform:translate(-50%,-50%);cursor:grabbing}
 .tl-insert-line{position:absolute;top:0;bottom:0;width:2px;background:var(--acc);z-index:3;pointer-events:none;opacity:.9;border-radius:1px}
