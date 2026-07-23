@@ -1,6 +1,6 @@
 # Current Status
 
-As of July 21, 2026:
+As of July 23, 2026:
 
 ## Notes
 strip_AI branch: removed all AI features (Analyze Story menu item, AI panel with Analysis/Chat tabs, ai.js, chat.js, and related state/CSS) so the app ships without them for now — to be reintroduced later. Also hardened the app: CSP meta tags on all pages, stricter JSON import validation, and cleanup of leftover AI localStorage keys.
@@ -2168,6 +2168,166 @@ and conv-dot size/shadow; Title/Summary divider position and freeze behavior;
 visibility state at both a scrolled-to-start and scrolled-to-middle position;
 the full move-confirm flow (open → discard → re-open → save → undo). Console
 clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Loom/Path direct-feedback round: selection, drag, Conflicts panel, True-scale fixes
+
+Two back-to-back rounds of direct, user-driven fixes across Loom/Path, the
+Conflicts panel, and Chronology True scale — the largest single batch since
+the view-toggle unification. **Touched files:** `timeline.js` (bulk of the
+logic), `conflicts.js` (panel rewrite), `editor.html` (icons, toolbar
+markup), `styles.css` (throughout).
+
+### Selection & Inspector
+- Clicking a Loom card or Path/Braid node now expands the Inspector panel if
+  it's currently collapsed (`_tlDoSelectScene` calls `togglePanel('tl-panel')`
+  when needed) — previously the selection happened but stayed hidden behind
+  the collapsed strip.
+- Clicking off a selected card now actually deselects everywhere, including
+  empty space *inside* a chron lane row — the click handler on `#tl-track`
+  used to require `e.target === track` exactly, which a lane-row's own
+  background (a full-row absolutely-positioned div) never satisfies since
+  it's a distinct element. Now any bubbled click (cards call
+  `stopPropagation()` on their own) deselects.
+- Selected-card styling now reuses hover's exact treatment (same
+  `var(--c, var(--acc))` color source) at a heavier ring (3px vs 1px) instead
+  of a hardcoded `var(--acc)` that read as a different color; `redrawWires()`
+  gives the selected scene's wire the same full-opacity/heavy-width
+  treatment as a hovered one, persisting even while a *different* card is
+  being hovered.
+
+### Storyline palette
+Index 2 (purple) was `#a78bfa`/`#7b5ea7` — too close to index 0's blue at
+small sizes (dots, thin wires). Shifted toward magenta (hue ~285) for real
+separation.
+
+### Narrative (manuscript) ribbon drag-reorder
+Ribbon cards are now draggable to reorder, mirroring the chron strip's drag
+(candidate/threshold-4px/active two-phase pattern) but simpler — one row, no
+lanes. Reordering directly splices `S.scenes` (matching how
+`manuscriptOrder()`/`buildSceneNumMap()` derive reading order from that
+array's own storage order grouped by `sectionId` — the same thing
+`editor.js`'s board drag-reorder already relies on), reassigns the dropped
+scene's `sectionId` to match its new neighbor's, and reuses the same
+move-confirmation modal as chron drag (`_tlPendingMove` generalized to an
+`{label, apply}` shape so both drag flavors and the True-scale date-drag
+below share one commit path). Scene numbers update everywhere on save.
+
+### Drag text-selection bug
+`.tl-scene`/`.tl-ms-card` lacked `user-select:none` (unlike the board's
+`.sc`), so dragging a card in Loom dragged a browser text-selection across
+neighboring card titles at the same time. Added.
+
+### Loom/Path icon redraw (per hand sketch)
+Loom: same crossed-curve X, one leg now dashed. Path: redrawn as a thin
+curved "string" (`stroke-width:1.3`) with four larger beads (`r:2.1`) at
+fixed on-curve points, replacing the zigzag+small-dot version from the prior
+round.
+
+### Conflicts panel rework
+Previously filtered to the selected scene's own conflicts, with a "show all"
+override triggered only by the header badge. Reworked to always show every
+conflict (with a "Conflicts (N)" count header inside the panel body) —
+selecting a scene now scrolls the panel to and highlights that scene's
+conflict row instead of filtering the list down. Highlight color was
+initially `var(--acc)` (brown) which read as a different state than clicking
+a row directly (`flagActive`, red) — unified to the same `var(--rd)`
+treatment, just a heavier ring. Click-off now clears *both* forms of
+highlight — the card-driven one (via the general deselect path) and the
+row-click-driven "flag mode" one (`clearFlagMode()` added to the generic
+outside-click guard and to `_tlDoSelectScene`, since flag mode was previously
+only cleared via Escape).
+
+### Toolbar polish
+- `#chart-type-toggle .chart-type-btn`'s compact icon-button styling
+  (padding, border, on-state SVG color) was never extended to
+  `#chart-type-timeline-toggle` — Loom/Path buttons were falling back to the
+  base `.chart-type-btn` text-button padding, reading as visibly
+  smaller/misaligned next to Snake/Circle. Fixed, then further evened up by
+  enlarging the Loom/Path SVGs themselves (15px/12px tall → 18px) so the
+  bordered group's cross-axis height (set by its tallest child under the
+  default `align-items:stretch`) matches Snake/Circle's.
+- The CARDS/FLOW/TIMELINE labels floating above their buttons
+  (`.view-toggle-lbl`, `position:absolute`) only had `#tl-chron-hdr`'s 8px
+  top padding to render into before hitting `#tl-stage`'s `overflow:hidden`
+  clip (that header sits flush at the stage's own top edge) — increased to
+  16px. An earlier one-off `margin-bottom` bump on just the Timeline label
+  (meant to fix the same symptom before the real cause was found) was
+  removed once the header padding fix made it redundant — it was actually
+  making Timeline sit visibly higher than Flow.
+- Era-marker labels (`.tl-marker-label`, e.g. "1793 — GENEVA & INGOLSTADT")
+  are already positioned as high as they can go without clipping (a prior
+  round's fix), so at low zoom the top lane's cards render close enough
+  behind them to read as "covered" despite already being stacked on top via
+  z-index — no background meant no contrast against a card's own content.
+  Gave the label a solid background chip.
+
+### Chronology True scale: cross-lane order bug (thread zigzag)
+Root cause of a reported character-Thread zigzag and general "cards look
+out of order" complaint: `chronXTrueScale()`'s per-lane collision-avoidance
+pass (enforces a minimum on-screen gap between same-lane cards, since only
+same-lane cards can visually overlap) operates on each storyline in
+isolation. A lane with many tightly-clustered scenes can get pushed forward
+enough to numerically overtake a *different* lane's scene that's
+chronologically later — harmless for the pass's actual job (same-lane cards
+never overlap), but `S.chronOrder` (built from real dates, spanning every
+lane) was left non-monotonic in x, and `renderChronThread()` just walks
+`chronOrder` connecting points in sequence, so a cross-lane inversion read
+as the thread zig-zagging backward even though every scene's own date was
+correct. Fixed with one more forward-only sweep over `chronOrder` itself
+(not per-lane) after the existing pass — verified by asserting zero
+x-decreases along `chronOrder` on the Frankenstein sample (was 3 violations
+before the fix).
+
+Also (found while on the same code): the same collision pass has no upper
+bound, so a dense lane could push x values past 100 — cards rendered past
+the track's own right edge, past where the lane-row color band and
+everything else track-relative actually ends (visible as color bands
+stopping abruptly partway across, independent of the thread bug above).
+Rescales the whole map back into `[0,100]` when that happens.
+
+### Chronology True scale: drag now edits the anchor date
+Previously a deliberate limitation (`S.timelinePrefs.axis === 'true'` disabled
+horizontal drag entirely, with a one-time "Switch to Ordinal to reorder by
+time" toast) — horizontal position in True scale *is* the date axis, so
+dragging didn't have an obvious "reorder" meaning. Asked the user; went with
+the recommended option since they had no strong preference: dragging a card
+now edits its anchor date, interpreting the drop x-position as a date via
+the same anchored-scene timestamp range True scale itself uses for
+`ts -> x%` (added the inverse, `_tlXPercentToTs`), with a continuous
+placement-indicator line that tracks the cursor (rather than snapping
+between two cards, since there's no discrete "slot" concept here) and the
+same move-confirmation modal as every other drag, showing the resulting date
+(e.g. `… (to Oct 7, 1793)?`). Repositions the scene within `chronOrder` to
+sit next to its new date's neighbors (`_tlReorderChronForNewAnchor` — walks
+the existing order rather than a full resort, so unrelated scenes' relative
+positions are untouched) so the change can't reintroduce the cross-lane
+inversion bug above. The dead toast function/CSS this replaced was removed.
+
+### Scroll-arrow edge overlap at low zoom
+The bubble scroll-arrow buttons (26px wide, inset 6px from the edge) aren't
+part of document flow, so nothing previously reserved room for them — at a
+tight zoom/large scene count the edge-most cards rendered close enough to
+0%/100% (chron strip, percentage-positioned) or the row's own 10px padding
+(manuscript ribbon, flex-positioned) that the arrow sat directly on top of
+real card content. Manuscript row: padding bumped from 10px to 38px on each
+side. Chron strip: `chronXOrdinal()`'s `0-100%` domain is now inset by a
+pixel-based margin (`chronXEdgeMarginPct()`, accounting for the arrow's
+reach *and* the current card's half-width so it scales correctly at every
+zoom level) rather than running edge-to-edge.
+
+### Verified live
+All of the above tested in-browser on the Frankenstein sample across
+multiple fresh preview-server restarts (this environment's dev server
+intermittently served stale files across normal navigations — mid-session,
+not a project bug — worked around by restarting the server and/or a full
+hard navigation whenever a fix didn't appear to take effect before trusting
+a negative result). Confirmed via both visual screenshots and direct state
+inspection (`tlSelectedId`, `S.chronOrder`, `S.scenes` order, computed
+styles, simulated mousedown/mousemove/mouseup drag sequences). Console clean
+throughout.
 
 ### Not yet done
 Not merged to `main` — same standing instruction as the rest of this branch.

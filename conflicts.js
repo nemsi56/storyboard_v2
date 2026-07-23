@@ -288,46 +288,60 @@ function renderConflictsBadge() {
 }
 
 // ── CONFLICTS PANEL (right panel tab, §6.6/§8) ────────────────────────────────
-// Selecting a scene tees up its own conflicts here (so the tab is ready the
-// moment the user clicks it); the "Conflicts (N)" badge explicitly overrides
-// that back to showing everything. Any new selection (including deselecting)
-// clears the override — see _tlDoSelectScene (timeline.js).
-let _tlConflictsFilterOverride = false;
+// Always shows every conflict — no per-selection filtering. Selecting a scene
+// that's involved in a conflict instead scrolls the panel to (and highlights)
+// that conflict's row, so the full list stays visible as context. Deselecting
+// (or selecting a scene with no conflict) just clears the highlight — see
+// _tlDoSelectScene (timeline.js), which re-renders this panel on every
+// selection change.
 function tlShowAllConflicts() {
-  _tlConflictsFilterOverride = true;
   tlSwitchTab('conflicts');
 }
 function renderConflictsPanel() {
   const body = document.getElementById('tl-conflicts-body');
   if (!body) return;
   body.innerHTML = '';
-  const showAll = _tlConflictsFilterOverride || tlSelectedId == null;
-  let active = getActiveConflicts();
-  let dismissed = getDismissedConflicts();
-  if (!showAll) {
-    active = active.filter(c => c.sceneIds.includes(tlSelectedId));
-    dismissed = dismissed.filter(c => c.sceneIds.includes(tlSelectedId));
-  }
+  const active = getActiveConflicts();
+  const dismissed = getDismissedConflicts();
+
+  const hdr = document.createElement('div');
+  hdr.className = 'conflictCountHdr';
+  hdr.textContent = 'Conflicts (' + active.length + ')';
+  body.appendChild(hdr);
 
   if (!active.length && !dismissed.length) {
     const empty = document.createElement('div');
     empty.className = 'tl-panel-empty';
-    empty.textContent = showAll ? 'No conflicts found.' : 'No conflicts involve this scene.';
+    empty.textContent = 'No conflicts found.';
     body.appendChild(empty);
     return;
   }
 
   const list = document.createElement('div');
   list.className = 'conflictList';
-  active.forEach(c => list.appendChild(buildConflictRow(c, false)));
+  let selRow = null;
+  active.forEach(c => {
+    const row = buildConflictRow(c, false);
+    if (tlSelectedId != null && c.sceneIds.includes(tlSelectedId) && !selRow) selRow = row;
+    list.appendChild(row);
+  });
   if (dismissed.length) {
-    const hdr = document.createElement('div');
-    hdr.className = 'conflictGroupHeader';
-    hdr.textContent = 'Dismissed';
-    list.appendChild(hdr);
-    dismissed.forEach(c => list.appendChild(buildConflictRow(c, true)));
+    const dh = document.createElement('div');
+    dh.className = 'conflictGroupHeader';
+    dh.textContent = 'Dismissed';
+    list.appendChild(dh);
+    dismissed.forEach(c => {
+      const row = buildConflictRow(c, true);
+      if (tlSelectedId != null && c.sceneIds.includes(tlSelectedId) && !selRow) selRow = row;
+      list.appendChild(row);
+    });
   }
   body.appendChild(list);
+
+  if (selRow) {
+    selRow.classList.add('conflictSelMatch');
+    selRow.scrollIntoView({ block: 'nearest' });
+  }
 }
 
 function buildConflictRow(c, isDismissed) {

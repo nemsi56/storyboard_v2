@@ -4,9 +4,12 @@
 // Ported from ../Timeline/js/state.js STORYLINE_PALETTE/slColor, adapted:
 // SceneSetter has five themes, not two — map each theme to whichever of the
 // two pools (dark-ish / light-ish) reads better against its background.
+// Index 2 (purple) was originally #a78bfa/#7b5ea7 — too close to index 0's blue
+// at small sizes (similar lightness/saturation, only ~50deg of hue apart).
+// Shifted toward magenta (hue ~285) for real separation from blue at a glance.
 const STORYLINE_PALETTE = {
-  dark:  ['#5aa9e6','#e0a458','#a78bfa','#6ad19a','#e66a9a','#58c4d4','#d4c458','#c48a58','#8a9ae6','#6ae0c4'],
-  light: ['#3d6c9e','#b07a35','#7b5ea7','#3f8f68','#b3486f','#35809a','#8f7d2e','#8f5b32','#4f5fa8','#2e8b7a'],
+  dark:  ['#5aa9e6','#e0a458','#c065e8','#6ad19a','#e66a9a','#58c4d4','#d4c458','#c48a58','#8a9ae6','#6ae0c4'],
+  light: ['#3d6c9e','#b07a35','#9142ad','#3f8f68','#b3486f','#35809a','#8f7d2e','#8f5b32','#4f5fa8','#2e8b7a'],
 };
 const TL_DARK_THEMES = new Set(['slate', 'ocean']);
 function slColor(paletteIndex) {
@@ -47,11 +50,31 @@ function renderConvDots(scene, storylineById) {
 // ── GEOMETRY ENGINE (ported wholesale from ../Timeline/js/time.js, schema v3 §6.2) ──
 function chronX(axisMode) { return axisMode === 'true' ? chronXTrueScale() : chronXOrdinal(); }
 
+// Margin (in %) reserved at each edge so the first/last card's own edge (not
+// just its center) never lands under the scroll-arrow buttons (26px wide,
+// inset 6px from the edge — see .tl-scroll-arrow in styles.css) — without
+// it, at a tight zoom/large scene count the edge-most cards render almost
+// flush with 0%/100% and the arrow sits directly on top of them, hiding real
+// content. Accounts for the current card width (bigger cards need more
+// clearance for their center to keep their edge past the arrow), and is
+// pixel-based (converted to % of the track's actual width) so it scales
+// correctly at every zoom level and scene count.
+const TL_ARROW_REACH_PX = 32; // .tl-scroll-arrow: left:6px + width:26px
+function chronXEdgeMarginPct() {
+  const track = document.getElementById('tl-track');
+  const w = track ? track.clientWidth : 0;
+  if (!w) return 4;
+  const cardW = Math.max(TL_ZOOM_MIN_CARD_PX, Math.min(96, tlCurrentPxPerScene() - 10));
+  const neededPx = TL_ARROW_REACH_PX + cardW / 2 + 4;
+  return Math.min(20, (neededPx / w) * 100);
+}
 function chronXOrdinal() {
   const map = new Map();
   const order = S.chronOrder || [];
   const n = order.length;
-  order.forEach((id, i) => map.set(id, ((i + 0.5) / n) * 100));
+  const margin = chronXEdgeMarginPct();
+  const span = 100 - margin * 2;
+  order.forEach((id, i) => map.set(id, margin + ((i + 0.5) / n) * span));
   return map;
 }
 
@@ -62,6 +85,31 @@ function anchorTs(anchor) {
   return isNaN(ms) ? null : ms;
 }
 
+// Shared by chronXTrueScale (ts -> x%) and _tlXPercentToTs (x% -> ts, used
+// when dragging a card to a new date in True scale) — both must agree on
+// exactly the same anchored-scene range or a drag could "snap" a card to a
+// date slightly off from where it visually landed.
+function _tlAnchoredTsRange() {
+  const order = S.chronOrder || [];
+  const sceneById = new Map(S.scenes.map(s => [s.id, s]));
+  const anchored = [];
+  order.forEach(id => {
+    const s = sceneById.get(id); if (!s) return;
+    const ts = anchorTs(s.anchor);
+    if (ts !== null) anchored.push(ts);
+  });
+  if (anchored.length < 2) return null;
+  anchored.sort((a, b) => a - b);
+  return { tMin: anchored[0], tMax: anchored[anchored.length - 1] };
+}
+// Inverse of the anchored-scene mapping below (x% -> timestamp), for
+// True-scale card drag: interprets wherever the card was dropped as a date.
+function _tlXPercentToTs(xPct) {
+  const range = _tlAnchoredTsRange();
+  if (!range || range.tMax === range.tMin) return null;
+  const frac = (xPct - 4) / 92;
+  return range.tMin + frac * (range.tMax - range.tMin);
+}
 function chronXTrueScale() {
   const order = S.chronOrder || [];
   const sceneById = new Map(S.scenes.map(s => [s.id, s]));
@@ -133,6 +181,40 @@ function chronXTrueScale() {
       if (curX - prevX < minGapPct) map.set(ids[q], prevX + minGapPct);
     }
   });
+
+  // The per-lane pass above only looks at each lane in isolation, so a lane
+  // with many tightly-clustered scenes can get pushed forward enough to
+  // overtake a *different* lane's scene that's chronologically later —
+  // same-lane cards never visually overlap as a result (the pass's actual
+  // job), but S.chronOrder (built from real dates, spanning every lane) is
+  // no longer left-to-right monotonic in x. Nothing downstream expects that:
+  // the character Thread (renderChronThread) walks chronOrder and connects
+  // each point in sequence, so a cross-lane inversion here reads as the
+  // thread zig-zagging backward even though the scenes are in correct date
+  // order. One more forward-only sweep over chronOrder itself (not per-lane)
+  // restores that invariant — it only ever pushes a later scene's x up to
+  // match an earlier one's, same "push forward, never back" rule as above.
+  let prevOrderX = -Infinity;
+  order.forEach(id => {
+    const x = map.get(id);
+    if (x === undefined) return;
+    if (x < prevOrderX) map.set(id, prevOrderX);
+    else prevOrderX = x;
+  });
+
+  // The collision pass above can push a dense lane's x values past 100 (it
+  // only enforces a minimum gap, with no upper bound) — left unclamped, those
+  // cards render past the track's own right edge, past where the lane-row
+  // color band and every other track-relative background actually ends
+  // (visible as bands that stop abruptly partway across True scale). Rescale
+  // the whole map back into [0,100] when that happens, preserving order and
+  // relative spacing.
+  let maxX = 0;
+  map.forEach(x => { if (x > maxX) maxX = x; });
+  if (maxX > 100) {
+    const scale = 100 / maxX;
+    map.forEach((x, id) => map.set(id, x * scale));
+  }
 
   return map;
 }
@@ -234,6 +316,13 @@ document.addEventListener('mousedown', e => {
   if (e.target.closest('.tl-scene, .tl-ms-card, .tl-braid-node, #tl-chron-scroll, #tl-ms-scroll, #tl-braid-scroll')) return;
   if (document.querySelector('.cfm-modal.open') || document.getElementById('tl-marker-popover') || document.getElementById('tl-marker-context-menu')) return;
   tlSelectScene(null);
+  // A conflict "shown" via the panel's own row click (flag mode) is a
+  // separate state from card selection — clicking off should clear it too,
+  // same as it clears a card-driven selection above.
+  if (typeof isFlagModeActive === 'function' && isFlagModeActive()) {
+    clearFlagMode();
+    if (typeof renderConflictsPanel === 'function' && tlActiveTab === 'conflicts') renderConflictsPanel();
+  }
 });
 
 function _openTimelineViewImpl() {
@@ -608,7 +697,12 @@ function renderChronStrip() {
 
 function onChronCardDown(e, sceneId) {
   if (e.button !== 0) return;
-  _tlDrag = { sceneId, active: false, startX: e.clientX, startY: e.clientY, ghostEl: null, insertLineEl: null, targetBeforeId: undefined, targetStorylineId: null };
+  _tlDrag = { zone: 'chron', sceneId, active: false, startX: e.clientX, startY: e.clientY, ghostEl: null, insertLineEl: null, targetBeforeId: undefined, targetStorylineId: null };
+}
+
+function onMsCardDown(e, sceneId) {
+  if (e.button !== 0) return;
+  _tlDrag = { zone: 'ms', sceneId, active: false, startX: e.clientX, startY: e.clientY, ghostEl: null, insertLineEl: null, targetBeforeId: undefined };
 }
 
 function renderManuscriptRibbon() {
@@ -662,7 +756,12 @@ function buildRibbonCard(s, num, storylineById) {
 
   card.addEventListener('mouseenter', () => highlightScene(s.id, true));
   card.addEventListener('mouseleave', () => highlightScene(s.id, false));
-  card.addEventListener('click', e => { e.stopPropagation(); tlSelectScene(s.id); });
+  card.addEventListener('click', e => {
+    e.stopPropagation();
+    if (_tlDragOccurred) { _tlDragOccurred = false; return; } // a drag just ended here
+    tlSelectScene(s.id);
+  });
+  card.addEventListener('mousedown', e => onMsCardDown(e, s.id));
   return card;
 }
 
@@ -766,7 +865,6 @@ function renderChronThread() {
 let _tlDrag = null; // null when not dragging
 let _tlDragActive = false; // guards undo (editor.js keydown) and hover (highlightScene) mid-drag
 let _tlDragOccurred = false; // suppresses the click that always follows a drag's mouseup
-let _tlTrueScaleToastShown = false;
 
 function isTlDragActive() { return !!(_tlDrag && _tlDrag.active); }
 function cancelTlDrag() { if (_tlDrag) _tlDragCancel(); }
@@ -776,6 +874,8 @@ function _tlDragBegin(e) {
   d.active = true;
   _tlDragActive = true;
   clearHighlight(); // the mouseleave the drag itself triggers won't fire while dragActive guards it below
+
+  if (d.zone === 'ms') { _tlMsDragBegin(d); return; }
 
   const track = document.getElementById('tl-track');
   const srcEl = track.querySelector('.tl-scene[data-scene-id="' + d.sceneId + '"]');
@@ -799,23 +899,31 @@ function _tlDragBegin(e) {
   line.style.display = 'none';
   track.appendChild(line);
   d.insertLineEl = line;
-
-  // Horizontal reorder is ordinal-mode only (§6.5) — true-scale still allows
-  // the vertical lane move, with a one-time toast and a plain cursor.
-  if (S.timelinePrefs.axis === 'true') {
-    document.body.style.cursor = 'default';
-    _tlShowTrueScaleToast();
-  }
 }
 
-function _tlShowTrueScaleToast() {
-  if (_tlTrueScaleToastShown) return;
-  _tlTrueScaleToastShown = true;
-  const toast = document.createElement('div');
-  toast.className = 'tl-toast';
-  toast.textContent = 'Switch to Ordinal to reorder by time';
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 2200);
+function _tlMsDragBegin(d) {
+  const row = document.getElementById('tl-ms-row');
+  const srcEl = row.querySelector('.tl-ms-card[data-scene-id="' + d.sceneId + '"]');
+  if (srcEl) srcEl.classList.add('tl-drag-source');
+
+  const scene = S.scenes.find(x => x.id === d.sceneId);
+  if (!scene) { _tlDragCancel(); return; }
+  const st = S.storylines.find(x => x.id === scene.storylineId);
+
+  const ghost = document.createElement('div');
+  ghost.className = 'tl-ms-card tl-drag-ghost';
+  ghost.style.width = '96px';
+  ghost.style.setProperty('--c', st ? slColor(st.paletteIndex) : 'var(--acc)');
+  const t = document.createElement('div'); t.className = 'tl-t'; t.textContent = scene.title;
+  ghost.appendChild(t);
+  row.appendChild(ghost);
+  d.ghostEl = ghost;
+
+  const line = document.createElement('div');
+  line.className = 'tl-insert-line';
+  line.style.display = 'none';
+  row.appendChild(line);
+  d.insertLineEl = line;
 }
 
 // Nearest scene to the right of the cursor ACROSS ALL LANES by x — the drop
@@ -866,6 +974,7 @@ function _tlLaneAtClientY(clientY) {
 
 function _tlDragMove(e) {
   const d = _tlDrag;
+  if (d.zone === 'ms') { _tlMsDragMove(d, e); return; }
   const track = document.getElementById('tl-track');
   const trackRect = track.getBoundingClientRect();
   const localX = e.clientX - trackRect.left;
@@ -879,8 +988,14 @@ function _tlDragMove(e) {
     d.insertLineEl.style.left = _tlInsertionX(track, trackRect, beforeId, String(d.sceneId)) + 'px';
     d.insertLineEl.style.display = '';
   } else {
-    d.targetBeforeId = undefined; // true-scale reorder disabled
-    d.insertLineEl.style.display = 'none';
+    // True scale: there's no "slot" to snap to — the drop position itself is
+    // interpreted as a date (see _tlDragFinish), so the indicator just
+    // tracks the cursor directly, same idea as the Manuscript row's line but
+    // continuous instead of snapping between two cards.
+    d.targetBeforeId = undefined;
+    d.targetXPct = Math.max(0, Math.min(100, (localX / trackRect.width) * 100));
+    d.insertLineEl.style.left = localX + 'px';
+    d.insertLineEl.style.display = '';
   }
 
   const laneStId = _tlLaneAtClientY(e.clientY);
@@ -890,11 +1005,56 @@ function _tlDragMove(e) {
   });
 }
 
+// Single row, no lanes — the reading-order equivalent of _tlFindDropBeforeId/
+// _tlInsertionX above, just simpler (one axis, one track of cards).
+function _tlMsFindDropBeforeId(localX, excludeId) {
+  const row = document.getElementById('tl-ms-row');
+  const cards = [...row.querySelectorAll('.tl-ms-card:not(.tl-drag-ghost)')];
+  let best = null, bestX = Infinity;
+  cards.forEach(el => {
+    const id = el.dataset.sceneId;
+    if (!id || id === excludeId) return;
+    const r = el.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const cx = r.left + r.width / 2 - rowRect.left;
+    if (cx >= localX && cx < bestX) { bestX = cx; best = id; }
+  });
+  return best; // null = insert at the end
+}
+function _tlMsInsertionX(row, rowRect, beforeId, excludeId) {
+  if (beforeId) {
+    const el = row.querySelector('.tl-ms-card[data-scene-id="' + beforeId + '"]');
+    if (el) { const r = el.getBoundingClientRect(); return r.left - rowRect.left - 4; }
+  }
+  const cards = [...row.querySelectorAll('.tl-ms-card:not(.tl-drag-ghost)')];
+  let maxRight = 0;
+  cards.forEach(el => {
+    if (el.dataset.sceneId === excludeId) return;
+    const r = el.getBoundingClientRect();
+    const rx = r.right - rowRect.left;
+    if (rx > maxRight) maxRight = rx;
+  });
+  return maxRight + 4;
+}
+function _tlMsDragMove(d, e) {
+  const row = document.getElementById('tl-ms-row');
+  const rowRect = row.getBoundingClientRect();
+  const localX = e.clientX - rowRect.left;
+  const localY = e.clientY - rowRect.top;
+  d.ghostEl.style.left = localX + 'px';
+  d.ghostEl.style.top = localY + 'px';
+
+  const beforeId = _tlMsFindDropBeforeId(localX, String(d.sceneId));
+  d.targetBeforeId = beforeId;
+  d.insertLineEl.style.left = _tlMsInsertionX(row, rowRect, beforeId, String(d.sceneId)) + 'px';
+  d.insertLineEl.style.display = '';
+}
+
 function _tlDragCleanupVisual() {
   if (_tlDrag) {
     if (_tlDrag.ghostEl) _tlDrag.ghostEl.remove();
     if (_tlDrag.insertLineEl) _tlDrag.insertLineEl.remove();
-    const srcEl = document.querySelector('.tl-scene[data-scene-id="' + _tlDrag.sceneId + '"]');
+    const srcEl = document.querySelector('.tl-scene[data-scene-id="' + _tlDrag.sceneId + '"], .tl-ms-card[data-scene-id="' + _tlDrag.sceneId + '"]');
     if (srcEl) srcEl.classList.remove('tl-drag-source');
   }
   document.querySelectorAll('.tl-lane-row.tl-drop-target').forEach(r => r.classList.remove('tl-drop-target'));
@@ -909,6 +1069,7 @@ function _tlDragCancel() {
 
 function _tlDragFinish() {
   const d = _tlDrag;
+  if (d.zone === 'ms') { _tlMsDragFinish(d); return; }
   _tlDragCleanupVisual();
   _tlDragActive = false;
   _tlDrag = null;
@@ -918,6 +1079,7 @@ function _tlDragFinish() {
   if (!scene) return;
 
   let newChronOrder = null;
+  let newAnchor = null;
   if (S.timelinePrefs.axis !== 'true' && d.targetBeforeId !== undefined) {
     const without = S.chronOrder.filter(id => id !== d.sceneId);
     const beforeIdNum = d.targetBeforeId ? parseInt(d.targetBeforeId, 10) : null;
@@ -927,39 +1089,129 @@ function _tlDragFinish() {
     candidate.splice(idx, 0, d.sceneId);
     const same = candidate.length === S.chronOrder.length && candidate.every((id, i) => id === S.chronOrder[i]);
     if (!same) newChronOrder = candidate;
+  } else if (S.timelinePrefs.axis === 'true' && d.targetXPct !== undefined) {
+    // True scale: dropping a card is interpreted as re-dating it (x IS the
+    // date axis here) rather than reordering — reorder chronOrder to match
+    // so the two stay consistent (no anchor-vs-order contradiction from the
+    // drag itself).
+    const newTs = _tlXPercentToTs(d.targetXPct);
+    if (newTs !== null) {
+      const dateStr = _tlTsToDateStr(newTs);
+      if (!scene.anchor || scene.anchor.date !== dateStr) {
+        newAnchor = { date: dateStr, time: (scene.anchor && scene.anchor.time) || null };
+        newChronOrder = _tlReorderChronForNewAnchor(d.sceneId, newTs);
+      }
+    }
   }
 
   const targetStorylineId = d.targetStorylineId ? parseInt(d.targetStorylineId, 10) : null;
   const relane = !!(targetStorylineId && targetStorylineId !== scene.storylineId);
 
-  if (!newChronOrder && !relane) return; // no-op drag: nothing moved, no commit
+  if (!newChronOrder && !newAnchor && !relane) return; // no-op drag: nothing moved, no commit
 
   // Nothing is committed yet — the real card was never actually moved during
   // the drag (only a ghost element tracked the cursor), so simply not
-  // applying newChronOrder/relane below (Discard) leaves S and the render
-  // exactly as they were, no extra cleanup needed.
-  const label = newChronOrder ? 'Move scene (time)' : 'Move scene (lane)';
-  const kind = newChronOrder ? 'when it happens' : 'which storyline it belongs to';
-  _tlPendingMove = { sceneId: d.sceneId, newChronOrder, relane, targetStorylineId, label };
+  // applying newChronOrder/newAnchor/relane below (Discard) leaves S and the
+  // render exactly as they were, no extra cleanup needed.
+  const label = newAnchor ? 'Move scene (date)' : (newChronOrder ? 'Move scene (time)' : 'Move scene (lane)');
+  const kind = newAnchor ? ('to ' + fmtAnchor(newAnchor)) : (newChronOrder ? 'when it happens' : 'which storyline it belongs to');
+  _tlPendingMove = {
+    label,
+    apply: () => {
+      if (newAnchor) scene.anchor = newAnchor;
+      if (newChronOrder) S.chronOrder = newChronOrder;
+      if (relane) {
+        scene.storylineId = targetStorylineId;
+        // §2.5 invariant: alsoStorylineIds never contains storylineId.
+        scene.alsoStorylineIds = (scene.alsoStorylineIds || []).filter(id => id !== targetStorylineId);
+      }
+    },
+  };
   document.getElementById('tl-move-cfm-msg').textContent =
     'Save this move — changing "' + scene.title + '" (' + kind + ')?';
+  document.getElementById('tl-move-cfm-modal').classList.add('open');
+}
+
+function _tlTsToDateStr(ts) {
+  const dt = new Date(ts);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  const day = String(dt.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+// Repositions just the dragged scene within chronOrder to sit next to its
+// new date's neighbors — walks the existing order (already expected to be
+// date-consistent) rather than a full resort, so every other scene's
+// relative position (including unanchored ones) is left untouched.
+function _tlReorderChronForNewAnchor(sceneId, newTs) {
+  const without = S.chronOrder.filter(id => id !== sceneId);
+  let insertAt = without.length;
+  for (let i = 0; i < without.length; i++) {
+    const s = S.scenes.find(x => x.id === without[i]);
+    const ts = s ? anchorTs(s.anchor) : null;
+    if (ts !== null && ts > newTs) { insertAt = i; break; }
+  }
+  const candidate = without.slice();
+  candidate.splice(insertAt, 0, sceneId);
+  return candidate;
+}
+
+// Reorders S.scenes directly, exactly mirroring editor.js's board drag-reorder
+// (endCardDrag) — manuscriptOrder()/buildSceneNumMap() derive reading order
+// from S.scenes' own storage order grouped by sectionId, so that's the array
+// that must actually move, not a separate "manuscript order" list.
+function _tlMsDragFinish(d) {
+  _tlDragCleanupVisual();
+  _tlDragActive = false;
+  _tlDrag = null;
+  _tlDragOccurred = true;
+
+  const scene = S.scenes.find(x => x.id === d.sceneId);
+  if (!scene) return;
+  if (d.targetBeforeId === undefined) return; // never moved over a valid drop position
+
+  const without = S.scenes.filter(s => s.id !== d.sceneId);
+  const beforeIdNum = d.targetBeforeId ? parseInt(d.targetBeforeId, 10) : null;
+  let idx = beforeIdNum !== null ? without.findIndex(s => s.id === beforeIdNum) : -1;
+  if (idx === -1) idx = without.length;
+
+  let targetSectionId = scene.sectionId ?? null;
+  if (S.sections.length) {
+    const validSecIds = new Set(S.sections.map(s => s.id));
+    if (beforeIdNum !== null) {
+      const targetScene = without.find(s => s.id === beforeIdNum);
+      targetSectionId = targetScene && validSecIds.has(targetScene.sectionId) ? targetScene.sectionId : null;
+    } else {
+      const lastScene = without[without.length - 1];
+      targetSectionId = lastScene && validSecIds.has(lastScene.sectionId) ? lastScene.sectionId : null;
+    }
+  }
+
+  const candidate = without.slice();
+  candidate.splice(idx, 0, scene);
+  const reordered = candidate.length === S.scenes.length && !candidate.every((s, i) => s === S.scenes[i]);
+  const resectioned = S.sections.length && targetSectionId !== (scene.sectionId ?? null);
+  if (!reordered && !resectioned) return; // no-op drag: nothing moved, no commit
+
+  _tlPendingMove = {
+    label: 'Reorder narrative',
+    apply: () => {
+      if (S.sections.length) scene.sectionId = targetSectionId;
+      S.scenes = candidate;
+    },
+  };
+  document.getElementById('tl-move-cfm-msg').textContent =
+    'Save this move — changing "' + scene.title + '" (its place in reading order)?';
   document.getElementById('tl-move-cfm-modal').classList.add('open');
 }
 
 let _tlPendingMove = null;
 function tlConfirmMoveSave() {
   if (!_tlPendingMove) return;
-  const { sceneId, newChronOrder, relane, targetStorylineId, label } = _tlPendingMove;
+  const { apply, label } = _tlPendingMove;
   closeTlMoveConfirm();
-  const scene = S.scenes.find(x => x.id === sceneId);
-  if (!scene) return;
   pushHistory(label);
-  if (newChronOrder) S.chronOrder = newChronOrder;
-  if (relane) {
-    scene.storylineId = targetStorylineId;
-    // §2.5 invariant: alsoStorylineIds never contains storylineId.
-    scene.alsoStorylineIds = (scene.alsoStorylineIds || []).filter(id => id !== targetStorylineId);
-  }
+  apply();
   recordDataEdit();
   saveState();
   renderTimeline();
@@ -1173,9 +1425,13 @@ function redrawWires() {
     const dy = Math.max(40, (by - ay) / 2);
     const st = storylineById.get(s.storylineId);
     let color = st ? slColor(st.paletteIndex) : 'var(--acc)';
-    const isHi = hovering && String(s.id) === hoveredId;
+    const isSelCard = tlSelectedId != null && String(s.id) === String(tlSelectedId);
+    // Selection reuses hover's "heavy wire" treatment (same as isHi below) —
+    // selecting a card should look like a pinned hover, not a separate style.
+    const isHi = (hovering && String(s.id) === hoveredId) || isSelCard;
     let opacity = 0.5, width = 1.4;
     if (hovering) opacity = isHi ? 1 : 0.08;
+    else if (isSelCard) opacity = 1;
     if (isHi) width = 2.4;
     if (flagActive) {
       const isFlagged = flaggedIds.includes(s.id);
@@ -1575,11 +1831,12 @@ function tlSelectScene(sceneId, opts) {
 }
 function _tlDoSelectScene(sceneId, opts) {
   tlSelectedId = sceneId;
-  // Any new selection (including deselecting to null) resets the Conflicts
-  // panel back to following the selection — only the explicit "Conflicts (N)"
-  // badge click (tlShowAllConflicts()) should force "show every conflict"
-  // past this point.
-  if (typeof _tlConflictsFilterOverride !== 'undefined') _tlConflictsFilterOverride = false;
+  // A conflict "shown" via the panel's own row click (flag mode) is a
+  // separate state from card selection — selecting (or clearing) a card is a
+  // click elsewhere as far as that state is concerned, so it clears too.
+  if (typeof isFlagModeActive === 'function' && isFlagModeActive()) clearFlagMode();
+  // The Conflicts panel always shows every conflict; re-render just moves
+  // which row (if any) is scrolled-to/highlighted for the new selection.
   if (typeof renderConflictsPanel === 'function' && tlActiveTab === 'conflicts') renderConflictsPanel();
   document.querySelectorAll('.tl-scene, .tl-ms-card, .tl-braid-node').forEach(el => {
     el.classList.toggle('tl-sel', el.dataset.sceneId === String(sceneId));
@@ -1594,6 +1851,8 @@ function _tlDoSelectScene(sceneId, opts) {
     emptyEl.style.display = 'none';
     openEditMode(sceneId);
     form.style.display = 'flex';
+    const tlPanel = document.getElementById('tl-panel');
+    if (tlPanel && tlPanel.classList.contains('collapsed')) togglePanel('tl-panel');
     if (opts.focusTitle) {
       setTimeout(() => { const t = document.getElementById('ed-title'); if (t) { t.focus(); t.select(); } }, 40);
     }
@@ -1694,7 +1953,10 @@ if (document.getElementById('timeline-host')) {
     track.addEventListener('contextmenu', chronTrackContextMenu);
     track.addEventListener('click', e => {
       if (_tlDragOccurred) { _tlDragOccurred = false; return; } // drag dropped on empty track space
-      if (e.target === track) tlSelectScene(null);
+      // Cards call stopPropagation() on their own click, so anything that
+      // bubbles up here (the bare track, a lane row's empty background, the
+      // markers layer, etc.) is a click off a card — deselect.
+      tlSelectScene(null);
     });
   }
   window.addEventListener('mousemove', e => {

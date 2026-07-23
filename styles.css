@@ -770,10 +770,10 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
    above the button (within the 46px row) for the CARDS/FLOW label floating
    over it (see .view-toggle-lbl) to clear the row's top edge instead of
    getting clipped by #sbp/#chart-host's overflow:hidden. */
-#chart-type-toggle .chart-type-btn{display:flex;align-items:center;justify-content:center;padding:4px 10px;border:none;border-radius:0}
-#chart-type-toggle .chart-type-btn:first-child{border-right:1px solid var(--s1)}
-#chart-type-toggle .chart-type-btn.on svg{color:var(--ontx)}
-#chart-type-toggle .chart-type-btn svg{color:var(--tx);display:block}
+#chart-type-toggle .chart-type-btn,#chart-type-timeline-toggle .chart-type-btn{display:flex;align-items:center;justify-content:center;padding:4px 10px;border:none;border-radius:0}
+#chart-type-toggle .chart-type-btn:first-child,#chart-type-timeline-toggle .chart-type-btn:first-child{border-right:1px solid var(--s1)}
+#chart-type-toggle .chart-type-btn.on svg,#chart-type-timeline-toggle .chart-type-btn.on svg{color:var(--ontx)}
+#chart-type-toggle .chart-type-btn svg,#chart-type-timeline-toggle .chart-type-btn svg{color:var(--tx);display:block}
 /* Cards/Snake/Circle view switch — lives in #sbhdr on the board and moves
    into #chart-toolbar while the chart is open (see openChartView/
    closeChartView in charts.js), always in the same spot relative to the
@@ -865,7 +865,12 @@ body.tl-mode #ed-notes-field{display:none}
 
 #timeline-host{flex:1;min-width:0;display:flex;overflow:hidden}
 #tl-stage{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
-#tl-chron-hdr{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:8px 14px;border-bottom:1px solid var(--s1);background:var(--bg1)}
+/* padding-top > padding-bottom: #tl-chron-hdr sits flush against #tl-stage's
+   own top edge (overflow:hidden), so the CARDS/FLOW/TIMELINE label floating
+   above its button (.view-toggle-lbl, position:absolute) only has this top
+   padding to render into before getting clipped — 8px wasn't enough headroom
+   for the label's own height + gap. */
+#tl-chron-hdr{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:16px 14px 8px;border-bottom:1px solid var(--s1);background:var(--bg1)}
 #tl-axis-switch{display:flex;border:1px solid var(--s1);border-radius:7px;overflow:hidden}
 .tl-axis-btn{background:var(--s0);color:var(--sub);border:none;padding:6px 10px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer}
 .tl-axis-btn.on{background:var(--acc);color:var(--ontx)}
@@ -977,7 +982,12 @@ body.tl-mode #ed-notes-field{display:none}
 }
 .tl-lane-row.tl-drop-target{outline:2px dashed var(--acc);outline-offset:-2px}
 
-#tl-wires-zone{flex:1;min-height:100px;position:relative;border-bottom:1px solid var(--s1)}
+/* overflow:hidden makes this a scroll container (even with nothing to scroll)
+   so overscroll-behavior-x actually applies — without it, a trackpad swipe
+   over the wire gap (between the chron and manuscript rows, which have their
+   own overscroll-behavior-x:contain) falls through to the document and
+   triggers the browser's back/forward navigation gesture. */
+#tl-wires-zone{flex:1;min-height:100px;position:relative;border-bottom:1px solid var(--s1);overflow:hidden;overscroll-behavior-x:contain}
 .tl-row-caption{position:absolute;left:0;right:0;text-align:center;font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--lbl);pointer-events:none;z-index:1}
 .tl-row-caption-top{top:4px}
 .tl-row-caption-bottom{bottom:4px}
@@ -994,13 +1004,16 @@ body.tl-mode #ed-notes-field{display:none}
 #tl-ms-scroll-wrap{flex:0 0 auto;max-height:30%;min-height:0;position:relative;margin-left:132px;background:var(--bg1)}
 #tl-ms-scroll{width:100%;height:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}
 #tl-ms-scroll::-webkit-scrollbar{display:none}
-#tl-ms-row{display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start;min-width:100%;padding:10px 10px 22px;height:auto;box-sizing:border-box}
+/* Left/right padding wide enough (38px) to clear the scroll-arrow buttons
+   (26px wide, inset 6px from the edge — .tl-scroll-arrow) — at 10px the
+   first/last card rendered right under the arrow, hiding real content. */
+#tl-ms-row{position:relative;display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start;min-width:100%;padding:10px 38px 22px;height:auto;box-sizing:border-box}
 .tl-sep{flex:0 0 auto;align-self:stretch;width:0;border-left:1px dashed var(--o0);margin:4px 2px 0;position:relative}
 .tl-sep-label{position:absolute;bottom:-15px;left:3px;font-size:8.5px;letter-spacing:.06em;color:var(--sub);white-space:nowrap;font-weight:700}
 
 .tl-scene,.tl-ms-card{
   background:var(--cbg);border:1px solid var(--s1);border-radius:7px;
-  border-top:3px solid var(--c,var(--acc));cursor:pointer;
+  border-top:3px solid var(--c,var(--acc));cursor:pointer;user-select:none;
   transition:opacity .13s,box-shadow .13s,border-color .13s;
 }
 .tl-scene{position:absolute;z-index:2;transform:translate(-50%,-50%);width:96px;padding:5px 7px 4px}
@@ -1026,7 +1039,10 @@ body.tl-mode #ed-notes-field{display:none}
 body.hovering .tl-scene:not(.tl-hi):not(.tl-flag),
 body.hovering .tl-ms-card:not(.tl-hi):not(.tl-flag){opacity:.28}
 .tl-scene.tl-hi,.tl-ms-card.tl-hi{box-shadow:0 0 0 1px var(--c,var(--acc)),0 4px 14px rgba(0,0,0,.3);border-color:var(--c,var(--acc));opacity:1}
-.tl-scene.tl-sel,.tl-ms-card.tl-sel{box-shadow:0 0 0 2px var(--acc);border-color:var(--acc)}
+/* Same treatment as hover (same color source, same shadow), just a heavier
+   ring — selection is a more emphatic state than a passing hover, not a
+   different one, so it shouldn't read as a different color/style. */
+.tl-scene.tl-sel,.tl-ms-card.tl-sel{box-shadow:0 0 0 3px var(--c,var(--acc)),0 4px 14px rgba(0,0,0,.3);border-color:var(--c,var(--acc));opacity:1}
 .tl-scene.tl-flag,.tl-ms-card.tl-flag{box-shadow:0 0 0 2px var(--rd),0 4px 14px rgba(0,0,0,.3);border-color:var(--rd);opacity:1}
 body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){opacity:.25}
 
@@ -1079,11 +1095,17 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
 .tl-panel-empty{color:var(--sub);font-size:12px;text-align:center;padding:40px 14px;font-style:italic}
 /* Conflicts tab (schema v3 §8) */
 #tl-conflicts-body{padding:12px}
+.conflictCountHdr{font-size:11px;letter-spacing:.06em;color:var(--sub);font-weight:700;text-transform:uppercase;margin:0 0 10px}
 .conflictList{display:flex;flex-direction:column;gap:8px}
 .conflictGroupHeader{font-size:10.5px;letter-spacing:.06em;color:var(--sub);font-weight:700;text-transform:uppercase;margin:10px 0 2px}
-.conflictRow{background:var(--s0);border:1px solid var(--s1);border-radius:8px;padding:8px 10px;cursor:pointer}
+.conflictRow{background:var(--s0);border:1px solid var(--s1);border-radius:8px;padding:8px 10px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
 .conflictRow:hover{border-color:var(--o0)}
 .conflictRow.flagActive{border-color:var(--rd);box-shadow:0 0 0 1px var(--rd)}
+/* The row for whichever conflict involves the currently-selected scene card —
+   same red treatment as clicking the row directly (flagActive), just a
+   heavier ring, so both read as the same kind of "this conflict is active"
+   state rather than two different colors. */
+.conflictRow.conflictSelMatch{border-color:var(--rd);box-shadow:0 0 0 2px var(--rd)}
 .conflictRow.dismissed{opacity:.55;cursor:default}
 .conflictHead{display:flex;align-items:center;gap:7px;margin-bottom:4px}
 .conflictDot{width:8px;height:8px;border-radius:50%;background:var(--rd);flex-shrink:0}
@@ -1133,9 +1155,6 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
    means it's frozen right along with it. */
 #tl-inspector-body .cp-form-fields > .ff:first-child{position:sticky;top:0;z-index:2;background:var(--bg1);margin-bottom:4px;border-bottom:1px solid var(--s1);padding-bottom:10px}
 
-/* one-time drag toasts / popovers reused in M5, styled now so M5 doesn't need
-   another CSS pass */
-.tl-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--cbg);border:1px solid var(--s1);color:var(--tx);padding:8px 14px;border-radius:8px;font-size:12px;z-index:400;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 .tl-popover{position:fixed;z-index:300;background:var(--cbg);border:1px solid var(--s1);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;width:200px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
 .tl-popover input[type=text]{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:6px 8px;color:var(--tx);font-family:inherit}
 .tl-popover .tl-popover-row{display:flex;justify-content:flex-end}
@@ -1146,7 +1165,13 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
    clipped away entirely by #tl-chron-scroll's overflow-y:hidden regardless
    of z-index, since that's an overflow clip, not a stacking issue. */
 .tl-marker-line{position:absolute;top:20px;bottom:0;width:0;border-left:1px dashed var(--o0);z-index:1}
-.tl-marker-label{position:absolute;top:-15px;left:4px;font-size:9px;letter-spacing:1px;color:var(--lbl);white-space:nowrap;cursor:pointer;font-weight:700}
+/* Solid background chip — at low zoom the top lane's cards can render close
+   enough behind the label (both live near the track's very top edge, see
+   the .tl-marker-line comment above) that plain text with no background
+   read as "covered" by the card behind it even though it's already
+   stacked on top (z-index). The chip guarantees legibility regardless of
+   what's behind it. */
+.tl-marker-label{position:absolute;top:-15px;left:4px;font-size:9px;letter-spacing:1px;color:var(--lbl);white-space:nowrap;cursor:pointer;font-weight:700;background:var(--bg1);padding:1px 4px;border-radius:3px;box-shadow:0 0 0 1px var(--s1)}
 .tl-marker-label:hover{color:var(--tx)}
 .tl-gap-divider{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--o0);z-index:1;pointer-events:none}
 .tl-gap-label{position:absolute;top:50%;left:4px;transform:translateY(-50%);font-size:9px;color:var(--lbl);white-space:nowrap;font-weight:700}
