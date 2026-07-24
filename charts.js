@@ -214,8 +214,11 @@ function computeTraceLanes(scenes) {
   return { lanes: items.slice(0, LANE_SANITY_CAP).map((e, i) => ({ id: e.id, name: e.name, color: TRACE_COLORS[i % TRACE_COLORS.length] })), overflow };
 }
 
-function computeLaneRuns(layout, id) {
-  const numMap = buildSceneNumMap();
+// numMap is caller-built (once per chart render pass, not per lane) — see
+// addSnakeTraceLanes/addCircleTraceLanes, which can call this once per traced
+// lane (up to LANE_SANITY_CAP times) and would otherwise rebuild the same
+// O(scenes) map that many times over.
+function computeLaneRuns(layout, id, numMap) {
   const runs = [];
   layout.forEach(({ scene, offset, len }) => {
     const has = (scene[traceCat] || []).includes(id);
@@ -387,9 +390,15 @@ function sectionLetter(idx) {
   return idx < 26 ? String.fromCharCode(65 + idx) : String(idx + 1);
 }
 
+// Checked against orderedScenes() (the actual filtered/rendered scene list),
+// not all of S.scenes — otherwise, filtering the section dropdown to exclude
+// "Unassigned" would still shift every real section's letter by one and leave
+// a phantom "Unassigned" entry in the legend, even though no unassigned scene
+// is ever drawn.
 function hasUnassignedScenes() {
+  if (!S.sections.length) return false;
   const validSecIds = new Set(S.sections.map(s => s.id));
-  return S.sections.length > 0 && S.scenes.some(s => !validSecIds.has(s.sectionId));
+  return orderedScenes().some(s => !validSecIds.has(s.sectionId));
 }
 
 function chartLegendSections() {
@@ -690,13 +699,14 @@ function snakeLenToLaneLen(lenC, N, W, thickness, d) {
 function addSnakeTraceLanes(svg, N, W, trace, layout, total, thickness, laneW) {
   if (!trace || !trace.lanes.length) return;
   const offsets = laneOffsets(trace.lanes.length, thickness, laneW);
+  const numMap = buildSceneNumMap(); // once for every lane, not once per lane
   trace.lanes.forEach((lane, i) => {
     const path = document.createElementNS(SVGNS, 'path');
     path.setAttribute('d', buildSnakeLanePathD(N, W, offsets[i], thickness));
     path.setAttribute('stroke', 'none'); path.setAttribute('fill', 'none');
     svg.appendChild(path);
     const laneTotal = path.getTotalLength();
-    const runs = computeLaneRuns(layout, lane.id);
+    const runs = computeLaneRuns(layout, lane.id, numMap);
     const mapLen = len => snakeLenToLaneLen(len, N, W, thickness, offsets[i]);
     drawLaneRuns(svg, path, laneTotal, total, runs, lane, laneW, mapLen);
   });
@@ -824,13 +834,14 @@ function addSnakeEstimatedTicks(svg, centerline, layout, total) {
 function addCircleTraceLanes(g, layout, cx, cy, R, total, trace, thickness, laneW) {
   if (!trace || !trace.lanes.length) return;
   const offsets = laneOffsets(trace.lanes.length, thickness, laneW);
+  const numMap = buildSceneNumMap(); // once for every lane, not once per lane
   trace.lanes.forEach((lane, i) => {
     const path = document.createElementNS(SVGNS, 'circle');
     path.setAttribute('cx', cx); path.setAttribute('cy', cy); path.setAttribute('r', R + offsets[i]);
     path.setAttribute('stroke', 'none'); path.setAttribute('fill', 'none');
     g.appendChild(path);
     const laneTotal = path.getTotalLength();
-    const runs = computeLaneRuns(layout, lane.id);
+    const runs = computeLaneRuns(layout, lane.id, numMap);
     drawLaneRuns(g, path, laneTotal, total, runs, lane, laneW);
   });
 }

@@ -9,11 +9,14 @@ const fs = require('fs');
 
 if (!fs.existsSync('dist')) fs.mkdirSync('dist');
 
-// JS load order must match HTML script tags
+// JS load order must match HTML script tags (see editor.html's <script> order —
+// timeline.js/conflicts.js/editor-init.js were added for the ThruLine
+// integration and missing here, which would have shipped a bundle silently
+// missing the Timeline view and Conflicts engine).
 const JS_FILES = [
   'config.js', 'tracking.js', 'state.js', 'backup.js', 'reports.js',
-  'ui.js', 'charts.js', 'editor.js', 'projects.js',
-  'main.js', 'app.js',
+  'ui.js', 'timeline.js', 'charts.js', 'editor.js', 'conflicts.js', 'projects.js',
+  'main.js', 'app.js', 'editor-init.js',
 ];
 
 // Concatenate all JS, then minify as one file

@@ -253,6 +253,26 @@ function createAndOpenProject(name) {
   trackProjectCreated();
   const id = genProjId();
   const now = new Date().toISOString();
+  // Blob written before the index entry (and guarded), same ordering every
+  // other project-creation path uses (duplicateProject, finishAsNew,
+  // ensureSampleProjects) — a quota/storage failure here must not leave a
+  // permanent index entry pointing at data that was never actually written.
+  try {
+    localStorage.setItem(projKey(id), JSON.stringify({
+      v: DATA_VERSION, characters:[], locations:[], themes:[], misc:[],
+      scenes:[], nextId:1, andOr:'OR', theme: document.documentElement.dataset.theme,
+      sections:[], nextSecId:1,
+      nextEntId: 2,
+      povCustom:[], povOrder:[],
+      storylines: [{ id: 1, name: 'Main', paletteIndex: 0 }],
+      revealsLib:[], constraints:[], markers:[], chronOrder:[], dismissed:[],
+      timelinePrefs: { axis:'ordinal', threadCharId:null, zoomPos:62 },
+      projectUid: genProjUid(), revision: 0,
+    }));
+  } catch(e) {
+    alert('Could not create the project (browser storage is full or unavailable). Please free up space and try again.');
+    return;
+  }
   const index = loadProjectIndex();
   index.push({ id, name, createdAt: now, modifiedAt: now, sceneCount: 0, theme: document.documentElement.dataset.theme });
   saveProjectIndex(index);
@@ -260,17 +280,6 @@ function createAndOpenProject(name) {
   if (index.length === 2) {
     trackMilestone('2nd_project_created');
   }
-  localStorage.setItem(projKey(id), JSON.stringify({
-    v: DATA_VERSION, characters:[], locations:[], themes:[], misc:[],
-    scenes:[], nextId:1, andOr:'OR', theme: document.documentElement.dataset.theme,
-    sections:[], nextSecId:1,
-    nextEntId: 2,
-    povCustom:[], povOrder:[],
-    storylines: [{ id: 1, name: 'Main', paletteIndex: 0 }],
-    revealsLib:[], constraints:[], markers:[], chronOrder:[], dismissed:[],
-    timelinePrefs: { axis:'ordinal', threadCharId:null, zoomPos:62 },
-    projectUid: genProjUid(), revision: 0,
-  }));
   if (_page === 'projects') {
     sessionStorage.setItem('ss_open_project', id);
     window.location.href = 'editor.html';
@@ -307,8 +316,14 @@ function closeProjRename() { document.getElementById('proj-rename-modal').classL
 
 function confirmProjRename() {
   if (!renamingProjId) return;
-  const name = document.getElementById('proj-rename-input').value.trim();
-  if (!name) return;
+  const input = document.getElementById('proj-rename-input');
+  const name = input.value.trim();
+  // No error slot in this modal (unlike the New Scene/Edit Scene forms) — an
+  // empty name isn't defaulted the way createAndOpenProject defaults to
+  // "Untitled Project", since here the user is explicitly renaming something
+  // that already has a name; re-focusing at least signals the click did
+  // something instead of silently doing nothing.
+  if (!name) { input.focus(); input.select(); return; }
   const index = loadProjectIndex();
   const entry = index.find(p => p.id === renamingProjId);
   if (entry) { entry.name = name; saveProjectIndex(index); }
@@ -525,6 +540,17 @@ function validateV3Import(d) {
   const maxEntId = allIds.reduce((m, id) => Math.max(m, id), 0);
   if (d.nextEntId <= maxEntId) d.nextEntId = maxEntId + 1;
 
+  // Sections use their own id space (nextSecId), separate from the entity
+  // counter above — validated the same way the v2 import branch below already
+  // validates its own d.sections (dup ids merge distinct sections into one
+  // group on the board; a non-string name reaches the DOM as-is elsewhere).
+  if (!d.sections.every(sec => sec && typeof sec === 'object' && isPosInt(sec.id) && isStr(sec.name))) {
+    return 'Invalid project structure. Every entry in "sections" needs a positive integer "id" and a string "name".';
+  }
+  if (new Set(d.sections.map(sec => sec.id)).size !== d.sections.length) {
+    return 'Invalid project structure. Section "id" values must be unique.';
+  }
+
   for (const f of ['characters', 'locations', 'themes', 'misc', 'povCustom']) {
     if (!d[f].every(x => isStr(x.name))) return 'Invalid project structure. Every entry in "' + f + '" needs a string "name".';
   }
@@ -577,8 +603,22 @@ function validateV3Import(d) {
     }
     if (sc.durationMin != null && !(Number.isInteger(sc.durationMin) && sc.durationMin > 0)) return 'Invalid project structure. Scene ' + n + ' "durationMin" must be null or a positive integer.';
     if (sc.offscreen != null && typeof sc.offscreen !== 'boolean') return 'Invalid project structure. Scene ' + n + ' "offscreen" must be a boolean.';
+    // Not required to resolve to an actual section (an id that doesn't match
+    // any entry is already treated as "unassigned" everywhere a validSecIds
+    // set is checked) — just type-checked, same leniency as sc.durationMin.
+    if (sc.sectionId != null && !Number.isInteger(sc.sectionId)) return 'Invalid project structure. Scene ' + n + ' "sectionId" must be null or an integer.';
   }
   if (new Set(d.scenes.map(s => s.id)).size !== d.scenes.length) return 'Invalid project structure. Scene "id" values must be unique.';
+
+  // Same reasoning as nextEntId above: a missing/stale nextId or nextSecId
+  // would let the next Add Scene/Add Section mint an id that collides with
+  // one already in the file, silently corrupting every id-based lookup from
+  // then on. Repaired (not rejected), mirroring the v2 import branch's own
+  // nextId/nextSecId auto-repair below.
+  const maxSceneId = d.scenes.reduce((m, sc) => Math.max(m, sc.id), 0);
+  if (typeof d.nextId !== 'number' || d.nextId <= maxSceneId) d.nextId = maxSceneId + 1;
+  const maxSecId = d.sections.reduce((m, sec) => Math.max(m, sec.id), 0);
+  if (typeof d.nextSecId !== 'number' || d.nextSecId <= maxSecId) d.nextSecId = maxSecId + 1;
 
   for (const c of d.constraints) {
     if (!['before', 'same-time', 'offset'].includes(c.type)) return 'Invalid project structure. Constraint ' + c.id + ' has an invalid "type".';

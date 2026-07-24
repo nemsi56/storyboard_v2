@@ -175,7 +175,10 @@ function rptPageHeader(title) {
 }
 
 function rptEsc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // No call site currently uses a single-quoted HTML attribute (only "..."),
+  // so this wasn't exploitable — escaped anyway so it stays that way if a
+  // future report template adds one.
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function rptFieldRow(label, val) {
   return `<div class="field-row"><span class="field-lbl">${label}</span><span class="field-val">${val}</span></div>`;

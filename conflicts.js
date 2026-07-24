@@ -247,6 +247,7 @@ function sceneHasWarning(sceneId) {
 }
 // Stale dismissed fingerprints (no longer produced) are pruned on save.
 function pruneDismissed() {
+  if (!S.dismissed.length) return; // nothing to prune — skip the full O(n²) recompute saveState would otherwise force on every save
   const active = computeConflicts().map(c => c.fingerprint);
   S.dismissed = S.dismissed.filter(fp => active.includes(fp));
 }

@@ -834,10 +834,18 @@ function setTlAxis(mode) {
   renderTimeline();
 }
 
+// The slider fires an 'input' event per pixel of drag — saveState() (a full
+// project JSON.stringify plus a synchronous conflicts recompute via
+// pruneDismissed) on every single tick would make dragging visibly stutter.
+// The render stays synchronous (immediate visual feedback); only the actual
+// persistence is debounced, same tradeoff scheduleTlRerender already makes
+// for resize.
+let _tlZoomSaveTimer = null;
 function setTlZoom(pos) {
   pos = Math.max(0, Math.min(100, parseInt(pos, 10) || 0));
   S.timelinePrefs.zoomPos = pos;
-  saveState();
+  clearTimeout(_tlZoomSaveTimer);
+  _tlZoomSaveTimer = setTimeout(saveState, 300);
   renderTimeline();
 }
 
@@ -1980,8 +1988,14 @@ function tlUniqueUntitledName() {
 }
 // Create -> New Scene / the strip header's "+ Scene" button, while in timeline
 // mode (§6.1): creates immediately with §2.5 defaults instead of opening the
-// (hidden) New Scene form.
+// (hidden) New Scene form. Routed through the same discard guard as every
+// other selection/mode-switch entry point in timeline mode — creating a scene
+// immediately re-selects it (_tlDoSelectScene), which would otherwise discard
+// a dirty Inspector edit silently instead of prompting.
 function tlCreateScene() {
+  runWithDiscardGuard(_tlCreateSceneImpl);
+}
+function _tlCreateSceneImpl() {
   const title = tlUniqueUntitledName();
   pushHistory('Add scene "' + title + '"');
   if (typeof trackSceneAdded === 'function') trackSceneAdded();

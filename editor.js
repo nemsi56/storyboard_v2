@@ -1233,13 +1233,17 @@ function alignSecHeaders() {
     const h = grp.querySelector('.sec-hdr');
     if (h) h.style.width = '';
   });
-  // One rAF: browser re-lays-out with cleared widths, then we measure card extents
+  // One rAF: browser re-lays-out with cleared widths, then we measure card extents.
+  // Read every group's target width first, then write all of them — writing
+  // group i's width would invalidate the layout group i+1 is about to read,
+  // forcing one synchronous reflow per group instead of a single reflow for
+  // the whole pass.
   requestAnimationFrame(() => {
     const cs = parseFloat(document.getElementById('board').style.getPropertyValue('--cs') || '1') || 1;
     const minW = Math.ceil((174 + 24) * cs); // at minimum: one card width + 12px padding each side
-    document.querySelectorAll('.sec-group').forEach(grp => {
+    const measurements = [...document.querySelectorAll('.sec-group')].map(grp => {
       const hdr = grp.querySelector('.sec-hdr');
-      if (!hdr) return;
+      if (!hdr) return null;
       let w = minW;
       const gl = grp.getBoundingClientRect().left;
       // Measure the rightmost edge of any card relative to this group's left edge
@@ -1247,9 +1251,9 @@ function alignSecHeaders() {
         const r = c.getBoundingClientRect();
         w = Math.max(w, Math.ceil(r.right - gl + 12)); // +12 = right padding
       });
-      hdr.style.width = w + 'px';
-      grp.style.width = w + 'px';
+      return { hdr, grp, w };
     });
+    measurements.forEach(m => { if (m) { m.hdr.style.width = m.w + 'px'; m.grp.style.width = m.w + 'px'; } });
     updateSecPins(); // re-sync pins after widths settle
   });
 }
