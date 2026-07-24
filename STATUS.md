@@ -2561,3 +2561,111 @@ consequence of the request, not a side effect.
 
 Not implemented — the user asked to defer, this section exists so the assessment isn't
 lost if it comes up again.
+
+## thruLine_v2 branch — Fifth full-app audit & fixes
+
+A fresh full-app audit of the branch in its current state (commit `9ee86ff`), covering
+every JS file plus the security surface (CSP, `innerHTML`/`document.write` sinks, import
+validation, localStorage error handling). Overall verdict: strong — CSP intact on every
+page, zero unescaped user data reaching any HTML sink, `reports.js`'s `document.write`
+path fully `rptEsc`-escaped, v3 import validation thorough on entity references. All four
+findings from the prior (July 18) audit were confirmed already fixed. Six real issues
+turned up this round, all fixed and verified live; several more low-severity/efficiency
+items were fixed in a same-session follow-up round below.
+
+### Delegation note
+Two subagents covered `editor.js`+`charts.js` and the `projects.js`/`reports.js`/support-
+file surface in parallel while the main session covered `state.js`, `timeline.js`,
+`conflicts.js`, and the import/persistence paths directly. Every subagent finding was
+independently re-verified against source before being fixed or logged; one subagent claim
+(that `validateV3Import` already repaired `nextId`/`nextSecId`) was checked against the
+actual code and found wrong — it repaired only `nextEntId` despite a comment claiming
+parity with the v2 import's repair — and is one of the fixes below.
+
+### What was found and fixed
+- **Timeline "New Scene" bypassed the discard guard.** `menuNewScene()` (editor.js) called
+  `tlCreateScene()` (timeline.js) directly in Timeline mode, which immediately selects the
+  new scene via `_tlDoSelectScene` — silently discarding a dirty Inspector edit instead of
+  prompting, the one entry point in Timeline mode that didn't go through
+  `runWithDiscardGuard`. `tlCreateScene()` now wraps its own body (`_tlCreateSceneImpl`) in
+  the guard, so any future caller gets the same protection for free.
+- **v3 import never repaired `nextId`/`nextSecId`**, and skipped section-entry validation
+  entirely — both real gaps the v2 import branch already closes. `validateV3Import`
+  (projects.js) now repairs both counters against the actual max scene/section id in the
+  file, type-checks `sectionId`, and validates every `sections` entry (positive-int `id`,
+  string `name`, unique ids) the same way the v2 path does.
+- **`createAndOpenProject` wrote the index entry before the project blob**, and the blob
+  write had no try/catch (every other project-creation path writes blob-first) — a quota
+  failure mid-creation left a permanent index entry pointing at data that was never
+  written, later surfacing as a misleading "may be corrupted" alert. Now writes the blob
+  first (guarded, alerts and bails on failure) before touching the index.
+- **Chart section lettering/legend ignored the active section filter.** `hasUnassignedScenes()`
+  (charts.js) checked all of `S.scenes` while the chart itself renders from the filtered
+  `orderedScenes()` — filtering out "Unassigned" still shifted every real section's letter
+  by one and left a phantom "Unassigned" row in the printed legend. Now checks
+  `orderedScenes()` directly.
+- **`pruneDismissed()` ran a full O(n²) `computeConflicts()` on every single save**, even
+  when `S.dismissed` was empty (the common case) — now early-returns first.
+- **The Timeline zoom slider saved on every `input` tick** — dragging it stringified the
+  whole project and re-ran conflict pruning per pixel of movement. `setTlZoom()` now
+  debounces the `saveState()` call by 300ms; the render itself stays synchronous so the
+  slider still feels immediate.
+- **Minor:** empty project-rename silently no-opped with the modal left open — now
+  refocuses the input; `rptEsc` (reports.js) didn't escape single quotes (no exploitable
+  gap today, since no report template uses single-quoted attributes, but one edit away
+  from one); `index.html`'s landing copy claimed "no data sent to any server," which GA/
+  Formspree telemetry contradicts — reworded to make the actual claim (story content never
+  leaves the browser) instead of an inaccurate absolute one.
+
+### How it was verified
+Live in the browser (this environment's `.claude/launch.json` "Storyboard" config,
+`python3 -m http.server`) against the Frankenstein and Longfellow Job sample projects —
+not just by reading the diff:
+- Reproduced the discard-guard bypass first (dirtied a scene's title, called
+  `menuNewScene()`, confirmed it silently proceeded), then confirmed the fixed version
+  opens the discard-confirm modal with the correct scene name/message, "Keep Editing"
+  preserves the in-progress edit untouched, and no scene was created underneath it.
+- Called `validateV3Import` directly against cloned project data with a deliberately stale
+  `nextId`/`nextSecId` and confirmed both repair correctly against the real max id;
+  separately confirmed a duplicate section id and a non-string section name are now both
+  rejected with a clear error.
+- Ran `createAndOpenProject` end-to-end and confirmed the index/blob pair is written
+  consistently; cleaned up the test project's index entry and blob afterward.
+- Simulated a section filter in-memory (added a section, unassigned a scene, filtered it
+  out) and confirmed `hasUnassignedScenes()` now returns `false` exactly when
+  `orderedScenes()` renders no unassigned scene, `true` otherwise.
+- Set the zoom slider via `setTlZoom()` and confirmed the in-memory value updates
+  immediately while the localStorage write only lands after the 300ms debounce window.
+- Confirmed the empty-rename refocus, and `rptEsc`'s new single-quote escaping, directly.
+
+### Follow-up round: remaining low-priority efficiency fixes
+Three more items from the same audit's low-severity list, fixed and verified in the same
+session:
+- `computeLaneRuns` (charts.js) rebuilt `buildSceneNumMap()` internally on every call;
+  `addSnakeTraceLanes`/`addCircleTraceLanes` called it once per traced lane (up to
+  `LANE_SANITY_CAP` = 24×). Now takes a shared `numMap` built once by the caller. Verified
+  both Snake and Circle charts still render correctly with a traced character selected.
+- `alignSecHeaders` (editor.js) interleaved DOM reads and writes per section group,
+  forcing one synchronous reflow per group. Now reads every group's target width first,
+  then writes all of them in a single pass. Verified the batched measurement logic
+  produces correct per-section widths against a real multi-section project (this
+  environment's `requestAnimationFrame` doesn't fire in a backgrounded automation tab, so
+  the read/write logic itself was extracted and run directly to confirm correctness rather
+  than relying on the rAF timing).
+- `build.js`'s `JS_FILES` list was missing `timeline.js`, `conflicts.js`, and
+  `editor-init.js` — dormant today since the minified bundle isn't actually deployed
+  (GitHub Pages serves source directly), but would have shipped a bundle silently missing
+  the entire Timeline view and Conflicts engine if it ever were. Fixed to match
+  `editor.html`'s real script order.
+
+Explicitly left unfixed (flagged as real but non-trivial, not "easy"): `sceneMatchesLib`
+(editor.js) rebuilds its selection list on every call and is invoked per-scene from both
+`renderCard` and `sceneMatchesChart` (3 call sites across editor.js/charts.js) — hoisting
+it to a build-once-per-render-pass value needs a new parameter threaded through multiple
+function signatures across two files. Likewise `toggleLibItem`/`clearAllSel`/
+`clearCardSel`/`toggleCardSel` each triggering a full `renderBoard()` teardown for a single
+class toggle — the correct fix is a targeted-DOM-update path, not a small patch.
+
+### Not yet done
+Not merged anywhere. No further open findings from this audit as of this entry — a future
+audit should re-check from scratch rather than assume this list is exhaustive.
