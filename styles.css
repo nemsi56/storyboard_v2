@@ -190,6 +190,11 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .ck-drop-item{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:5px;cursor:pointer;font-size:12px;color:var(--tx);user-select:none}
 .ck-drop-item:hover{background:var(--s0)}
 .ck-drop-item input{cursor:pointer;accent-color:var(--acc)}
+/* Reveal library items (This scene reveals / Foreshadow) get inline edit/delete
+   buttons — reuses .iedit/.idel (see the library-panel .li rule above) but
+   reveals on this row's own hover instead, since these buttons live in a
+   .ck-drop-item, not a .li. */
+.ck-drop-item:hover .idel,.ck-drop-item:hover .iedit{opacity:1}
 .ck-drop-empty{font-size:11px;color:var(--sub);padding:6px 7px;font-style:italic}
 .ck-drop-add{display:block;width:100%;text-align:left;background:none;border:none;border-radius:5px;padding:6px 7px;margin-bottom:4px;font-size:12px;font-weight:600;font-family:inherit;color:var(--acc);cursor:pointer}
 .ck-drop-add:hover{background:var(--s0)}

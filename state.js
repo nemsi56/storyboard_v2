@@ -468,6 +468,10 @@ function undo() {
   hist.future.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
   buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovCk("sc", []); renderPovCk("ed", []); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  // New Scene form's storyline field (§7) isn't itself undo-tracked (it's a
+  // blank draft, not saved data) but must stay valid if the storylines list
+  // undo/redo just restored no longer contains whatever it had selected.
+  if (typeof refreshNewSceneStorylineField === 'function') refreshNewSceneStorylineField();
   // renderBoard() no-ops into renderChart() on its own when chart view is
   // open, but the timeline view is a wholly separate render tree — without
   // this, undo/redo silently desyncs its DOM from the data the moment either
@@ -483,6 +487,10 @@ function redo() {
   hist.past.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
   buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovCk("sc", []); renderPovCk("ed", []); renderBoard(); updateLibClearBtn(); updateUndoRedo();
+  // New Scene form's storyline field (§7) isn't itself undo-tracked (it's a
+  // blank draft, not saved data) but must stay valid if the storylines list
+  // undo/redo just restored no longer contains whatever it had selected.
+  if (typeof refreshNewSceneStorylineField === 'function') refreshNewSceneStorylineField();
   // renderBoard() no-ops into renderChart() on its own when chart view is
   // open, but the timeline view is a wholly separate render tree — without
   // this, undo/redo silently desyncs its DOM from the data the moment either

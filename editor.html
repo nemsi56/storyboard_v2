@@ -208,6 +208,32 @@
           <div class="ff"><label>Word Count</label><input type="number" id="sc-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
           <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="sc-povs-wrap"><button class="ck-drop-btn" type="button" id="sc-povs-btn">No POV selected</button><div class="ck-drop-list" id="sc-povs"></div></div></div>
           <div class="ff"><label>Notes</label><textarea id="sc-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+
+          <div class="ffg" id="sc-timing-group">
+            <button type="button" class="ffg-hdr" id="sc-timing-toggle" aria-expanded="true">Timing <span class="ffg-car">▾</span></button>
+            <div class="ffg-body" id="sc-timing-body">
+              <div class="ff"><label>Storyline</label><select id="sc-storyline" class="ff-sel"></select></div>
+              <div class="ff"><label>Also part of</label><div class="ck-drop-wrap" id="sc-also-sl-wrap"><button class="ck-drop-btn" type="button" id="sc-also-sl-btn">No other storylines</button><div class="ck-drop-list" id="sc-also-sl"></div></div></div>
+              <div class="ff">
+                <label>Anchor</label>
+                <div class="anchor-row">
+                  <input type="date" id="sc-anchor-date">
+                  <input type="time" id="sc-anchor-time">
+                  <button type="button" id="sc-anchor-clear">Clear</button>
+                </div>
+              </div>
+              <div class="ff"><label>Duration (minutes)</label><input type="number" id="sc-duration" min="1" max="999999" placeholder="e.g. 5"></div>
+              <label class="ff-ck-row"><input type="checkbox" id="sc-offscreen"> Offscreen (happens, but the reader never sees it)</label>
+            </div>
+          </div>
+
+          <div class="ffg" id="sc-reveals-group">
+            <button type="button" class="ffg-hdr" id="sc-reveals-toggle" aria-expanded="true">Reveals <span class="ffg-car">▾</span></button>
+            <div class="ffg-body" id="sc-reveals-body">
+              <div class="ff"><label>This scene reveals</label><div class="ck-drop-wrap" id="sc-reveals-wrap"><button class="ck-drop-btn" type="button" id="sc-reveals-btn">No reveals selected</button><div class="ck-drop-list" id="sc-reveals"></div></div></div>
+              <div class="ff"><label>Foreshadow</label><div class="ck-drop-wrap" id="sc-requires-wrap"><button class="ck-drop-btn" type="button" id="sc-requires-btn">No foreshadow selected</button><div class="ck-drop-list" id="sc-requires"></div></div></div>
+            </div>
+          </div>
         </div>
       </div>
       <!-- Edit Scene form -->
@@ -252,8 +278,8 @@
           <div class="ffg" id="ed-reveals-group">
             <button type="button" class="ffg-hdr" id="ed-reveals-toggle" aria-expanded="true">Reveals <span class="ffg-car">▾</span></button>
             <div class="ffg-body" id="ed-reveals-body">
-              <div class="ff"><label>This scene reveals</label><div class="ck-drop-wrap" id="ed-reveals-wrap"><button class="ck-drop-btn" type="button" id="ed-reveals-btn">No reveals</button><div class="ck-drop-list" id="ed-reveals"></div></div></div>
-              <div class="ff"><label>Requires knowing</label><div class="ck-drop-wrap" id="ed-requires-wrap"><button class="ck-drop-btn" type="button" id="ed-requires-btn">No requirements</button><div class="ck-drop-list" id="ed-requires"></div></div></div>
+              <div class="ff"><label>This scene reveals</label><div class="ck-drop-wrap" id="ed-reveals-wrap"><button class="ck-drop-btn" type="button" id="ed-reveals-btn">No reveals selected</button><div class="ck-drop-list" id="ed-reveals"></div></div></div>
+              <div class="ff"><label>Foreshadow</label><div class="ck-drop-wrap" id="ed-requires-wrap"><button class="ck-drop-btn" type="button" id="ed-requires-btn">No foreshadow selected</button><div class="ck-drop-list" id="ed-requires"></div></div></div>
             </div>
           </div>
         </div>

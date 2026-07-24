@@ -368,6 +368,14 @@ function _openTimelineViewImpl() {
   document.getElementById('sbemp').style.display = 'none';
   document.getElementById('sbscrl').style.display = 'none';
   document.getElementById('timeline-host').style.display = 'flex';
+  // renderBoard() normally clears these body-level pins on every call (they're
+  // appended straight to <body>, not #board, so a scrolled section's sticky
+  // label stays positioned correctly regardless of #board's own scrolling) —
+  // but nothing in Timeline mode ever calls renderBoard() again to reach that
+  // cleanup, so a pin left over from scrolling the board stays stuck on
+  // screen for as long as Timeline is open unless cleared here too (same fix
+  // already applied to openChartView(), charts.js).
+  document.querySelectorAll('.sec-pin').forEach(p => p.remove());
   _tlCaptureFormEditHome();
   document.getElementById('tl-inspector-body').appendChild(document.getElementById('form-edit'));
   tlSwitchTab('inspector');
@@ -596,6 +604,7 @@ function addStoryline() {
   S.storylines.push({ id, name: 'Storyline ' + S.storylines.length, paletteIndex: nextStorylinePaletteIndex() });
   recordDataEdit(); saveState();
   renderTimeline();
+  if (typeof refreshNewSceneStorylineField === 'function') refreshNewSceneStorylineField();
 }
 function renameStoryline(id, name) {
   const st = S.storylines.find(x => x.id === id); if (!st) return;
@@ -605,6 +614,7 @@ function renameStoryline(id, name) {
   st.name = name;
   recordDataEdit(); saveState();
   renderTimeline();
+  if (typeof refreshNewSceneStorylineField === 'function') refreshNewSceneStorylineField();
 }
 function deleteStoryline(id) {
   if (S.storylines.length <= 1) { alert('A project must always have at least one storyline.'); return; }
@@ -619,6 +629,7 @@ function deleteStoryline(id) {
   });
   recordDataEdit(); saveState();
   renderTimeline();
+  if (typeof refreshNewSceneStorylineField === 'function') refreshNewSceneStorylineField();
 }
 
 function renderChronStrip() {
@@ -908,7 +919,7 @@ function renderChronThread() {
   svg.appendChild(path);
   pts.forEach(p => {
     const c = document.createElementNS(SVGNS, 'circle');
-    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', '7');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', '11');
     c.setAttribute('fill', THREAD_COLOR); c.setAttribute('opacity', '.32');
     svg.appendChild(c);
   });
@@ -1172,6 +1183,7 @@ function _tlDragFinish() {
   const kind = newAnchor ? ('to ' + fmtAnchor(newAnchor)) : (newChronOrder ? 'when it happens' : 'which storyline it belongs to');
   _tlPendingMove = {
     label,
+    sceneId: scene.id,
     apply: () => {
       if (newAnchor) scene.anchor = newAnchor;
       if (newChronOrder) S.chronOrder = newChronOrder;
@@ -1250,6 +1262,7 @@ function _tlMsDragFinish(d) {
 
   _tlPendingMove = {
     label: 'Reorder narrative',
+    sceneId: scene.id,
     apply: () => {
       if (S.sections.length) scene.sectionId = targetSectionId;
       S.scenes = candidate;
@@ -1263,12 +1276,23 @@ function _tlMsDragFinish(d) {
 let _tlPendingMove = null;
 function tlConfirmMoveSave() {
   if (!_tlPendingMove) return;
-  const { apply, label } = _tlPendingMove;
+  const { apply, label, sceneId } = _tlPendingMove;
   closeTlMoveConfirm();
   pushHistory(label);
   apply();
   recordDataEdit();
   saveState();
+  // If the moved scene is also the one currently open in the Inspector, its
+  // form fields (storyline/anchor/section) are now stale against what apply()
+  // just changed underneath them — isEditFormDirty() compares the live form
+  // DOM against the scene's current data, so without this it would spuriously
+  // report the form as dirty (Save/Cancel's disabled state was last computed
+  // *before* the drag and never re-checked, so it stays wrongly greyed too),
+  // and the very next scene-selection/tab-switch would hit the discard-guard
+  // asking to keep or discard "changes" the user never actually made.
+  // openEditMode() fully re-populates every field from the current data —
+  // the same call _tlDoSelectScene() already makes for a fresh selection.
+  if (S.editingId === sceneId) { openEditMode(sceneId); refreshTlSaveCancelState(); }
   renderTimeline();
 }
 function tlConfirmMoveDiscard() {
@@ -1939,6 +1963,13 @@ function _tlDoSelectScene(sceneId, opts) {
   if (sceneId != null) scrollTlCounterpartIntoView(sceneId);
   updateTlInspectorFooter();
   refreshTlSaveCancelState();
+  // Wire opacity/width is baked into each path's own attributes at draw time
+  // (redrawWires reads tlSelectedId directly, no CSS hook) — selecting only
+  // incidentally redraws today via the hover events a click naturally fires
+  // alongside it, but deselecting by clicking empty track space fires no
+  // hover event on any card at all, so without this the just-deselected
+  // scene's wire stays rendered at its old "selected" opacity/width forever.
+  redrawWires();
 }
 
 function tlSwitchTab(tab) {

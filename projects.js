@@ -153,6 +153,10 @@ function initStoryboard() {
   syncAndOrUI();
   buildLibPanel(); renderAllLib(); renderAllCk();
   renderSecPanel(); renderSectionSelects(); renderPovCk('sc', []); renderPovCk('ed', []);
+  // New Scene form's Timing/Reveals fields (§7) — blank-draft defaults, same
+  // as every other New Scene field on a fresh project load.
+  if (typeof refreshNewSceneStorylineField === 'function') refreshNewSceneStorylineField();
+  if (typeof renderRevealCk === 'function') { renderRevealCk('sc-reveals', []); renderRevealCk('sc-requires', []); }
   // Primed once on load so the very first renderBoard() below (which shows
   // warn-dots) isn't stuck with an empty conflicts cache for the first 150ms.
   if (typeof conflictsCacheRefreshNow === 'function') conflictsCacheRefreshNow();

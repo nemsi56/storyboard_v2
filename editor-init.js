@@ -131,7 +131,10 @@
     ['ck-locations-btn','ck-locations-wrap','locations'],
     ['ck-themes-btn','ck-themes-wrap','themes'],
     ['ck-misc-btn','ck-misc-wrap','misc'],
-    ['sc-povs-btn','sc-povs-wrap','povs']
+    ['sc-povs-btn','sc-povs-wrap','povs'],
+    ['sc-also-sl-btn','sc-also-sl-wrap','storylines'],
+    ['sc-reveals-btn','sc-reveals-wrap','reveals'],
+    ['sc-requires-btn','sc-requires-wrap','reveals']
   ].forEach(function(t){
     var wrapId = t[1], type = t[2];
     $(t[0]).addEventListener('click', function(){ toggleCkDrop(wrapId, type); });

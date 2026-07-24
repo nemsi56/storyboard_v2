@@ -223,6 +223,18 @@ function scheduleConflictsRecompute() {
   _tlConflictsDebounceTimer = setTimeout(() => {
     conflictsCacheRefreshNow();
     renderConflictsBadge();
+    // A chron/manuscript drag in progress (§6.5) has its own ghost/insert-line
+    // elements live in #tl-track/#tl-ms-row — renderTimeline() tears down and
+    // rebuilds those same containers, silently destroying them mid-drag (the
+    // drag's own JS state keeps tracking correctly, but the ghost the user is
+    // actually watching just vanishes, which reads as "the drag stopped
+    // working"). This debounce firing mid-drag isn't rare: starting a new
+    // drag within 150ms of any earlier save (e.g. right after finishing an
+    // edit) is exactly the common case. Skipping the render here costs
+    // nothing real — the drag's own finish path (tlConfirmMoveSave) always
+    // renders again itself, and a plain saveState() from *any* other action
+    // will re-schedule this same recompute anyway.
+    if (typeof isTlDragActive === 'function' && isTlDragActive()) return;
     if (typeof timelineMode !== 'undefined' && timelineMode) {
       renderTimeline();
       if (tlActiveTab === 'conflicts') renderConflictsPanel();
