@@ -184,15 +184,15 @@ function computeConflicts() {
       if (revealer) {
         push({
           fingerprint: fp('reveal-order', [s.id, revealer.id], rvId),
-          type: 'reveal-order', severity: 'error', title: 'Reveal used before shown',
-          message: `${sceneLabel(s.id)} requires "${label}" — not revealed until ${sceneLabel(revealer.id)}.`,
+          type: 'reveal-order', severity: 'error', title: 'Reveal before foreshadow',
+          message: `${sceneLabel(s.id)} reveals "${label}" before foreshadowed in ${sceneLabel(revealer.id)}.`,
           sceneIds: [s.id, revealer.id],
         });
       } else {
         push({
           fingerprint: fp('reveal-missing', [s.id], rvId),
-          type: 'reveal-missing', severity: 'error', title: 'Reveal never shown',
-          message: `"${label}" is never revealed to the reader.`,
+          type: 'reveal-missing', severity: 'error', title: 'Reveal never foreshadowed',
+          message: `${sceneLabel(s.id)} reveals "${label}", but nothing foreshadows it.`,
           sceneIds: [s.id],
         });
       }

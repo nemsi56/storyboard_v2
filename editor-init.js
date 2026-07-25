@@ -199,6 +199,7 @@
   $('tl-ms-arrow-right').addEventListener('click', function(){ tlScrollByPage('tl-ms-scroll', 1); });
   $('tl-braid-scroll').addEventListener('click', function(e){ if (e.target === $('tl-braid-scroll') || e.target.id === 'tl-braid-svg') tlSelectScene(null); });
   $('tl-braid-scroll').addEventListener('scroll', tlBraidUpdateMarkerHud);
+  $('tl-braid-scroll').addEventListener('scroll', tlBraidUpdateSectionHud);
   $('tl-panel-strip-btn').addEventListener('click', function(){ togglePanel('tl-panel'); });
   $('tl-panel-collapse-btn').addEventListener('click', function(){ togglePanel('tl-panel'); });
   $('tl-delete-scene-btn').addEventListener('click', tlDeleteSelectedScene);

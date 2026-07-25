@@ -374,10 +374,10 @@ function savePovEdit() {
 // Reveal library entries (S.revealsLib) have no notes concept and are looked
 // up by id, not array index (the reveal checklists carry ids, never
 // positions) — reuses the same modal DOM as openLibEditModal/openPovEditModal.
-function openRevealEditModal(id) {
+function openRevealEditModal(id, kind) {
   const entry = S.revealsLib.find(r => r.id === id); if (!entry) return;
   libEditSec = 'revealsLib'; libEditIdx = id;
-  document.getElementById('lib-edit-hdr').textContent = 'Edit Reveal';
+  document.getElementById('lib-edit-hdr').textContent = 'Edit ' + (kind === 'reveal' ? 'Reveal' : 'Foreshadow');
   document.getElementById('lib-edit-name').value = entry.label;
   document.getElementById('lib-edit-notes-wrap').style.display = 'none';
   document.getElementById('lib-edit-modal').classList.add('open');
@@ -439,10 +439,11 @@ function openPovDelModal(id) {
 }
 // Shares the libdel-modal DOM with the openers above; 'revealsLib' isn't a
 // SECS key either, so openLibDelModal's cfg/label lookup doesn't apply.
-function openRevealDelModal(id) {
+function openRevealDelModal(id, kind) {
   const entry = S.revealsLib.find(r => r.id === id); if (!entry) return;
   libDelSec = 'revealsLib'; libDelId = id;
-  document.getElementById('libdel-msg').textContent = `Permanently delete "${entry.label}" (Reveal) from the entire file? This cannot be undone.`;
+  const label = kind === 'reveal' ? 'Reveal' : 'Foreshadow';
+  document.getElementById('libdel-msg').textContent = `Permanently delete "${entry.label}" (${label}) from the entire file? This cannot be undone.`;
   document.getElementById('libdel-modal').classList.add('open');
 }
 function closeLibDelModal() { document.getElementById('libdel-modal').classList.remove('open'); libDelSec = null; libDelId = null; }
@@ -843,6 +844,11 @@ function confirmSaveEdit() {
 function closeSaveCfm() { document.getElementById('savecfm-modal').classList.remove('open'); }
 function setNewSceneLive(on) {
   document.getElementById('tab-new').classList.toggle('live', on);
+  // Cancel/Save dim to "nothing to do" while the form is blank — mirrors
+  // Timeline's own refreshTlSaveCancelState() dirty-gated disable for Edit
+  // Scene's Cancel/Save Changes buttons.
+  document.getElementById('new-cancel').disabled = !on;
+  document.getElementById('asb').disabled = !on;
 }
 function checkNewSceneLive() {
   const storylineSel = document.getElementById('sc-storyline');
@@ -940,25 +946,28 @@ function renderAlsoStorylineCk(primaryId, checked=[], prefix='ed') {
   });
   if (wrap) updateCkDropLabel(wrap, 'other storylines');
 }
-// Shared by "This scene reveals" (*-reveals) and "Foreshadow" (*-requires),
-// each in both the New Scene and Edit Scene forms (sc-/ed- prefixes) — all
-// four list the same S.revealsLib, and the inline mint adds to that one
-// shared library regardless of which box it was opened from, so minting from
-// any of them re-renders all four to keep them in sync.
+// Shared by "This scene reveals" and "Foreshadow", each in both the New
+// Scene and Edit Scene forms (sc-/ed- prefixes) — all four list the same
+// S.revealsLib, and the inline mint adds to that one shared library
+// regardless of which box it was opened from, so minting from any of them
+// re-renders all four to keep them in sync.
 const REVEAL_CK_BOXES = ['ed-reveals', 'ed-requires', 'sc-reveals', 'sc-requires'];
-// "Foreshadow" (*-requires) flags a reveal the reader must already know
-// going into this scene — its own copy shouldn't borrow "reveals" wording
-// (a mismatch previously visible as "No reveals selected"/"New reveal…"/"No
-// reveals yet" inside the Foreshadow box).
-function revealBoxIsRequires(boxId) { return boxId.endsWith('-requires'); }
+// Display labels are the OPPOSITE of these box-id suffixes: the *-requires
+// box (backed by scene.requires — "this scene assumes the reader already
+// knows X") is labeled "This scene reveals" (the payoff/disclosure moment),
+// and the *-reveals box (backed by scene.reveals — "this scene discloses X
+// to the reader") is labeled "Foreshadow" (the earlier setup). Deliberate:
+// the ids/data fields and the conflict engine are unchanged, only the
+// display strings are swapped — see editor.html's matching swapped <label>s.
+function revealBoxKind(boxId) { return boxId.endsWith('-requires') ? 'reveal' : 'foreshadow'; }
 function renderRevealCk(boxId, checked=[]) {
   const wrap = document.getElementById(boxId + '-wrap');
   const box  = document.getElementById(boxId); if (!box) return;
-  const isRequires = revealBoxIsRequires(boxId);
+  const kind = revealBoxKind(boxId);
   box.innerHTML = '';
   const mintRow = document.createElement('div'); mintRow.className = 'ck-drop-mint';
   const inp = document.createElement('input'); inp.type = 'text';
-  inp.placeholder = isRequires ? 'Name what’s foreshadowed…' : 'New reveal…';
+  inp.placeholder = kind === 'reveal' ? 'New reveal…' : 'New foreshadow…';
   inp.maxLength = 80;
   const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = '+ Add';
   const mint = () => {
@@ -979,10 +988,10 @@ function renderRevealCk(boxId, checked=[]) {
   inp.addEventListener('click', e => e.stopPropagation());
   mintRow.appendChild(inp); mintRow.appendChild(btn);
   box.appendChild(mintRow);
-  const selectedLabel = isRequires ? 'foreshadow' : 'reveals';
+  const selectedLabel = kind === 'reveal' ? 'reveals' : 'foreshadow';
   if (!S.revealsLib.length) {
     const empty = document.createElement('div'); empty.className = 'ck-drop-empty';
-    empty.textContent = isRequires ? 'Nothing to foreshadow yet' : 'No reveals yet';
+    empty.textContent = kind === 'reveal' ? 'No reveals yet' : 'Nothing to foreshadow yet';
     box.appendChild(empty);
     if (wrap) updateCkDropLabel(wrap, selectedLabel);
     return;
@@ -995,9 +1004,9 @@ function renderRevealCk(boxId, checked=[]) {
     const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'iedit'; edit.title = 'Edit'; edit.textContent = '✎';
     const del  = document.createElement('button'); del.type = 'button'; del.className  = 'idel';  del.title = 'Remove'; del.textContent = '×';
     edit.addEventListener('mousedown', e => e.stopPropagation());
-    edit.addEventListener('click',     e => { e.stopPropagation(); openRevealEditModal(r.id); });
+    edit.addEventListener('click',     e => { e.stopPropagation(); openRevealEditModal(r.id, kind); });
     del.addEventListener('mousedown',  e => e.stopPropagation());
-    del.addEventListener('click',      e => { e.stopPropagation(); openRevealDelModal(r.id); });
+    del.addEventListener('click',      e => { e.stopPropagation(); openRevealDelModal(r.id, kind); });
     item.appendChild(cb); item.appendChild(sp); item.appendChild(edit); item.appendChild(del); box.appendChild(item);
   });
   if (wrap) updateCkDropLabel(wrap, selectedLabel);

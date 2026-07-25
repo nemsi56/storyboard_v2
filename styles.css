@@ -178,7 +178,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
    isEditFormDirty() (nothing to Save/Cancel while the form is clean); board's
    own Edit Scene form never sets this attribute on these same shared buttons,
    so this never affects board behavior. */
-#canceledit:disabled,#saveedit:disabled{opacity:.4;cursor:default;pointer-events:none}
+#canceledit:disabled,#saveedit:disabled,#new-cancel:disabled,#asb:disabled{opacity:.4;cursor:default;pointer-events:none}
 .lib-rename-inp{flex:1;min-width:0;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:1px 5px;color:var(--tx);font-size:12px;font-family:inherit;outline:none}
 .lib-hint{font-style:italic;font-size:11px;color:var(--sub);text-align:center;margin:0 0 8px;line-height:1.4;padding:0 4px;flex-shrink:0}
 .ck-drop-wrap{position:relative}
@@ -1076,7 +1076,7 @@ body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){op
    -swatch/-name classes for a consistent look rather than a bespoke style. */
 #tl-braid-legend{display:none;flex-shrink:0;flex-wrap:wrap;align-items:center;row-gap:4px;column-gap:14px;padding:6px 16px;background:var(--bg1);border-bottom:1px solid var(--s1);font-size:11px;color:var(--sub)}
 #tl-stage.tl-braid-active #tl-braid-legend{display:flex}
-.tl-braid-legend-swatch{display:inline-block;flex-shrink:0;width:11px;height:11px;border-radius:50%;background:var(--cbg);border:2px solid var(--o0);box-sizing:border-box}
+.tl-braid-legend-swatch{display:inline-block;flex-shrink:0;width:13px;height:13px;border-radius:50%;background:var(--cbg);border:3.5px solid var(--o0);box-sizing:border-box}
 /* Era-marker labels live in an HTML overlay, not the SVG, so they can be
    horizontally re-pinned to the viewport's left edge on scroll
    (tlBraidUpdateMarkerHud()) — the dashed marker LINE stays in the SVG and
@@ -1084,9 +1084,55 @@ body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){op
 #tl-braid-markers-hud{position:absolute;top:0;left:0;right:0;pointer-events:none}
 .tl-braid-marker-label{position:absolute;font-size:9px;letter-spacing:.6px;font-weight:700;color:var(--lbl);white-space:nowrap;background:var(--bg1);padding:1px 4px;border-radius:3px}
 
-.tl-braid-node circle{transition:stroke-width .15s}
+/* Section labels live in their own HTML overlay for the opposite reason
+   markers do: their divider is a full-height VERTICAL line, so the label
+   should track horizontal scroll normally (stay above its own divider) but
+   get vertically re-pinned near the top on scroll (tlBraidUpdateSectionHud())
+   instead of scrolling away with the chart's own height. */
+/* z-index:7, above #tl-braid-axis-hud's 6 — section labels now share the top
+   margin bar (#tl-braid-top-bar lives inside axis-hud) and must paint above
+   it, not get hidden behind it; DOM order alone isn't enough once a sibling
+   has an explicit z-index. */
+#tl-braid-section-hud{position:absolute;top:0;left:0;right:0;pointer-events:none;z-index:7}
+.tl-braid-section-label{position:absolute;font-size:10px;font-weight:700;white-space:nowrap;background:var(--bg1);padding:1px 6px;border-radius:3px;border-left:3px solid var(--acc)}
+
+/* Axis labels ("READING ORDER →" / "CHRONOLOGY") always belong in the exact
+   same top-left corner regardless of scroll — unlike markers/sections, which
+   track a moving target on one axis, these need no per-scroll recompute:
+   position:sticky with both top and left set pins them to that corner in
+   both scroll directions at once. */
+#tl-braid-axis-hud{position:sticky;top:0;left:0;width:0;height:0;overflow:visible;z-index:6;pointer-events:none}
+/* Opaque bars spanning the full visible width/height of the viewport (sized
+   in JS — tlBraidUpdateAxisBars() — to the scroll container's own
+   clientWidth/clientHeight, not just as wide as the label text) so gridlines/
+   paths/markers that scroll into these margins render fully hidden behind
+   them, instead of cluttering the space around the axis labels. The labels
+   themselves need no background of their own now — they just sit on the bar. */
+/* Tall enough to cover both the "READING ORDER →" row and the section-label
+   row below it (see tlBraidUpdateSectionHud()'s +30 offset) — previously the
+   bar only covered the first row, so the section-label row sat in a gap
+   between the bar and the section pills' own (much smaller) individual
+   backgrounds, leaving gridlines/paths visible around them. */
+#tl-braid-top-bar{position:absolute;top:0;left:0;height:54px;background:var(--bg1)}
+#tl-braid-left-bar{position:absolute;top:0;left:0;width:54px;background:var(--bg1)}
+.tl-braid-axis-top{position:absolute;top:6px;left:60px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--lbl);white-space:nowrap}
+.tl-braid-axis-left{position:absolute;top:38px;left:6px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--lbl);white-space:nowrap;writing-mode:vertical-rl;transform:rotate(180deg)}
+.tl-braid-axis-arrow{writing-mode:horizontal-tb;transform:rotate(180deg);font-size:11px;font-weight:400;letter-spacing:0}
+
+.tl-braid-node circle{transition:stroke-width .15s,transform .15s}
 .tl-braid-node.tl-hi circle{stroke-width:5}
-.tl-braid-node.tl-sel circle{stroke:var(--acc) !important;stroke-width:4}
+/* Selection reads as a more emphatic state than a passing hover, not a
+   lesser one — was thinner than .tl-hi's own stroke-width (4 vs 5), which
+   made a selected node look less prominent than one you're just hovering.
+   Deliberately does NOT override stroke color (unlike .tl-flag below) —
+   selection should look more prominent, not recolored away from the node's
+   own storyline color. The glow uses currentColor (set via circle.style.color
+   in renderBraid(), same value as its stroke) for the same reason: a fixed
+   accent-colored halo around a differently-colored node read as a color
+   change, not emphasis. scale() needs fill-box/center (the default SVG
+   transform origin is the viewport's own 0,0, which would fling the circle
+   across the chart instead of growing it in place). */
+.tl-braid-node.tl-sel circle{stroke-width:6;transform-box:fill-box;transform-origin:center;transform:scale(1.25);filter:drop-shadow(0 0 3px currentColor)}
 .tl-braid-node.tl-flag circle{stroke:var(--rd) !important}
 body.hovering .tl-braid-node:not(.tl-hi){opacity:.28}
 body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}

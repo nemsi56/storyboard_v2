@@ -355,7 +355,13 @@ document.addEventListener('mousedown', e => {
   if (!timelineMode) return;
   if (e.target.closest('#tl-panel')) return;
   if (e.target.closest('.tl-scene, .tl-ms-card, .tl-braid-node, #tl-chron-scroll, #tl-ms-scroll, #tl-braid-scroll')) return;
-  if (document.querySelector('.cfm-modal.open') || document.getElementById('tl-marker-popover') || document.getElementById('tl-marker-context-menu')) return;
+  // anyModalOpen() (editor.js) covers every modal, not just the confirm-style
+  // .cfm-modal ones — the reveal-library Edit modal (lib-edit-modal) is a
+  // plain data-entry dialog, not a .cfm-modal, so the narrower check missed
+  // it: clicking its Cancel button (or anywhere inside it) bubbled a
+  // mousedown here uncaught, deselecting the Timeline card and clearing the
+  // Inspector underneath the modal the user was still interacting with.
+  if ((typeof anyModalOpen === 'function' && anyModalOpen()) || document.getElementById('tl-marker-popover') || document.getElementById('tl-marker-context-menu')) return;
   // Clears both card selection and (via _tlDoSelectScene) flag mode — the
   // panel's own row-click "show scenes" state — in one action.
   tlSelectScene(null);
@@ -1619,53 +1625,17 @@ function renderBraid() {
     svg.appendChild(gl);
   }
 
-  // ---- top edge: "READING ORDER →" label. No per-column "Sc n" ticks — each
-  // node already shows its own number, so a duplicate tick row overhead the
-  // chart added nothing. ----
-  const topLabel = document.createElementNS(SVGNS, 'text');
-  topLabel.setAttribute('x', BRAID_LEFT); topLabel.setAttribute('y', 20);
-  topLabel.setAttribute('font-size', 10); topLabel.setAttribute('font-weight', 'bold'); topLabel.setAttribute('letter-spacing', '1.5px');
-  topLabel.style.fill = 'var(--lbl)';
-  topLabel.textContent = 'READING ORDER →';
-  svg.appendChild(topLabel);
+  // ---- axis labels ("READING ORDER →" / "CHRONOLOGY" + arrow): static HTML
+  // in #tl-braid-axis-hud (editor.html), not the SVG — position:sticky pins
+  // them to the top-left corner of #tl-braid-scroll's own viewport in BOTH
+  // scroll directions at once, with no per-scroll recompute needed (unlike
+  // the marker/section labels below, these never need to track a moving
+  // target — they always belong in that one corner). Also gives them a real
+  // opaque background (the old SVG <text> version had none, so gridlines/
+  // paths could render visibly through the letters). Content is nailed down
+  // in the HTML/CSS itself; nothing to build here every render. ----
 
   const numMap = buildSceneNumMap();
-
-  // ---- left edge: rotated "CHRONOLOGY" label, with a separate, unrotated ↓
-  // placed just past its own bottom end (where the first letter lands after
-  // rotation) so the arrow itself reads pointing straight down on screen,
-  // rather than sideways as it would if it were part of the rotated string. ----
-  const leftY = braidRowY((N - 1) / 2, rowH);
-  const leftLabel = document.createElementNS(SVGNS, 'text');
-  leftLabel.setAttribute('x', 18); leftLabel.setAttribute('y', leftY);
-  leftLabel.setAttribute('font-size', 10); leftLabel.setAttribute('font-weight', 'bold'); leftLabel.setAttribute('letter-spacing', '1.5px');
-  leftLabel.setAttribute('text-anchor', 'middle'); leftLabel.setAttribute('transform', 'rotate(-90 18 ' + leftY + ')');
-  leftLabel.style.fill = 'var(--lbl)';
-  leftLabel.textContent = 'CHRONOLOGY';
-  svg.appendChild(leftLabel);
-  // Measured from the label's own actual rendered box (getBoundingClientRect,
-  // post-rotation, real screen coordinates) rather than assumed from x=18 and
-  // getBBox() math — a rotated text element's visual centerline doesn't
-  // necessarily land exactly on its rotation pivot (the "x" attribute
-  // positions the BASELINE, and glyphs sit asymmetrically around it), which
-  // is what left the previous, computed-not-measured version still visibly
-  // off-center. Hand-drawn (stem + triangle) rather than the "↓" glyph, whose
-  // own side bearings aren't symmetric in every font either.
-  const labelRect = leftLabel.getBoundingClientRect();
-  const svgRect = svg.getBoundingClientRect();
-  const arrowX = labelRect.left + labelRect.width / 2 - svgRect.left;
-  const arrowTop = labelRect.bottom - svgRect.top + 8;
-  const stem = document.createElementNS(SVGNS, 'line');
-  stem.setAttribute('x1', arrowX); stem.setAttribute('x2', arrowX);
-  stem.setAttribute('y1', arrowTop); stem.setAttribute('y2', arrowTop + 9);
-  stem.setAttribute('stroke-width', 1.5);
-  stem.style.stroke = 'var(--lbl)';
-  svg.appendChild(stem);
-  const head = document.createElementNS(SVGNS, 'polygon');
-  const headY = arrowTop + 9;
-  head.setAttribute('points', (arrowX - 4) + ',' + headY + ' ' + (arrowX + 4) + ',' + headY + ' ' + arrowX + ',' + (headY + 6));
-  head.style.fill = 'var(--lbl)';
-  svg.appendChild(head);
 
   // ---- markers (§7.4): dashed line in the SVG (scrolls normally); the label
   // lives in the HTML #tl-braid-markers-hud overlay instead, so it can stay
@@ -1704,13 +1674,34 @@ function renderBraid() {
   // ---- section boundaries (sections replace ThruLine's "dividers"): full-height
   // vertical dividers between the relevant reading-order columns, colored by
   // the section's own .color, dashed and behind the path/nodes layers (appended
-  // before them) so they read as background structure, not foreground content. ----
+  // before them) so they read as background structure, not foreground content.
+  // Labels live in the HTML #tl-braid-section-hud overlay (same idea as the
+  // marker labels' #tl-braid-markers-hud, opposite axis): a divider is a
+  // full-height VERTICAL line, so its label should scroll normally along
+  // with horizontal scroll (stay above its own divider) but get re-pinned
+  // near the top on vertical scroll instead of scrolling away — see
+  // tlBraidUpdateSectionHud(). The very first group (i===0) never gets a
+  // divider tick (nothing precedes it to divide from) but still needs its
+  // own label, same "lead" treatment renderManuscriptRibbon() gives the
+  // Narrative row's first group. ----
   const dividersLayer = document.createElementNS(SVGNS, 'g');
   svg.appendChild(dividersLayer);
+  const sectionHud = document.getElementById('tl-braid-section-hud');
+  if (sectionHud) sectionHud.textContent = '';
   let lastSecKey;
   msScenes.forEach((s, i) => {
     const secKey = validSecIds.has(s.sectionId) ? s.sectionId : null;
-    if (i > 0 && secKey !== lastSecKey) {
+    if (i === 0) {
+      const sec = S.sections.find(x => x.id === secKey);
+      if (sec && sectionHud) {
+        const label = document.createElement('div');
+        label.className = 'tl-braid-section-label';
+        label.style.left = braidColX(0) + 'px';
+        label.style.borderLeftColor = sec.color || 'var(--acc)';
+        label.textContent = sec.name;
+        sectionHud.appendChild(label);
+      }
+    } else if (secKey !== lastSecKey) {
       const x = (braidColX(i - 1) + braidColX(i)) / 2;
       const sec = S.sections.find(x => x.id === secKey);
       const tick = document.createElementNS(SVGNS, 'line');
@@ -1720,9 +1711,19 @@ function renderBraid() {
       tick.style.stroke = (sec && sec.color) || 'var(--acc)';
       tick.style.opacity = '.55';
       dividersLayer.appendChild(tick);
+      if (sec && sectionHud) {
+        const label = document.createElement('div');
+        label.className = 'tl-braid-section-label';
+        label.style.left = (x + 6) + 'px';
+        label.style.borderLeftColor = sec.color || 'var(--acc)';
+        label.textContent = sec.name;
+        sectionHud.appendChild(label);
+      }
     }
     lastSecKey = secKey;
   });
+  if (sectionHud) { sectionHud.style.height = contentH + 'px'; tlBraidUpdateSectionHud(); }
+  tlBraidUpdateAxisBars();
 
   // ---- reading path: cubic bezier per consecutive msOrder pair, drawn before nodes ----
   const pathsLayer = document.createElementNS(SVGNS, 'g');
@@ -1782,6 +1783,11 @@ function renderBraid() {
     circle.setAttribute('stroke-width', 3);
     circle.style.fill = 'var(--cbg)';
     circle.style.stroke = color;
+    // Also set as `color` (not just `stroke`) so the .tl-sel selection glow
+    // (styles.css, drop-shadow(currentColor)) matches this node's own
+    // storyline color instead of a fixed accent — selection should look more
+    // prominent, not recolored.
+    circle.style.color = color;
     g.appendChild(circle);
 
     const num = document.createElementNS(SVGNS, 'text');
@@ -1859,6 +1865,41 @@ function tlBraidUpdateMarkerHud() {
   // since both sit in that same left margin.
   const left = scroll.scrollLeft + BRAID_LEFT + 4;
   hud.querySelectorAll('.tl-braid-marker-label').forEach(el => { el.style.left = left + 'px'; });
+}
+
+// Section labels are the opposite case from era-marker labels: their divider
+// is a full-height VERTICAL line, so the label should track horizontal
+// scroll normally (stay above its own divider, no compensation needed —
+// each label's `left` is already set to its divider's real x) but needs
+// re-pinning near the TOP on VERTICAL scroll, or it scrolls away with the
+// rest of the chart's height exactly like the divider tick itself does.
+// +38, not flush under #tl-braid-top-bar's own 30px height — leaves a small
+// +30, not flush under the axis label's own row — leaves a small gap so the
+// section label doesn't sit right on its heel. Still within
+// #tl-braid-top-bar's own (taller, 54px) height, so both rows share one
+// continuous opaque bar rather than the section-label row sitting in a gap
+// below it where gridlines/paths could show through.
+function tlBraidUpdateSectionHud() {
+  const scroll = document.getElementById('tl-braid-scroll');
+  const hud = document.getElementById('tl-braid-section-hud');
+  if (!scroll || !hud) return;
+  const top = scroll.scrollTop + 30;
+  hud.querySelectorAll('.tl-braid-section-label').forEach(el => { el.style.top = top + 'px'; });
+}
+
+// Sizes the two opaque axis-margin bars to the scroll container's own
+// visible (client) dimensions — not the wide/tall scrollable content — so
+// they cover exactly the top/left margin regardless of how far the chart
+// itself extends. clientWidth/clientHeight don't change on scroll, only on
+// resize, but this is cheap enough to just call alongside the other HUD
+// updates rather than wiring a separate resize-only path.
+function tlBraidUpdateAxisBars() {
+  const scroll = document.getElementById('tl-braid-scroll');
+  const topBar = document.getElementById('tl-braid-top-bar');
+  const leftBar = document.getElementById('tl-braid-left-bar');
+  if (!scroll || !topBar || !leftBar) return;
+  topBar.style.width = scroll.clientWidth + 'px';
+  leftBar.style.height = scroll.clientHeight + 'px';
 }
 
 let _tlWiresRafPending = false;

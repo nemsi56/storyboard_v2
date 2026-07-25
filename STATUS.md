@@ -2695,3 +2695,37 @@ All ten items confirmed directly in the browser against the Frankenstein and Mon
 
 ### Not yet done
 Not merged anywhere. No further open items from this round.
+
+## thruLine_v2 branch — Reveals/Foreshadow relabeling, Path view polish, conflict-message rewording
+
+Two rounds of direct-feedback fixes on top of the previous round's Reveals/Foreshadow UI work, plus a diagnostic question about the conflict engine that turned out not to be a bug.
+
+### Round one: ten items
+- Canceling the reveal-item edit modal no longer deselects the Timeline card / clears the Inspector — the modal (a plain data-entry dialog, not a `.cfm-modal`) was missing from the click-outside deselect guard's modal checklist; now uses the existing `anyModalOpen()` helper (editor.js), which also protects a few other non-`.cfm-modal` dialogs that had the same latent gap.
+- Foreshadow box's mint placeholder reworded to "New foreshadow…".
+- **Path view (Braid) section dividers now have labels**, including the first section (previously unlabeled entirely), pinned to stay visible at the top of the viewport on vertical scroll while still scrolling naturally with horizontal scroll so each label tracks its own divider.
+- Reveal library edit/delete modal titles are now context-aware ("Edit Reveal" vs "Edit Foreshadow", matching delete-confirm text) based on which box's ✎/× was clicked, instead of always saying "Reveal".
+- New Scene tab's Cancel/Save buttons now grey out when the form has no content, matching Edit Scene's existing dirty-gated disable in Timeline mode.
+- Storyline legend ring in Path view thickened (2px → 3.5px) for color legibility.
+- **Swapped the Reveal/Foreshadow display labels** per the user's correction — "This scene reveals" (`scene.reveals`) and "Foreshadow" (`scene.requires`) had the concepts backwards from what the user intended. This is a display-only swap: the underlying data fields, ids, and conflict-engine logic (conflicts.js) are completely unchanged, so no migration was needed and existing sample-project data displays correctly under the swapped labels — verified by checking a real tagged scene (Frankenstein) renders its existing `requires` tag correctly checked in the now-relabeled box.
+- Path view's "READING ORDER →" / "CHRONOLOGY" axis labels + arrow, previously plain SVG `<text>` that scrolled away in both directions, converted to an HTML overlay pinned via `position:sticky` (top:0;left:0) — frozen in the top-left corner regardless of scroll direction, with no per-scroll JS recompute needed (unlike markers/sections, these never track a moving target). Hit and fixed a placement bug along the way: the sticky overlay must be the *first* child inside the scroll container, or its natural (pre-sticky) flow position ends up wherever the tall SVG's own height happens to place it, so it never becomes visible until scrolled far down.
+- Gave the axis labels a real opaque background — the old SVG-text version had none at all, so gridlines/paths rendered visibly through the letters.
+
+### Round two: four items
+- Added visible spacing between "READING ORDER →" and the section-header row directly below it (they were nearly touching).
+- Reworked the axis-label opacity fix into two full-viewport-sized opaque bars (`#tl-braid-top-bar`, `#tl-braid-left-bar`, sized in JS to the scroll container's own `clientWidth`/`clientHeight`) instead of small pill-shaped backgrounds around just the label text — gridlines/paths/markers that scroll into these margins are now fully hidden behind the bars, not just around the letters.
+- Selected node in Path view made more prominent: the ring was previously *thinner* than the plain hover state (4px vs. hover's 5px), which read as less emphatic than just hovering. Now 6px, scaled up 25%, with a glow — while explicitly *not* recoloring the node (see below).
+- Reworded the "Reveal used before shown" conflict message, which read confusingly under the new label swap: now titled "Reveal before foreshadow" — *"Scene X — '[title]' reveals '[item]' before foreshadowed in Scene Y — '[title]'."* Updated the sibling "never shown" message ("Reveal never foreshadowed") to match the same vocabulary for consistency, since it wasn't asked for but had the identical staleness problem.
+
+### Follow-up round: two more
+- Section headers moved onto the *same* opaque top bar as "READING ORDER →" (bar height increased to cover both rows) instead of sitting in a gap below it where grid content could still show through. Surfaced and fixed a real stacking-order bug in the process: `#tl-braid-axis-hud` carries an explicit `z-index:6`, and `#tl-braid-section-hud` had none (`auto`) — an explicit z-index beats a z-index:auto sibling regardless of DOM order, so the bar was silently painting over the section labels until `#tl-braid-section-hud` was given `z-index:7`.
+- Selected node's ring/glow no longer overrides the node's own storyline color with a fixed accent color — `renderBraid()` now also sets `circle.style.color` (not just `.stroke`) to the node's real color, so the CSS glow's `drop-shadow(currentColor)` matches it instead of showing an unrelated accent-colored halo.
+
+### Diagnostic: "conflict not showing" question
+User asked whether something was wrong after tagging an earlier scene's item as "Reveal" and a later scene's same item as "Foreshadow" with no conflict appearing. Reproduced the exact scenario end-to-end through the real Edit Scene form (not just by mutating `S` directly) and got a correct `reveal-order` conflict — the engine itself is not broken. Likely causes flagged back to the user: minting the same-sounding reveal text twice (creating two distinct library entries instead of reusing one), one of the two scenes being marked Offscreen (excluded from the reader-order check entirely), or simply not knowing where the signal surfaces (Conflicts badge count + panel row + card warn-dot — there is no popup alert).
+
+### Verified live
+Every item in all three rounds confirmed directly in the browser (Frankenstein and Monte Cristo samples) — stacking order, sticky-scroll behavior on both axes, color values, and the conflict message text were all checked programmatically (computed styles, `getBoundingClientRect()` before/after scroll, `getActiveConflicts()` output), not just visually. Every sample project touched during testing (mutated storylines, reveals, scene tags) was restored to pristine state afterward via the same remove-local-copy-and-reseed approach used in prior sessions, confirmed each time by re-checking scene count and `revision: 0`.
+
+### Not yet done
+Not merged anywhere. No further open items from this round.
