@@ -64,7 +64,7 @@ function chronXEdgeMarginPct() {
   const track = document.getElementById('tl-track');
   const w = track ? track.clientWidth : 0;
   if (!w) return 4;
-  const cardW = Math.max(TL_ZOOM_MIN_CARD_PX, Math.min(96, tlCurrentPxPerScene() - 10));
+  const cardW = tlLoomCardW(tlCurrentPxPerScene(), 10, 96);
   const neededPx = TL_ARROW_REACH_PX + cardW / 2 + 4;
   return Math.min(20, (neededPx / w) * 100);
 }
@@ -512,17 +512,56 @@ function renderTimeline() {
 // minimum (70px/scene), and 100 is the original fixed maximum (200px/scene) —
 // so anyone used to the old 70-200 range sees identical density in the upper
 // half of the slider.
-const TL_ZOOM_MID_PX = 70, TL_ZOOM_MAX_PX = 200, TL_ZOOM_MIN_CARD_PX = 28;
+const TL_ZOOM_MID_PX = 70, TL_ZOOM_MAX_PX = 200;
+// TL_PITCH_FLOOR_PX: not a "readable card" floor — a purely technical one, just
+// enough to keep a pitch/width declaration meaningful (never 0 or negative) for
+// a pathological scene count. Previously floored at 38px (a fixed "readable
+// card" minimum), which sounds reasonable but actually broke the fit-to-window
+// promise at position 0: with enough scenes that true fit needs tighter than
+// 38px/scene (e.g. ~89 scenes in a ~1200px container needs ~12.6px),
+// tlZoomFitPx() silently clamped back up to 38px, chronTrackWidth() then
+// exceeded the container width, and "fit everything, no scroll" quietly
+// became "scroll anyway" — the exact thing this setting exists to avoid.
+// cardW below (tlLoomCardW()) still caps card width at its own pitch (not at
+// this floor), so cards shrink right along with the pitch instead of
+// overlapping once real fit needs to go below 38px.
+const TL_PITCH_FLOOR_PX = 2;
 function tlZoomFitPx() {
   const scroll = document.getElementById('tl-chron-scroll');
   const n = (S.chronOrder && S.chronOrder.length) || 1;
   const containerW = (scroll && scroll.clientWidth) || 800;
   const PADDING = 80;
-  // Floored at MIN_CARD_PX+10 (never asks for spacing tighter than the
-  // smallest readable card) — past that point chronTrackWidth's own
-  // Math.max(containerW, …) below takes over and allows horizontal scroll
-  // instead of forcing cards to overlap just to avoid it.
-  return Math.max(TL_ZOOM_MIN_CARD_PX + 10, (containerW - PADDING) / n);
+  return Math.max(TL_PITCH_FLOOR_PX, (containerW - PADDING) / n);
+}
+// Card width from a given pitch (pxPerScene) — always kept within that pitch
+// (minus a small gap) rather than floored at a fixed "readable" minimum, so a
+// tight fit-to-window pitch shrinks cards right along with it instead of the
+// card staying wider than its own slot and overlapping its neighbors.
+function tlLoomCardW(pxPerScene, gap, cap) {
+  const w = Math.max(TL_PITCH_FLOOR_PX, pxPerScene - gap);
+  return cap ? Math.min(cap, w) : w;
+}
+// .tl-scene/.tl-ms-card's CSS padding (7px sides) + border (1px sides) is a
+// SECOND, independent floor that tlLoomCardW() alone doesn't clear: with
+// box-sizing:border-box, a declared width smaller than padding+border simply
+// can't render smaller than that sum — the box model clamps it, silently
+// widening cards back out past their pitch (and, for the flex-laid-out
+// manuscript ribbon, back out past the container) exactly like the old fixed
+// width floor did. Scales padding down together with width below the
+// full-padding threshold so cards keep shrinking in lockstep with a tight
+// fit-to-window pitch instead of bottoming out around ~16px regardless of
+// what width was requested. Border (1px/3px accent) is left alone — it only
+// contributes ~2px on top, small enough not to meaningfully block fitting a
+// realistic scene count, and touching it would also flatten the storyline-
+// color accent stripe that makes each card recognizable at a glance.
+const TL_CARD_FULL_PAD = { top: 5, side: 7, bottom: 4 };
+function tlApplyCardWidth(el, cardW) {
+  el.style.width = cardW + 'px';
+  const floor = TL_CARD_FULL_PAD.side * 2;
+  const scale = Math.max(0, Math.min(1, cardW / floor));
+  el.style.padding = (TL_CARD_FULL_PAD.top * scale).toFixed(2) + 'px '
+    + (TL_CARD_FULL_PAD.side * scale).toFixed(2) + 'px '
+    + (TL_CARD_FULL_PAD.bottom * scale).toFixed(2) + 'px';
 }
 function tlZoomSliderToPx(pos) {
   const fitPx = tlZoomFitPx();
@@ -536,16 +575,29 @@ function tlCurrentPxPerScene() {
 // Braid's own version of the same zoom mapping — same shared slider
 // (S.timelinePrefs.zoomPos), same 0=fit/50=default/100=max shape, just against
 // Braid's own container and column count instead of the chron strip's.
-const BRAID_ZOOM_MID_DX = 93, BRAID_ZOOM_MAX_DX = 200, BRAID_ZOOM_MIN_DX = 40;
+const BRAID_ZOOM_MID_DX = 93, BRAID_ZOOM_MAX_DX = 200;
+// BRAID_NODE_FULL_R: node circle radius at a comfortable column spacing.
+// braidNodeR() below scales it down as columns pack tighter than that, so a
+// high scene count's true fit-to-window spacing doesn't leave neighboring
+// nodes overlapping — same fix as tlLoomCardW() on the Loom side, applied to
+// a radius instead of a width.
+const BRAID_NODE_FULL_R = 11, BRAID_NODE_MIN_R = 3;
+function braidNodeR(dx) {
+  return Math.max(BRAID_NODE_MIN_R, Math.min(BRAID_NODE_FULL_R, dx / 2 - 2));
+}
 function tlBraidZoomFitDx(colCount) {
   const scroll = document.getElementById('tl-braid-scroll');
   const containerW = (scroll && scroll.clientWidth) || 800;
   // Matches renderBraid()'s own contentW formula exactly (braidColX(n-1) +
   // BRAID_RIGHT_PAD) so fitDx produces contentW === containerW precisely,
-  // not just approximately.
+  // not just approximately. No fixed floor (previously 40px) — that silently
+  // widened columns back out past the container once a high scene count's
+  // true fit-to-window spacing needed tighter than 40px, same bug as
+  // tlZoomFitPx() had on the Loom side. TL_PITCH_FLOOR_PX is purely
+  // technical (never 0/negative), not a readability floor.
   const usable = containerW - BRAID_COL_X0 - BRAID_RIGHT_PAD;
   const gaps = Math.max(1, colCount - 1);
-  return Math.max(BRAID_ZOOM_MIN_DX, usable / gaps);
+  return Math.max(TL_PITCH_FLOOR_PX, usable / gaps);
 }
 function tlBraidColDx(colCount) {
   const pos = S.timelinePrefs.zoomPos;
@@ -665,12 +717,13 @@ function renderChronStrip() {
   });
 
   const laneCount = S.storylines.length || 1;
-  // Was a flat 96px regardless of zoom — at the new auto-fit low end of the
-  // zoom slider that let fixed-width cards overlap even though their pitch
-  // had shrunk below it. Capped at 96 (today's look, unchanged down to
-  // ~pxPerScene 106) and floored at 28 (still shrinks further than that only
-  // once the slider is pushed into auto-fit territory).
-  const laneH = 92, cardW = Math.max(TL_ZOOM_MIN_CARD_PX, Math.min(96, tlCurrentPxPerScene() - 10));
+  // Was a flat 96px regardless of zoom — at the auto-fit low end of the zoom
+  // slider that let fixed-width cards overlap even though their pitch had
+  // shrunk below it. Capped at 96 (today's look, unchanged down to
+  // ~pxPerScene 106); shrinks with the pitch past that (tlLoomCardW(), no
+  // fixed floor) so a high scene count's true fit-to-window pitch isn't
+  // silently widened back out past the container.
+  const laneH = 92, cardW = tlLoomCardW(tlCurrentPxPerScene(), 10, 96);
   // min-height (not height) so a short lane list still stretches to fill
   // #tl-chron-scroll via CSS height:100% (which now grows with the box, see
   // styles.css #tl-chron-body flex:1 1 auto); a lane list taller than that
@@ -725,7 +778,7 @@ function renderChronStrip() {
     const card = document.createElement('div');
     card.className = 'tl-scene' + (s.offscreen ? ' tl-offscreen' : '');
     card.dataset.sceneId = s.id;
-    card.style.width = cardW + 'px';
+    tlApplyCardWidth(card, cardW);
     card.style.left = x + '%';
     card.style.top = (lane * laneH + laneH / 2) + 'px';
     card.style.setProperty('--c', slColor(storylineById.get(s.storylineId).paletteIndex));
@@ -806,11 +859,17 @@ function renderManuscriptRibbon() {
     row.appendChild(buildRibbonCard(s, numMap.get(s.id) ?? 1, storylineById));
   });
 
-  // Floor dropped from 70 to 28 (TL_ZOOM_MIN_CARD_PX) — a flat 70px floor
-  // would have kept forcing ribbon cards wider than the actual pitch once the
-  // zoom slider's auto-fit low end computes a spacing smaller than that.
-  const cardW = Math.max(TL_ZOOM_MIN_CARD_PX, tlCurrentPxPerScene() - 14);
-  row.querySelectorAll('.tl-ms-card').forEach(el => { el.style.width = cardW + 'px'; });
+  // No fixed floor (tlLoomCardW()) — a flat floor here would keep forcing
+  // ribbon cards wider than the actual pitch once a high scene count's
+  // fit-to-window pitch drops below it, defeating the fit.
+  const cardW = tlLoomCardW(tlCurrentPxPerScene(), 14);
+  row.querySelectorAll('.tl-ms-card').forEach(el => tlApplyCardWidth(el, cardW));
+  // #tl-ms-row's CSS gap (8px, styles.css) is fixed-size same as the old card
+  // width/padding floors were — irrelevant at normal density, but with
+  // enough scenes it alone (n-1 gaps × 8px) can exceed the container even
+  // once every card itself has shrunk to fit, so it scales down with cardW
+  // too rather than silently reintroducing the overflow that just got fixed.
+  row.style.gap = Math.min(8, cardW) + 'px';
 }
 
 function buildRibbonCard(s, num, storylineById) {
@@ -1774,6 +1833,12 @@ function renderBraid() {
 
   const flagActive = typeof isFlagModeActive === 'function' && isFlagModeActive();
   const flaggedIds = flagActive && typeof getFlaggedSceneIds === 'function' ? (getFlaggedSceneIds() || []) : [];
+  const nodeR = braidNodeR(_braidColDx);
+  // The scene number doesn't shrink with the circle (fixed font-size:10) — at
+  // some point it stops fitting inside the node at all, so it's dropped
+  // rather than left spilling out past a tiny circle at extreme fit-to-window
+  // zoom levels.
+  const showNodeNum = nodeR >= 7;
 
   msOrder.forEach((id, i) => {
     const s = sceneById.get(id);
@@ -1792,7 +1857,7 @@ function renderBraid() {
     if (flagActive && flaggedIds.includes(id)) g.classList.add('tl-flag');
 
     const circle = document.createElementNS(SVGNS, 'circle');
-    circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', 11);
+    circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', nodeR);
     circle.setAttribute('stroke-width', 3);
     circle.style.fill = 'var(--cbg)';
     circle.style.stroke = color;
@@ -1803,17 +1868,23 @@ function renderBraid() {
     circle.style.color = color;
     g.appendChild(circle);
 
-    const num = document.createElementNS(SVGNS, 'text');
-    num.setAttribute('x', x); num.setAttribute('y', y);
-    num.setAttribute('font-size', 10); num.setAttribute('font-weight', 'bold'); num.setAttribute('text-anchor', 'middle');
-    num.setAttribute('dominant-baseline', 'central'); num.setAttribute('pointer-events', 'none');
-    num.style.fill = 'var(--tx)';
-    num.textContent = String(numMap.get(id) ?? (i + 1));
-    g.appendChild(num);
+    if (showNodeNum) {
+      const num = document.createElementNS(SVGNS, 'text');
+      num.setAttribute('x', x); num.setAttribute('y', y);
+      num.setAttribute('font-size', 10); num.setAttribute('font-weight', 'bold'); num.setAttribute('text-anchor', 'middle');
+      num.setAttribute('dominant-baseline', 'central'); num.setAttribute('pointer-events', 'none');
+      num.style.fill = 'var(--tx)';
+      num.textContent = String(numMap.get(id) ?? (i + 1));
+      g.appendChild(num);
+    }
 
     if (g.classList.contains('tl-warn')) {
+      // Offset/radius scale with nodeR (both fixed at 9/4 for the full-size
+      // 11px node) so the badge stays pinned to the node's own edge instead
+      // of floating past it once nodeR shrinks well below 11 at a tight fit.
+      const warnScale = nodeR / BRAID_NODE_FULL_R;
       const warn = document.createElementNS(SVGNS, 'circle');
-      warn.setAttribute('cx', x + 9); warn.setAttribute('cy', y - 9); warn.setAttribute('r', 4);
+      warn.setAttribute('cx', x + 9 * warnScale); warn.setAttribute('cy', y - 9 * warnScale); warn.setAttribute('r', Math.max(2, 4 * warnScale));
       warn.setAttribute('stroke-width', 2); warn.setAttribute('pointer-events', 'none');
       warn.style.fill = 'var(--rd)';
       warn.style.stroke = 'var(--cbg)';
