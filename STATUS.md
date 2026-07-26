@@ -1,6 +1,6 @@
 # Current Status
 
-As of July 23, 2026 (`thruLine_v2` branch, forked from `thruLine_v1` at `fc40212`):
+As of July 26, 2026 (`thruLine_v3` branch, forked from `thruLine_v2` at `aa0bb78`):
 
 ## Notes
 strip_AI branch: removed all AI features (Analyze Story menu item, AI panel with Analysis/Chat tabs, ai.js, chat.js, and related state/CSS) so the app ships without them for now — to be reintroduced later. Also hardened the app: CSP meta tags on all pages, stricter JSON import validation, and cleanup of leftover AI localStorage keys.
@@ -2726,6 +2726,134 @@ User asked whether something was wrong after tagging an earlier scene's item as 
 
 ### Verified live
 Every item in all three rounds confirmed directly in the browser (Frankenstein and Monte Cristo samples) — stacking order, sticky-scroll behavior on both axes, color values, and the conflict message text were all checked programmatically (computed styles, `getBoundingClientRect()` before/after scroll, `getActiveConflicts()` output), not just visually. Every sample project touched during testing (mutated storylines, reveals, scene tags) was restored to pristine state afterward via the same remove-local-copy-and-reseed approach used in prior sessions, confirmed each time by re-checking scene count and `revision: 0`.
+
+### Not yet done
+Not merged anywhere. No further open items from this round.
+
+## thruLine_v3 branch — Chronology lane-column overhaul (fill-down, scrollbar, zoom-to-fit), hover callout
+
+A direct-feedback round entirely focused on the Loom Chronology pane's lane column and the
+Timeline zoom-to-fit setting, plus a new hover-callout feature. Every item verified live
+against the sample projects (Frankenstein, Count of Monte Cristo), including several with
+temporary test data (extra storylines, duplicated scenes to reach realistic scene counts)
+added and then removed/undone afterward.
+
+### Chronology lane column: fill-down, then a real scrollbar
+`#tl-chron-body` was `flex:0 0 auto` (content-sized) with a `max-height:55%` cap meant only
+as a ceiling for many-storyline projects — but content-sizing meant a project with few
+storylines left a large dead band between the last lane row and the wires zone below, with
+the "+ Storyline" button stranded right after the last row instead of using the available
+space. First fix: `flex:1 1 auto` so the box actively grows to fill the cap, with
+`#tl-lane-labels`/`#tl-track` given `height:100%` to stretch along with it (JS switched from
+setting an exact `height` to a `min-height`, so a lane list taller than the filled box still
+clips/scrolls the same as before). Second fix (a separate round): storylines that didn't fit
+under the cap were silently clipped with no way to reach them, and the button — a
+`position:absolute` overlay on `#tl-lane-labels` — clipped away with them, since an
+absolutely-positioned descendant of a scrolling container still scrolls with that container's
+content, it only escapes normal flow. Split `#tl-lane-labels` into a `#tl-lane-scroll`
+sub-region (the real, native scrollbar) plus the button as a true flex sibling below it, so
+it's reachable regardless of scroll position or lane count. `#tl-track` can't scroll natively
+in sync (its own scroll container is already claimed for horizontal paging), so
+`tlSyncLaneScroll()` mirrors `#tl-lane-scroll`'s `scrollTop` onto `#tl-track` via a matching
+`translateY` — verified row-for-row alignment holds at any scroll offset via
+`getBoundingClientRect()`, and confirmed the existing drag-relane hit test
+(`_tlLaneAtClientY`, keyed off live rects) needed no changes since it already reads
+post-transform positions. Wheel events over the card area are forwarded to the lane
+scrollbar too, so scrolling isn't limited to the narrow 132px label column. Cap later raised
+from 55% to 65% (verified 6 lanes now fit before scrolling vs. 5 before, at a 1100px-tall
+window) to show more lanes before the scrollbar kicks in, chosen conservatively rather than
+more aggressively specifically to keep the wires zone comfortable — it was a hardcoded
+sliver that made wire curves "nearly invisible" before an earlier round gave it guaranteed
+room (see the Post-M7 hardening entry above).
+
+**Reverted, same session:** the `flex:1 1 auto` fill-down fix, on reflection, overcorrected —
+it meant *every* project's `#tl-chron-body` claimed the full 65% regardless of actual
+content, pushing the button and the "Chronology" caption below it down by a large fixed
+amount even for a 1-2-storyline project with nothing to fill that space. Reverted to
+`flex:0 0 auto` (content-sized growth, `max-height:65%` now purely a ceiling for
+many-storyline projects) so the box starts right under the header and grows only as
+storylines are added; the button's spacing above it now comes from a fixed 24px top margin
+instead of stretching the whole box. Verified live: 1 storyline sits high on the page with
+the button right below it, each added storyline grows the box and pushes the button/caption
+down proportionally, and 10 storylines still correctly caps at 65% with the scrollbar intact.
+
+### Three bugs found while shipping the above
+- **Trackpad horizontal scroll went jittery.** The wheel-forwarding listener (added for the
+  lane scrollbar) treated any nonzero `deltaY` as a vertical gesture and called
+  `preventDefault()`, which also cancels the accompanying `deltaX` — a trackpad horizontal
+  swipe reports a small noisy `deltaY` alongside its `deltaX`, so nearly every such swipe got
+  hijacked mid-gesture. Fixed to only intercept when `|deltaY| > |deltaX|`; verified with
+  synthetic wheel events that a horizontal-dominant gesture no longer gets prevented while a
+  vertical-dominant one still scrolls the lanes.
+- **Wires bled through the lane label column.** `#tl-wires` (a full-`#tl-stage` SVG
+  connecting each scene's chronology position to its manuscript-row position) was never
+  clipped by the label column — cards get clipped for free by `#tl-chron-scroll`'s own
+  scroll boundary, but wires aren't inside that scrollable region, so a wire endpoint for any
+  card scrolled behind the column still drew straight through it. A pre-existing gap, only
+  newly visible once more of the column became populated/reachable. Fixed with an explicit
+  `z-index:6` + opaque background on `#tl-lane-labels`; confirmed via the actual SVG path
+  data (endpoints extending from deeply negative x-coordinates through the column's 0-132px
+  range) that the fix masks it correctly.
+- **Path view's vertical "CHRONOLOGY" axis label** was getting clipped by a top bar that grew
+  taller in an earlier round without this label's own offset being adjusted (`top:38px` →
+  `60px`), and its down-arrow was floating beside the word's middle instead of sitting below
+  it — a `flex-direction:column` + `writing-mode:vertical-rl` interaction actually lays
+  column children out on the *cross* axis, not stacked, under that combination. Switched to
+  `row-reverse`, confirmed via measured `getBoundingClientRect()`s that the arrow now centers
+  exactly on the word's axis and sits directly below it.
+
+### Zoom-to-fit didn't actually fit
+The lowest zoom setting is supposed to fit every scene into the window with no horizontal
+scroll (`tlZoomFitPx()`/`tlBraidZoomFitDx()`), but with enough scenes (reported: 89) that true
+fit needed tighter spacing than a hardcoded "readable card" floor, the fit calculation
+silently clamped back up past that floor and the promise silently became "scroll anyway."
+Three independent floors had to go: the fit functions' own fixed floor (38px/scene,
+40px/column — replaced with a purely technical 2px floor, not a readability minimum); the
+matching floor in three separate `cardW` formulas (replaced with `tlLoomCardW()`, which keeps
+width within its own pitch instead of a fixed minimum); and a second, subtler floor from
+`box-sizing:border-box` itself — card padding + border alone impose a ~16px floor regardless
+of requested width, since a border-box element can't render smaller than its own padding +
+border. `tlApplyCardWidth()` now scales padding down together with width below that
+threshold. Braid nodes got the parallel fix (`braidNodeR()`, scaling circle radius down with
+column spacing and dropping the scene-number label once it no longer fits legibly), plus the
+manuscript ribbon's flex `gap` (8px × 88 gaps alone was enough to blow out the container even
+after every card had shrunk) got the same treatment. Verified with a real 89-scene test
+project (39 real + duplicated to 89, cleaned up afterward): both Loom (chron track +
+manuscript ribbon) and Path fit with zero horizontal scroll at zoom 0, confirmed via
+`scrollWidth === clientWidth` and actual rightmost-element position, not just the computed
+values; re-verified a normal 27-scene project still renders cleanly at zoom 0 (slightly
+denser than before — 28px/scene vs. the old 38px floor — but fully legible, no regression).
+
+**Follow-up diagnostic, no bug found:** after the above, Chronology looked appropriately
+sized at zoom 0 but Narrative looked over-condensed on a dense multi-storyline project.
+Investigated by reproducing the exact shape (90 scenes across 5 storylines) — card boxes
+turned out to be *identical* size in both panes (4px, both exactly fitting the container).
+The real cause is structural, not a bug: Chronology spreads its scenes across N lanes, so
+each lane only has to visually accommodate its own subset (real breathing room, both
+horizontally and vertically), while Narrative shows every scene in one continuous row (no
+"lane" to spread across, since manuscript order is a single reading sequence) — same card
+size, same total width, but N× the density in that one strip. Decided against changing
+Narrative's sizing (would mean either letting it scroll, undoing the zoom-to-fit fix above,
+or shrinking Chronology to match Narrative's cramped density) in favor of the hover callout
+below, which makes any card's full info reachable regardless of how small it renders.
+
+### New: hover callout with full card info
+Every chron and manuscript card now shows a read-only popover (title, date/time, storyline
+name, summary, POV, characters, locations) on a 400ms hover delay, independent of the card's
+rendered size — the point being that a card shrunk down for a tight fit-to-window zoom level
+is still fully inspectable even though it's no longer legible at its rendered size.
+`tlWireCardHover()` replaces the previously-duplicated mouseenter/mouseleave pair at both
+card-creation sites with one shared helper doing both the existing cross-highlight and the
+new callout, so the two can't drift apart. Dismissed on mouseleave, drag start, any scroll of
+the chron/manuscript/lane-label scroll containers (position is computed once at show time,
+not tracked live), and on re-render (a mid-hover zoom change or undo can tear out and rebuild
+the anchor card without ever firing its mouseleave). Character/location names resolved via
+editor.js's existing `buildLibMaps()` rather than re-deriving id-to-name lookups. Verified
+live at both normal card size and the ~16px cards produced by the lowest zoom setting;
+confirmed the popover flips below the card when too close to the viewport top, dismisses
+correctly on mouseleave/scroll, and that cross-highlight (hover-to-thicken-wires) still works
+alongside it. One follow-up polish item: the storyline line now reads e.g. "Victor's Account
+storyline" instead of just the bare name, clarifying what that meta item is at a glance.
 
 ### Not yet done
 Not merged anywhere. No further open items from this round.
