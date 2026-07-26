@@ -1590,7 +1590,7 @@ function tlShowCallout(sceneId, anchorEl) {
   const anchorStr = fmtAnchor(s.anchor);
   if (anchorStr) metaBits.push(anchorStr);
   const st = S.storylines.find(x => x.id === s.storylineId);
-  if (st) metaBits.push(st.name);
+  if (st) metaBits.push(st.name + ' storyline');
   if (metaBits.length) {
     const meta = document.createElement('div');
     meta.className = 'tl-callout-meta';
