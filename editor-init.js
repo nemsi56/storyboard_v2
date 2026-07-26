@@ -201,10 +201,15 @@
   // card area itself are forwarded to #tl-lane-scroll (rather than given
   // their own independent scroll handling) so scrolling anywhere in the
   // chronology row scrolls the lanes, not just when the cursor happens to be
-  // over the narrow 132px label column.
+  // over the narrow 132px label column. Only when the gesture is vertical-
+  // dominant (|deltaY| > |deltaX|) — a trackpad horizontal swipe reports a
+  // small noisy deltaY alongside its deltaX, and preventDefault() cancels
+  // the whole wheel event including that deltaX, so treating any nonzero
+  // deltaY as "vertical" hijacked and stuttered #tl-chron-scroll's native
+  // horizontal panning on every such swipe.
   $('tl-lane-scroll').addEventListener('scroll', tlSyncLaneScroll);
   $('tl-chron-scroll-wrap').addEventListener('wheel', function(e){
-    if (e.deltaY === 0) return;
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
     const laneScroll = $('tl-lane-scroll');
     if (laneScroll.scrollHeight <= laneScroll.clientHeight) return;
     e.preventDefault();
