@@ -195,6 +195,21 @@
   $('tl-ms-scroll').addEventListener('click', function(e){ if (e.target === $('tl-ms-scroll') || e.target.id === 'tl-ms-row') tlSelectScene(null); });
   $('tl-chron-arrow-left').addEventListener('click', function(){ tlScrollByPage('tl-chron-scroll', -1); });
   $('tl-chron-arrow-right').addEventListener('click', function(){ tlScrollByPage('tl-chron-scroll', 1); });
+  // #tl-lane-scroll is the one real (native) vertical scrollbar for the
+  // storyline lanes; tlSyncLaneScroll() mirrors its position onto #tl-track
+  // via translateY so the card rows track the labels. Wheel events over the
+  // card area itself are forwarded to #tl-lane-scroll (rather than given
+  // their own independent scroll handling) so scrolling anywhere in the
+  // chronology row scrolls the lanes, not just when the cursor happens to be
+  // over the narrow 132px label column.
+  $('tl-lane-scroll').addEventListener('scroll', tlSyncLaneScroll);
+  $('tl-chron-scroll-wrap').addEventListener('wheel', function(e){
+    if (e.deltaY === 0) return;
+    const laneScroll = $('tl-lane-scroll');
+    if (laneScroll.scrollHeight <= laneScroll.clientHeight) return;
+    e.preventDefault();
+    laneScroll.scrollTop += e.deltaY;
+  }, { passive: false });
   $('tl-ms-arrow-left').addEventListener('click', function(){ tlScrollByPage('tl-ms-scroll', -1); });
   $('tl-ms-arrow-right').addEventListener('click', function(){ tlScrollByPage('tl-ms-scroll', 1); });
   $('tl-braid-scroll').addEventListener('click', function(e){ if (e.target === $('tl-braid-scroll') || e.target.id === 'tl-braid-svg') tlSelectScene(null); });

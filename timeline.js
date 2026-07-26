@@ -564,9 +564,8 @@ function chronTrackWidth(trackEl) {
 }
 
 function renderStorylineLanes() {
-  const laneLabels = document.getElementById('tl-lane-labels');
-  const addBtn = document.getElementById('tl-add-storyline-btn');
-  laneLabels.querySelectorAll('.tl-lane-label').forEach(el => el.remove());
+  const laneScroll = document.getElementById('tl-lane-scroll');
+  laneScroll.querySelectorAll('.tl-lane-label').forEach(el => el.remove());
   const laneH = 92;
   S.storylines.forEach((st, i) => {
     const count = S.scenes.filter(s => s.storylineId === st.id).length;
@@ -583,8 +582,24 @@ function renderStorylineLanes() {
     const delBtn = document.createElement('button'); delBtn.className = 'tl-lane-del'; delBtn.textContent = '×'; delBtn.title = 'Delete storyline';
     delBtn.addEventListener('click', e => { e.stopPropagation(); deleteStoryline(st.id); });
     label.appendChild(sw); label.appendChild(nameWrap); label.appendChild(countEl); label.appendChild(delBtn);
-    laneLabels.insertBefore(label, addBtn);
+    laneScroll.appendChild(label);
   });
+  tlSyncLaneScroll();
+}
+
+// Mirrors #tl-lane-scroll's scrollTop onto #tl-track via a matching
+// translateY, so the card rows track the lane labels 1:1 as the labels
+// column scrolls — #tl-track itself stays un-scrollable (#tl-chron-scroll
+// keeps overflow-y:hidden, its native scrollbar already repurposed for
+// horizontal paging), it just visually follows the one real scrollbar on the
+// labels side. clientHeight can be 0 on the very first paint before layout
+// has run once (e.g. right after switching into Timeline view), so this is
+// re-called after every lane/scene render rather than wired once.
+function tlSyncLaneScroll() {
+  const laneScroll = document.getElementById('tl-lane-scroll');
+  const track = document.getElementById('tl-track');
+  if (!laneScroll || !track) return;
+  track.style.transform = 'translateY(-' + laneScroll.scrollTop + 'px)';
 }
 
 function startStorylineRename(labelEl, id) {
@@ -639,7 +654,6 @@ function deleteStoryline(id) {
 }
 
 function renderChronStrip() {
-  const laneLabels = document.getElementById('tl-lane-labels');
   const track = document.getElementById('tl-track');
   if (!track) return;
   track.querySelectorAll('.tl-scene, .tl-lane-row, #tl-thread-svg, .tl-markers-layer').forEach(el => el.remove());
@@ -657,19 +671,15 @@ function renderChronStrip() {
   // ~pxPerScene 106) and floored at 28 (still shrinks further than that only
   // once the slider is pushed into auto-fit territory).
   const laneH = 92, cardW = Math.max(TL_ZOOM_MIN_CARD_PX, Math.min(96, tlCurrentPxPerScene() - 10));
-  // BTN_RESERVE: #tl-add-storyline-btn floats pinned to #tl-lane-labels'
-  // bottom edge (styles.css) — without reserving this room, it always
-  // overlaps the last lane's label. min-height (not height) so a short lane
-  // list still stretches to fill #tl-chron-body via CSS height:100% (which
-  // now grows with the box, see styles.css #tl-chron-body flex:1 1 auto);
-  // a lane list taller than that just forces the box past 100% and clips via
-  // the ancestors' overflow-y:hidden, same as before. Set on both track and
-  // laneLabels equally so the reserved space doesn't reintroduce a mismatch
-  // between the two (each lane is still positioned identically at i*laneH).
-  const BTN_RESERVE = 40;
-  track.style.minHeight = (laneCount * laneH + BTN_RESERVE) + 'px';
+  // min-height (not height) so a short lane list still stretches to fill
+  // #tl-chron-scroll via CSS height:100% (which now grows with the box, see
+  // styles.css #tl-chron-body flex:1 1 auto); a lane list taller than that
+  // just forces track past 100% and out of view, revealed by scrolling
+  // #tl-lane-labels — tlSyncLaneScroll() mirrors that scroll onto #tl-track
+  // via translateY so the two stay in lockstep (each lane is still
+  // positioned identically at i*laneH in both).
+  track.style.minHeight = (laneCount * laneH) + 'px';
   track.style.width = chronTrackWidth(track) + 'px';
-  laneLabels.style.minHeight = (laneCount * laneH + BTN_RESERVE) + 'px';
 
   const laneIndex = new Map(S.storylines.map((st, i) => [st.id, i]));
   const storylineById = new Map(S.storylines.map(st => [st.id, st]));
@@ -748,6 +758,7 @@ function renderChronStrip() {
   renderChronMarkers(markersLayer, xMap);
   renderChronThread();
   updateAxisAvailability();
+  tlSyncLaneScroll();
 }
 
 function onChronCardDown(e, sceneId) {

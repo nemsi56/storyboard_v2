@@ -921,19 +921,33 @@ body.tl-mode #ed-notes-field{display:none}
    rather than rigidly holding content height and pushing the wires zone's
    own min-height floor into overflowing #tl-stage instead. */
 #tl-chron-body{flex:1 1 auto;max-height:55%;min-height:0;display:flex;overflow:hidden}
-#tl-lane-labels{position:relative;flex:0 0 132px;height:100%;display:flex;flex-direction:column;border-right:none;overflow-y:hidden}
-/* flex-shrink:0 is load-bearing: #tl-lane-labels is a flex column, and without
-   this, flex's default shrink-to-fit squeezes every label below its declared
-   height the moment total lane height exceeds #tl-chron-body's available
-   space (e.g. a shorter window, or a max-height:55% squeeze from a lot of
-   wire/manuscript content). The chron track's own rows/cards are absolutely
-   positioned, immune to that shrink, so they stay at their true 92px spacing
-   — the labels would silently drift out of alignment with their rows,
-   worse with each subsequent lane, while the rows themselves stayed put.
-   With shrink disabled, any excess instead clips via #tl-lane-labels'
-   overflow-y:hidden, exactly like the track's own rows already do via
-   #tl-chron-scroll's overflow-y:hidden — same failure mode on both sides
-   instead of a silent divergence between them. */
+#tl-lane-labels{position:relative;flex:0 0 132px;height:100%;display:flex;flex-direction:column;border-right:none;overflow:hidden}
+/* #tl-lane-scroll is the actual scrolling region — split out from
+   #tl-lane-labels (which now just arranges [scroll region, footer button]
+   vertically) so the +Storyline button below can sit OUTSIDE the scrolled
+   content as a real flex sibling. A position:absolute button anchored to an
+   ancestor that itself scrolls still scrolls away with that ancestor's
+   content (position:absolute only escapes NORMAL FLOW, not the scrollable
+   overflow region of its own containing block) — the old floating-overlay
+   button relied on #tl-lane-labels never actually scrolling (excess just
+   clipped, unreachable) to stay put; now that lanes past the cap are
+   reachable via scroll, the button needs to live one level up to stay fixed
+   regardless of scroll position. flex:1/min-height:0 so it fills #tl-chron-
+   body's available height (same fill-down as before) and only engages its
+   own scrollbar once content exceeds that. */
+#tl-lane-scroll{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+#tl-lane-scroll::-webkit-scrollbar{width:4px}
+#tl-lane-scroll::-webkit-scrollbar-thumb{background:var(--s0);border-radius:2px}
+/* flex-shrink:0 on .tl-lane-label (below) is load-bearing: #tl-lane-scroll is
+   a flex column, and without this, flex's default shrink-to-fit squeezes
+   every label below its declared height the moment total lane height
+   exceeds the available space — the chron track's own rows/cards are
+   absolutely positioned, immune to that shrink, so they'd stay at their true
+   92px spacing while the labels silently drifted out of alignment with them,
+   worse with each subsequent lane. With shrink disabled, excess instead
+   scrolls via #tl-lane-scroll's own overflow-y:auto (see tlSyncLaneScroll()
+   in timeline.js, which mirrors this scroll position onto #tl-track via a
+   matching transform so the card rows track the labels 1:1). */
 .tl-lane-label{position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:4px 10px;border-right:2px solid var(--s1);border-bottom:1px dashed var(--s1);border-top:2px solid var(--lane-c,transparent);background:color-mix(in srgb,var(--lane-c,transparent) 5%,transparent);box-sizing:border-box;flex-shrink:0;font-size:11px;color:var(--sub);font-weight:600}
 .tl-lane-label .tl-sw{width:18px;height:3px;border-radius:2px}
 .tl-lane-label .tl-lane-name{color:var(--tx);cursor:text}
@@ -945,15 +959,12 @@ body.tl-mode #ed-notes-field{display:none}
 .tl-lane-del{position:absolute;top:3px;right:4px;background:none;border:none;color:var(--o0);cursor:pointer;font-size:12px;padding:1px 3px;line-height:1;opacity:0;transition:opacity .1s}
 .tl-lane-label:hover .tl-lane-del{opacity:1}
 .tl-lane-del:hover{color:var(--rd)}
-/* Taken out of #tl-lane-labels' normal flex flow entirely (was previously
-   just the last flex child, sitting right after the labels — despite the
-   unused margin-top:auto below, which the later margin:6px 8px 8px shorthand
-   in the same original rule always overrode) — with flex-shrink:0 above now
-   keeping every label at its true height, a project with enough storylines
-   to fill #tl-lane-labels' available space would push this button past the
-   clipped bottom edge and make it permanently unreachable. Pinned as a
-   floating overlay instead, so it's always visible regardless of lane count. */
-#tl-add-storyline-btn{position:absolute;left:8px;right:8px;bottom:8px;background:var(--bg1);border:1px dashed var(--s1);border-radius:6px;color:var(--sub);font-size:11px;font-weight:600;font-family:inherit;padding:6px;cursor:pointer;box-shadow:0 -4px 8px -2px var(--bg1)}
+/* A normal static flex child now, sitting below #tl-lane-scroll (its sibling,
+   not its ancestor) — always visible regardless of lane count or scroll
+   position, since it lives outside the element that actually scrolls. The
+   box-shadow (a faint shadow cast upward) keeps the same visual separation
+   from scrolled content that the old floating-overlay version had. */
+#tl-add-storyline-btn{flex:0 0 auto;margin:8px;background:var(--bg1);border:1px dashed var(--s1);border-radius:6px;color:var(--sub);font-size:11px;font-weight:600;font-family:inherit;padding:6px;cursor:pointer;box-shadow:0 -4px 8px -2px var(--bg1)}
 #tl-add-storyline-btn:hover{border-color:var(--acc);color:var(--acc)}
 
 /* Wrap (not the scrolling element itself) carries the flex sizing and hosts
