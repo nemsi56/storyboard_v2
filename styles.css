@@ -1269,6 +1269,23 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
 .tl-popover .tl-popover-row{display:flex;justify-content:flex-end}
 .tl-popover button{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--tx);cursor:pointer;font-family:inherit}
 .tl-popover button.tl-danger{color:var(--rd)}
+
+/* Read-only hover callout for chron/manuscript cards (timeline.js
+   tlShowCallout()) — separate from .tl-popover above (that one's an editable
+   form opened by click, this is transient info shown after a hover delay).
+   pointer-events:none since it should never itself be interactive or steal
+   the mouseleave that would otherwise dismiss it; z-index:400 clears
+   .tl-popover's 300 and everything else in the Timeline view. Exists
+   specifically so a card that's been shrunk down for a tight fit-to-window
+   zoom level (see tlApplyCardWidth()) still has its full info reachable via
+   hover, without needing to be legible at its rendered size. */
+.tl-callout{position:fixed;z-index:400;max-width:240px;background:var(--cbg);border:1px solid var(--s1);border-radius:8px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.28);pointer-events:none;font-size:11px;line-height:1.4;color:var(--tx)}
+.tl-callout-title{font-size:12.5px;font-weight:700;margin-bottom:3px}
+.tl-callout-meta{font-size:10px;color:var(--sub);margin-bottom:6px}
+.tl-callout-summary{margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.tl-callout-row{font-size:10px;color:var(--sub);margin-top:3px}
+.tl-callout-row b{color:var(--tx);font-weight:600}
+.tl-callout-offscreen{font-size:9.5px;font-weight:700;color:var(--sub);margin-bottom:4px}
 /* top:20px (not 4px) leaves room for the label's top:-15px offset above the
    line — at 4px the label ended up 11px above the track's own top edge,
    clipped away entirely by #tl-chron-scroll's overflow-y:hidden regardless

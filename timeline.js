@@ -708,6 +708,10 @@ function deleteStoryline(id) {
 function renderChronStrip() {
   const track = document.getElementById('tl-track');
   if (!track) return;
+  // A card mid-hover can get torn out and rebuilt by this render (zoom
+  // change, undo, live edit elsewhere) without its mouseleave ever firing —
+  // the callout would otherwise linger, anchored to a now-detached element.
+  clearTimeout(_tlCalloutTimer); tlHideCallout();
   track.querySelectorAll('.tl-scene, .tl-lane-row, #tl-thread-svg, .tl-markers-layer').forEach(el => el.remove());
 
   const scenesByStoryline = new Map(S.storylines.map(st => [st.id, []]));
@@ -796,8 +800,7 @@ function renderChronStrip() {
     const convDots = renderConvDots(s, storylineById);
     if (convDots) card.appendChild(convDots);
 
-    card.addEventListener('mouseenter', () => highlightScene(s.id, true));
-    card.addEventListener('mouseleave', () => highlightScene(s.id, false));
+    tlWireCardHover(card, s.id);
     card.addEventListener('click', e => {
       e.stopPropagation();
       if (_tlDragOccurred) { _tlDragOccurred = false; return; } // a drag just ended here
@@ -816,11 +819,13 @@ function renderChronStrip() {
 
 function onChronCardDown(e, sceneId) {
   if (e.button !== 0) return;
+  clearTimeout(_tlCalloutTimer); tlHideCallout();
   _tlDrag = { zone: 'chron', sceneId, active: false, startX: e.clientX, startY: e.clientY, ghostEl: null, insertLineEl: null, targetBeforeId: undefined, targetStorylineId: null };
 }
 
 function onMsCardDown(e, sceneId) {
   if (e.button !== 0) return;
+  clearTimeout(_tlCalloutTimer); tlHideCallout();
   _tlDrag = { zone: 'ms', sceneId, active: false, startX: e.clientX, startY: e.clientY, ghostEl: null, insertLineEl: null, targetBeforeId: undefined };
 }
 
@@ -890,8 +895,7 @@ function buildRibbonCard(s, num, storylineById) {
   const convDots = renderConvDots(s, storylineById);
   if (convDots) card.appendChild(convDots);
 
-  card.addEventListener('mouseenter', () => highlightScene(s.id, true));
-  card.addEventListener('mouseleave', () => highlightScene(s.id, false));
+  tlWireCardHover(card, s.id);
   card.addEventListener('click', e => {
     e.stopPropagation();
     if (_tlDragOccurred) { _tlDragOccurred = false; return; } // a drag just ended here
@@ -1524,6 +1528,116 @@ function _tlContextMenuOutsideClick(e) {
     menu.remove();
     document.removeEventListener('click', _tlContextMenuOutsideClick);
   }
+}
+
+// ── HOVER CALLOUT ─────────────────────────────────────────────────────────────
+// Read-only "full card info" popover shown after a hover delay on any chron or
+// manuscript card, at any zoom level — the point being that a card shrunk down
+// for a tight fit-to-window zoom (tlApplyCardWidth()) still has its info
+// reachable even though it's no longer legible at its rendered size.
+const TL_CALLOUT_DELAY_MS = 400;
+let _tlCalloutTimer = null;
+let _tlCalloutEl = null;
+
+// Shared by both card-creation sites (renderChronStrip, buildRibbonCard) so
+// the hover-highlight wiring and the callout wiring can't drift apart between
+// the two.
+function tlWireCardHover(card, sceneId) {
+  card.addEventListener('mouseenter', () => {
+    highlightScene(sceneId, true);
+    clearTimeout(_tlCalloutTimer);
+    _tlCalloutTimer = setTimeout(() => tlShowCallout(sceneId, card), TL_CALLOUT_DELAY_MS);
+  });
+  card.addEventListener('mouseleave', () => {
+    highlightScene(sceneId, false);
+    clearTimeout(_tlCalloutTimer);
+    tlHideCallout();
+  });
+}
+
+function tlHideCallout() {
+  if (_tlCalloutEl) { _tlCalloutEl.remove(); _tlCalloutEl = null; }
+}
+
+function tlShowCallout(sceneId, anchorEl) {
+  const s = S.scenes.find(x => x.id === sceneId);
+  // anchorEl.isConnected: the card can be gone by the time the delay fires
+  // (a re-render mid-hover, e.g. from an undo or a live edit elsewhere).
+  if (!s || !anchorEl.isConnected) return;
+  tlHideCallout();
+
+  const maps = buildLibMaps();
+  const namesFor = (ids, key) => (ids || [])
+    .map(id => { const e = maps[key] && maps[key].get(id); return e ? e.name : null; })
+    .filter(Boolean);
+
+  const pop = document.createElement('div');
+  pop.className = 'tl-callout';
+
+  if (s.offscreen) {
+    const chip = document.createElement('div');
+    chip.className = 'tl-callout-offscreen';
+    chip.textContent = 'OFFSCREEN';
+    pop.appendChild(chip);
+  }
+
+  const title = document.createElement('div');
+  title.className = 'tl-callout-title';
+  title.textContent = s.title || '(untitled scene)';
+  pop.appendChild(title);
+
+  const metaBits = [];
+  const anchorStr = fmtAnchor(s.anchor);
+  if (anchorStr) metaBits.push(anchorStr);
+  const st = S.storylines.find(x => x.id === s.storylineId);
+  if (st) metaBits.push(st.name);
+  if (metaBits.length) {
+    const meta = document.createElement('div');
+    meta.className = 'tl-callout-meta';
+    meta.textContent = metaBits.join(' · ');
+    pop.appendChild(meta);
+  }
+
+  if (s.summary) {
+    const summary = document.createElement('div');
+    summary.className = 'tl-callout-summary';
+    summary.textContent = s.summary;
+    pop.appendChild(summary);
+  }
+
+  const povNames = namesFor(s.povs, 'povs');
+  if (povNames.length) tlAppendCalloutRow(pop, 'POV', povNames.join(', '));
+  const charNames = namesFor(s.characters, 'characters');
+  if (charNames.length) tlAppendCalloutRow(pop, 'Characters', charNames.join(', '));
+  const locNames = namesFor(s.locations, 'locations');
+  if (locNames.length) tlAppendCalloutRow(pop, 'Locations', locNames.join(', '));
+
+  document.body.appendChild(pop);
+  _tlCalloutEl = pop;
+  tlPositionCallout(pop, anchorEl);
+}
+
+function tlAppendCalloutRow(pop, label, text) {
+  const row = document.createElement('div');
+  row.className = 'tl-callout-row';
+  const b = document.createElement('b');
+  b.textContent = label + ': ';
+  row.appendChild(b);
+  row.appendChild(document.createTextNode(text));
+  pop.appendChild(row);
+}
+
+function tlPositionCallout(pop, anchorEl) {
+  const r = anchorEl.getBoundingClientRect();
+  const pr = pop.getBoundingClientRect();
+  let left = r.left + r.width / 2 - pr.width / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - pr.width - 8));
+  // Above the card by default; flips below if there isn't room (e.g. a
+  // manuscript-ribbon card near the top of the viewport).
+  let top = r.top - pr.height - 8;
+  if (top < 8) top = r.bottom + 8;
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
 }
 
 // ── HOVER + WIRES (ported from ../Timeline/js/wires.js, schema v3 §6.2/§9) ────

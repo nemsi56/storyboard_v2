@@ -195,6 +195,11 @@
   $('tl-ms-scroll').addEventListener('click', function(e){ if (e.target === $('tl-ms-scroll') || e.target.id === 'tl-ms-row') tlSelectScene(null); });
   $('tl-chron-arrow-left').addEventListener('click', function(){ tlScrollByPage('tl-chron-scroll', -1); });
   $('tl-chron-arrow-right').addEventListener('click', function(){ tlScrollByPage('tl-chron-scroll', 1); });
+  // Hover callout (timeline.js tlShowCallout()) is positioned once, relative
+  // to its anchor card's rect at show time — any scroll that could move that
+  // card away from under it just dismisses it instead of tracking it live.
+  $('tl-chron-scroll').addEventListener('scroll', function(){ clearTimeout(_tlCalloutTimer); tlHideCallout(); });
+  $('tl-ms-scroll').addEventListener('scroll', function(){ clearTimeout(_tlCalloutTimer); tlHideCallout(); });
   // #tl-lane-scroll is the one real (native) vertical scrollbar for the
   // storyline lanes; tlSyncLaneScroll() mirrors its position onto #tl-track
   // via translateY so the card rows track the labels. Wheel events over the
@@ -208,6 +213,7 @@
   // deltaY as "vertical" hijacked and stuttered #tl-chron-scroll's native
   // horizontal panning on every such swipe.
   $('tl-lane-scroll').addEventListener('scroll', tlSyncLaneScroll);
+  $('tl-lane-scroll').addEventListener('scroll', function(){ clearTimeout(_tlCalloutTimer); tlHideCallout(); });
   $('tl-chron-scroll-wrap').addEventListener('wheel', function(e){
     if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
     const laneScroll = $('tl-lane-scroll');
