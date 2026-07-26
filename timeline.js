@@ -658,16 +658,18 @@ function renderChronStrip() {
   // once the slider is pushed into auto-fit territory).
   const laneH = 92, cardW = Math.max(TL_ZOOM_MIN_CARD_PX, Math.min(96, tlCurrentPxPerScene() - 10));
   // BTN_RESERVE: #tl-add-storyline-btn floats pinned to #tl-lane-labels'
-  // bottom edge (styles.css) — without reserving this room in both
-  // containers' own height, it always overlaps the last lane's label, since
-  // #tl-chron-body sizes strictly to its content (flex:0 0 auto) and never
-  // grows just because the window has room to spare. Added to both track and
+  // bottom edge (styles.css) — without reserving this room, it always
+  // overlaps the last lane's label. min-height (not height) so a short lane
+  // list still stretches to fill #tl-chron-body via CSS height:100% (which
+  // now grows with the box, see styles.css #tl-chron-body flex:1 1 auto);
+  // a lane list taller than that just forces the box past 100% and clips via
+  // the ancestors' overflow-y:hidden, same as before. Set on both track and
   // laneLabels equally so the reserved space doesn't reintroduce a mismatch
   // between the two (each lane is still positioned identically at i*laneH).
   const BTN_RESERVE = 40;
-  track.style.height = (laneCount * laneH + BTN_RESERVE) + 'px';
+  track.style.minHeight = (laneCount * laneH + BTN_RESERVE) + 'px';
   track.style.width = chronTrackWidth(track) + 'px';
-  laneLabels.style.height = (laneCount * laneH + BTN_RESERVE) + 'px';
+  laneLabels.style.minHeight = (laneCount * laneH + BTN_RESERVE) + 'px';
 
   const laneIndex = new Map(S.storylines.map((st, i) => [st.id, i]));
   const storylineById = new Map(S.storylines.map(st => [st.id, st]));

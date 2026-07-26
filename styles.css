@@ -912,15 +912,16 @@ body.tl-mode #ed-notes-field{display:none}
    grey on dark themes specifically, where --o0 alone read as too low-contrast. */
 .tl-zoom-tick{position:absolute;left:50%;top:50%;width:2px;height:9px;background:var(--tx);box-shadow:0 0 0 1px var(--bg0);transform:translate(-50%,-50%);pointer-events:none}
 
-/* Content-sized (ThruLine's own chronSection/manuscriptSection are flex:0 0
-   auto too) rather than a fixed flex-grow share of the stage — lane rows are
-   already fixed-height (timeline.js's laneH=92, not computed from available
-   space), so this doesn't affect lane rendering, and it leaves the wires zone
-   below (flex:1) whatever room chron/manuscript don't need instead of a
-   hardcoded 48px sliver. Capped so a many-storyline project can't starve the
-   wires zone down to its min-height. */
-#tl-chron-body{flex:0 0 auto;max-height:55%;min-height:0;display:flex;overflow:hidden}
-#tl-lane-labels{position:relative;flex:0 0 132px;display:flex;flex-direction:column;border-right:none;overflow-y:hidden}
+/* flex:1 1 auto (not 0 0 auto) so the lane column/track fill down to the cap
+   instead of stopping at content height and leaving a dead band above the
+   wires zone — #tl-lane-labels/#tl-track below fill via height:100% of this
+   box once it's grown. Still capped at max-height:55% so a many-storyline
+   project can't starve the wires zone (flex:1 below) past its min-height;
+   flex-shrink now enabled (was 0) so a short window shrinks this box first
+   rather than rigidly holding content height and pushing the wires zone's
+   own min-height floor into overflowing #tl-stage instead. */
+#tl-chron-body{flex:1 1 auto;max-height:55%;min-height:0;display:flex;overflow:hidden}
+#tl-lane-labels{position:relative;flex:0 0 132px;height:100%;display:flex;flex-direction:column;border-right:none;overflow-y:hidden}
 /* flex-shrink:0 is load-bearing: #tl-lane-labels is a flex column, and without
    this, flex's default shrink-to-fit squeezes every label below its declared
    height the moment total lane height exceeds #tl-chron-body's available
@@ -961,7 +962,7 @@ body.tl-mode #ed-notes-field{display:none}
 #tl-chron-scroll-wrap{flex:1;min-width:0;position:relative}
 #tl-chron-scroll{width:100%;height:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}
 #tl-chron-scroll::-webkit-scrollbar{display:none}
-#tl-track{position:relative;min-width:100%}
+#tl-track{position:relative;min-width:100%;height:100%}
 /* Small bubble scroll affordance for trackpad-less users, since the native
    scrollbar is hidden above — shown only on the side there's actually more
    to see (tlUpdateScrollArrows()), not permanently. */
