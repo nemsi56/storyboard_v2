@@ -915,12 +915,17 @@ body.tl-mode #ed-notes-field{display:none}
 /* flex:1 1 auto (not 0 0 auto) so the lane column/track fill down to the cap
    instead of stopping at content height and leaving a dead band above the
    wires zone — #tl-lane-labels/#tl-track below fill via height:100% of this
-   box once it's grown. Still capped at max-height:55% so a many-storyline
-   project can't starve the wires zone (flex:1 below) past its min-height;
-   flex-shrink now enabled (was 0) so a short window shrinks this box first
-   rather than rigidly holding content height and pushing the wires zone's
-   own min-height floor into overflowing #tl-stage instead. */
-#tl-chron-body{flex:1 1 auto;max-height:55%;min-height:0;display:flex;overflow:hidden}
+   box once it's grown. Capped at max-height:65% (raised from 55% to show
+   more lanes before #tl-lane-scroll's own scrollbar kicks in) so a many-
+   storyline project still can't starve the wires zone (flex:1 below) past
+   its min-height — 65% was chosen over a more aggressive value specifically
+   to keep that floor comfortable, since the wires zone was a hardcoded
+   sliver that made wire curves "nearly invisible" before it was given
+   guaranteed room (see STATUS.md); flex-shrink now enabled (was 0) so a
+   short window shrinks this box first rather than rigidly holding content
+   height and pushing the wires zone's own min-height floor into overflowing
+   #tl-stage instead. */
+#tl-chron-body{flex:1 1 auto;max-height:65%;min-height:0;display:flex;overflow:hidden}
 /* z-index:6 + an opaque background — #tl-wires (styles.css, z-index:5) is a
    full-#tl-stage overlay connecting every scene's chronology position to its
    manuscript-row position, so it always has a line endpoint sitting at each
