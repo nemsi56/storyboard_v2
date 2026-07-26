@@ -912,20 +912,25 @@ body.tl-mode #ed-notes-field{display:none}
    grey on dark themes specifically, where --o0 alone read as too low-contrast. */
 .tl-zoom-tick{position:absolute;left:50%;top:50%;width:2px;height:9px;background:var(--tx);box-shadow:0 0 0 1px var(--bg0);transform:translate(-50%,-50%);pointer-events:none}
 
-/* flex:1 1 auto (not 0 0 auto) so the lane column/track fill down to the cap
-   instead of stopping at content height and leaving a dead band above the
-   wires zone — #tl-lane-labels/#tl-track below fill via height:100% of this
-   box once it's grown. Capped at max-height:65% (raised from 55% to show
-   more lanes before #tl-lane-scroll's own scrollbar kicks in) so a many-
-   storyline project still can't starve the wires zone (flex:1 below) past
-   its min-height — 65% was chosen over a more aggressive value specifically
-   to keep that floor comfortable, since the wires zone was a hardcoded
-   sliver that made wire curves "nearly invisible" before it was given
-   guaranteed room (see STATUS.md); flex-shrink now enabled (was 0) so a
-   short window shrinks this box first rather than rigidly holding content
-   height and pushing the wires zone's own min-height floor into overflowing
-   #tl-stage instead. */
-#tl-chron-body{flex:1 1 auto;max-height:65%;min-height:0;display:flex;overflow:hidden}
+/* flex:0 0 auto (content-sized) — a prior version made this flex:1 1 auto so
+   the lane column would fill down to the cap even with only a few
+   storylines, which fixed an early complaint (rows stopping short, the
+   button appearing to cut off well above the wires zone) but overcorrected:
+   it meant EVERY project's chron-body claimed the full max-height:65%
+   regardless of actual content, pushing the +Storyline button and the
+   "Chronology" caption below it down by a large fixed amount even for a
+   1-2-storyline project with nothing to fill that space. Content-sizing
+   instead means the box starts right under the header and grows only as
+   storylines are added — max-height:65% now acts purely as a ceiling for
+   many-storyline projects (so they still can't starve the wires zone past
+   its min-height), not a target every project gets stretched to. The small
+   amount of breathing room the button needs above it (so it doesn't read as
+   "cut off" immediately after the last row) comes from a fixed margin on
+   #tl-add-storyline-btn itself now, not from stretching this whole box.
+   flex-shrink still enabled so a short window shrinks this box first rather
+   than rigidly holding content height and pushing the wires zone's own
+   min-height floor into overflowing #tl-stage instead. */
+#tl-chron-body{flex:0 0 auto;max-height:65%;min-height:0;display:flex;overflow:hidden}
 /* z-index:6 + an opaque background — #tl-wires (styles.css, z-index:5) is a
    full-#tl-stage overlay connecting every scene's chronology position to its
    manuscript-row position, so it always has a line endpoint sitting at each
@@ -981,7 +986,12 @@ body.tl-mode #ed-notes-field{display:none}
    position, since it lives outside the element that actually scrolls. The
    box-shadow (a faint shadow cast upward) keeps the same visual separation
    from scrolled content that the old floating-overlay version had. */
-#tl-add-storyline-btn{flex:0 0 auto;margin:8px;background:var(--bg1);border:1px dashed var(--s1);border-radius:6px;color:var(--sub);font-size:11px;font-weight:600;font-family:inherit;padding:6px;cursor:pointer;box-shadow:0 -4px 8px -2px var(--bg1)}
+/* margin-top:24px (not 8px, like the other three sides) — #tl-chron-body is
+   content-sized now, so without this the button would sit immediately
+   against the last lane row with no breathing room at all. A fixed gap
+   rather than stretching the whole box to fill available height (see
+   #tl-chron-body above). */
+#tl-add-storyline-btn{flex:0 0 auto;margin:24px 8px 8px;background:var(--bg1);border:1px dashed var(--s1);border-radius:6px;color:var(--sub);font-size:11px;font-weight:600;font-family:inherit;padding:6px;cursor:pointer;box-shadow:0 -4px 8px -2px var(--bg1)}
 #tl-add-storyline-btn:hover{border-color:var(--acc);color:var(--acc)}
 
 /* Wrap (not the scrolling element itself) carries the flex sizing and hosts
