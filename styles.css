@@ -228,7 +228,14 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .errmsg{font-size:11px;color:var(--rd);margin-top:5px;min-height:14px}
 
 /* ══ STORYBOARD PANEL ══════════════════════════════════════════════════════ */
-#sbp{flex:1;min-width:0;background:var(--sbg);display:flex;flex-direction:column;overflow:hidden}
+/* position:relative — #sbemp below is position:absolute expecting THIS panel
+   as its containing block (inset:46px 0 0 0, meant to center the empty-state
+   message under #sbp's own header). Without it, #sbemp falls back to the
+   nearest positioned ancestor, which is none — the initial containing block
+   (viewport) — so the message centers across the whole window, straddling
+   into the Library/Sections/New-Scene panels to its left instead of staying
+   inside the board area. */
+#sbp{position:relative;flex:1;min-width:0;background:var(--sbg);display:flex;flex-direction:column;overflow:hidden}
 /* 52px, not the 46px every other panel header row uses — the extra height
    gives the CARDS/FLOW label (see .view-toggle-lbl) breathing room above it
    instead of sitting flush against the row's top edge. */
