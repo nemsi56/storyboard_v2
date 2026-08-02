@@ -172,32 +172,40 @@ function computeConflicts() {
   // directions) ────────────────────────────────────────────────────────────
   const revealById = new Map(S.revealsLib.map(r => [r.id, r]));
   const readerOrder = manuscriptOrder().filter(s => !s.offscreen);
-  const known = new Set();
-  readerOrder.forEach(s => {
+  // Not a single "seen at least one foreshadow of this item yet" flag — that
+  // broke down the moment an item was foreshadowed on more than one scene
+  // (e.g. several hints building toward one payoff): the flag latched true at
+  // the FIRST foreshadow scene and stayed true for the rest of the read-
+  // through, so a payoff dragged back past a LATER foreshadow scene (but
+  // still after the first one) silently passed with no conflict, even though
+  // it now sat ahead of a foreshadow scene it still needed to follow.
+  // Instead, for each payoff, find every scene that foreshadows the same
+  // item and flag it if ANY of them still sits at or after the payoff —
+  // reported against the nearest (first) such still-pending one.
+  readerOrder.forEach((s, sIdx) => {
     (s.requires || []).forEach(rvId => {
-      if (known.has(rvId)) return;
-      let revealer = null;
-      for (const s2 of readerOrder) {
-        if ((s2.reveals || []).includes(rvId)) { revealer = s2; break; }
-      }
+      const revealers = [];
+      readerOrder.forEach((s2, idx2) => { if ((s2.reveals || []).includes(rvId)) revealers.push({ s2, idx2 }); });
       const label = (revealById.get(rvId) || {}).label || rvId;
-      if (revealer) {
-        push({
-          fingerprint: fp('reveal-order', [s.id, revealer.id], rvId),
-          type: 'reveal-order', severity: 'error', title: 'Reveal before foreshadow',
-          message: `${sceneLabel(s.id)} reveals "${label}" before foreshadowed in ${sceneLabel(revealer.id)}.`,
-          sceneIds: [s.id, revealer.id],
-        });
-      } else {
+      if (!revealers.length) {
         push({
           fingerprint: fp('reveal-missing', [s.id], rvId),
           type: 'reveal-missing', severity: 'error', title: 'Reveal never foreshadowed',
           message: `${sceneLabel(s.id)} reveals "${label}", but nothing foreshadows it.`,
           sceneIds: [s.id],
         });
+        return;
+      }
+      const pending = revealers.find(r => r.idx2 >= sIdx);
+      if (pending) {
+        push({
+          fingerprint: fp('reveal-order', [s.id, pending.s2.id], rvId),
+          type: 'reveal-order', severity: 'error', title: 'Reveal before foreshadow',
+          message: `${sceneLabel(s.id)} reveals "${label}" before foreshadowed in ${sceneLabel(pending.s2.id)}.`,
+          sceneIds: [s.id, pending.s2.id],
+        });
       }
     });
-    (s.reveals || []).forEach(rvId => known.add(rvId));
   });
 
   return fpOrder.map(f => byFingerprint.get(f));
