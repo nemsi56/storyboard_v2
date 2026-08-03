@@ -889,7 +889,7 @@ body.tl-mode #ed-notes-field{display:none}
    padding to render into before getting clipped — 8px wasn't enough headroom
    for the label's own height + gap. */
 #tl-chron-hdr{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:16px 14px 8px;border-bottom:1px solid var(--s1);background:var(--bg1)}
-#tl-axis-switch{display:flex;border:1px solid var(--s1);border-radius:7px;overflow:hidden}
+#tl-axis-switch,#tl-braid-mode-switch{display:flex;border:1px solid var(--s1);border-radius:7px;overflow:hidden}
 .tl-axis-btn{background:var(--s0);color:var(--sub);border:none;padding:6px 10px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer}
 .tl-axis-btn.on{background:var(--acc);color:var(--ontx)}
 .tl-axis-btn:disabled{opacity:.4;cursor:default}
@@ -1116,7 +1116,17 @@ body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){op
 #tl-stage.tl-braid-active #tl-ms-scroll,
 #tl-stage.tl-braid-active #tl-wires{display:none}
 #tl-stage.tl-braid-active #tl-braid-scroll{display:block}
-#tl-braid-svg{display:block}
+/* position:relative (no offset needed) makes this a positioned element in
+   the same local stacking layer as #tl-braid-watermark, so DOM order (this
+   comes after the watermark in the HTML) decides paint order between the
+   two — the watermark stays behind. Without this, the svg is a plain
+   non-positioned element, which per CSS paints BEFORE any positioned
+   sibling regardless of DOM order or z-index sign — a negative z-index on
+   the watermark to "go behind" would escape this container entirely and
+   land behind some ancestor's opaque background instead (confirmed live:
+   the watermark disappeared completely, not just faded, the first time
+   this was tried with z-index:-1). */
+#tl-braid-svg{display:block;position:relative}
 /* Storyline-color legend, always visible at the top of the chart (not inside
    the scrollable area) — reuses the Flow Chart's own .chart-legend-item/
    -swatch/-name classes for a consistent look rather than a bespoke style. */
@@ -1176,6 +1186,12 @@ body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){op
    free, via align-items:center now doing what it was meant to. */
 .tl-braid-axis-left{position:absolute;top:60px;left:6px;display:flex;flex-direction:row-reverse;align-items:center;gap:4px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--lbl);white-space:nowrap;writing-mode:vertical-rl;transform:rotate(180deg)}
 .tl-braid-axis-arrow{writing-mode:horizontal-tb;transform:rotate(180deg);font-size:11px;font-weight:400;letter-spacing:0}
+/* Centered in the current viewport of #tl-braid-scroll (position recomputed
+   on scroll/render by tlBraidUpdateWatermark(), same pattern as the axis
+   bars) — sits behind the SVG in DOM order so nodes/gridlines/paths draw
+   over it and it only reads clearly in genuinely empty grid space, exactly
+   where it's meant to be seen. */
+#tl-braid-watermark{position:absolute;transform:translate(-50%,-50%);pointer-events:none;font-size:46px;font-weight:800;letter-spacing:5px;text-transform:uppercase;color:var(--sub);opacity:.13;white-space:nowrap;user-select:none}
 
 .tl-braid-node circle{transition:stroke-width .15s,transform .15s}
 .tl-braid-node.tl-hi circle{stroke-width:5}
@@ -1323,5 +1339,6 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
 .tl-insert-line{position:absolute;top:0;bottom:0;width:2px;background:var(--acc);z-index:3;pointer-events:none;opacity:.9;border-radius:1px}
 .tl-ms-insert-line{position:fixed;width:2px;background:var(--acc);z-index:300;pointer-events:none;opacity:.9;border-radius:1px}
 .tl-scene.tl-drag-source,.tl-ms-card.tl-drag-source{opacity:.35}
+.tl-braid-node.tl-drag-source{opacity:.35}
 
 

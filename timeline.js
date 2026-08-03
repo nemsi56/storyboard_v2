@@ -303,6 +303,7 @@ function fmtGap(ms) {
 // ── MODE STATE ─────────────────────────────────────────────────────────────────
 let timelineMode = false;
 let tlBraidMode = false; // Strip vs. Braid, ephemeral like chartMode — resets on project open
+let tlBraidChronMode = false; // Narrative vs. Chronology axis within Braid, same ephemeral lifetime as tlBraidMode
 let tlSelectedId = null;
 let tlActiveTab = 'inspector'; // in-memory only, not persisted (§6.6)
 let _tlFormEditHome = null; // { parent, next } captured once, restored on leave
@@ -387,9 +388,11 @@ function _openTimelineViewImpl() {
   tlSwitchTab('inspector');
   tlSelectedId = null;
   tlBraidMode = false;
+  tlBraidChronMode = false;
   document.getElementById('tl-stage').classList.remove('tl-braid-active');
   document.getElementById('tl-axis-switch').style.display = '';
   document.getElementById('tl-thread-wrap').style.display = '';
+  document.getElementById('tl-braid-mode-switch').style.display = 'none';
   // Cards/Snake/Circle/Timeline(Loom/Path) switch moves onto the Timeline
   // header, same reparent-not-clone pattern openChartView() already uses for
   // #chart-toolbar — keeps its listeners/state intact rather than duplicating them.
@@ -450,8 +453,22 @@ function setTlViewMode(mode) {
   updateViewToggleUI();
   const axisSwitch = document.getElementById('tl-axis-switch');
   const threadWrap = document.getElementById('tl-thread-wrap');
+  const braidModeSwitch = document.getElementById('tl-braid-mode-switch');
   if (axisSwitch) axisSwitch.style.display = tlBraidMode ? 'none' : '';
   if (threadWrap) threadWrap.style.display = tlBraidMode ? 'none' : '';
+  if (braidModeSwitch) braidModeSwitch.style.display = tlBraidMode ? '' : 'none';
+  renderTimeline();
+}
+// Narrative (today's reading-order × chronology braid, unchanged) vs.
+// Chronology (same braid, axes swapped: columns walk chronological order —
+// merging scenes that share an exact anchor into one column — and rows are
+// each scene's reading-order rank instead). Nested inside Braid the same way
+// Braid itself nests inside Timeline; resets alongside tlBraidMode.
+function setTlBraidChronMode(chron) {
+  tlBraidChronMode = !!chron;
+  document.querySelectorAll('#tl-braid-mode-switch .tl-axis-btn').forEach(b => {
+    b.classList.toggle('on', (b.dataset.braidMode === 'chronology') === tlBraidChronMode);
+  });
   renderTimeline();
 }
 // Loom/Path buttons live in the shared #view-toggle bar now (top of every
@@ -823,6 +840,14 @@ function onChronCardDown(e, sceneId) {
   _tlDrag = { zone: 'chron', sceneId, active: false, startX: e.clientX, startY: e.clientY, ghostEl: null, insertLineEl: null, targetBeforeId: undefined, targetStorylineId: null };
 }
 
+function onBraidNodeDown(e, ids) {
+  if (e.button !== 0) return;
+  clearTimeout(_tlCalloutTimer); tlHideCallout();
+  // ids: every scene in this column (>1 only for a merged Chronology-mode
+  // node) — the whole group drags and reorders together as one unit.
+  _tlDrag = { zone: 'braid', sceneId: ids[0], ids: ids.slice(), active: false, startX: e.clientX, startY: e.clientY, ghostEl: null, insertLineEl: null, targetBeforeId: undefined };
+}
+
 function onMsCardDown(e, sceneId) {
   if (e.button !== 0) return;
   clearTimeout(_tlCalloutTimer); tlHideCallout();
@@ -1024,6 +1049,7 @@ function _tlDragBegin(e) {
   clearHighlight(); // the mouseleave the drag itself triggers won't fire while dragActive guards it below
 
   if (d.zone === 'ms') { _tlMsDragBegin(d); return; }
+  if (d.zone === 'braid') { _tlBraidDragBegin(d); return; }
 
   const track = document.getElementById('tl-track');
   const srcEl = track.querySelector('.tl-scene[data-scene-id="' + d.sceneId + '"]');
@@ -1123,6 +1149,7 @@ function _tlLaneAtClientY(clientY) {
 function _tlDragMove(e) {
   const d = _tlDrag;
   if (d.zone === 'ms') { _tlMsDragMove(d, e); return; }
+  if (d.zone === 'braid') { _tlBraidDragMove(d, e); return; }
   const track = document.getElementById('tl-track');
   const trackRect = track.getBoundingClientRect();
   const localX = e.clientX - trackRect.left;
@@ -1202,8 +1229,15 @@ function _tlDragCleanupVisual() {
   if (_tlDrag) {
     if (_tlDrag.ghostEl) _tlDrag.ghostEl.remove();
     if (_tlDrag.insertLineEl) _tlDrag.insertLineEl.remove();
-    const srcEl = document.querySelector('.tl-scene[data-scene-id="' + _tlDrag.sceneId + '"], .tl-ms-card[data-scene-id="' + _tlDrag.sceneId + '"]');
-    if (srcEl) srcEl.classList.remove('tl-drag-source');
+    // querySelectorAll + remove-from-every-match, not querySelector's first
+    // match — the same scene id exists simultaneously as a .tl-scene AND a
+    // .tl-ms-card AND a .tl-braid-node (Loom/Path both stay in the DOM, just
+    // CSS-hidden, whichever isn't the active sub-view), so a single-match
+    // query can grab the wrong one and leave the real source element stuck
+    // faded. Removing the class from every match is safe either way — it was
+    // only ever added to the one that actually started the drag.
+    document.querySelectorAll('.tl-scene[data-scene-id="' + _tlDrag.sceneId + '"], .tl-ms-card[data-scene-id="' + _tlDrag.sceneId + '"], .tl-braid-node[data-scene-id="' + _tlDrag.sceneId + '"]')
+      .forEach(el => el.classList.remove('tl-drag-source'));
   }
   document.querySelectorAll('.tl-lane-row.tl-drop-target').forEach(r => r.classList.remove('tl-drop-target'));
   document.body.style.cursor = '';
@@ -1218,6 +1252,7 @@ function _tlDragCancel() {
 function _tlDragFinish() {
   const d = _tlDrag;
   if (d.zone === 'ms') { _tlMsDragFinish(d); return; }
+  if (d.zone === 'braid') { _tlBraidDragFinish(d); return; }
   _tlDragCleanupVisual();
   _tlDragActive = false;
   _tlDrag = null;
@@ -1353,6 +1388,157 @@ function _tlMsDragFinish(d) {
   document.getElementById('tl-move-cfm-msg').textContent =
     'Save this move — changing "' + scene.title + '" (its place in reading order)?';
   document.getElementById('tl-move-cfm-modal').classList.add('open');
+}
+
+// ── BRAID DRAG (Path view node reorder) ─────────────────────────────────────
+// Unlike the chron/ms zones above, a braid column's on-screen position is a
+// pure formula (braidColX(i)) rather than something read off real card DOM
+// rects, so there's no need for the _tlFindDropBeforeId-style "query real
+// elements" approach — the drop target is computed directly from _braidColIds
+// (the exact column list renderBraid() just drew) and cursor x alone.
+function _tlBraidDragBegin(d) {
+  const scroll = document.getElementById('tl-braid-scroll');
+  document.querySelectorAll('.tl-braid-node[data-scene-id="' + d.sceneId + '"]').forEach(el => el.classList.add('tl-drag-source'));
+
+  // Reuses .tl-ms-card's own box styling (padding/background/border-radius)
+  // for the floating label — a braid node has no equivalent HTML card of its
+  // own to clone, and this reads identically to the ms-row ghost already
+  // used elsewhere in Timeline.
+  const ghost = document.createElement('div');
+  ghost.className = 'tl-ms-card tl-drag-ghost';
+  ghost.style.width = 'auto';
+  const titles = d.ids.map(id => { const s = S.scenes.find(x => x.id === id); return s ? s.title : ''; }).join(' / ');
+  const t = document.createElement('div'); t.className = 'tl-t'; t.textContent = titles;
+  ghost.appendChild(t);
+  scroll.appendChild(ghost);
+  d.ghostEl = ghost;
+
+  const line = document.createElement('div');
+  line.className = 'tl-insert-line';
+  line.style.display = 'none';
+  // Cached once here rather than re-read every _tlBraidDragMove() — reading
+  // scrollHeight right after a style WRITE (the ghost's left/top, set first
+  // thing in that function) forces a synchronous layout reflow, and doing
+  // that on every single mousemove event during a drag is exactly the kind
+  // of jank that makes a real drag feel like it "didn't take": the drop
+  // position calc lags behind the cursor, so the user can release believing
+  // they're over a new column while `targetBeforeId` is still catching up
+  // to a stale/earlier one. The content height can't change mid-drag (no
+  // render happens while dragging), so one read up front is exact for the
+  // whole gesture, not just an approximation.
+  d.insertLineHeight = scroll.scrollHeight;
+  line.style.top = '0';
+  line.style.height = d.insertLineHeight + 'px';
+  scroll.appendChild(line);
+  d.insertLineEl = line;
+}
+
+// Nearest column (by center x) at or past localX, excluding any column that
+// shares a scene with the dragged group — returns that column's first scene
+// id as the "insert before" target, or null for "insert at the end."
+function _tlBraidFindDropBeforeId(localX, excludeIds) {
+  let best = null, bestX = Infinity;
+  _braidColIds.forEach((col, i) => {
+    if (col.ids.some(id => excludeIds.includes(id))) return;
+    const cx = braidColX(i);
+    if (cx >= localX && cx < bestX) { bestX = cx; best = col.ids[0]; }
+  });
+  return best;
+}
+function _tlBraidInsertionX(beforeId, excludeIds) {
+  if (beforeId !== null) {
+    const i = _braidColIds.findIndex(col => col.ids[0] === beforeId);
+    if (i !== -1) return braidColX(i) - _braidColDx / 2;
+  }
+  let maxX = 0;
+  _braidColIds.forEach((col, i) => {
+    if (col.ids.some(id => excludeIds.includes(id))) return;
+    const x = braidColX(i);
+    if (x > maxX) maxX = x;
+  });
+  return maxX + _braidColDx / 2;
+}
+function _tlBraidDragMove(d, e) {
+  const scroll = document.getElementById('tl-braid-scroll');
+  const scrollRect = scroll.getBoundingClientRect();
+  const localX = e.clientX - scrollRect.left + scroll.scrollLeft;
+  const localY = e.clientY - scrollRect.top + scroll.scrollTop;
+  d.ghostEl.style.left = localX + 'px';
+  d.ghostEl.style.top = localY + 'px';
+
+  const beforeId = _tlBraidFindDropBeforeId(localX, d.ids);
+  d.targetBeforeId = beforeId;
+  d.insertLineEl.style.left = _tlBraidInsertionX(beforeId, d.ids) + 'px';
+  d.insertLineEl.style.display = '';
+}
+// Narrative mode reorders S.scenes (mirrors _tlMsDragFinish exactly — a
+// braid node is always a single scene there, no merge). Chronology mode
+// reorders S.chronOrder, splicing every id in the dragged column back in as
+// one contiguous block so a merged node's scenes stay adjacent (and thus
+// still merge into one column) at their new position.
+function _tlBraidDragFinish(d) {
+  _tlDragCleanupVisual();
+  _tlDragActive = false;
+  _tlDrag = null;
+  _tlDragOccurred = true;
+  if (d.targetBeforeId === undefined) return; // never moved over a valid drop position
+
+  if (tlBraidChronMode) {
+    const without = S.chronOrder.filter(id => !d.ids.includes(id));
+    let idx = d.targetBeforeId !== null ? without.indexOf(d.targetBeforeId) : -1;
+    if (idx === -1) idx = without.length;
+    const candidate = without.slice();
+    candidate.splice(idx, 0, ...d.ids);
+    const same = candidate.length === S.chronOrder.length && candidate.every((id, i) => id === S.chronOrder[i]);
+    if (same) return;
+
+    const scene = S.scenes.find(x => x.id === d.sceneId);
+    const desc = d.ids.length > 1 ? 'these scenes' : ('"' + ((scene && scene.title) || '') + '"');
+    _tlPendingMove = {
+      label: 'Reorder chronology',
+      sceneId: d.sceneId,
+      apply: () => { S.chronOrder = candidate; },
+    };
+    document.getElementById('tl-move-cfm-msg').textContent =
+      'Save this move — changing when ' + desc + ' happen' + (d.ids.length > 1 ? '' : 's') + ' in the story?';
+    document.getElementById('tl-move-cfm-modal').classList.add('open');
+  } else {
+    const scene = S.scenes.find(x => x.id === d.sceneId);
+    if (!scene) return;
+    const without = S.scenes.filter(s => s.id !== d.sceneId);
+    let idx = d.targetBeforeId !== null ? without.findIndex(s => s.id === d.targetBeforeId) : -1;
+    if (idx === -1) idx = without.length;
+
+    let targetSectionId = scene.sectionId ?? null;
+    if (S.sections.length) {
+      const validSecIds = new Set(S.sections.map(s => s.id));
+      if (d.targetBeforeId !== null) {
+        const targetScene = without.find(s => s.id === d.targetBeforeId);
+        targetSectionId = targetScene && validSecIds.has(targetScene.sectionId) ? targetScene.sectionId : null;
+      } else {
+        const lastScene = without[without.length - 1];
+        targetSectionId = lastScene && validSecIds.has(lastScene.sectionId) ? lastScene.sectionId : null;
+      }
+    }
+
+    const candidate = without.slice();
+    candidate.splice(idx, 0, scene);
+    const reordered = candidate.length === S.scenes.length && !candidate.every((s, i) => s === S.scenes[i]);
+    const resectioned = S.sections.length && targetSectionId !== (scene.sectionId ?? null);
+    if (!reordered && !resectioned) return;
+
+    _tlPendingMove = {
+      label: 'Reorder narrative',
+      sceneId: scene.id,
+      apply: () => {
+        if (S.sections.length) scene.sectionId = targetSectionId;
+        S.scenes = candidate;
+      },
+    };
+    document.getElementById('tl-move-cfm-msg').textContent =
+      'Save this move — changing "' + scene.title + '" (its place in reading order)?';
+    document.getElementById('tl-move-cfm-modal').classList.add('open');
+  }
 }
 
 let _tlPendingMove = null;
@@ -1719,12 +1905,16 @@ function redrawWires() {
   svg.appendChild(frag);
 }
 
-// ── BRAID VIEW (§9.5) — read-only structure chart ──────────────────────────────
+// ── BRAID VIEW (§9.5) — structure chart, draggable to reorder ─────────────────
 // Ported from ../Timeline/js/braid.js, adapted: SceneSetter's manuscriptOrder()
 // includes offscreen scenes (ThruLine's msOrder never did), so the reading-order
 // axis explicitly filters them out here; "dividers" become section boundaries
 // (this app has sections instead of ThruLine's separate divider concept), colored
 // by each section's own .color instead of one literal accent hex.
+// Originally read-only; a later round (the Narrative/Chronology mode toggle,
+// see tlBraidChronMode) generalized the single msOrder×chronOrder axis pair
+// into a column/row abstraction (colIds/rowOf/rowCount below) so both axis
+// assignments — and drag-to-reorder in either one — share one render path.
 const BRAID_COL_X0 = 110, BRAID_ROW_Y0 = 70;
 const BRAID_LEFT = 60, BRAID_RIGHT_PAD = 210, BRAID_LABEL_FLIP_ZONE = 160;
 const BRAID_MIN_ROWH = 26, BRAID_MAX_ROWH = 52;
@@ -1751,6 +1941,50 @@ function renderBraidLegend() {
     el.appendChild(item);
   });
 }
+// Appended to the legend built above, only in Chronology mode and only once
+// at least one column actually merged two-or-more simultaneous scenes — a
+// merged node has no single storyline color (see renderBraid's node loop), so
+// it needs its own swatch explaining the neutral/accent ring it renders with.
+function appendBraidMergedLegendEntry() {
+  const el = document.getElementById('tl-braid-legend');
+  if (!el) return;
+  const item = document.createElement('span'); item.className = 'chart-legend-item';
+  const swatch = document.createElement('span'); swatch.className = 'tl-braid-legend-swatch'; swatch.style.borderColor = 'var(--acc)';
+  const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = 'Simultaneous scenes';
+  item.appendChild(swatch); item.appendChild(nameEl);
+  el.appendChild(item);
+}
+
+// Groups a chronological order (already filtered to on-screen scenes) into
+// one column per exact-anchor match — ported from chronXOrdinal()'s own
+// grouping (timeline.js:92), same "never collapse a repeated storyline into
+// one slot" rule, just producing column {ids} objects instead of an x-percent
+// map. Used only by Chronology mode; Narrative mode's columns are one scene
+// each (msOrder), unchanged from before this mode existed.
+function braidChronColumns(chronOrderIds, sceneById) {
+  const groups = [];
+  let current = null;
+  chronOrderIds.forEach(id => {
+    const scene = sceneById.get(id);
+    const key = scene ? _tlAnchorKey(scene) : null;
+    const lane = scene ? scene.storylineId : undefined;
+    if (current && key !== null && key === current.key && !current.lanes.has(lane)) {
+      current.ids.push(id);
+      current.lanes.add(lane);
+    } else {
+      current = { key, lanes: new Set([lane]), ids: [id] };
+      groups.push(current);
+    }
+  });
+  return groups.map(g => ({ ids: g.ids }));
+}
+
+// Columns/rows the node loop and drag logic both read every render — kept
+// module-level (not a local of renderBraid) so drag handlers, which fire
+// between renders, can look up the exact same column list the visible chart
+// was drawn from without recomputing it (and possibly disagreeing, e.g. mid-
+// drag if S.chronOrder/S.scenes changes some other way).
+let _braidColIds = []; // [{ids:[sceneId,...]}, ...] one entry per column, left to right
 
 function renderBraid() {
   const scroll = document.getElementById('tl-braid-scroll');
@@ -1759,38 +1993,75 @@ function renderBraid() {
 
   const msScenes = manuscriptOrder().filter(s => !s.offscreen);
   const msOrder = msScenes.map(s => s.id);
-  const chronOrder = S.chronOrder || [];
+  const sceneById = new Map(S.scenes.map(s => [s.id, s]));
+  const chronOrder = S.chronOrder || []; // unfiltered: Narrative mode's row axis, unchanged
   const N = chronOrder.length;
 
   renderBraidLegend();
 
+  const axisTopEl = document.querySelector('.tl-braid-axis-top');
+  const axisLeftEl = document.querySelector('.tl-braid-axis-left span:first-child');
+  if (axisTopEl) axisTopEl.textContent = tlBraidChronMode ? 'EVENTS →' : 'READING ORDER →';
+  if (axisLeftEl) axisLeftEl.textContent = 'CHRONOLOGY';
+  const watermarkEl = document.getElementById('tl-braid-watermark');
+  if (watermarkEl) watermarkEl.textContent = tlBraidChronMode ? 'Chronology Order' : 'Narrative Order';
+  tlBraidUpdateWatermark();
+
   svg.textContent = '';
+  _braidColIds = [];
   if (!tlBraidMode) return;
 
-  if (!msOrder.length || N < 1) {
+  const chronIndex = new Map();
+  chronOrder.forEach((id, i) => chronIndex.set(id, i));
+
+  // colIds: one entry per column, left to right. rowOf(col, i): a column's
+  // row rank (0-based) — i is the column's own index in colIds, only used by
+  // the Chronology branch. rowCount: number of distinct row slots (drives
+  // rowH/gridlines).
+  // Narrative mode (unchanged): one scene per column (msOrder), row = the
+  // scene's own rank in chronological order — an independent value from its
+  // column position, which is what lets the connecting path show flashbacks
+  // (a later column with an earlier row).
+  // Chronology mode: one column per exact-anchor group (walking
+  // S.chronOrder, offscreen scenes excluded same as msOrder always was), and
+  // the row axis stays Chronology too — but here it's simply each column's
+  // OWN position (row = i), not a second independent value. Column order and
+  // row order are therefore the same sequence by construction: dragging a
+  // node reorders S.chronOrder directly (same effect as Loom's own
+  // Chronology-row drag, just in this view), and the resting chart is always
+  // a monotonic southeast staircase — "regression" has no meaning on an axis
+  // that only ever measures itself.
+  let colIds, rowOf, rowCount;
+  if (!tlBraidChronMode) {
+    colIds = msOrder.map(id => ({ ids: [id] }));
+    rowOf = col => chronIndex.get(col.ids[0]);
+    rowCount = N;
+  } else {
+    const visibleChronOrder = chronOrder.filter(id => { const s = sceneById.get(id); return s && !s.offscreen; });
+    colIds = braidChronColumns(visibleChronOrder, sceneById);
+    rowOf = (col, i) => i;
+    rowCount = colIds.length;
+  }
+  _braidColIds = colIds;
+
+  if (!colIds.length || rowCount < 1) {
     svg.setAttribute('width', scroll.clientWidth || 1);
     svg.setAttribute('height', scroll.clientHeight || 1);
     return;
   }
 
-  _braidColDx = tlBraidColDx(msOrder.length);
+  _braidColDx = tlBraidColDx(colIds.length);
 
-  const sceneById = new Map(S.scenes.map(s => [s.id, s]));
   const storylineById = new Map(S.storylines.map(st => [st.id, st]));
   const validSecIds = new Set(S.sections.map(s => s.id));
 
-  const chronIndex = new Map();
-  chronOrder.forEach((id, i) => chronIndex.set(id, i));
-  const msIndex = new Map();
-  msOrder.forEach((id, i) => msIndex.set(id, i));
-
   const stageH = scroll.clientHeight || 400;
-  let rowH = N > 1 ? (stageH - 140) / (N - 1) : BRAID_MAX_ROWH;
+  let rowH = rowCount > 1 ? (stageH - 140) / (rowCount - 1) : BRAID_MAX_ROWH;
   rowH = Math.max(BRAID_MIN_ROWH, Math.min(BRAID_MAX_ROWH, rowH));
 
-  const contentW = Math.max(scroll.clientWidth || 0, braidColX(msOrder.length - 1) + BRAID_RIGHT_PAD);
-  const contentH = Math.max(scroll.clientHeight || 0, braidRowY(N - 1, rowH) + 60);
-  const chartRight = braidColX(msOrder.length - 1) + 110;
+  const contentW = Math.max(scroll.clientWidth || 0, braidColX(colIds.length - 1) + BRAID_RIGHT_PAD);
+  const contentH = Math.max(scroll.clientHeight || 0, braidRowY(rowCount - 1, rowH) + 60);
+  const chartRight = braidColX(colIds.length - 1) + 110;
 
   // Explicit width/height ATTRIBUTES, not just CSS — an <svg> is a replaced
   // element and silently falls back to the 300x150 UA default without them
@@ -1801,8 +2072,8 @@ function renderBraid() {
   const theme = document.documentElement.dataset.theme || 'ivory';
   const flashbackColor = BRAID_FLASHBACK_COLOR[TL_DARK_THEMES.has(theme) ? 'dark' : 'light'];
 
-  // ---- gridlines: one per chronOrder rank ----
-  for (let r = 0; r < N; r++) {
+  // ---- gridlines: one per row rank ----
+  for (let r = 0; r < rowCount; r++) {
     const gl = document.createElementNS(SVGNS, 'line');
     gl.setAttribute('x1', BRAID_LEFT); gl.setAttribute('x2', chartRight);
     gl.setAttribute('y1', braidRowY(r, rowH)); gl.setAttribute('y2', braidRowY(r, rowH));
@@ -1831,30 +2102,38 @@ function renderBraid() {
   svg.appendChild(markersLayer);
   const hud = document.getElementById('tl-braid-markers-hud');
   if (hud) { hud.textContent = ''; hud.style.height = contentH + 'px'; }
-  (S.markers || []).forEach(m => {
-    let y;
-    if (!m.beforeSceneId) {
-      y = braidRowY(N - 1, rowH) + rowH / 2;
-    } else {
-      const idx = chronIndex.get(m.beforeSceneId);
-      if (idx === undefined) return;
-      y = (idx === 0) ? braidRowY(0, rowH) - rowH / 2 : (braidRowY(idx - 1, rowH) + braidRowY(idx, rowH)) / 2;
-    }
-    const line = document.createElementNS(SVGNS, 'line');
-    line.setAttribute('x1', BRAID_LEFT); line.setAttribute('x2', chartRight);
-    line.setAttribute('y1', y); line.setAttribute('y2', y);
-    line.setAttribute('stroke-width', 1); line.setAttribute('stroke-dasharray', '5 4');
-    line.style.stroke = 'var(--o0)';
-    markersLayer.appendChild(line);
+  // Markers are era pins on the chronological axis — in Narrative mode
+  // that's the (vertical) row axis, drawn exactly as before. Chronology mode
+  // put chronological order on the (horizontal) column axis instead, so a
+  // marker there is a moving *column* target, not a row — not yet supported
+  // (skipped rather than drawn in the wrong place); the horizontal-line/HUD
+  // machinery below is Narrative-mode-only.
+  if (!tlBraidChronMode) {
+    (S.markers || []).forEach(m => {
+      let y;
+      if (!m.beforeSceneId) {
+        y = braidRowY(rowCount - 1, rowH) + rowH / 2;
+      } else {
+        const idx = chronIndex.get(m.beforeSceneId);
+        if (idx === undefined) return;
+        y = (idx === 0) ? braidRowY(0, rowH) - rowH / 2 : (braidRowY(idx - 1, rowH) + braidRowY(idx, rowH)) / 2;
+      }
+      const line = document.createElementNS(SVGNS, 'line');
+      line.setAttribute('x1', BRAID_LEFT); line.setAttribute('x2', chartRight);
+      line.setAttribute('y1', y); line.setAttribute('y2', y);
+      line.setAttribute('stroke-width', 1); line.setAttribute('stroke-dasharray', '5 4');
+      line.style.stroke = 'var(--o0)';
+      markersLayer.appendChild(line);
 
-    if (hud) {
-      const label = document.createElement('div');
-      label.className = 'tl-braid-marker-label';
-      label.style.top = (y - 12) + 'px';
-      label.textContent = m.label;
-      hud.appendChild(label);
-    }
-  });
+      if (hud) {
+        const label = document.createElement('div');
+        label.className = 'tl-braid-marker-label';
+        label.style.top = (y - 12) + 'px';
+        label.textContent = m.label;
+        hud.appendChild(label);
+      }
+    });
+  }
   tlBraidUpdateMarkerHud();
 
   // ---- section boundaries (sections replace ThruLine's "dividers"): full-height
@@ -1874,55 +2153,65 @@ function renderBraid() {
   svg.appendChild(dividersLayer);
   const sectionHud = document.getElementById('tl-braid-section-hud');
   if (sectionHud) sectionHud.textContent = '';
-  let lastSecKey;
-  msScenes.forEach((s, i) => {
-    const secKey = validSecIds.has(s.sectionId) ? s.sectionId : null;
-    if (i === 0) {
-      const sec = S.sections.find(x => x.id === secKey);
-      if (sec && sectionHud) {
-        const label = document.createElement('div');
-        label.className = 'tl-braid-section-label';
-        label.style.left = braidColX(0) + 'px';
-        label.style.borderLeftColor = sec.color || 'var(--acc)';
-        label.textContent = sec.name;
-        sectionHud.appendChild(label);
+  // Sections are a narrative-structure concept (a run of consecutive scenes
+  // in reading order) — meaningless as contiguous column spans once the
+  // column axis is chronological instead, so this whole block is Narrative-
+  // mode-only; Chronology mode just leaves dividersLayer/sectionHud empty.
+  if (!tlBraidChronMode) {
+    let lastSecKey;
+    msScenes.forEach((s, i) => {
+      const secKey = validSecIds.has(s.sectionId) ? s.sectionId : null;
+      if (i === 0) {
+        const sec = S.sections.find(x => x.id === secKey);
+        if (sec && sectionHud) {
+          const label = document.createElement('div');
+          label.className = 'tl-braid-section-label';
+          label.style.left = braidColX(0) + 'px';
+          label.style.borderLeftColor = sec.color || 'var(--acc)';
+          label.textContent = sec.name;
+          sectionHud.appendChild(label);
+        }
+      } else if (secKey !== lastSecKey) {
+        const x = (braidColX(i - 1) + braidColX(i)) / 2;
+        const sec = S.sections.find(x => x.id === secKey);
+        const tick = document.createElementNS(SVGNS, 'line');
+        tick.setAttribute('x1', x); tick.setAttribute('x2', x);
+        tick.setAttribute('y1', 42); tick.setAttribute('y2', contentH - 16);
+        tick.setAttribute('stroke-width', 1.5); tick.setAttribute('stroke-dasharray', '4 4');
+        tick.style.stroke = (sec && sec.color) || 'var(--acc)';
+        tick.style.opacity = '.55';
+        dividersLayer.appendChild(tick);
+        if (sec && sectionHud) {
+          const label = document.createElement('div');
+          label.className = 'tl-braid-section-label';
+          label.style.left = (x + 6) + 'px';
+          label.style.borderLeftColor = sec.color || 'var(--acc)';
+          label.textContent = sec.name;
+          sectionHud.appendChild(label);
+        }
       }
-    } else if (secKey !== lastSecKey) {
-      const x = (braidColX(i - 1) + braidColX(i)) / 2;
-      const sec = S.sections.find(x => x.id === secKey);
-      const tick = document.createElementNS(SVGNS, 'line');
-      tick.setAttribute('x1', x); tick.setAttribute('x2', x);
-      tick.setAttribute('y1', 42); tick.setAttribute('y2', contentH - 16);
-      tick.setAttribute('stroke-width', 1.5); tick.setAttribute('stroke-dasharray', '4 4');
-      tick.style.stroke = (sec && sec.color) || 'var(--acc)';
-      tick.style.opacity = '.55';
-      dividersLayer.appendChild(tick);
-      if (sec && sectionHud) {
-        const label = document.createElement('div');
-        label.className = 'tl-braid-section-label';
-        label.style.left = (x + 6) + 'px';
-        label.style.borderLeftColor = sec.color || 'var(--acc)';
-        label.textContent = sec.name;
-        sectionHud.appendChild(label);
-      }
-    }
-    lastSecKey = secKey;
-  });
+      lastSecKey = secKey;
+    });
+  }
   if (sectionHud) { sectionHud.style.height = contentH + 'px'; tlBraidUpdateSectionHud(); }
   tlBraidUpdateAxisBars();
 
-  // ---- reading path: cubic bezier per consecutive msOrder pair, drawn before nodes ----
+  // ---- path: cubic bezier per consecutive column pair, drawn before nodes ----
   const pathsLayer = document.createElementNS(SVGNS, 'g');
   svg.appendChild(pathsLayer);
   const pathEls = [];
-  for (let i = 0; i < msOrder.length - 1; i++) {
-    const aId = msOrder[i], bId = msOrder[i + 1];
-    const aIdx = chronIndex.get(aId), bIdx = chronIndex.get(bId);
+  for (let i = 0; i < colIds.length - 1; i++) {
+    const aCol = colIds[i], bCol = colIds[i + 1];
+    const aId = aCol.ids[0], bId = bCol.ids[0];
+    const aIdx = rowOf(aCol, i), bIdx = rowOf(bCol, i + 1);
     if (aIdx === undefined || bIdx === undefined) continue;
     const ax = braidColX(i), ay = braidRowY(aIdx, rowH);
     const bx = braidColX(i + 1), by = braidRowY(bIdx, rowH);
     const mx = (ax + bx) / 2;
-    const isFlashback = bIdx < aIdx; // upward = backward in story time
+    // Upward = backward on the row axis. Always false in Chronology mode —
+    // bIdx is literally i+1 there (row = column's own index), so it can never
+    // be less than aIdx's i.
+    const isFlashback = bIdx < aIdx;
     const path = document.createElementNS(SVGNS, 'path');
     path.setAttribute('d', 'M ' + ax + ' ' + ay + ' C ' + mx + ' ' + ay + ', ' + mx + ' ' + by + ', ' + bx + ' ' + by);
     path.setAttribute('fill', 'none'); path.setAttribute('stroke-width', 2.5);
@@ -1954,21 +2243,31 @@ function renderBraid() {
   // zoom levels.
   const showNodeNum = nodeR >= 7;
 
-  msOrder.forEach((id, i) => {
-    const s = sceneById.get(id);
-    if (!s) return;
-    const idx = chronIndex.get(id);
+  colIds.forEach((col, i) => {
+    const ids = col.ids;
+    const scenes = ids.map(id => sceneById.get(id)).filter(Boolean);
+    if (!scenes.length) return;
+    const idx = rowOf(col, i);
     if (idx === undefined) return;
     const x = braidColX(i), y = braidRowY(idx, rowH);
-    const st = storylineById.get(s.storylineId);
+    // A merged node (2+ scenes sharing one exact anchor, Chronology mode
+    // only) has no single storyline to color by — drawn in the neutral
+    // accent instead, with a legend entry (appendBraidMergedLegendEntry())
+    // explaining it rather than picking one member's color arbitrarily.
+    const merged = scenes.length > 1;
+    const st = !merged ? storylineById.get(scenes[0].storylineId) : null;
     const color = st ? slColor(st.paletteIndex) : 'var(--acc)';
+    // The node's own identity for selection/hover/drag is its first scene —
+    // simplest consistent choice for a merged node.
+    const id = ids[0];
 
     const g = document.createElementNS(SVGNS, 'g');
     g.setAttribute('class', 'tl-braid-node');
     g.dataset.sceneId = String(id);
+    g.dataset.sceneIds = ids.join(',');
     if (String(id) === String(tlSelectedId)) g.classList.add('tl-sel');
-    if (typeof sceneHasWarning === 'function' && sceneHasWarning(id)) g.classList.add('tl-warn');
-    if (flagActive && flaggedIds.includes(id)) g.classList.add('tl-flag');
+    if (scenes.some(s => typeof sceneHasWarning === 'function' && sceneHasWarning(s.id))) g.classList.add('tl-warn');
+    if (flagActive && scenes.some(s => flaggedIds.includes(s.id))) g.classList.add('tl-flag');
 
     const circle = document.createElementNS(SVGNS, 'circle');
     circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', nodeR);
@@ -1988,7 +2287,7 @@ function renderBraid() {
       num.setAttribute('font-size', 10); num.setAttribute('font-weight', 'bold'); num.setAttribute('text-anchor', 'middle');
       num.setAttribute('dominant-baseline', 'central'); num.setAttribute('pointer-events', 'none');
       num.style.fill = 'var(--tx)';
-      num.textContent = String(numMap.get(id) ?? (i + 1));
+      num.textContent = ids.map(sid => numMap.get(sid) ?? '?').join('/');
       g.appendChild(num);
     }
 
@@ -2005,7 +2304,7 @@ function renderBraid() {
       g.appendChild(warn);
     }
 
-    const lastColX = braidColX(msOrder.length - 1);
+    const lastColX = braidColX(colIds.length - 1);
     const flip = (lastColX - x) < BRAID_LABEL_FLIP_ZONE;
     const labelX = flip ? x - 18 : x + 18;
     const anchor = flip ? 'end' : 'start';
@@ -2014,23 +2313,30 @@ function renderBraid() {
     title.setAttribute('x', labelX); title.setAttribute('y', y - 2);
     title.setAttribute('font-size', 11); title.setAttribute('text-anchor', anchor); title.setAttribute('pointer-events', 'none');
     title.style.fill = 'var(--tx)';
-    title.textContent = s.title;
+    title.textContent = scenes.map(s => s.title).join(' / ');
     g.appendChild(title);
 
     const timeLabel = document.createElementNS(SVGNS, 'text');
     timeLabel.setAttribute('x', labelX); timeLabel.setAttribute('y', y + 11);
     timeLabel.setAttribute('font-size', 9.5); timeLabel.setAttribute('text-anchor', anchor); timeLabel.setAttribute('pointer-events', 'none');
     timeLabel.style.fill = 'var(--sub)';
-    timeLabel.textContent = fmtAnchor(s.anchor) || '—';
+    timeLabel.textContent = fmtAnchor(scenes[0].anchor) || '—';
     g.appendChild(timeLabel);
 
     g.style.cursor = 'pointer';
-    g.addEventListener('mouseenter', () => { highlightScene(id, true); _tlBraidThickenPaths(pathEls, id, true); });
-    g.addEventListener('mouseleave', () => { highlightScene(id, false); _tlBraidThickenPaths(pathEls, id, false); });
-    g.addEventListener('click', e => { e.stopPropagation(); tlSelectScene(id); });
+    g.addEventListener('mouseenter', () => { ids.forEach(sid => highlightScene(sid, true)); _tlBraidThickenPaths(pathEls, id, true); });
+    g.addEventListener('mouseleave', () => { ids.forEach(sid => highlightScene(sid, false)); _tlBraidThickenPaths(pathEls, id, false); });
+    g.addEventListener('click', e => {
+      e.stopPropagation();
+      if (_tlDragOccurred) { _tlDragOccurred = false; return; } // a drag just ended here
+      tlSelectScene(id);
+    });
+    g.addEventListener('mousedown', e => onBraidNodeDown(e, ids));
 
     nodesLayer.appendChild(g);
   });
+
+  if (tlBraidChronMode && colIds.some(c => c.ids.length > 1)) appendBraidMergedLegendEntry();
 }
 
 function _tlBraidThickenPaths(pathEls, sceneId, on) {
@@ -2098,6 +2404,19 @@ function tlBraidUpdateAxisBars() {
   if (!scroll || !topBar || !leftBar) return;
   topBar.style.width = scroll.clientWidth + 'px';
   leftBar.style.height = scroll.clientHeight + 'px';
+}
+
+// Recentered on the container's own CURRENT viewport (scrollLeft/Top +
+// half its client size), not a fixed point in the scrollable content — a
+// watermark meant to always read as "which mode am I in" needs to stay
+// visible no matter how far the user has scrolled, the same reasoning
+// tlBraidUpdateMarkerHud() already applies to era-marker labels.
+function tlBraidUpdateWatermark() {
+  const scroll = document.getElementById('tl-braid-scroll');
+  const wm = document.getElementById('tl-braid-watermark');
+  if (!scroll || !wm) return;
+  wm.style.left = (scroll.scrollLeft + scroll.clientWidth / 2) + 'px';
+  wm.style.top = (scroll.scrollTop + scroll.clientHeight / 2) + 'px';
 }
 
 let _tlWiresRafPending = false;

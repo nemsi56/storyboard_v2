@@ -378,6 +378,10 @@
             <button class="tl-axis-btn on" id="tl-axis-ordinal" data-axis="ordinal">Ordinal</button>
             <button class="tl-axis-btn" id="tl-axis-true" data-axis="true">True scale</button>
           </div>
+          <div id="tl-braid-mode-switch" style="display:none">
+            <button class="tl-axis-btn" id="tl-braid-mode-chronology" data-braid-mode="chronology">Chronology</button>
+            <button class="tl-axis-btn on" id="tl-braid-mode-narrative" data-braid-mode="narrative">Narrative</button>
+          </div>
           <label id="tl-thread-wrap">Thread
             <select id="tl-thread-sel"><option value="">None</option></select>
           </label>
@@ -407,7 +411,7 @@
           <button class="tl-scroll-arrow tl-scroll-arrow-right" id="tl-ms-arrow-right" aria-label="Scroll right">›</button>
         </div>
         <div id="tl-braid-legend"></div>
-        <div id="tl-braid-scroll"><div id="tl-braid-axis-hud"><div id="tl-braid-top-bar"></div><div id="tl-braid-left-bar"></div><div class="tl-braid-axis-top">READING ORDER →</div><div class="tl-braid-axis-left"><span>CHRONOLOGY</span><span class="tl-braid-axis-arrow">↓</span></div></div><svg id="tl-braid-svg"></svg><div id="tl-braid-markers-hud"></div><div id="tl-braid-section-hud"></div></div>
+        <div id="tl-braid-scroll"><div id="tl-braid-axis-hud"><div id="tl-braid-top-bar"></div><div id="tl-braid-left-bar"></div><div class="tl-braid-axis-top">READING ORDER →</div><div class="tl-braid-axis-left"><span>CHRONOLOGY</span><span class="tl-braid-axis-arrow">↓</span></div></div><div id="tl-braid-watermark"></div><svg id="tl-braid-svg"></svg><div id="tl-braid-markers-hud"></div><div id="tl-braid-section-hud"></div></div>
       </div>
       <div class="panel" id="tl-panel">
         <button class="p-strip" id="tl-panel-strip-btn" aria-label="Expand Inspector panel">

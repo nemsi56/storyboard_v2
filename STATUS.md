@@ -2887,3 +2887,167 @@ checked the Frankenstein sample's existing single-foreshadow conflict still fire
 
 ### Not yet done
 Not merged anywhere. No further open items from this round.
+
+## thruLine_v4 branch — Path view Narrative/Chronology toggle, drag-to-reorder
+
+Adds a "Narrative" / "Chronology" toggle above the Path (Braid) chart, in the same header
+row as the Ordinal/True scale switch it's nested alongside (hidden unless Path view is
+active, same pattern). Narrative mode is the default and is pixel-identical to the Path view
+that existed before this round — one column per scene in reading order, row = the scene's
+own rank in `S.chronOrder` (an independent value from its column, which is what lets the
+connecting path show a flashback: a later column landing on an earlier row). Chronology mode
+walks `S.chronOrder` across the columns instead (top axis label becomes "SCENES →"), merging
+scenes that share an exact anchor into one node — but the row axis stays Chronology too, same
+as Narrative mode's label ("CHRONOLOGY," unchanged). The row isn't a second independent value
+here, though: it's simply each column's own position, so column order and row order are the
+same sequence by construction. That was a mid-round correction — the first pass had Chronology
+mode's row show each scene's reading-order rank (a mirror of Narrative mode, swapping which
+axis is independent), which the user caught as wrong: dragging in this mode is meant to work
+"just as in Loom view" — a single real-time ordering being edited, not two independently
+meaningful axes — so the resting chart is always a monotonic southeast staircase (no
+"flashback" is possible when the row only ever measures the column's own position), and
+dragging a node here has the exact same effect as dragging a card in Loom's own Chronology
+row. Two or more scenes sharing an exact anchor (date AND time) merge into one column/node,
+titled with each scene's title joined by " / " — same identical-anchor rule
+`chronXOrdinal()` (Loom's own Chronology-row x-position grouping) already used, reused here
+via a new `braidChronColumns()` rather than reimplemented. Both modes are draggable — dropping
+a node reorders `S.chronOrder` (Chronology mode) or `S.scenes`'/reading order (Narrative mode,
+mirrors the existing Manuscript-ribbon drag in Loom exactly) — through the same move-
+confirmation dialog Loom's own chron/manuscript drags already use, so it participates in undo
+identically. Since both modes ultimately mutate the same `S.chronOrder`/`S.scenes` the rest of
+the app already reads from, dragging in Path immediately updates Loom (and vice versa) with no
+new sync code.
+
+**Touched files:** `timeline.js` (all the logic — `renderBraid()` generalized from a fixed
+msOrder×chronOrder axis pair into a column/row abstraction; new `_tlBraidDrag*` family
+mirroring the existing `_tlMsDrag*`/chron-drag families), `editor.html` (mode-switch buttons),
+`editor-init.js` (click wiring), `styles.css` (switch styling reuses `#tl-axis-switch`'s rule;
+one new `.tl-braid-node.tl-drag-source` rule).
+
+### How it works
+- `colIds`/`rowOf(col, i)`/`rowCount` are computed once per `renderBraid()` call and drive
+  every downstream piece (gridlines, the connecting path, node placement) — Narrative mode's
+  values are exactly the old `msOrder`/`chronIndex`/`N`, just renamed, so that mode's rendering
+  is provably unchanged. Chronology mode's `rowOf` ignores the column entirely and just returns
+  its own index `i` — row = column position, always, which is what makes the isFlashback check
+  in the path-drawing loop (`bIdx < aIdx`) permanently false there: `bIdx` is always `i + 1`, so
+  it can never be less than `aIdx`'s `i`. No special-casing needed for "no regression" — it
+  falls straight out of the row formula.
+- Section dividers only make sense as contiguous spans in Narrative mode (a section is a run
+  of scenes in *reading* order) — Chronology mode leaves that layer empty rather than drawing
+  something structurally meaningless.
+- Era markers (dashed lines pinned to a `beforeSceneId` chron-order position) are Narrative-
+  mode-only for now — Chronology mode's chronological axis moved from rows to columns, so a
+  marker there would need to become a *vertical* line at a column position instead of the
+  existing horizontal-line/HUD machinery; scoped out of this round (skipped, not drawn wrong)
+  rather than building the second orientation.
+- Drag hit-testing doesn't query real DOM rects the way the chron/manuscript row drags do
+  (`_tlFindDropBeforeId` etc.) — a braid column's x position is a pure formula
+  (`braidColX(i)`), so the braid drag family computes the drop target directly from
+  `_braidColIds` (the exact column list the last render built) and cursor x.
+
+### Bug found and fixed during verification
+`_tlDragCleanupVisual()`'s single `document.querySelector('.tl-scene[...], .tl-ms-card[...],
+.tl-braid-node[...]')` returns the *first* DOM match for a scene id, but all three elements
+for the same scene coexist simultaneously (Loom and Path both stay in the DOM, just CSS-
+hidden, whichever isn't the active sub-view) — so ending a Path drag could clear the
+`tl-drag-source` fade from the wrong (hidden) element and leave the real braid node stuck
+faded after Discard. This ambiguity predates this round (the same query already mixed
+`.tl-scene`/`.tl-ms-card`) but wasn't visibly reachable until a third overlapping selector
+was added. Fixed by switching to `querySelectorAll` + remove-from-every-match — safe
+regardless of which element actually had the class, since it was only ever added to the one
+that started the drag.
+
+### Verification
+Live in the browser against The Count of Monte Cristo (39 scenes): toggled Narrative ↔
+Chronology repeatedly with a clean console throughout; confirmed Narrative mode's rendering
+byte-for-byte matches pre-change output (section dividers, legend, axis labels). Simulated a
+merge (temporarily co-anchoring two scenes on a temporary second storyline, in-memory only,
+never saved) and confirmed a single node rendered with " / "-joined title, the correct shared
+anchor label, a legend entry reading "Simultaneous scenes," and the scene count dropping by
+exactly one. Dragged that merged node to a new position and confirmed the move-confirmation
+dialog read correctly and `S.chronOrder` updated with the whole group moved as one contiguous
+block. Dragged a Narrative-mode node and confirmed the existing "its place in reading order"
+confirmation flow fires identically to the pre-existing Manuscript-ribbon drag. Switched to
+Loom after a Chronology-mode reorder and confirmed the Chronology row reflects the new order
+with no extra wiring. Reloaded and reopened the project afterward and confirmed zero test
+artifacts persisted (39 scenes, one storyline, zero anchored scenes) — all test mutations
+were applied directly to the in-memory `S` object and never went through `saveState()`.
+
+### Not yet done
+Not merged anywhere. Era markers unsupported in Chronology mode (see above — a real gap, not
+an oversight). No automated test suite exists for this app; verification above was manual via
+the Claude Code browser preview tool, as with every other round in this file.
+
+## thruLine_v4 branch — Mode-switch order flip, "Events" axis rename, watermark, drag-reliability fix
+
+Three small follow-ups plus one real bug fix from live user feedback on the Narrative/
+Chronology toggle above.
+
+### Mode-switch order flipped; top axis relabeled "Events"
+Per direct request: the toggle buttons now read Chronology, then Narrative (was the reverse),
+and Chronology mode's top axis label changed from "SCENES →" to "EVENTS →" (`renderBraid()`,
+one line each — no layout/logic change, display text only).
+
+### Prominent mode watermark
+A large (46px), low-opacity (13%) label — "NARRATIVE ORDER" or "CHRONOLOGY ORDER" — now sits
+centered in the Path chart's current viewport at all times, re-centered on every scroll event
+(`tlBraidUpdateWatermark()`, same "recompute against scrollLeft/scrollTop + half the client
+size" pattern the era-marker labels already use) and behind the chart's own content in paint
+order, so it only reads clearly in genuinely empty grid space and fades under populated areas.
+**Hit a real stacking bug getting there:** the first attempt used `z-index:-1` on the watermark
+to sit it behind the plain (non-positioned) `#tl-braid-svg` sibling — this made it vanish
+completely rather than just go behind the chart, because a negative z-index escapes the local
+container entirely and paints behind whatever ANCESTOR stacking context claims it, which in
+this case was hidden behind opaque page chrome several levels up. Per CSS stacking rules, any
+*positioned* element (even at z-index:auto/0) already paints above a plain non-positioned
+sibling regardless of DOM order or z-index sign — so the actual fix was giving `#tl-braid-svg`
+`position:relative` (no offset needed) so both elements compete for paint order within the
+*same* local layer, where DOM order (watermark first, so it's "under") decides correctly.
+
+### Drag reliability: dropped moves that needed several tries
+User report: dragging a node in Path view sometimes silently didn't register — no move-
+confirmation dialog — requiring repeated attempts. Root cause: `_tlBraidDragMove()` (fires on
+every mousemove during a drag) wrote the ghost element's position, then immediately read
+`scroll.scrollHeight` to size the insert-line indicator — a write-then-read pattern that forces
+a **synchronous layout reflow on every single mousemove event** of the drag. On a chart with
+many nodes, that's real, repeated cost that can make the drop-position calculation lag behind
+the actual cursor: the user releases believing they're over a new column while
+`targetBeforeId` is still catching up to a stale one, which reads to the app as "no real move
+happened" (the resulting order equals the original, so no confirmation is shown — correct
+behavior for a genuine no-op, wrong outcome for what was actually a real, intended drag).
+Fixed by reading `scroll.scrollHeight` exactly once, in `_tlBraidDragBegin()` — the content
+height can't change mid-drag (nothing re-renders while dragging), so a single cached read at
+drag-start is exact for the whole gesture, cutting the forced-reflow count per mousemove
+roughly in half.
+
+**Diagnosing this took a wrong turn worth recording:** an initial batch of synthetic drag
+tests (dispatching real mousedown/mousemove/mouseup sequences via console) showed 9 failures
+out of 10 attempts, alongside a console error `e.target.closest is not a function` — this
+looked like a strong lead but was entirely a test-script artifact, not an app bug: several
+target nodes were scrolled outside the visible viewport, so `document.elementFromPoint()`
+correctly returned `null` for their coordinates, the test's own fallback (`|| document`)
+dispatched the synthetic mousedown directly on `document`, and the app's own
+`document.addEventListener('mousedown', ...)` guard (unrelated pre-existing code) choked on
+`document.closest` not existing (only Elements have `.closest`). Once the test scrolled each
+node into view before computing its coordinates, the error and the 9 failures both disappeared
+completely — confirming the real bug was the reflow, not anything related to that error.
+Re-running the same batch after the reflow fix: 11 of 12 randomized drags (varying distance,
+direction, and step count, including very fast 2-3-step drags) correctly opened the
+confirmation dialog; the one "failure" was independently confirmed as a genuine no-op (a 110px
+drag against a measured ~119px column pitch, landing back on the node's own current slot) —
+zero console errors, and the insert-line's cached height matched the container's real
+scrollHeight at drag-start.
+
+### Verification
+All three UI changes confirmed visually (button order, axis label text in Chronology mode,
+watermark text/position/centering-on-scroll in both modes) against The Count of Monte Cristo.
+The drag-reliability fix specifically verified via the batch-test methodology described above,
+both before (to confirm the real vs. false-lead failure modes) and after the fix. Reloaded and
+reopened the project afterward and confirmed zero test artifacts persisted (39 scenes,
+`chronOrder` still `[1,2,3,4,5,6,7,8,9,10,...]`) — every test drag in this round was either
+discarded or never crossed a real order-changing threshold, and none went through
+`saveState()`.
+
+### Not yet done
+Not merged anywhere.

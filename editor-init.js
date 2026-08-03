@@ -181,6 +181,8 @@
   $('tl-view-path').addEventListener('click', function(){ setTlViewFromToggle('braid'); });
   $('tl-axis-ordinal').addEventListener('click', function(){ setTlAxis('ordinal'); });
   $('tl-axis-true').addEventListener('click', function(){ setTlAxis('true'); });
+  $('tl-braid-mode-narrative').addEventListener('click', function(){ setTlBraidChronMode(false); });
+  $('tl-braid-mode-chronology').addEventListener('click', function(){ setTlBraidChronMode(true); });
   $('tl-thread-sel').addEventListener('change', function(){ setTlThread(this.value); });
   $('tl-zoom').addEventListener('input', function(){ setTlZoom(this.value); });
   $('tl-zoom').addEventListener('dblclick', function(){ this.value = 50; setTlZoom(50); });
@@ -226,6 +228,7 @@
   $('tl-braid-scroll').addEventListener('click', function(e){ if (e.target === $('tl-braid-scroll') || e.target.id === 'tl-braid-svg') tlSelectScene(null); });
   $('tl-braid-scroll').addEventListener('scroll', tlBraidUpdateMarkerHud);
   $('tl-braid-scroll').addEventListener('scroll', tlBraidUpdateSectionHud);
+  $('tl-braid-scroll').addEventListener('scroll', tlBraidUpdateWatermark);
   $('tl-panel-strip-btn').addEventListener('click', function(){ togglePanel('tl-panel'); });
   $('tl-panel-collapse-btn').addEventListener('click', function(){ togglePanel('tl-panel'); });
   $('tl-delete-scene-btn').addEventListener('click', tlDeleteSelectedScene);
