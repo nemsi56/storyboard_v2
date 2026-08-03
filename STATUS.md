@@ -2855,5 +2855,35 @@ correctly on mouseleave/scroll, and that cross-highlight (hover-to-thicken-wires
 alongside it. One follow-up polish item: the storyline line now reads e.g. "Victor's Account
 storyline" instead of just the bare name, clarifying what that meta item is at a glance.
 
+### Empty-state message straddling into the New Scene pane
+`#sbemp` ("Create your first scene to get started") is `position:absolute` expecting `#sbp`
+(the Scene Board Panel) as its containing block (`inset:46px 0 0 0`), but `#sbp` never had
+`position:relative` set — so it fell back to the viewport as its containing block, centering
+the message across the *entire* window instead of just the board area, visibly straddling
+into the Library/Sections/New-Scene panels to its left. Fixed by adding `position:relative`
+to `#sbp`. Verified with a fresh empty project that the message now stays confined to the
+board panel.
+
+### Reveal-order conflict missing violations when an item is foreshadowed on multiple scenes
+User reported dragging a "payoff" scene before its "foreshadow" scene in the Narrative row
+without the conflict alert firing. Live-reproduced the report's exact mechanics four
+different ways (direct data mutation, real form + same-section drag, real form + no-sections
+drag, real form + cross-section drag) — all four correctly triggered the conflict, ruling out
+the drag path, the form's save path, and section-boundary handling as the cause. The real
+cause only showed up once the user's actual project file was loaded and inspected: their
+reveal item was tagged **Foreshadow on five separate scenes** (several hints building toward
+one payoff), not just one. `computeConflicts()`'s reveal-order check walked reader order with
+a single "has this item been foreshadowed at all yet" flag — it latched `true` at the FIRST
+foreshadow scene and stayed `true` for the rest of the read-through, so dragging the payoff
+back past a *later* foreshadow scene (while still staying after the first one) silently
+produced no conflict, since the flag was already satisfied from the earliest hint. Fixed by
+checking each payoff directly against every scene that foreshadows the same item, flagging it
+if any of them still sits at or after the payoff (reported against the nearest/first such
+still-pending one) — a single-foreshadow item behaves identically to before. Verified against
+the user's actual file (imported directly, not recreated): confirmed 0 conflicts before the
+fix when reproducing their exact drag (a payoff scene moved before 2 of its item's 5
+foreshadow scenes), and a correct "Reveal before foreshadow" conflict after. Regression-
+checked the Frankenstein sample's existing single-foreshadow conflict still fires identically.
+
 ### Not yet done
 Not merged anywhere. No further open items from this round.
