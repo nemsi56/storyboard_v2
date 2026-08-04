@@ -3309,3 +3309,34 @@ rather than inventing a new path.
 ### Not yet done
 Not merged anywhere. `pride-and-prejudice.json` deleted from the repo entirely (fully
 unreferenced after this change — confirmed via repo-wide grep before removing it).
+
+## thruLine_v4 branch — Documenting the reveals/requires field swap
+
+Follow-up to the sample-project round above, after the user asked directly whether the
+reveals/requires naming mismatch (§ above: `scene.reveals` is the UI's "Foreshadow" field,
+`scene.requires` is "This scene reveals") was worth fixing. Assessed as not a functional
+problem — the UI, conflict engine, and every existing saved/exported project are all
+internally consistent with each other — but a real *developer* footgun: it had just tripped
+up this exact session's own sample-authoring work, and the only warning about it lived in
+one comment in `editor.js`, not anywhere a future schema change would likely go looking.
+Renaming the JSON fields to match their labels was assessed and rejected — a breaking change
+touching every saved project in every user's `localStorage` plus every exported `.json` file
+they might re-import, for a purely cosmetic inconsistency with zero user-facing effect.
+
+**Touched files:** `state.js` (`loadState()`'s scene-loading loop, and the `revealsLib`
+default), `conflicts.js` (the reveal-order check). Comments only — no behavior changed.
+
+Added the same explanation at both of the other two places someone editing this data is
+likely to be looking: `state.js`'s `loadState()` (right where `scene.reveals`/`.requires`
+are actually loaded) and its `revealsLib` default declaration, and `conflicts.js`'s
+reveal-order check itself (where the field meanings are read "backwards" from their names
+to actually implement the rule correctly). All three now point back to `editor.js`'s
+original `REVEAL_CK_BOXES` comment as the canonical explanation, rather than requiring
+whoever's reading to already know to look there.
+
+### Verification
+Comment-only change — reloaded the app fresh (cleared `localStorage`) and confirmed a clean
+console with no syntax errors introduced.
+
+### Not yet done
+Not merged anywhere.

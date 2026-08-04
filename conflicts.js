@@ -170,6 +170,10 @@ function computeConflicts() {
   // an offscreen scene neither contributes a reveal nor triggers a requires
   // check, matching §9's "excluded from reader-knowledge checks" in both
   // directions) ────────────────────────────────────────────────────────────
+  // Read the code below literally, not by field name: a scene's .requires is
+  // the PAYOFF (the "this scene reveals" moment in the UI) and .reveals is
+  // the FORESHADOW (the earlier hint) — opposite of what the names suggest.
+  // See state.js's loadState() for the full explanation.
   const revealById = new Map(S.revealsLib.map(r => [r.id, r]));
   const readerOrder = manuscriptOrder().filter(s => !s.offscreen);
   // Not a single "seen at least one foreshadow of this item yet" flag — that

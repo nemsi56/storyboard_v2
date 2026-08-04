@@ -250,6 +250,16 @@ function loadState(storageKey) {
         anchor: (sc.anchor && typeof sc.anchor === 'object') ? { date: sc.anchor.date, time: sc.anchor.time ?? null } : null,
         durationMin: (Number.isInteger(sc.durationMin) && sc.durationMin > 0) ? sc.durationMin : null,
         offscreen: !!sc.offscreen,
+        // scene.reveals/requires are named the OPPOSITE of what they mean in
+        // the UI and to the conflict engine (conflicts.js's reveal-order
+        // check): `reveals` is the "Foreshadow" field (the early hint) and
+        // `requires` is "This scene reveals" (the later payoff, which
+        // requires the foreshadow to already be known). Deliberate historical
+        // relabeling — the UI copy changed, the field names didn't, to avoid
+        // a schema migration for a cosmetic rename. Easy to get backwards
+        // when touching this data directly (sample-project authoring has
+        // gotten it wrong at least once); see editor.js's REVEAL_CK_BOXES
+        // comment for the full explanation.
         reveals: arr(sc.reveals), requires: arr(sc.requires),
       };
     });
@@ -369,6 +379,9 @@ const S = {
   povCustom: [],
   povOrder: [],
   storylines: [],
+  // See the reveals/requires comment on scene loading above (loadState()) —
+  // the two scene fields that reference an entry here are named the opposite
+  // of their UI labels.
   revealsLib: [],
   constraints: [],
   markers: [],
