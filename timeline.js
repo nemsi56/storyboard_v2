@@ -1915,9 +1915,30 @@ function redrawWires() {
 // see tlBraidChronMode) generalized the single msOrder×chronOrder axis pair
 // into a column/row abstraction (colIds/rowOf/rowCount below) so both axis
 // assignments — and drag-to-reorder in either one — share one render path.
-const BRAID_COL_X0 = 110, BRAID_ROW_Y0 = 70;
+// BRAID_ROW_Y0 bumped 70 -> 120: a marker pinned before row 0 (the very
+// first scene) draws BRAID_MARKER_LEAD_GAP above row 0, and needs enough
+// clearance both from #tl-braid-top-bar (styles.css) — a position:sticky bar
+// that paints opaque over the first 54px of the viewport, to hide scrolled-
+// PAST content under the sticky axis labels; at scrollTop 0, "scrolled
+// past" and "not yet scrolled to" are the same 0px, so a leading marker
+// could render entirely behind it — and from row 0's own label. The first
+// attempt at fixing this only clamped the marker's own Y up to clear the
+// bar, which shrank its gap from row 0 down to a few px and traded one
+// collision for another: with a wide marker label (pinned near the left
+// edge, same as row 0's own column) the two labels overlapped instead,
+// visually hiding row 0's title behind the marker's opaque label box —
+// reported with a second screenshot. Padding out BRAID_ROW_Y0 itself instead
+// gives the leading marker real breathing room on both sides at once,
+// rather than fighting over a few px squeezed between two fixed points.
+const BRAID_COL_X0 = 110, BRAID_ROW_Y0 = 120;
 const BRAID_LEFT = 60, BRAID_RIGHT_PAD = 210, BRAID_LABEL_FLIP_ZONE = 160;
 const BRAID_MIN_ROWH = 26, BRAID_MAX_ROWH = 52;
+// Fixed, not rowH-scaled (unlike every other row gap) — at BRAID_MIN_ROWH a
+// half-row gap alone (13px) isn't enough clearance from either the top bar
+// or row 0's own label; a flat 40px is enough at every zoom level, and
+// doesn't need to grow just because rowH does (row 0 itself already moves
+// down with rowH via BRAID_ROW_Y0 + nothing — it's the anchor).
+const BRAID_MARKER_LEAD_GAP = 40;
 const BRAID_FLASHBACK_COLOR = { dark: '#e0a458', light: '#b07a35' };
 // A merged (simultaneous-scenes) node has no single storyline to color by.
 // Originally drew it in var(--acc) — every theme's accent turned out to sit
@@ -2156,7 +2177,7 @@ function renderBraid() {
     } else {
       const idx = markerRowIndex.get(m.beforeSceneId);
       if (idx === undefined) return;
-      y = (idx === 0) ? braidRowY(0, rowH) - rowH / 2 : (braidRowY(idx - 1, rowH) + braidRowY(idx, rowH)) / 2;
+      y = (idx === 0) ? braidRowY(0, rowH) - BRAID_MARKER_LEAD_GAP : (braidRowY(idx - 1, rowH) + braidRowY(idx, rowH)) / 2;
     }
     const line = document.createElementNS(SVGNS, 'line');
     line.setAttribute('x1', BRAID_LEFT); line.setAttribute('x2', chartRight);

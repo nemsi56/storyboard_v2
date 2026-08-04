@@ -3153,3 +3153,45 @@ both a dark (slate) and light (ivory) theme, with a clean console throughout.
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v4 branch — Leading era marker still clipped, round two
+
+The label-halo fix above solved markers overlapping *arbitrary* node text, but the user came
+back with a second screenshot: a marker pinned before the very first scene was still cut off,
+this time at the very top edge of the chart, in both Path view modes.
+
+### What the first attempt got wrong
+The initial fix (`BRAID_MARKER_TOP_CLEAR`, since removed) clamped just the leading marker's own
+Y upward so it would clear `#tl-braid-top-bar` — a `position:sticky` bar that opaquely covers
+the first 54px of the viewport to hide scrolled-past content under the sticky axis labels (at
+`scrollTop: 0`, "scrolled past" and "not yet scrolled to" are the same 0px, so an
+insufficiently-cleared leading marker can render entirely behind it). That clamp worked for the
+bar, but it squeezed the marker's already-small gap to row 0 down to just a few px — trading
+one collision for another: the marker's *label* (an HTML div pinned near the left edge, same
+side row 0's own leftmost column naturally sits on) ended up wide enough to overlap and hide
+row 0's own title behind its opaque background, visible in the user's second screenshot as
+"A Happy Childhood in Geneva" mostly obscured.
+
+### Real fix
+Rather than fighting over a few pixels squeezed between two fixed points (the top bar below,
+row 0 above), gave the leading marker real room on both sides at once:
+- `BRAID_ROW_Y0` (top padding before row 0) raised 70 → 120 — pads out the whole chart's top
+  margin, not just the marker's own position, so there's slack for both problems simultaneously
+  instead of relitigating the same cramped 20-30px band.
+- The leading marker's Y is now `braidRowY(0, rowH) - BRAID_MARKER_LEAD_GAP`, a **flat 40px**
+  gap — not the previous `rowH / 2`, which shrank to a mere 13px at `BRAID_MIN_ROWH` (the exact
+  zoom level most likely once a project has enough scenes, i.e. exactly when this was most
+  likely to be hit). Every other marker (pinned before row 1+) is unaffected — its gap is still
+  the natural midpoint between two real rows, which was never the problem.
+
+### Verification
+Reproduced the exact second-round collision first (Frankenstein, fit-to-window zoom, slate
+theme, scrolled to the very top) — measured the marker label's rect against row 0's title
+rect and confirmed they overlapped both horizontally and vertically pre-fix. Post-fix: label
+bottom at 242px, title top at 268px — a clean 26px gap, zero overlap — and the label sits at
+229px, well clear of the top bar's 54px band. Re-verified in both Path view modes and both a
+dark (slate) and light (ivory) theme, clean console throughout. This round only touched
+rendering constants (no scene data mutated), so no persistence check was needed.
+
+### Not yet done
+Not merged anywhere.
