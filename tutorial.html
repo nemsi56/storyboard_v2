@@ -250,6 +250,37 @@
     color: var(--tx);
   }
 
+  /* ── TABLE OF CONTENTS ── */
+  .toc {
+    background: #fff;
+    border: 1px solid var(--bdr);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 0 0 40px;
+  }
+  .toc-label {
+    font-family: 'Arial', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--acc);
+    margin-bottom: 10px;
+  }
+  .toc-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 24px;
+  }
+  .toc-list a {
+    font-size: 14.5px;
+    color: var(--tx);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  .toc-list a:hover { color: var(--acc); border-bottom-color: var(--acc); }
+
   /* ── FOOTER ── */
   footer {
     margin-top: 64px;
@@ -263,7 +294,7 @@
 
   /* ── RESPONSIVE ── */
   @media (max-width: 640px) {
-    .panels-grid, .feature-grid { grid-template-columns: 1fr; }
+    .panels-grid, .feature-grid, .toc-list { grid-template-columns: 1fr; }
     .hero h1 { font-size: 30px; }
     .page { padding: 0 20px 60px; }
   }
@@ -299,8 +330,24 @@
     <p style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(176,106,0,.35);font-size:12.5px;color:#5a4010">Your content remains privately yours. We use Google Analytics and other tools to understand feature usage and improve the app, but no personal data or project content is shared.</p>
   </div>
 
+  <div class="toc">
+    <div class="toc-label">Contents</div>
+    <ul class="toc-list">
+      <li><a href="#your-projects">Your Projects</a></li>
+      <li><a href="#the-interface">The Interface</a></li>
+      <li><a href="#build-library">1. Build Your Library</a></li>
+      <li><a href="#create-sections">2. Create Sections</a></li>
+      <li><a href="#add-scenes">3. Add Scenes</a></li>
+      <li><a href="#tools-features">Tools &amp; Features</a></li>
+      <li><a href="#scene-flow-chart">The Scene Flow Chart</a></li>
+      <li><a href="#timeline">The Timeline: Loom &amp; Path</a></li>
+      <li><a href="#reports">Reports</a></li>
+      <li><a href="#tips-shortcuts">Tips &amp; Shortcuts</a></li>
+    </ul>
+  </div>
+
   <!-- ── PROJECTS ── -->
-  <h2>Your Projects</h2>
+  <h2 id="your-projects">Your Projects</h2>
   <p style="color:var(--sub); margin-bottom:16px;">When you first open SceneSetter you'll see the <strong>Project Manager</strong> — a home screen where all your stories live. Each project is a completely separate storyboard with its own library, scenes, and sections.</p>
 
   <div class="steps">
@@ -339,7 +386,7 @@
   </div>
 
   <!-- ── INTERFACE ── -->
-  <h2>The Interface</h2>
+  <h2 id="the-interface">The Interface</h2>
   <p style="color:var(--sub); margin-bottom:16px;">Once inside a project, a menu bar at the top provides quick access to File, Edit, Create, View, and Help options. Below that, the screen is divided into three panels — each collapsible and resizable — and a scene board.</p>
 
   <div class="panels-grid">
@@ -366,7 +413,7 @@
   </div>
 
   <!-- ── GETTING STARTED ── -->
-  <h2><span class="num">1</span> Build Your Library</h2>
+  <h2 id="build-library"><span class="num">1</span> Build Your Library</h2>
   <p style="color:var(--sub); margin-bottom:16px;">The Library panel organizes your story's recurring elements into four categories: Characters, Locations, Themes, and Misc Items — plus a read-only POV section listing whichever names you've assigned as a scene's point of view (managed from the Scene form, not added here).</p>
 
   <div class="steps">
@@ -394,7 +441,7 @@
   </div>
 
   <!-- ── SECTIONS ── -->
-  <h2><span class="num">2</span> Create Sections</h2>
+  <h2 id="create-sections"><span class="num">2</span> Create Sections</h2>
   <p style="color:var(--sub); margin-bottom:16px;">Sections act as named columns on the board — Acts, Chapters, Sequences, or whatever structure suits your story.</p>
 
   <div class="steps">
@@ -422,7 +469,7 @@
   </div>
 
   <!-- ── SCENES ── -->
-  <h2><span class="num">3</span> Add Scenes</h2>
+  <h2 id="add-scenes"><span class="num">3</span> Add Scenes</h2>
   <p style="color:var(--sub); margin-bottom:16px;">Each scene is a card on the board. Fill in as much or as little as you need.</p>
 
   <div class="steps">
@@ -450,7 +497,7 @@
   </div>
 
   <!-- ── FEATURES ── -->
-  <h2>Tools &amp; Features</h2>
+  <h2 id="tools-features">Tools &amp; Features</h2>
 
   <div class="feature-grid">
     <div class="feature-card">
@@ -496,7 +543,7 @@
   </div>
 
   <!-- ── SCENE FLOW CHART ── -->
-  <h2>The Scene Flow Chart</h2>
+  <h2 id="scene-flow-chart">The Scene Flow Chart</h2>
   <p style="color:var(--sub); margin-bottom:16px;">Switch the Scene Board into a chart view to see your whole story as one continuous ribbon of scenes — useful for spotting pacing, gaps, and structure at a glance. Press <kbd>Alt V</kbd>, use <strong>View &gt; Show Scene Flow Chart</strong>, or click the Snake/Circle icon in the Cards/Snake/Circle view switch to open it. Click the Cards icon in that same switch to go back.</p>
 
   <div class="feature-grid">
@@ -546,8 +593,117 @@
     <strong>Tip:</strong> Hover any segment for a quick tooltip with the scene's title, section, and summary. Hover a section badge (snake) or wedge (circle) for a tooltip with its section name.
   </div>
 
+  <!-- ── TIMELINE ── -->
+  <h2 id="timeline">The Timeline: Loom &amp; Path</h2>
+  <p style="color:var(--sub); margin-bottom:16px;">Every other view in SceneSetter is organized by <strong>reading order</strong> — the order scenes appear in your manuscript. The Timeline is a second, independent way to look at your story: <strong>when things actually happen</strong>, which isn't always the same order the reader sees them in. Give a scene a real date, sort your cast into storylines, and the Timeline can show you flashbacks, parallel plots, and scenes that happen at the very same moment to different characters. Open it from <strong>View &gt; Timeline</strong> (<kbd>Alt K</kbd>) or the Timeline icon in the Cards/Flow/Timeline switch at the top of the board.</p>
+
+  <h3>Storylines &amp; Anchors</h3>
+  <p style="color:var(--sub); margin-bottom:16px;">Two pieces of scene data power everything in this view — neither is required, but the more scenes that have them, the more useful the Timeline gets.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">🧵</div>
+      <div class="step-body">
+        <h4>Storylines</h4>
+        <p>A storyline is a plot thread or POV strand — one per major character or subplot. Click <strong>+ Storyline</strong> at the bottom of the Loom view's lane column to add one; each gets its own color. In the Scene form, set a scene's primary <strong>Storyline</strong>, and optionally mark it <strong>Also part of</strong> other storylines too, for a scene that belongs to more than one thread at once.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">📅</div>
+      <div class="step-body">
+        <h4>Anchor date &amp; time</h4>
+        <p>Open the <strong>Timing</strong> group in the Scene form and set a scene's <strong>Anchor</strong> — the in-story date it happens, with an optional time. Scenes without an anchor still get a chronological rank (drag them into place in the Chronology row), they just can't be placed on a real calendar in True scale mode. Two scenes on different storylines that share the exact same date and time are treated as simultaneous.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>Loom View</h3>
+  <p style="color:var(--sub); margin-bottom:16px;">Loom lays your story out as two parallel rows, connected by curved wires — one wire per scene. Hover a card in either row to trace its wire and highlight its counterpart.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🕰</div>
+      <h4>Chronology row</h4>
+      <p>"When it happened." Scenes are grouped into a horizontal lane per storyline. Drag a card to change when it happens, or to move it to a different storyline entirely.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📖</div>
+      <h4>Narrative row</h4>
+      <p>"What the reader gets" — the same order as the Scene Board. Drag a card here to reorder your manuscript directly from the Timeline; the Scene Board updates to match.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📐</div>
+      <h4>Ordinal / True scale</h4>
+      <p><strong>Ordinal</strong> spaces every scene evenly, by rank alone. <strong>True scale</strong> positions anchored scenes along a real proportional date axis — a scene a year later sits much further along than one a day later. Drag a card in True scale to change its actual anchor date.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h4>Thread</h4>
+      <p>Pick a character from the <strong>Thread</strong> pulldown to draw a highlighted line connecting every scene they appear in, in chronological order — useful for following one character's journey through a large cast.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🚩</div>
+      <h4>Era markers</h4>
+      <p>Right-click empty space on the Chronology row and choose <strong>Add marker here</strong> to pin a label to that point in time — "Ten Years Later," "The Night of the Storm." Click a marker's label to rename or delete it.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👻</div>
+      <h4>Offscreen scenes</h4>
+      <p>Check <strong>Offscreen</strong> in a scene's Timing group for something that happens but is never shown to the reader directly. It still appears in the Chronology row, but is excluded from the Narrative row, Scene Board, Scene Flow Chart, and reports.</p>
+    </div>
+  </div>
+
+  <div class="tip-box">
+    <strong>Tip:</strong> Any drag that would change reading order or timing asks you to confirm before it's saved — nothing commits until you say so, and it's a normal step in the undo history.
+  </div>
+
+  <h3>Path View</h3>
+  <p style="color:var(--sub); margin-bottom:16px;">Path plots every scene as a single connected line of nodes, colored by storyline. Switch to it with the <strong>Loom / Path</strong> icons next to the Timeline switch, then use the <strong>Chronology / Narrative</strong> toggle above the chart to choose which order the line follows.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📖</div>
+      <h4>Narrative mode</h4>
+      <p>Nodes are placed by reading order left-to-right, at a height that reflects each scene's chronological rank. A dashed amber segment marks a flashback or flash-forward — anywhere the line moves backward in time.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🕰</div>
+      <h4>Chronology mode</h4>
+      <p>Nodes are placed purely by when things happen — a real-time reorder editor, just like dragging cards in Loom's Chronology row. The line only ever moves forward, since "going back" has no meaning on an axis that measures nothing but itself.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">◎</div>
+      <h4>Simultaneous scenes</h4>
+      <p>Two scenes on different storylines that share the exact same anchor merge into one node in Chronology mode, titled with both scenes' names separated by a slash.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">✋</div>
+      <h4>Drag to reorder</h4>
+      <p>Drag any node to a new position — in Narrative mode this reorders your manuscript; in Chronology mode it changes when the scene happens. Both go through the same save confirmation as Loom.</p>
+    </div>
+  </div>
+
+  <h3>Conflicts</h3>
+  <p style="color:var(--sub); margin-bottom:16px;">The <strong>Conflicts</strong> badge in the Timeline header keeps a running count of two things the Timeline can catch automatically that are easy to miss by eye. Click the badge to open the panel; click any conflict to jump to and highlight the scenes involved.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📍</div>
+      <h4>Character in two places at once</h4>
+      <p>Flagged when a character is tagged in two scenes at different locations whose times overlap — a sign one of the anchors, locations, or character tags needs a second look.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔮</div>
+      <h4>Reveal before foreshadow</h4>
+      <p>Flagged when a scene marked <strong>This scene reveals</strong> a payoff sits at or before, in reading order, every scene that <strong>Foreshadow</strong>s it — see below.</p>
+    </div>
+  </div>
+
+  <h3>Reveals &amp; Foreshadowing</h3>
+  <p style="color:var(--sub); margin-bottom:16px;">In the Scene form's Timing group, the <strong>Foreshadow</strong> and <strong>This scene reveals</strong> dropdowns track a piece of story information from its first hint to its eventual payoff. Mint a new reveal from either dropdown (e.g. "the will is a forgery") — it's shared across both, so any scene can reference it. Tag the early hint scene under <strong>Foreshadow</strong> and the payoff scene under <strong>This scene reveals</strong>; if you later drag the payoff ahead of every scene that foreshadows it, the Conflicts panel catches it.</p>
+
   <!-- ── REPORTS ── -->
-  <h2>Reports</h2>
+  <h2 id="reports">Reports</h2>
   <p style="color:var(--sub); margin-bottom:16px;">Use <strong>Create > Generate Report</strong> to open the report dialog. Choose a type, select which sections and options to include, and click <strong>Generate Report</strong> — a print-ready page opens in a new tab. Character, Location, Theme, and Misc Items reports can optionally include the notes you've added to each library item.</p>
 
   <table class="rpt-table">
@@ -566,13 +722,15 @@
   </table>
 
   <!-- ── TIPS ── -->
-  <h2>Tips &amp; Shortcuts</h2>
+  <h2 id="tips-shortcuts">Tips &amp; Shortcuts</h2>
 
   <h3>Keyboard</h3>
   <p style="color:var(--sub); font-size:14px; margin-bottom:12px;">
     <kbd>Ctrl Z</kbd> Undo &nbsp;&nbsp;
     <kbd>Ctrl Y</kbd> Redo &nbsp;&nbsp;
-    <kbd>Esc</kbd> Close any open dialog or clear search
+    <kbd>Esc</kbd> Close any open dialog or clear search &nbsp;&nbsp;
+    <kbd>Alt V</kbd> Toggle Scene Flow Chart &nbsp;&nbsp;
+    <kbd>Alt K</kbd> Toggle Timeline
   </p>
 
   <h3>Workflow suggestions</h3>

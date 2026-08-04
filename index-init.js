@@ -12,7 +12,7 @@ function closeOverviewImg() {
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeOverviewImg();
 });
-['ov-img-sceneboard', 'ov-img-search', 'ov-img-flowchart-1', 'ov-img-flowchart-2', 'ov-img-report-1', 'ov-img-report-2', 'ov-img-report-3'].forEach(function(id) {
+['ov-img-sceneboard', 'ov-img-search', 'ov-img-flowchart-1', 'ov-img-flowchart-2', 'ov-img-loom', 'ov-img-path', 'ov-img-report-1', 'ov-img-report-2', 'ov-img-report-3'].forEach(function(id) {
   const el = document.getElementById(id);
   if (el) el.addEventListener('click', function() { openOverviewImg(this); });
 });

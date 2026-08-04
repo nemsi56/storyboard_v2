@@ -577,7 +577,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #landing{
   --lbg:#0a0c11; --lbg2:#12141c; --lcard:#161922; --lcard-bdr:rgba(255,255,255,.08);
   --ltx:#f3efe9; --lsub:#9d968f; --lacc:#f0975a; --lacc2:#ffb37a;
-  --lbl:#6fa8dc; --lgr:#7cc99a; --lpv:#b98ee0; --lam:#f0b24a; --llv:#9098e8;
+  --lbl:#6fa8dc; --lgr:#7cc99a; --lpv:#b98ee0; --lam:#f0b24a; --llv:#9098e8; --lrd:#e8776f;
   display:flex;flex-direction:column;height:100vh;background:var(--lbg);color:var(--ltx);
 }
 /* 1fr/auto/1fr with the nav in the center column and an empty spacer
@@ -642,6 +642,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .landing-feature[data-accent="pv"]{--landing-accent:var(--lpv)}
 .landing-feature[data-accent="am"]{--landing-accent:var(--lam)}
 .landing-feature[data-accent="lv"]{--landing-accent:var(--llv)}
+.landing-feature[data-accent="rd"]{--landing-accent:var(--lrd)}
 /* "Window chrome" framing around every screenshot — a dark card with three
    traffic-light dots, so a plain screenshot reads as an app window rather
    than a bare cropped image floating on the page. */

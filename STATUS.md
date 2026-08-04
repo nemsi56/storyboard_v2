@@ -3340,3 +3340,69 @@ console with no syntax errors introduced.
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v4 branch — Tutorial: full Timeline documentation + table of contents; landing page Timeline row
+
+The Tutorial had no Timeline documentation at all — every Loom/Path feature built across this
+entire branch (storylines, anchors, era markers, the Narrative/Chronology toggle, drag-to-
+reorder, simultaneous-scene merging, the Conflicts panel, reveals/foreshadowing, offscreen
+scenes) was undocumented for an actual user. Also added the hypertext table of contents
+requested alongside it, and a matching feature row on the landing page using the two new
+screenshots (`images/overview-Loom.png`, `images/overview-Path.png`) the user supplied.
+
+**Touched files:** `tutorial.html` (new Timeline section, TOC, `id` on every existing `h2`),
+`index.html` (new "Timeline: Loom & Path" landing-page row), `index-init.js` (click-to-
+enlarge wiring for the two new images), `styles.css` (TOC styles; a 7th landing-page accent
+color — the existing 6 were all already in use by the other rows).
+
+### Tutorial: new Timeline section
+Placed between Scene Flow Chart and Reports (Timeline is another alternate view of the same
+data, same as Scene Flow Chart, not a "getting started" step) and split into the same
+sub-structure the app itself uses, so the copy can be cross-checked against real UI labels
+rather than paraphrased from memory — every field name, button label, and menu path
+(`Foreshadow`, `This scene reveals`, `+ Storyline`, `Also part of`, `Anchor`, `Thread`,
+`Ordinal`/`True scale`, `View > Timeline` / `Alt K`, `Add marker here`) was pulled directly
+from `editor.html`/`timeline.js`/`conflicts.js`, not written first and hoped to match:
+- **Storylines & Anchors** — what each is, where to set them, and that neither is required.
+- **Loom View** — the two-row/wires layout, storyline lanes, Ordinal vs. True scale, Thread
+  highlighting, era markers, offscreen scenes, and the drag-confirmation flow.
+- **Path View** — the Narrative/Chronology toggle (this branch's own main feature), what a
+  dashed flashback segment means, simultaneous-scene merging, and drag-to-reorder.
+- **Conflicts** — bilocation and reveal-order, in plain language, matching the actual
+  `conflicts.js` message copy.
+- **Reveals & Foreshadowing** — explained via the UI's own field labels throughout (not the
+  underlying JSON names, which — per the round just before this one — mean the opposite of
+  what they're called).
+
+### Table of contents
+Added right after the intro/backups box, before "Your Projects" — a two-column link grid to
+all 10 major sections (the existing 8 plus the two new Timeline entries implied by the split
+above are folded into one "The Timeline: Loom & Path" entry, matching how the section itself
+reads as one topic). Every existing `<h2>` got an `id` to anchor to; verified with a script
+(not by eye) that every TOC `href="#..."` resolves to a real id in the document.
+
+### Landing page: Timeline row
+A 7th `.landing-feature` row, matching the existing Scene Flow Chart row's two-image layout
+(`landing-feature-media-multi` + `landing-img-half`) since Loom and Path are naturally a
+pair, same as Snake and Circle. Needed a 7th accent color — the landing page's own bespoke
+dark palette (`--lacc`/`--lbl`/`--lgr`/`--lpv`/`--lam`/`--llv`, `#landing`-scoped, independent
+of the app's five `data-theme` palettes) only had 6, all already claimed by the other rows —
+added `--lrd` and a matching `[data-accent="rd"]` rule rather than reuse one of the existing
+six a second time.
+
+### Verification
+Landing page: confirmed the new row renders correctly (screenshot, on a freshly-restarted
+origin to rule out the stale-script-cache artifact this project's testing has repeatedly hit
+— confirmed via `fetch` that the cached tab really was serving an old `index-init.js` before
+the restart), click-to-enlarge opens the right image at full size, clean console.
+Tutorial: verified via `get_page_text` (a full, faithful text dump of the entire rendered
+page, immune to the scroll-position screenshot flakiness hit near the end of this session)
+that every new section's copy renders completely and in the right place; a small script
+confirmed all 10 TOC links resolve to a real heading id; clean console. Screenshot
+verification of the Timeline section specifically was inconclusive due to an unrelated
+Browser-pane scroll/screenshot timeout in this environment (reproduced on a fresh tab too,
+and the un-scrolled top of the same page screenshots fine) — not chased further since the
+text-dump and computed-style checks already independently confirmed correct rendering.
+
+### Not yet done
+Not merged anywhere.
