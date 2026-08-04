@@ -1940,6 +1940,19 @@ let _braidColDx = BRAID_ZOOM_MID_DX;
 
 function braidColX(i) { return BRAID_COL_X0 + i * _braidColDx; }
 function braidRowY(chronIndex, rowH) { return BRAID_ROW_Y0 + chronIndex * rowH; }
+// Background-colored halo behind an SVG text element (paint-order:stroke
+// draws the stroke UNDER the fill, unlike normal SVG stroke-on-top) — makes
+// the glyphs opaque against whatever else is drawn behind them (gridlines,
+// paths, era-marker lines), without needing a real background <rect> sized
+// to a dynamically-measured bbox. var(--cbg) matches the node circle's own
+// fill so the halo reads as "this label has a small opaque backing," not as
+// an outlined-text effect.
+function applyBraidLabelHalo(textEl) {
+  textEl.style.paintOrder = 'stroke';
+  textEl.style.stroke = 'var(--cbg)';
+  textEl.style.strokeWidth = '3px';
+  textEl.style.strokeLinejoin = 'round';
+}
 
 function renderBraidLegend() {
   const el = document.getElementById('tl-braid-legend');
@@ -2340,6 +2353,15 @@ function renderBraid() {
     const title = document.createElementNS(SVGNS, 'text');
     title.setAttribute('x', labelX); title.setAttribute('y', y - 2);
     title.setAttribute('font-size', 11); title.setAttribute('text-anchor', anchor); title.setAttribute('pointer-events', 'none');
+    // A background-colored "halo" stroke behind the fill (paint-order:stroke)
+    // knocks out anything drawn behind the glyphs — gridlines, the flashback/
+    // connecting path, and especially era-marker lines, which at a tight
+    // rowH (many scenes, low zoom) can land only a few px from a node's own
+    // label and visibly cut through the letterforms otherwise (reported with
+    // a screenshot: a marker line reading as struck through the node text it
+    // sat just above). Cheap and correct at any zoom level — no per-marker
+    // clearance math needed.
+    applyBraidLabelHalo(title);
     title.style.fill = 'var(--tx)';
     title.textContent = scenes.map(s => s.title).join(' / ');
     g.appendChild(title);
@@ -2347,6 +2369,7 @@ function renderBraid() {
     const timeLabel = document.createElementNS(SVGNS, 'text');
     timeLabel.setAttribute('x', labelX); timeLabel.setAttribute('y', y + 11);
     timeLabel.setAttribute('font-size', 9.5); timeLabel.setAttribute('text-anchor', anchor); timeLabel.setAttribute('pointer-events', 'none');
+    applyBraidLabelHalo(timeLabel);
     timeLabel.style.fill = 'var(--sub)';
     timeLabel.textContent = fmtAnchor(scenes[0].anchor) || '—';
     g.appendChild(timeLabel);

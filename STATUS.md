@@ -3118,3 +3118,38 @@ were untouched.
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v4 branch — Era-marker lines visually "cutting" node labels
+
+User-reported, with a screenshot: an era marker placed right before a node made it look like
+the marker's dashed line sliced through the node's own title text, in both Path view modes.
+
+### Root cause
+Measured directly rather than guessed: at the chart's minimum row spacing (`BRAID_MIN_ROWH` =
+26px, the common case once a project has enough scenes that fit-to-window zoom bottoms out),
+a marker's line — positioned at the midpoint between its target row and the row above it — can
+land as little as 2-3px from the top of the target node's own title text. SVG `<text>` has no
+background by default, so the marker's dashed stroke shows straight through the gaps in the
+letterforms whenever it passes this close, reading as a strikethrough. This isn't unique to
+markers — any line-based content (gridlines, the connecting path) can suffer the same
+legibility problem at tight zoom — but markers were the one a user actually noticed and
+reported, since their dashed styling reads as intentional "content," not background structure.
+
+### Fix
+Added `applyBraidLabelHalo()` — a small shared helper applied to both the title and time-label
+`<text>` elements, using `paint-order:stroke` with a `var(--cbg)`-colored stroke (matching the
+node circle's own fill) drawn *underneath* the fill. This gives every label a cheap opaque
+backing that knocks out whatever's drawn behind it — markers, gridlines, paths — without
+computing per-marker clearance or measuring real text bounding boxes. Fixes the problem at any
+zoom level generically, not just the specific case in the screenshot.
+
+### Verification
+Reproduced the exact reported collision first (Frankenstein sample, zoomed to fit-to-window so
+rowH bottoms out at 26px, in the slate/dark theme matching the user's screenshot) — measured
+the marker line at y=161 against the target node's title text at y=172, a 9-11px true baseline
+gap that reads as visually touching given the text's ascent. Confirmed post-fix: the same
+marker line no longer visibly touches or crosses the label text in either Path view mode, in
+both a dark (slate) and light (ivory) theme, with a clean console throughout.
+
+### Not yet done
+Not merged anywhere.
