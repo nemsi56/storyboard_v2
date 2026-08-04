@@ -1919,6 +1919,20 @@ const BRAID_COL_X0 = 110, BRAID_ROW_Y0 = 70;
 const BRAID_LEFT = 60, BRAID_RIGHT_PAD = 210, BRAID_LABEL_FLIP_ZONE = 160;
 const BRAID_MIN_ROWH = 26, BRAID_MAX_ROWH = 52;
 const BRAID_FLASHBACK_COLOR = { dark: '#e0a458', light: '#b07a35' };
+// A merged (simultaneous-scenes) node has no single storyline to color by.
+// Originally drew it in var(--acc) — every theme's accent turned out to sit
+// close enough to one of STORYLINE_PALETTE's own hues (e.g. slate's #b07ef8
+// accent next to the palette's #c065e8 purple storyline swatch) to read as
+// the same color at circle size, exactly the ambiguity a legend swatch is
+// supposed to prevent. Fixed with a dedicated, fully desaturated gray in
+// each theme's bucket instead — the palette above is all fully-saturated
+// hues, so a true gray can never sit close to any of them regardless of
+// which storyline colors happen to be in use.
+const BRAID_MERGED_COLOR = { dark: '#9aa3ad', light: '#6b6459' };
+function braidMergedColor() {
+  const theme = document.documentElement.dataset.theme || 'ivory';
+  return BRAID_MERGED_COLOR[TL_DARK_THEMES.has(theme) ? 'dark' : 'light'];
+}
 // Recomputed once per renderBraid() call from the shared zoom slider
 // (tlBraidColDx()) — module-level so braidColX() doesn't need every call site
 // updated to thread a parameter through.
@@ -1949,7 +1963,7 @@ function appendBraidMergedLegendEntry() {
   const el = document.getElementById('tl-braid-legend');
   if (!el) return;
   const item = document.createElement('span'); item.className = 'chart-legend-item';
-  const swatch = document.createElement('span'); swatch.className = 'tl-braid-legend-swatch'; swatch.style.borderColor = 'var(--acc)';
+  const swatch = document.createElement('span'); swatch.className = 'tl-braid-legend-swatch'; swatch.style.borderColor = braidMergedColor();
   const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = 'Simultaneous scenes';
   item.appendChild(swatch); item.appendChild(nameEl);
   el.appendChild(item);
@@ -2044,6 +2058,21 @@ function renderBraid() {
   }
   _braidColIds = colIds;
 
+  // Markers (below) need a scene-id -> row lookup too. Narrative mode's rows
+  // ARE chronIndex, so it can reuse that map directly. Chronology mode's rows
+  // are each column's own index (rowOf above) — NOT the same as chronIndex,
+  // since colIds is filtered (offscreen excluded) and merged (2+ simultaneous
+  // scenes collapse into one column), so its row count can be smaller than
+  // chronIndex's raw range. Built once here from colIds so every id in a
+  // merged column correctly maps to that column's single row.
+  let markerRowIndex;
+  if (!tlBraidChronMode) {
+    markerRowIndex = chronIndex;
+  } else {
+    markerRowIndex = new Map();
+    colIds.forEach((col, i) => col.ids.forEach(id => markerRowIndex.set(id, i)));
+  }
+
   if (!colIds.length || rowCount < 1) {
     svg.setAttribute('width', scroll.clientWidth || 1);
     svg.setAttribute('height', scroll.clientHeight || 1);
@@ -2102,38 +2131,35 @@ function renderBraid() {
   svg.appendChild(markersLayer);
   const hud = document.getElementById('tl-braid-markers-hud');
   if (hud) { hud.textContent = ''; hud.style.height = contentH + 'px'; }
-  // Markers are era pins on the chronological axis — in Narrative mode
-  // that's the (vertical) row axis, drawn exactly as before. Chronology mode
-  // put chronological order on the (horizontal) column axis instead, so a
-  // marker there is a moving *column* target, not a row — not yet supported
-  // (skipped rather than drawn in the wrong place); the horizontal-line/HUD
-  // machinery below is Narrative-mode-only.
-  if (!tlBraidChronMode) {
-    (S.markers || []).forEach(m => {
-      let y;
-      if (!m.beforeSceneId) {
-        y = braidRowY(rowCount - 1, rowH) + rowH / 2;
-      } else {
-        const idx = chronIndex.get(m.beforeSceneId);
-        if (idx === undefined) return;
-        y = (idx === 0) ? braidRowY(0, rowH) - rowH / 2 : (braidRowY(idx - 1, rowH) + braidRowY(idx, rowH)) / 2;
-      }
-      const line = document.createElementNS(SVGNS, 'line');
-      line.setAttribute('x1', BRAID_LEFT); line.setAttribute('x2', chartRight);
-      line.setAttribute('y1', y); line.setAttribute('y2', y);
-      line.setAttribute('stroke-width', 1); line.setAttribute('stroke-dasharray', '5 4');
-      line.style.stroke = 'var(--o0)';
-      markersLayer.appendChild(line);
+  // Markers are era pins on the Chronology axis, and Chronology is the row
+  // (Y) axis in BOTH modes now — Narrative mode's row IS chronIndex;
+  // Chronology mode's row is each column's own index, looked up via
+  // markerRowIndex (built above) instead. Same horizontal-line rendering
+  // works unchanged in both; only which row-lookup map feeds it differs.
+  (S.markers || []).forEach(m => {
+    let y;
+    if (!m.beforeSceneId) {
+      y = braidRowY(rowCount - 1, rowH) + rowH / 2;
+    } else {
+      const idx = markerRowIndex.get(m.beforeSceneId);
+      if (idx === undefined) return;
+      y = (idx === 0) ? braidRowY(0, rowH) - rowH / 2 : (braidRowY(idx - 1, rowH) + braidRowY(idx, rowH)) / 2;
+    }
+    const line = document.createElementNS(SVGNS, 'line');
+    line.setAttribute('x1', BRAID_LEFT); line.setAttribute('x2', chartRight);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    line.setAttribute('stroke-width', 1); line.setAttribute('stroke-dasharray', '5 4');
+    line.style.stroke = 'var(--o0)';
+    markersLayer.appendChild(line);
 
-      if (hud) {
-        const label = document.createElement('div');
-        label.className = 'tl-braid-marker-label';
-        label.style.top = (y - 12) + 'px';
-        label.textContent = m.label;
-        hud.appendChild(label);
-      }
-    });
-  }
+    if (hud) {
+      const label = document.createElement('div');
+      label.className = 'tl-braid-marker-label';
+      label.style.top = (y - 12) + 'px';
+      label.textContent = m.label;
+      hud.appendChild(label);
+    }
+  });
   tlBraidUpdateMarkerHud();
 
   // ---- section boundaries (sections replace ThruLine's "dividers"): full-height
@@ -2251,12 +2277,14 @@ function renderBraid() {
     if (idx === undefined) return;
     const x = braidColX(i), y = braidRowY(idx, rowH);
     // A merged node (2+ scenes sharing one exact anchor, Chronology mode
-    // only) has no single storyline to color by — drawn in the neutral
-    // accent instead, with a legend entry (appendBraidMergedLegendEntry())
-    // explaining it rather than picking one member's color arbitrarily.
+    // only) has no single storyline to color by — drawn in a dedicated
+    // desaturated gray (braidMergedColor(), guaranteed distinct from every
+    // storyline hue) instead, with a legend entry
+    // (appendBraidMergedLegendEntry()) explaining it rather than picking one
+    // member's color arbitrarily.
     const merged = scenes.length > 1;
     const st = !merged ? storylineById.get(scenes[0].storylineId) : null;
-    const color = st ? slColor(st.paletteIndex) : 'var(--acc)';
+    const color = merged ? braidMergedColor() : (st ? slColor(st.paletteIndex) : 'var(--acc)');
     // The node's own identity for selection/hover/drag is its first scene —
     // simplest consistent choice for a merged node.
     const id = ids[0];

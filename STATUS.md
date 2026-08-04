@@ -2976,8 +2976,9 @@ were applied directly to the in-memory `S` object and never went through `saveSt
 
 ### Not yet done
 Not merged anywhere. Era markers unsupported in Chronology mode (see above — a real gap, not
-an oversight). No automated test suite exists for this app; verification above was manual via
-the Claude Code browser preview tool, as with every other round in this file.
+an oversight; fixed in a later round below, see "Era markers now render in Chronology mode
+too"). No automated test suite exists for this app; verification above was manual via the
+Claude Code browser preview tool, as with every other round in this file.
 
 ## thruLine_v4 branch — Mode-switch order flip, "Events" axis rename, watermark, drag-reliability fix
 
@@ -3048,6 +3049,72 @@ reopened the project afterward and confirmed zero test artifacts persisted (39 s
 `chronOrder` still `[1,2,3,4,5,6,7,8,9,10,...]`) — every test drag in this round was either
 discarded or never crossed a real order-changing threshold, and none went through
 `saveState()`.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v4 branch — Era markers now render in Chronology mode too
+
+A follow-up to the "not yet supported in Chronology mode" gap noted above. The user pushed
+back on the reasoning behind that gap directly — correctly: Chronology mode's row (Y) axis is
+labeled "CHRONOLOGY," the same as Narrative mode's, so there was no real reason markers
+(pinned to a chronological position, rendered as a horizontal line at a row) should be
+Narrative-only. Re-examining the code confirmed the gap wasn't actually about the axis at all
+— it was a leftover assumption from an *earlier, since-corrected* version of Chronology mode
+(before the mid-round fix earlier in this file that made the row simply track each column's
+own position). The real, narrower blocker: markers looked up their row via `chronIndex`, a
+map built from the full, unfiltered `S.chronOrder` — correct for Narrative mode (whose
+`rowCount` is that same full length), but not for Chronology mode, whose rows are built from
+`colIds` (offscreen scenes filtered out, simultaneous scenes merged into one column) and can
+therefore have fewer rows than raw `chronIndex` has entries for.
+
+**Fix:** a new `markerRowIndex` map, built right after `colIds` — reuses `chronIndex` directly
+in Narrative mode (identical to before), and in Chronology mode walks `colIds` assigning every
+scene id in a column (all of them, for a merged column) to that column's own row index. The
+existing horizontal-line-plus-HUD-label rendering code is otherwise completely unchanged;
+only the `!tlBraidChronMode` guard around it was removed and the row lookup switched from
+`chronIndex` to `markerRowIndex`.
+
+### Verification
+Live against the Frankenstein sample (4 markers, exercises exactly the case `chronIndex` would
+have gotten wrong: fewer Chronology-mode rows than raw chronOrder entries once merges/offscreen
+filtering apply). All four markers — "1793 — GENEVA & INGOLSTADT," "1793–94 — THE CREATURE'S
+FIRST YEAR," "1795–96 — THE RECKONING," "1799 — WALTON'S EXPEDITION" — confirmed positioned at
+the correct row directly above their pinned scene in both modes, dashed line plus label
+correctly rendered, clean console. Re-verified Narrative mode's markers are pixel-for-pixel
+unchanged (same regression check as every geometry change in this file).
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v4 branch — Merged-node color too close to a storyline color
+
+User-reported, with a screenshot: a merged (simultaneous-scenes) node in Chronology mode was
+drawn in `var(--acc)`, and in the slate theme that accent (`#b07ef8`) sits close enough to the
+storyline palette's own purple (`#c065e8`, `The Creature's Account` in their project) to read
+as the same color at circle size — exactly the ambiguity the "Simultaneous scenes" legend entry
+was supposed to prevent.
+
+### Fix
+Added a dedicated `BRAID_MERGED_COLOR` (dark/light theme buckets, same pattern as
+`BRAID_FLASHBACK_COLOR`) — a fully desaturated gray in each bucket, not derived from `--acc` or
+any other theme variable. `STORYLINE_PALETTE`'s ten entries are all fully-saturated hues, so a
+true gray can't sit close to any of them regardless of which storyline colors happen to be in
+use in a given project — a stronger guarantee than picking "some other accent color" that could
+still coincidentally collide with a *different* storyline down the line. Applied to both the
+merged node's own stroke and the legend swatch that explains it, via one shared
+`braidMergedColor()` helper so they can't drift apart.
+
+### Verification
+Reproduced the exact collision first (two scenes on different storylines, one of them the
+purple "Creature's Account," given a matching anchor and made adjacent in `S.chronOrder` so
+they'd actually merge), confirmed the pre-fix color read as `--acc` (`#b07ef8`, one component
+away from the storyline's `#c065e8`), then confirmed post-fix the merged node and legend swatch
+both render `#9aa3ad` — numerically and visually distinct from every storyline color in the
+project (blue `#5aa9e6`, orange `#e0a458`, purple `#c065e8`). All test mutations (anchors on
+scenes 8/12) applied directly to the in-memory `S` object; reloaded and reopened the project
+afterward and confirmed the real stored anchors (`1793-11-11`/`1793-11-12`, distinct dates)
+were untouched.
 
 ### Not yet done
 Not merged anywhere.
