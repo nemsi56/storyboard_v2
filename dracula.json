@@ -1,0 +1,1310 @@
+{
+  "v": "3",
+  "projectName": "Dracula",
+  "characters": [
+    {
+      "id": 1,
+      "name": "Jonathan Harker",
+      "notes": "Young solicitor sent to Transylvania to close a property sale. Imprisoned by the Count; later marries Mina."
+    },
+    {
+      "id": 2,
+      "name": "Mina Murray",
+      "notes": "Jonathan's fiancée, then wife. Schoolteacher with a sharp mind — compiles the group's journals into one narrative."
+    },
+    {
+      "id": 3,
+      "name": "Lucy Westenra",
+      "notes": "Mina's dearest friend. Courted by three men at once. The Count's first English victim."
+    },
+    {
+      "id": 4,
+      "name": "Dr. John Seward",
+      "notes": "Young asylum director. One of Lucy's rejected suitors. Keeps a phonograph diary."
+    },
+    {
+      "id": 5,
+      "name": "Arthur Holmwood",
+      "notes": "Lucy's fiancé, later Lord Godalming. Devoted, and devastated by what he must do to save her soul."
+    },
+    {
+      "id": 6,
+      "name": "Quincey Morris",
+      "notes": "American adventurer, another of Lucy's suitors. Blunt, brave, ultimately self-sacrificing."
+    },
+    {
+      "id": 7,
+      "name": "Abraham Van Helsing",
+      "notes": "Dutch physician and scholar. Recognizes the vampire for what it is when no one else will."
+    },
+    {
+      "id": 8,
+      "name": "Count Dracula",
+      "notes": "Centuries-old nobleman of Transylvania. Charming host, ancient predator."
+    },
+    {
+      "id": 9,
+      "name": "Renfield",
+      "notes": "Patient at Seward's asylum. Eats insects to absorb their 'life.' Unknowingly in the Count's thrall."
+    }
+  ],
+  "locations": [
+    {
+      "id": 10,
+      "name": "Bistritz",
+      "notes": "Transylvanian town where Jonathan's coach journey begins."
+    },
+    {
+      "id": 11,
+      "name": "Borgo Pass",
+      "notes": "Mountain pass where the Count's own carriage meets Jonathan at midnight."
+    },
+    {
+      "id": 12,
+      "name": "Castle Dracula",
+      "notes": "The Count's crumbling ancestral seat. No mirrors, no servants, no way out."
+    },
+    {
+      "id": 13,
+      "name": "Whitby",
+      "notes": "Yorkshire seaside town. Where the Demeter runs aground and Lucy first falls under the Count's shadow."
+    },
+    {
+      "id": 14,
+      "name": "Hillingham",
+      "notes": "Lucy and her mother's home outside London."
+    },
+    {
+      "id": 15,
+      "name": "Purfleet Asylum",
+      "notes": "Dr. Seward's asylum, adjoining the Count's newly-purchased Carfax estate."
+    },
+    {
+      "id": 16,
+      "name": "Carfax Estate",
+      "notes": "The derelict property the Count has bought — and filled with boxes of his native earth."
+    },
+    {
+      "id": 17,
+      "name": "Budapest",
+      "notes": "Where Jonathan is found, feverish and raving, after his escape."
+    },
+    {
+      "id": 18,
+      "name": "Transylvania (Return)",
+      "notes": "The Count's homeland, reached again in the final pursuit."
+    }
+  ],
+  "themes": [
+    {
+      "id": 19,
+      "name": "Ancient Evil vs. Modern Science",
+      "notes": "Diaries, typewriters, blood transfusions, telegrams — and none of it enough without old-world faith."
+    },
+    {
+      "id": 20,
+      "name": "Blood and Contagion",
+      "notes": "Blood as life, as corruption, as the thing passed from victim to victim."
+    },
+    {
+      "id": 21,
+      "name": "Faith and the Sacred",
+      "notes": "Crucifixes, communion wafers, holy water — belief as a weapon when science fails."
+    },
+    {
+      "id": 22,
+      "name": "The New Woman",
+      "notes": "Mina's competence and Lucy's desire read as dangerous, then as the thing that saves everyone."
+    },
+    {
+      "id": 23,
+      "name": "Found Family and Fellowship",
+      "notes": "Strangers and rivals for Lucy's hand become a single, unbreakable circle."
+    },
+    {
+      "id": 24,
+      "name": "Purity and Corruption",
+      "notes": "What the Count takes from Lucy and Mina isn't only blood."
+    }
+  ],
+  "misc": [
+    {
+      "id": 25,
+      "name": "The Demeter's Log",
+      "notes": "The wrecked ship's captain lashed himself to the wheel rather than abandon his post."
+    },
+    {
+      "id": 26,
+      "name": "Boxes of Consecrated Earth",
+      "notes": "Fifty boxes of Transylvanian soil, shipped to Carfax — the Count's only safe resting places in England."
+    },
+    {
+      "id": 27,
+      "name": "Van Helsing's Bag",
+      "notes": "Garlic, crucifixes, a stake and hammer, communion wafers — old-world tools for a very old evil."
+    },
+    {
+      "id": 28,
+      "name": "Jonathan's Shorthand Journal",
+      "notes": "Written in shorthand so the Count couldn't read it. The first hard evidence of what he is."
+    },
+    {
+      "id": 29,
+      "name": "Mina's Typewritten Compilation",
+      "notes": "Every diary, letter, and phonograph cylinder, cross-referenced and dated into one document."
+    },
+    {
+      "id": 30,
+      "name": "The Communion Wafer",
+      "notes": "Used to seal the boxes of earth — and, devastatingly, to mark Mina's own forehead."
+    }
+  ],
+  "scenes": [
+    {
+      "id": 1,
+      "title": "Jonathan Departs for Transylvania",
+      "summary": "Jonathan sets out to finalize the Count's London property purchase, noting the local dread the trip provokes.",
+      "notes": "",
+      "characters": [
+        1,
+        8
+      ],
+      "locations": [
+        10
+      ],
+      "themes": [
+        19
+      ],
+      "misc": [],
+      "sectionId": 1,
+      "wordCount": 2600,
+      "povs": [
+        1
+      ],
+      "storylineId": 31,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-05-03",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 2,
+      "title": "Warnings at the Borgo Pass",
+      "summary": "Villagers press a crucifix on Jonathan and cross themselves at the mention of the Count. His carriage meets him at midnight, driven by an unseen hand.",
+      "notes": "",
+      "characters": [
+        1,
+        8
+      ],
+      "locations": [
+        11
+      ],
+      "themes": [
+        21
+      ],
+      "misc": [],
+      "sectionId": 1,
+      "wordCount": 3100,
+      "povs": [
+        1
+      ],
+      "storylineId": 31,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-05-04",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [
+        35
+      ],
+      "requires": []
+    },
+    {
+      "id": 3,
+      "title": "Arrival at Castle Dracula",
+      "summary": "The Count receives Jonathan with unsettling grace — cold hands, no servants in sight, and food only for his guest.",
+      "notes": "",
+      "characters": [
+        1,
+        8
+      ],
+      "locations": [
+        12
+      ],
+      "themes": [
+        19
+      ],
+      "misc": [],
+      "sectionId": 1,
+      "wordCount": 2900,
+      "povs": [
+        1
+      ],
+      "storylineId": 31,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-05-05",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 4,
+      "title": "No Mirrors, No Reflection",
+      "summary": "Jonathan realizes the castle has not one mirror, and that his host casts no reflection at all.",
+      "notes": "",
+      "characters": [
+        1,
+        8
+      ],
+      "locations": [
+        12
+      ],
+      "themes": [
+        19
+      ],
+      "misc": [
+        28
+      ],
+      "sectionId": 1,
+      "wordCount": 2400,
+      "povs": [
+        1
+      ],
+      "storylineId": 31,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-05-07",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": [
+        35
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Jonathan Realizes He's a Prisoner",
+      "summary": "Every door is locked from outside. Jonathan begins keeping his journal in shorthand, the only lock the Count can't pick.",
+      "notes": "",
+      "characters": [
+        1,
+        8
+      ],
+      "locations": [
+        12
+      ],
+      "themes": [
+        19
+      ],
+      "misc": [
+        28
+      ],
+      "sectionId": 1,
+      "wordCount": 3300,
+      "povs": [
+        1
+      ],
+      "storylineId": 31,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-05-24",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 6,
+      "title": "The Three Weird Women",
+      "summary": "Three pale women corner Jonathan in the moonlight. The Count intervenes at the last second: \"This man belongs to me.\"",
+      "notes": "",
+      "characters": [
+        1,
+        8
+      ],
+      "locations": [
+        12
+      ],
+      "themes": [
+        24
+      ],
+      "misc": [],
+      "sectionId": 1,
+      "wordCount": 2700,
+      "povs": [
+        1
+      ],
+      "storylineId": 31,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-05-25",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 7,
+      "title": "Dracula Departs Wearing Jonathan's Clothes",
+      "summary": "Fifty boxes of earth are loaded for shipment. Jonathan watches the Count descend the castle wall like a lizard — dressed, unmistakably, in Jonathan's own suit.",
+      "notes": "",
+      "characters": [
+        1,
+        8
+      ],
+      "locations": [
+        12
+      ],
+      "themes": [
+        20
+      ],
+      "misc": [
+        26
+      ],
+      "sectionId": 1,
+      "wordCount": 3400,
+      "povs": [
+        1
+      ],
+      "storylineId": 31,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-07-01",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 8,
+      "title": "Jonathan's Desperate Escape",
+      "summary": "Jonathan climbs the same wall to escape the castle he cannot otherwise leave, and is later found raving in a Budapest hospital, his journal clutched shut.",
+      "notes": "",
+      "characters": [
+        1
+      ],
+      "locations": [
+        12,
+        17
+      ],
+      "themes": [
+        19
+      ],
+      "misc": [
+        28
+      ],
+      "sectionId": 1,
+      "wordCount": 3000,
+      "povs": [
+        1
+      ],
+      "storylineId": 31,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-07-05",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 9,
+      "title": "Lucy and Mina's Correspondence",
+      "summary": "Letters between the two friends: Mina's shorthand practice for Jonathan's sake, and Lucy's news of not one but three proposals in a single day.",
+      "notes": "",
+      "characters": [
+        2,
+        3
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [
+        22
+      ],
+      "misc": [],
+      "sectionId": 1,
+      "wordCount": 2200,
+      "povs": [
+        2
+      ],
+      "storylineId": 32,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-05-09",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 10,
+      "title": "Lucy Accepts Arthur's Proposal",
+      "summary": "Lucy chooses Arthur, gently turning down Dr. Seward and Quincey Morris, who both take it with more grace than she expected.",
+      "notes": "",
+      "characters": [
+        3,
+        5,
+        4,
+        6
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [
+        23
+      ],
+      "misc": [],
+      "sectionId": 1,
+      "wordCount": 2500,
+      "povs": [
+        3
+      ],
+      "storylineId": 32,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-05-24",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 11,
+      "title": "Mina Joins Lucy in Whitby",
+      "summary": "Mina arrives at the seaside for a long visit, worried about Lucy's recent sleepwalking and about Jonathan's silence.",
+      "notes": "",
+      "characters": [
+        2,
+        3
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [
+        23
+      ],
+      "misc": [],
+      "sectionId": 1,
+      "wordCount": 2300,
+      "povs": [
+        2
+      ],
+      "storylineId": 32,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-07-24",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 12,
+      "title": "The Demeter Wrecks at Whitby",
+      "summary": "A Russian schooner runs aground in a sudden storm, her captain lashed dead to the wheel and every hand lost. A great dark shape bounds ashore. Reported secondhand -- no one in the group witnesses it directly.",
+      "notes": "",
+      "characters": [
+        8
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [
+        19
+      ],
+      "misc": [
+        25
+      ],
+      "sectionId": 1,
+      "wordCount": 3200,
+      "povs": [
+        2
+      ],
+      "storylineId": 32,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-08-08",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": true,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 13,
+      "title": "Lucy Begins Sleepwalking",
+      "summary": "Mina finds Lucy's bed empty at midnight and follows her to the churchyard, where a dark figure bends over her before slipping away.",
+      "notes": "",
+      "characters": [
+        2,
+        3
+      ],
+      "locations": [
+        13
+      ],
+      "themes": [
+        20
+      ],
+      "misc": [],
+      "sectionId": 1,
+      "wordCount": 2400,
+      "povs": [
+        2
+      ],
+      "storylineId": 32,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-08-11",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 14,
+      "title": "Lucy's Health Declines",
+      "summary": "Back at Hillingham, Lucy grows pale and listless. Arthur, alarmed, asks Dr. Seward to examine her.",
+      "notes": "",
+      "characters": [
+        3,
+        5,
+        4
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [
+        20
+      ],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 2600,
+      "povs": [
+        4
+      ],
+      "storylineId": 32,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-08-17",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 15,
+      "title": "Dr. Seward Summons Van Helsing",
+      "summary": "Baffled by two small puncture wounds that won't heal, Seward wires his old teacher — a man who believes in things Seward doesn't.",
+      "notes": "",
+      "characters": [
+        4,
+        7
+      ],
+      "locations": [
+        15
+      ],
+      "themes": [
+        19
+      ],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 2100,
+      "povs": [
+        4
+      ],
+      "storylineId": 33,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-09-02",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 16,
+      "title": "Renfield's Strange Fixation",
+      "summary": "Seward's patient Renfield catalogs flies, then spiders, then birds — each fed to the next, climbing toward something he calls 'the Master.'",
+      "notes": "",
+      "characters": [
+        9,
+        4
+      ],
+      "locations": [
+        15
+      ],
+      "themes": [
+        20
+      ],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 2300,
+      "povs": [
+        4
+      ],
+      "storylineId": 33,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-09-03",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [
+        36
+      ],
+      "requires": []
+    },
+    {
+      "id": 17,
+      "title": "The First Blood Transfusion",
+      "summary": "Van Helsing arrives, examines Lucy's wounds in silence, and gives Arthur his own blood to save her — telling him almost nothing of why.",
+      "notes": "",
+      "characters": [
+        3,
+        5,
+        7,
+        4
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [
+        20
+      ],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 3000,
+      "povs": [
+        7
+      ],
+      "storylineId": 34,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-09-07",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 18,
+      "title": "Van Helsing's Garlic and Warnings",
+      "summary": "Van Helsing wreathes Lucy's room in garlic flowers and begs her mother never to remove them, without explaining why.",
+      "notes": "",
+      "characters": [
+        3,
+        7
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [
+        21
+      ],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 2000,
+      "povs": [
+        7
+      ],
+      "storylineId": 34,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-09-10",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 19,
+      "title": "Lucy's Mother Removes the Garlic",
+      "summary": "Not knowing what it protects against, Lucy's mother clears the flowers away for the night air — the one night Van Helsing isn't there to stop her.",
+      "notes": "",
+      "characters": [
+        3
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [
+        20
+      ],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 2200,
+      "povs": [
+        4
+      ],
+      "storylineId": 32,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-09-17",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 20,
+      "title": "Lucy Dies",
+      "summary": "Despite three transfusions and every precaution, Lucy slips away in the night — and, for one unsettling moment before the end, seems almost to smile with teeth too sharp.",
+      "notes": "",
+      "characters": [
+        3,
+        5,
+        7,
+        4
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [
+        20
+      ],
+      "misc": [],
+      "sectionId": 2,
+      "wordCount": 3100,
+      "povs": [
+        4
+      ],
+      "storylineId": 32,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-09-20",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 21,
+      "title": "The Bloofer Lady Preys on Children",
+      "summary": "Newspapers report a beautiful woman luring small children from Hampstead Heath at night. Van Helsing tells Seward, plainly, who it is.",
+      "notes": "",
+      "characters": [
+        3,
+        7,
+        4
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [
+        24
+      ],
+      "misc": [],
+      "sectionId": 3,
+      "wordCount": 2500,
+      "povs": [
+        4
+      ],
+      "storylineId": 34,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-09-25",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": [
+        36
+      ]
+    },
+    {
+      "id": 22,
+      "title": "Jonathan and Mina Return, Married",
+      "summary": "Recovered at last, Jonathan marries Mina in Budapest, and the two return to England together — his journal still unread by anyone but him.",
+      "notes": "",
+      "characters": [
+        1,
+        2
+      ],
+      "locations": [
+        17
+      ],
+      "themes": [
+        23
+      ],
+      "misc": [
+        28
+      ],
+      "sectionId": 3,
+      "wordCount": 2400,
+      "povs": [
+        1
+      ],
+      "storylineId": 31,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-08-24",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 23,
+      "title": "Staking Lucy in Her Tomb",
+      "summary": "Arthur drives the stake through the thing wearing Lucy's face, at Van Helsing's insistence, so her soul can finally rest.",
+      "notes": "",
+      "characters": [
+        3,
+        5,
+        7,
+        4,
+        6
+      ],
+      "locations": [
+        14
+      ],
+      "themes": [
+        21
+      ],
+      "misc": [],
+      "sectionId": 3,
+      "wordCount": 3300,
+      "povs": [
+        5
+      ],
+      "storylineId": 34,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-09-29",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 24,
+      "title": "Mina Compiles the Documents",
+      "summary": "Mina types every diary and letter into one continuous, dated account — and is the first to notice how the pieces actually fit together.",
+      "notes": "",
+      "characters": [
+        2,
+        1,
+        4,
+        7
+      ],
+      "locations": [
+        15
+      ],
+      "themes": [
+        22
+      ],
+      "misc": [
+        29
+      ],
+      "sectionId": 3,
+      "wordCount": 2600,
+      "povs": [
+        2
+      ],
+      "storylineId": 34,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-10-01",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 25,
+      "title": "Renfield Attacked, Warns the Group",
+      "summary": "Battered and dying alone in his cell, Renfield finally understands what the Master next door has been using him for -- moments too late for anyone to hear his warning.",
+      "notes": "",
+      "characters": [
+        9
+      ],
+      "locations": [
+        15
+      ],
+      "themes": [
+        20
+      ],
+      "misc": [],
+      "sectionId": 3,
+      "wordCount": 2800,
+      "povs": [
+        9
+      ],
+      "storylineId": 33,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-10-03",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 26,
+      "title": "Dracula Attacks Mina",
+      "summary": "The men break into the Harkers' room to find the Count forcing Mina to drink his own blood — and know, watching, exactly what it means.",
+      "notes": "",
+      "characters": [
+        2,
+        1,
+        8,
+        7,
+        5,
+        6
+      ],
+      "locations": [
+        16
+      ],
+      "themes": [
+        20
+      ],
+      "misc": [
+        30
+      ],
+      "sectionId": 3,
+      "wordCount": 3500,
+      "povs": [
+        2
+      ],
+      "storylineId": 34,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-10-03",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 27,
+      "title": "Destroying the Boxes of Earth",
+      "summary": "The group hunts down and sterilizes every box of Transylvanian soil the Count shipped to England, cutting off his safe harbors one by one.",
+      "notes": "",
+      "characters": [
+        1,
+        7,
+        4,
+        5,
+        6
+      ],
+      "locations": [
+        16
+      ],
+      "themes": [
+        19
+      ],
+      "misc": [
+        26
+      ],
+      "sectionId": 4,
+      "wordCount": 2900,
+      "povs": [
+        1
+      ],
+      "storylineId": 34,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-10-05",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 28,
+      "title": "The Pursuit to Transylvania",
+      "summary": "With Mina marked and weakening by the day, the group races the Count back toward his own castle before winter closes the passes.",
+      "notes": "",
+      "characters": [
+        1,
+        2,
+        7,
+        4,
+        5,
+        6
+      ],
+      "locations": [
+        18
+      ],
+      "themes": [
+        23
+      ],
+      "misc": [],
+      "sectionId": 4,
+      "wordCount": 3200,
+      "povs": [
+        2
+      ],
+      "storylineId": 34,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-10-15",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 29,
+      "title": "Race Against the Setting Sun",
+      "summary": "Local guards escort the Count's coffin on its final leg home. The group intercepts it with minutes of daylight left.",
+      "notes": "",
+      "characters": [
+        1,
+        2,
+        7,
+        4,
+        5,
+        6
+      ],
+      "locations": [
+        18
+      ],
+      "themes": [
+        19
+      ],
+      "misc": [],
+      "sectionId": 4,
+      "wordCount": 3000,
+      "povs": [
+        1
+      ],
+      "storylineId": 34,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-11-06",
+        "time": null
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    },
+    {
+      "id": 30,
+      "title": "Dracula's Destruction",
+      "summary": "A knife through the heart and a throat cut in the same instant turn the Count to dust — but not before Quincey Morris falls defending them.",
+      "notes": "",
+      "characters": [
+        1,
+        2,
+        7,
+        4,
+        5,
+        6,
+        8
+      ],
+      "locations": [
+        18
+      ],
+      "themes": [
+        21
+      ],
+      "misc": [],
+      "sectionId": 4,
+      "wordCount": 3400,
+      "povs": [
+        2
+      ],
+      "storylineId": 34,
+      "alsoStorylineIds": [],
+      "anchor": {
+        "date": "1893-11-06",
+        "time": "17:00"
+      },
+      "durationMin": null,
+      "offscreen": false,
+      "reveals": [],
+      "requires": []
+    }
+  ],
+  "nextId": 31,
+  "andOr": "OR",
+  "theme": "ivory",
+  "sections": [
+    {
+      "id": 1,
+      "name": "Innocent Abroad",
+      "color": "#8a6a4a"
+    },
+    {
+      "id": 2,
+      "name": "The Bloofer Lady",
+      "color": "#6a8aa8"
+    },
+    {
+      "id": 3,
+      "name": "Van Helsing's Warning",
+      "color": "#8a5a9a"
+    },
+    {
+      "id": 4,
+      "name": "The Hunt to the Death",
+      "color": "#a85a5a"
+    }
+  ],
+  "nextSecId": 5,
+  "lastDataEditAt": null,
+  "lastExportedAt": null,
+  "editsSinceExport": 0,
+  "nextEntId": 42,
+  "povCustom": [],
+  "povOrder": [],
+  "storylines": [
+    {
+      "id": 31,
+      "name": "Jonathan's Ordeal",
+      "paletteIndex": 0
+    },
+    {
+      "id": 32,
+      "name": "Lucy's Decline",
+      "paletteIndex": 1
+    },
+    {
+      "id": 33,
+      "name": "The Asylum",
+      "paletteIndex": 2
+    },
+    {
+      "id": 34,
+      "name": "The Hunt",
+      "paletteIndex": 3
+    }
+  ],
+  "revealsLib": [
+    {
+      "id": 35,
+      "label": "Count Dracula is a vampire"
+    },
+    {
+      "id": 36,
+      "label": "Renfield's fits are the Count announcing his arrival"
+    }
+  ],
+  "constraints": [],
+  "markers": [
+    {
+      "id": 37,
+      "label": "MAY 1893 — INTO TRANSYLVANIA",
+      "beforeSceneId": 1
+    },
+    {
+      "id": 38,
+      "label": "AUGUST 1893 — THE DEMETER ARRIVES",
+      "beforeSceneId": 12
+    },
+    {
+      "id": 39,
+      "label": "SEPTEMBER 1893 — LUCY'S DECLINE",
+      "beforeSceneId": 14
+    },
+    {
+      "id": 40,
+      "label": "OCTOBER 1893 — THE FELLOWSHIP FORMS",
+      "beforeSceneId": 21
+    },
+    {
+      "id": 41,
+      "label": "NOVEMBER 1893 — THE FINAL PURSUIT",
+      "beforeSceneId": 27
+    }
+  ],
+  "chronOrder": [
+    1,
+    2,
+    3,
+    4,
+    9,
+    5,
+    10,
+    6,
+    7,
+    8,
+    11,
+    12,
+    13,
+    14,
+    22,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30
+  ],
+  "dismissed": [],
+  "timelinePrefs": {
+    "axis": "ordinal",
+    "threadCharId": null,
+    "zoomPos": 62
+  }
+}

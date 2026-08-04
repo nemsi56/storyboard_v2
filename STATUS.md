@@ -3195,3 +3195,117 @@ rendering constants (no scene data mutated), so no persistence check was needed.
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v4 branch — Sample-project lineup overhaul: Dracula replaces Pride and Prejudice, Monte Cristo restructured
+
+Prompted by a direct question: are Pride and Prejudice and Count of Monte Cristo still the
+best samples to demonstrate the app's Timeline features (multi-storyline, non-linear
+chronology, era markers)? Checked the actual sample data rather than guessing — both were
+single-storyline (only the implicit default "Main") with `chronOrder` identical to
+manuscript order (zero displacement, i.e. fully linear). Frankenstein was the only sample
+demonstrating any of it. Verdict, given to the user before touching anything: Monte Cristo's
+*source novel* already has real parallel revenge threads the sample data just never used
+(a restructuring job, not a wrong-book problem); Pride and Prejudice is close to strictly
+linear by design (single POV, no flashbacks) — no restructuring fixes that. Agreed plan:
+restructure Monte Cristo in place, retire Pride and Prejudice, replace it with Dracula
+(genuinely parallel storylines, real dated diary entries to anchor, simultaneous events
+across characters — a natural fit for the Chronology-mode merge feature specifically).
+
+**Touched files:** `count-of-monte-cristo.json` (converted v2 → v3-native, in place),
+`dracula.json` (new, v3-native from scratch), `pride-and-prejudice.json` (removed),
+`projects.js` (`ensureSampleProjects()` — sample list, retirement logic, `SAMPLES_VERSION`
+3 → 4).
+
+### Monte Cristo: v2 → v3-native conversion
+Scene titles/summaries/word counts/POVs/sections untouched — only added what a v2 file
+structurally can't carry (v2 has no concept of storylines, anchors, chronOrder divergence,
+markers, or reveals). Converted via a one-off Python script (not hand-edited) to guarantee
+every id reference stays internally consistent:
+- **5 storylines** assigned along the real revenge-plot structure: Edmond's Revenge (the
+  throughline), Fernand's Reckoning, Danglars' Ruin, Villefort's Downfall, Valentine &
+  Maximilien. The Ball (scene 35, where every thread converges) carries the other three as
+  `alsoStorylineIds` rather than picking one arbitrarily.
+- **Real anchor dates** spanning 1815 (arrest) → 1829 (escape) → 1838 (revenge), with the
+  revenge section (scenes 21-30) deliberately interleaved out of manuscript order — e.g.
+  Danglars' financial ruin (scene 23) is dated *before* Fernand's public exposure (21) even
+  though the book presents Fernand's chapter first, since a slow-burning financial scheme
+  and a fast public scandal don't actually take the same amount of story-time to play out.
+  Total chronOrder-vs-manuscript displacement: 74 (vs. Frankenstein's 174) — real, not huge.
+- **One simultaneous-scenes pair**: "Fernand's Exposure" and "Mercédès Recognizes Her Lover"
+  share the exact same date+time (different storylines, same location — the opera) —
+  merges into one node in Path view's Chronology mode.
+- **5 era markers** and **2 reveal/foreshadow threads** (the Count's real identity; Héloïse's
+  poisoning), both newly added.
+
+### Dracula: built from scratch
+30 scenes across 4 storylines (Jonathan's Ordeal, Lucy's Decline, The Asylum, The Hunt) and
+4 sections ("Books"), with real 1893 dates drawn from the novel's own diary/letter dating.
+Manuscript order deliberately presents Jonathan's entire Transylvania ordeal first, then
+"rewinds" to Mina and Lucy's correspondence from the same weeks — an authentic non-linear
+structure lifted directly from the real novel's own chapter order, not invented for the
+sample (displacement: 28). One offscreen scene (the Demeter's wreck — reported secondhand,
+witnessed by no POV character directly), 5 era markers, 2 reveal/foreshadow threads (Dracula
+is a vampire; Renfield's fits are the Count's arrival), and two genuinely simultaneous
+cross-storyline scene pairs for the Chronology-mode merge feature.
+
+### Two real bugs caught during verification, not by inspection
+- **Reveal/foreshadow fields are swapped from what their names suggest.** `scene.reveals` is
+  the UI's "Foreshadow" field (the early hint) and `scene.requires` is the UI's "This scene
+  reveals" field (the later payoff) — confirmed against `editor.js`'s own
+  `REVEAL_CK_BOXES` comment ("Display labels are the OPPOSITE of these box-id suffixes").
+  Both new files were authored backwards at first, which the Conflicts panel caught
+  immediately as spurious "Reveal before foreshadow" errors on data that was actually
+  correctly ordered — the bug was in the authoring script, not the app. Fixed by swapping
+  which field each script populates; re-verified against the actual conflict-engine logic
+  (`conflicts.js`) reproduced in Python, not just re-loaded in the browser.
+- **A genuine bilocation conflict in the first Dracula draft.** The two scenes meant to
+  merge on Oct 3, 1893 ("Renfield Attacked" / "Dracula Attacks Mina") originally shared two
+  characters (Seward, Van Helsing) despite being tagged at different locations — a real
+  authoring mistake the app's bilocation check correctly caught, not a false positive.
+  Fixed by splitting who's present in each scene (Seward stays with Renfield; Van Helsing is
+  with the group at Mina's) rather than suppressing the check.
+
+### `ensureSampleProjects()` changes
+- `samplesToLoad` now lists Monte Cristo, Frankenstein, and Dracula (Pride and Prejudice
+  removed). All three are v3-native now, so the v2-migration branch is dead code for the
+  *current* samples but left in place for any v2 sample added later.
+- New retirement pass (gated behind the same `SAMPLES_VERSION` check, so it only ever runs
+  once per bump, not every page load): an untouched (revision 0) Pride and Prejudice sample
+  is deleted outright; an edited copy is left completely alone but unflagged (`isSample`/
+  `sampleKey` removed) so it becomes a normal project going forward instead of a permanently
+  orphaned "sample" that nothing will ever refresh again.
+- `SAMPLES_VERSION` bumped 3 → 4, which is what makes all of the above run automatically for
+  existing installs on their next Projects-page visit — no manual `localStorage` reset.
+
+### Verification
+Checked the STATUS.md history first per the user's explicit instruction, given past
+sample-duplication bugs (the seeding race condition and the rename/delete/version-bump
+resurrection bug, both documented earlier in this file) — the fixes for both are still
+intact and this round's retirement logic reuses the same revision-0/sampleKey patterns
+rather than inventing a new path.
+- Both new JSON files validated structurally (id uniqueness, every reference resolves,
+  `chronOrder` is a true permutation of scene ids) and semantically (bilocation and
+  reveal-order checks reimplemented in Python from the actual `conflicts.js` logic) before
+  ever loading them in the browser.
+- Fresh browser (cleared `localStorage`): seeds exactly Monte Cristo, Frankenstein, Dracula
+  — no Pride and Prejudice, no console errors, `Conflicts (0)` on both new/changed samples.
+- Simulated an old browser (`samplesVersion: 3`, Pride and Prejudice + old-shape Monte
+  Cristo + Frankenstein already seeded, all `revision: 0`): after one Projects-page visit,
+  exactly 3 projects remain — Pride and Prejudice gone, Monte Cristo refreshed **in place**
+  (same storage id, new 5-storyline content), Frankenstein untouched, Dracula newly added.
+  No duplicates.
+- Simulated an *edited* Pride and Prejudice (`revision: 5`): survives the same upgrade pass
+  completely intact, just silently unflagged as a sample (confirmed both `isSample` and
+  `sampleKey` are gone from its index entry afterward).
+- Path view Chronology mode: confirmed both Monte Cristo's and both of Dracula's intended
+  simultaneous-scene pairs actually merge into one node each, with `Conflicts (0)`.
+  Generate Report (POV type, Dracula) produced real HTML output with no console errors
+  (`window.open` mocked to capture the content directly, per this project's established
+  testing pattern for anything that opens a popup).
+- Export filename convention needed no code changes — `exportProjectJSON()` already derives
+  the filename from the project's index `name` (not from anything sample-specific), so
+  "Dracula" and "The Count of Monte Cristo" export correctly automatically.
+
+### Not yet done
+Not merged anywhere. `pride-and-prejudice.json` deleted from the repo entirely (fully
+unreferenced after this change — confirmed via repo-wide grep before removing it).

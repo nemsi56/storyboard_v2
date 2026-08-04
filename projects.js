@@ -907,13 +907,13 @@ function importProjectJSON(inputEl) {
   inputEl.value = '';
 }
 
-// Bump whenever pride-and-prejudice.json / count-of-monte-cristo.json /
-// frankenstein.json change enough that existing (untouched) sample projects
-// should be refreshed with the new content — e.g. the wordCount/povs addition
-// this constant was introduced for. A user who's still on an older version
-// gets the refresh automatically on their next Projects-page visit; no manual
+// Bump whenever count-of-monte-cristo.json / frankenstein.json / dracula.json
+// change enough that existing (untouched) sample projects should be
+// refreshed with the new content — e.g. the wordCount/povs addition this
+// constant was introduced for. A user who's still on an older version gets
+// the refresh automatically on their next Projects-page visit; no manual
 // localStorage reset needed.
-const SAMPLES_VERSION = 3;
+const SAMPLES_VERSION = 4;
 
 function ensureSampleProjects() {
   // Seeded/refreshed up to SAMPLES_VERSION already? Nothing to do. Tracked by a version
@@ -944,10 +944,37 @@ function ensureSampleProjects() {
   // entries from before sampleKey existed only ever recorded a name, so check both.
   const deletedSamples = new Set(prefs.deletedSamples || []);
 
+  // Retired as of SAMPLES_VERSION 4 — Pride and Prejudice and Count of Monte
+  // Cristo (in its original form) were both fully linear, single-storyline
+  // sample data, so neither actually demonstrated the Timeline views
+  // (multi-storyline, non-linear chronology, era markers). Monte Cristo was
+  // restructured in place instead (its source novel has real parallel
+  // revenge threads the original sample just never used); Pride and
+  // Prejudice is close to strictly linear by design, so it's retired outright
+  // in favor of Dracula (see samplesToLoad below), which is genuinely
+  // multi-storyline with real dated diary entries to anchor. An untouched
+  // (revision 0) copy is removed outright; an edited copy is the user's own
+  // now and is just unflagged as a sample rather than deleted.
+  [{ key: 'pride-and-prejudice', name: 'Pride and Prejudice' }].forEach(sample => {
+    const index = loadProjectIndex();
+    const entry = index.find(p => p.isSample && (p.sampleKey === sample.key || (!p.sampleKey && p.name === sample.name)));
+    if (!entry) return;
+    let cur = null;
+    try { cur = JSON.parse(localStorage.getItem(projKey(entry.id)) || 'null'); } catch(e) {}
+    if (cur && (cur.revision || 0) !== 0) {
+      delete entry.isSample;
+      delete entry.sampleKey;
+      saveProjectIndex(index);
+    } else {
+      localStorage.removeItem(projKey(entry.id));
+      saveProjectIndex(index.filter(p => p.id !== entry.id));
+    }
+  });
+
   const samplesToLoad = [
-    { key: 'pride-and-prejudice', name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' },
     { key: 'count-of-monte-cristo', name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' },
     { key: 'frankenstein', name: 'Frankenstein; or, The Modern Prometheus', file: 'frankenstein.json' },
+    { key: 'dracula', name: 'Dracula', file: 'dracula.json' },
   ];
 
   const loadPromises = samplesToLoad.map(sample => {
@@ -958,12 +985,11 @@ function ensureSampleProjects() {
         return response.json();
       })
       .then(d => {
-        // Older sample JSON files on disk stay v2 (schema v3 spec §3.1.3) and
-        // migrate through the same path a v2 import would take, rather than
-        // hand-editing them — but frankenstein.json is v3-native (converted
-        // from ThruLine's own test fixture specifically to exercise
-        // storylines/reveals/anchors/conflicts, which v2 has no concept of),
-        // so it's seeded as-is.
+        // All three current samples are v3-native (storylines/reveals/anchors/
+        // markers hand-authored directly — v2 has no concept of any of them).
+        // The v2-migration branch is kept for any v2 sample file added later
+        // (or a stale cached copy of one still in a user's own project list),
+        // not because a current sample needs it.
         if (!d) return false;
         if (d.v === '2') migrateV2toV3(d);
         else if (d.v !== '3') return false;
