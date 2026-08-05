@@ -38,6 +38,12 @@
     text-align: center;
   }
   .hero-icon { font-size: 52px; margin-bottom: 16px; line-height: 1; }
+  .hero-icon img {
+    width: 108px;
+    height: 108px;
+    border-radius: 22px;
+    box-shadow: 0 12px 30px -8px rgba(0,0,0,.5);
+  }
   .hero h1 {
     font-family: 'Georgia', serif;
     font-size: 42px;
@@ -255,8 +261,8 @@
     background: #fff;
     border: 1px solid var(--bdr);
     border-radius: 10px;
-    padding: 20px 24px;
-    margin: 0 0 40px;
+    padding: 24px 28px;
+    margin: 0 0 48px;
   }
   .toc-label {
     font-family: 'Arial', sans-serif;
@@ -265,21 +271,187 @@
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--acc);
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
-  .toc-list {
-    list-style: none;
+  .toc-intro {
+    font-size: 14px;
+    color: var(--sub);
+    margin-bottom: 18px;
+    max-width: 640px;
+  }
+  .toc-parts {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px 24px;
+    gap: 12px;
   }
-  .toc-list a {
-    font-size: 14.5px;
+  .toc-part-card {
+    display: flex;
+    gap: 12px;
+    background: var(--bg1);
+    border: 1px solid var(--bdr);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .toc-part-img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    object-position: top left;
+    border-radius: 6px;
+    border: 1px solid var(--bdr);
+    flex-shrink: 0;
+  }
+  .toc-part-body { min-width: 0; }
+  .toc-part-title {
+    display: inline-block;
+    font-family: 'Arial', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
     color: var(--tx);
     text-decoration: none;
-    border-bottom: 1px solid transparent;
+    margin-bottom: 3px;
   }
-  .toc-list a:hover { color: var(--acc); border-bottom-color: var(--acc); }
+  .toc-part-title:hover { color: var(--acc); }
+  .toc-part-desc {
+    font-size: 12.5px;
+    color: var(--sub);
+    line-height: 1.45;
+    margin-bottom: 6px;
+  }
+  .toc-part-links { font-size: 12px; }
+  .toc-part-links a {
+    color: var(--acc2);
+    text-decoration: none;
+  }
+  .toc-part-links a:hover { text-decoration: underline; }
+
+  /* ── PART DIVIDERS ── */
+  .part { margin-top: 60px; }
+  .part:first-of-type { margin-top: 0; }
+  .part-hdr {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding-bottom: 20px;
+    margin-bottom: 4px;
+    border-bottom: 3px solid var(--acc);
+  }
+  .part-img {
+    width: 130px;
+    height: 92px;
+    object-fit: cover;
+    object-position: top left;
+    border-radius: 8px;
+    border: 1px solid var(--bdr);
+    box-shadow: 0 10px 22px -10px rgba(44,36,22,.4);
+    flex-shrink: 0;
+  }
+  .part-eyebrow {
+    font-family: 'Arial', sans-serif;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--acc);
+    margin-bottom: 4px;
+  }
+  h2.part-title {
+    margin: 0 0 6px;
+    padding-bottom: 0;
+    border-bottom: none;
+    font-size: 28px;
+  }
+  .part-desc { font-size: 15px; color: var(--sub); max-width: 640px; }
+
+  .back-to-toc { margin: 32px 0 0; text-align: right; }
+  .back-to-toc a {
+    font-family: 'Arial', sans-serif;
+    font-size: 12px;
+    color: var(--sub);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--bdr);
+  }
+  .back-to-toc a:hover { color: var(--acc); border-bottom-color: var(--acc); }
+
+  /* ── SCREENSHOTS ── */
+  .win-dots { display: flex; gap: 6px; padding: 0 2px 8px; }
+  .win-dots span { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .win-dots span:nth-child(1) { background: #e8695c; }
+  .win-dots span:nth-child(2) { background: #e8b25c; }
+  .win-dots span:nth-child(3) { background: #5cc26a; }
+
+  .shot {
+    background: #fff;
+    border: 1px solid var(--bdr);
+    border-radius: 12px;
+    padding: 10px 12px 14px;
+    margin: 18px 0;
+    box-shadow: 0 16px 32px -22px rgba(44,36,22,.4);
+  }
+  .shot img {
+    display: block;
+    width: 100%;
+    border-radius: 6px;
+    cursor: zoom-in;
+    transition: transform .15s ease;
+  }
+  .shot img:hover { transform: scale(1.01); }
+  .shot.narrow { text-align: center; }
+  .shot.narrow img { width: auto; max-width: 260px; max-height: 420px; margin: 0 auto; }
+  .shot-cap {
+    font-size: 12.5px;
+    color: var(--sub);
+    text-align: center;
+    margin-top: 8px;
+    font-style: italic;
+  }
+  .shot-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 18px 0;
+  }
+  .shot-row.three { grid-template-columns: 1fr 1fr 1fr; }
+  .shot-row .shot { margin: 0; }
+
+  /* ── ENLARGE MODAL ── */
+  .img-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20,14,6,.82);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+    padding: 24px;
+  }
+  .img-modal.open { display: flex; }
+  .img-modal-inner { position: relative; max-width: 92vw; max-height: 92vh; }
+  .img-modal-inner img {
+    max-width: 92vw;
+    max-height: 92vh;
+    border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    display: block;
+  }
+  .img-modal-close {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid var(--bdr);
+    color: var(--tx);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
 
   /* ── FOOTER ── */
   footer {
@@ -294,7 +466,9 @@
 
   /* ── RESPONSIVE ── */
   @media (max-width: 640px) {
-    .panels-grid, .feature-grid, .toc-list { grid-template-columns: 1fr; }
+    .panels-grid, .feature-grid, .toc-parts, .shot-row, .shot-row.three { grid-template-columns: 1fr; }
+    .part-hdr { flex-direction: column; align-items: flex-start; }
+    .part-img { width: 100%; height: 140px; }
     .hero h1 { font-size: 30px; }
     .page { padding: 0 20px 60px; }
   }
@@ -304,13 +478,16 @@
 
 <!-- Navigation -->
 <div style="background:var(--bg1,#f0ece6);border-bottom:1px solid var(--bdr,#d4cfc8);padding:8px 24px;display:flex;align-items:center;font-family:'Inter','Segoe UI',system-ui,sans-serif">
-  <a href="index.html" style="font-size:15px;font-weight:700;color:var(--acc,#9b4a1a);text-decoration:none">📝 SceneSetter</a>
+  <a href="index.html" style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--acc,#9b4a1a);text-decoration:none">
+    <img src="images/icon.png" alt="" style="width:28px;height:28px;border-radius:7px;object-fit:cover">
+    SceneSetter
+  </a>
 </div>
 
 <div class="hero">
-  <div class="hero-icon">📝</div>
+  <div class="hero-icon"><img src="images/icon.png" alt=""></div>
   <h1>SceneSetter</h1>
-  <p class="hero-sub">An interactive beatboard for writers — organize scenes, track characters, and see your story at a glance.</p>
+  <p class="hero-sub">An interactive tool for writers — organize scenes, track characters, and see your story at a glance.</p>
 </div>
 
 <div class="page">
@@ -330,461 +507,629 @@
     <p style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(176,106,0,.35);font-size:12.5px;color:#5a4010">Your content remains privately yours. We use Google Analytics and other tools to understand feature usage and improve the app, but no personal data or project content is shared.</p>
   </div>
 
-  <div class="toc">
+  <!-- ── CONTENTS ── -->
+  <div class="toc" id="contents">
     <div class="toc-label">Contents</div>
-    <ul class="toc-list">
-      <li><a href="#your-projects">Your Projects</a></li>
-      <li><a href="#the-interface">The Interface</a></li>
-      <li><a href="#build-library">1. Build Your Library</a></li>
-      <li><a href="#create-sections">2. Create Sections</a></li>
-      <li><a href="#add-scenes">3. Add Scenes</a></li>
-      <li><a href="#tools-features">Tools &amp; Features</a></li>
-      <li><a href="#scene-flow-chart">The Scene Flow Chart</a></li>
-      <li><a href="#timeline">The Timeline: Loom &amp; Path</a></li>
-      <li><a href="#reports">Reports</a></li>
-      <li><a href="#tips-shortcuts">Tips &amp; Shortcuts</a></li>
-    </ul>
-  </div>
+    <p class="toc-intro">SceneSetter has three core views on your story: <strong>Cards</strong> for entering and arranging your material, <strong>Flow</strong> for tracing how elements appear across the story, and <strong>Timeline</strong> for its timing structure. Click a part's title to jump in, or a topic link to go straight to it.</p>
 
-  <!-- ── PROJECTS ── -->
-  <h2 id="your-projects">Your Projects</h2>
-  <p style="color:var(--sub); margin-bottom:16px;">When you first open SceneSetter you'll see the <strong>Project Manager</strong> — a home screen where all your stories live. Each project is a completely separate storyboard with its own library, scenes, and sections.</p>
+    <div class="toc-parts">
 
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">+</div>
-      <div class="step-body">
-        <h4>Create a Project</h4>
-        <p>Click <strong>+ New Project</strong> to create a new, empty storyboard. You'll be prompted to give it a name right away. Your new project opens immediately and you can start building.</p>
+      <div class="toc-part-card">
+        <div class="toc-part-body">
+          <a href="#part-start" class="toc-part-title">Getting Started</a>
+          <p class="toc-part-desc">Create a project and get oriented in the interface before you build anything.</p>
+          <div class="toc-part-links"><a href="#your-projects">Your Projects</a> · <a href="#the-interface">The Interface</a></div>
+        </div>
       </div>
-    </div>
-    <div class="step">
-      <div class="step-num">📂</div>
-      <div class="step-body">
-        <h4>Open, Rename, Duplicate</h4>
-        <p>Each project card shows its name, scene count, and when it was last modified. Use the action buttons on the card to <strong>Open</strong>, <strong>Rename</strong>, or <strong>Duplicate</strong> any project. Double-clicking a card also opens it.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">↓</div>
-      <div class="step-body">
-        <h4>Export &amp; Import</h4>
-        <p>Click <strong>Export</strong> on a project card to download it as a <code>.json</code> file — a complete backup of all scenes, library items, and settings. Use <strong>Import project (JSON file)</strong> on the project manager toolbar to restore a backup or bring in a project from another device.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">◂</div>
-      <div class="step-body">
-        <h4>Switching Projects</h4>
-        <p>While inside a project, click the <strong>Projects</strong> button in the top-right of the header to return to the project manager. Your work is saved automatically before you leave.</p>
-      </div>
-    </div>
-  </div>
 
-  <div class="tip-box">
-    <strong>Tip:</strong> Projects are stored in your browser's local storage. Use <strong>Export</strong> regularly as a backup, and to move projects between devices or browsers. SceneSetter tracks versions — if you import a file that's older, newer, or in conflict with a copy you already have, it will tell you and ask what to do.
-  </div>
+      <div class="toc-part-card">
+        <img class="toc-part-img" src="images/overview-library.png" alt="">
+        <div class="toc-part-body">
+          <a href="#part-cards" class="toc-part-title">Cards — Build &amp; Arrange</a>
+          <p class="toc-part-desc">Enter your story's building blocks and lay them out in reading order.</p>
+          <div class="toc-part-links"><a href="#build-library">Library</a> · <a href="#create-sections">Sections</a> · <a href="#add-scenes">Scenes</a> · <a href="#tools-features">Tools &amp; Features</a></div>
+        </div>
+      </div>
 
-  <!-- ── INTERFACE ── -->
-  <h2 id="the-interface">The Interface</h2>
-  <p style="color:var(--sub); margin-bottom:16px;">Once inside a project, a menu bar at the top provides quick access to File, Edit, Create, View, and Help options. Below that, the screen is divided into three panels — each collapsible and resizable — and a scene board.</p>
+      <div class="toc-part-card">
+        <img class="toc-part-img" src="images/overview-snake.png" alt="">
+        <div class="toc-part-body">
+          <a href="#part-flow" class="toc-part-title">Flow — Elements Through the Story</a>
+          <p class="toc-part-desc">See every scene as one ribbon, and trace a character, location, or theme through it.</p>
+          <div class="toc-part-links"><a href="#scene-flow-chart">The Scene Flow Chart</a></div>
+        </div>
+      </div>
 
-  <div class="panels-grid">
-    <div class="panel-card blue">
-      <div class="panel-label">Library</div>
-      <p>Your story's building blocks — Characters, Locations, Themes, and Misc Items, plus a read-only POV section. Click any item to highlight the scenes that contain it.</p>
-    </div>
-    <div class="panel-card green">
-      <div class="panel-label">Sections</div>
-      <p>Organize your scenes into named groups such as Acts, Chapters, or Sequences. Unassigned scenes appear at the left of the board.</p>
-    </div>
-    <div class="panel-card purple">
-      <div class="panel-label">Scene</div>
-      <p>Create and edit individual scenes, pulling from the Library and adding the information you'd like.</p>
-    </div>
-    <div class="panel-card amber">
-      <div class="panel-label">Scene Board</div>
-      <p>The visual workspace. Scenes appear as cards, grouped by section. Drag to reorder; click to select one or more cards. Switch it to the Scene Flow Chart anytime with the Cards/Snake/Circle icons — see below.</p>
+      <div class="toc-part-card">
+        <img class="toc-part-img" src="images/overview-Loom.png" alt="">
+        <div class="toc-part-body">
+          <a href="#part-timeline" class="toc-part-title">Timeline — Timing Structure</a>
+          <p class="toc-part-desc">Give scenes real dates and see when things happen, separate from reading order.</p>
+          <div class="toc-part-links"><a href="#storylines-anchors">Storylines</a> · <a href="#loom-view">Loom</a> · <a href="#path-view">Path</a> · <a href="#conflicts">Conflicts</a> · <a href="#reveals-foreshadowing">Reveals</a></div>
+        </div>
+      </div>
+
+      <div class="toc-part-card">
+        <img class="toc-part-img" src="images/overview-report-2.png" alt="">
+        <div class="toc-part-body">
+          <a href="#part-reference" class="toc-part-title">Reference</a>
+          <p class="toc-part-desc">Printable reports and shortcuts to keep at hand while you write.</p>
+          <div class="toc-part-links"><a href="#reports">Reports</a> · <a href="#tips-shortcuts">Tips &amp; Shortcuts</a></div>
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <div class="tip-box">
-    <strong>Tip:</strong> Use the <strong>◀</strong> button on a panel header to collapse it and give yourself more space. Drag the right edge of the Library, Sections, or Scene panel to resize it.
-  </div>
+  <!-- ══════════════════════════════ PART: GETTING STARTED ══════════════════════════════ -->
+  <div class="part" id="part-start">
+    <div class="part-hdr">
+      <div>
+        <div class="part-eyebrow">Before You Begin</div>
+        <h2 class="part-title">Getting Started</h2>
+        <p class="part-desc">A quick tour of the Project Manager and the in-project layout, so you know your way around before you start building.</p>
+      </div>
+    </div>
 
-  <!-- ── GETTING STARTED ── -->
-  <h2 id="build-library"><span class="num">1</span> Build Your Library</h2>
-  <p style="color:var(--sub); margin-bottom:16px;">The Library panel organizes your story's recurring elements into four categories: Characters, Locations, Themes, and Misc Items — plus a read-only POV section listing whichever names you've assigned as a scene's point of view (managed from the Scene form, not added here).</p>
+    <h2 id="your-projects">Your Projects</h2>
+    <p style="color:var(--sub); margin-bottom:16px;">When you first open SceneSetter you'll see the <strong>Project Manager</strong> — a home screen where all your stories live. Each project is a completely separate storyboard with its own library, scenes, and sections.</p>
 
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">+</div>
-      <div class="step-body">
-        <h4>Add Items</h4>
-        <p>Click the <strong>+</strong> button next to a category header to add a new entry. Give it a name and an optional note — you'll be tagging scenes with it.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">+</div>
+        <div class="step-body">
+          <h4>Create a Project</h4>
+          <p>Click <strong>+ New Project</strong> to create a new, empty storyboard. You'll be prompted to give it a name right away. Your new project opens immediately and you can start building.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">📂</div>
+        <div class="step-body">
+          <h4>Open, Rename, Duplicate</h4>
+          <p>Each project card shows its name, scene count, and when it was last modified. Use the action buttons on the card to <strong>Open</strong>, <strong>Rename</strong>, or <strong>Duplicate</strong> any project. Double-clicking a card also opens it.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">↓</div>
+        <div class="step-body">
+          <h4>Export &amp; Import</h4>
+          <p>Click <strong>Export</strong> on a project card to download it as a <code>.json</code> file — a complete backup of all scenes, library items, and settings. Use <strong>Import project (JSON file)</strong> on the project manager toolbar to restore a backup or bring in a project from another device.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">◂</div>
+        <div class="step-body">
+          <h4>Switching Projects</h4>
+          <p>While inside a project, click the <strong>Projects</strong> button in the top-right of the header to return to the project manager. Your work is saved automatically before you leave.</p>
+        </div>
       </div>
     </div>
-    <div class="step">
-      <div class="step-num">✏</div>
-      <div class="step-body">
-        <h4>Edit or Delete</h4>
-        <p>Hover over any library item to reveal action buttons. The pencil icon opens an editor where you can update the item's name and notes. You can also drag the ⠿ handle to reorder the list, or delete an item entirely. In the POV section, every name — including ones that are also Characters — can be dragged to reorder, but editing or deleting only works for custom POV names; a POV name that's also a Character is edited or deleted from the Characters list instead, so hovering it there shows a dimmed pencil and × with a tooltip pointing you to the right place.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">●</div>
-      <div class="step-body">
-        <h4>Highlight Scenes</h4>
-        <p>Click any library item to highlight every scene that contains it on the board. Click again to deselect. Use the <strong>OR / AND</strong> toggle to control whether highlighting requires any or all selected items. A <strong>Clear Highlights</strong> button appears whenever items are selected.</p>
-      </div>
-    </div>
-  </div>
 
-  <!-- ── SECTIONS ── -->
-  <h2 id="create-sections"><span class="num">2</span> Create Sections</h2>
-  <p style="color:var(--sub); margin-bottom:16px;">Sections act as named columns on the board — Acts, Chapters, Sequences, or whatever structure suits your story.</p>
+    <div class="tip-box">
+      <strong>Tip:</strong> Projects are stored in your browser's local storage. Use <strong>Export</strong> regularly as a backup, and to move projects between devices or browsers. SceneSetter tracks versions — if you import a file that's older, newer, or in conflict with a copy you already have, it will tell you and ask what to do.
+    </div>
 
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <div class="step-body">
-        <h4>Add a Section</h4>
-        <p>Type a name in the <em>New section…</em> field at the top of the Sections panel and press <strong>+</strong> or <kbd>Enter</kbd>.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">⚡</div>
-      <div class="step-body">
-        <h4>Quick Setup</h4>
-        <p>Need several sections at once? Use <strong>Quick Setup</strong> — set the count and a name prefix (e.g., "3 named Act") and press <strong>Go</strong> to create Act 1, Act 2, and Act 3 in one step.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">↕</div>
-      <div class="step-body">
-        <h4>Manage Sections</h4>
-        <p>Hover a section row and click the <strong>→</strong> button to jump to it on the Scene Board. Hover the row to shuffle, rename, recolor, or delete it. Scenes not assigned to any section appear in an <em>Unassigned</em> group at the left of the board.</p>
-      </div>
-    </div>
-  </div>
+    <h2 id="the-interface">The Interface</h2>
+    <p style="color:var(--sub); margin-bottom:16px;">Once inside a project, a menu bar at the top provides quick access to File, Edit, Create, View, and Help options. Below that, the screen is divided into three panels — each collapsible and resizable — and a scene board.</p>
 
-  <!-- ── SCENES ── -->
-  <h2 id="add-scenes"><span class="num">3</span> Add Scenes</h2>
-  <p style="color:var(--sub); margin-bottom:16px;">Each scene is a card on the board. Fill in as much or as little as you need.</p>
+    <div class="shot">
+      <div class="win-dots"><span></span><span></span><span></span></div>
+      <img class="shot-img" src="images/overview-sceneboard.png" alt="SceneSetter's Scene Board, showing cards grouped into color-coded sections">
+      <div class="shot-cap">The Scene Board — cards grouped into sections, with Library, Sections, and Scene panels along the left when expanded.</div>
+    </div>
 
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">📝</div>
-      <div class="step-body">
-        <h4>New Scene</h4>
-        <p>Click the <strong>New Scene</strong> tab in the Scene panel, or hover over the board and press the <strong>Add Scene</strong> button below any card. Enter a title (required), an optional summary, and assign it to a section. Tag it with items from your library, assign one or more POV names if the scene (or chapter) is narrated from a particular viewpoint, record a word count, add notes if needed, then press <strong>Save</strong>.</p>
+    <div class="panels-grid">
+      <div class="panel-card blue">
+        <div class="panel-label">Library</div>
+        <p>Your story's building blocks — Characters, Locations, Themes, and Misc Items, plus a read-only POV section. Click any item to highlight the scenes that contain it.</p>
+      </div>
+      <div class="panel-card green">
+        <div class="panel-label">Sections</div>
+        <p>Organize your scenes into named groups such as Acts, Chapters, or Sequences. Unassigned scenes appear at the left of the board.</p>
+      </div>
+      <div class="panel-card purple">
+        <div class="panel-label">Scene</div>
+        <p>Create and edit individual scenes, pulling from the Library and adding the information you'd like.</p>
+      </div>
+      <div class="panel-card amber">
+        <div class="panel-label">Scene Board</div>
+        <p>The visual workspace. Scenes appear as cards, grouped by section. Drag to reorder; click to select one or more cards. Switch it to the Scene Flow Chart anytime with the Cards/Snake/Circle icons — see below.</p>
       </div>
     </div>
-    <div class="step">
-      <div class="step-num">✏</div>
-      <div class="step-body">
-        <h4>Edit a Scene</h4>
-        <p>Click a card on the board to select it — it loads automatically into the <strong>Edit Scene</strong> tab. Make your changes and press <strong>Save Changes</strong>. Clicking outside the Scene panel while changes are in progress will cancel the edit.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">⇄</div>
-      <div class="step-body">
-        <h4>Reorder &amp; Move</h4>
-        <p>Drag a card to a new position within the same section, or drop it into a different section entirely. Scene numbers update automatically. Click multiple cards to select them as a group, then drag to move them all at once.</p>
-      </div>
+
+    <div class="tip-box">
+      <strong>Tip:</strong> Use the <strong>◀</strong> button on a panel header to collapse it and give yourself more space. Drag the right edge of the Library, Sections, or Scene panel to resize it.
     </div>
   </div>
+  <div class="back-to-toc"><a href="#contents">↑ Back to Contents</a></div>
 
-  <!-- ── FEATURES ── -->
-  <h2 id="tools-features">Tools &amp; Features</h2>
-
-  <div class="feature-grid">
-    <div class="feature-card">
-      <div class="feature-icon">🔍</div>
-      <h4>Search</h4>
-      <p>Filter the board by title or summary text. Press <kbd>×</kbd> or <kbd>Esc</kbd> to clear.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📋</div>
-      <h4>Section Filter</h4>
-      <p>Use the Section filter pulldown to show only specific sections on the board. Useful for focusing on one part of your story.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🏷</div>
-      <h4>Card Details</h4>
-      <p>Toggle <em>Show Card Details</em> to display or hide library tags on each scene card.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">↔</div>
-      <h4>Zoom</h4>
-      <p>Use the <em>Zoom</em> slider in the board header to scale cards larger or smaller.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">↩</div>
-      <h4>Undo / Redo</h4>
-      <p>Up to 50 steps. You can also use <kbd>Ctrl Z</kbd> to undo, <kbd>Ctrl Y</kbd> to redo.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🎨</div>
-      <h4>Themes</h4>
-      <p>Choose from five color schemes: Cream, Slate, Studio, Ocean, and Sunset. Your choice applies across all projects.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">↓</div>
-      <h4>Export</h4>
-      <p>Use <strong>File > Export as JSON</strong> to download the current project as a <code>.json</code> file — a full backup you can restore or share at any time.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">❓</div>
-      <h4>Help Mode</h4>
-      <p>Click the <strong>?</strong> button to enter help mode. Hover any highlighted area for a plain-English description of what it does.</p>
-    </div>
-  </div>
-
-  <!-- ── SCENE FLOW CHART ── -->
-  <h2 id="scene-flow-chart">The Scene Flow Chart</h2>
-  <p style="color:var(--sub); margin-bottom:16px;">Switch the Scene Board into a chart view to see your whole story as one continuous ribbon of scenes — useful for spotting pacing, gaps, and structure at a glance. Press <kbd>Alt V</kbd>, use <strong>View &gt; Show Scene Flow Chart</strong>, or click the Snake/Circle icon in the Cards/Snake/Circle view switch to open it. Click the Cards icon in that same switch to go back.</p>
-
-  <div class="feature-grid">
-    <div class="feature-card">
-      <div class="feature-icon">🐍</div>
-      <h4>Snake Layout</h4>
-      <p>Scenes wind left-to-right, then back, coiling into as many rows as needed. Section boundaries appear as small lettered badges (A, B, C…) right on the ribbon — hover one for its section name — including an Unassigned badge if any scenes have no section.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">◯</div>
-      <h4>Circle Layout</h4>
-      <p>The same scenes wrap into a ring — Scene 1 at 12 o'clock, running clockwise. Sections show as labeled pie-slice wedges around the center, including an Unassigned wedge when relevant.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🔀</div>
-      <h4>Switch Anytime</h4>
-      <p>Use the <strong>Cards / Snake / Circle</strong> icons (top-left of the board or chart) to jump between the card board and either layout. Your last-used layout is remembered next time.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📊</div>
-      <h4>Size by Word Count</h4>
-      <p>Toggle <strong>Show relative word count</strong> to size each scene's segment by its word count instead of splitting the ribbon evenly — handy for spotting unusually long or short scenes at a glance. A scene with no word count is sized to the average of the ones that do, marked with a small red tick so you know that size is an estimate (explained in the legend).</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">✨</div>
-      <h4>Filtering Carries Over</h4>
-      <p>Click a Library item or type in Search exactly as you would on the board — matching scenes light up in the chart instantly, using the same OR / AND highlighting rules.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🧵</div>
-      <h4>Trace</h4>
-      <p>Pick a category from the <strong>Trace</strong> pulldown — Characters, Locations, Themes, Misc, or POV — then select items in the Library to draw a colored line for each one through the chart, so you can follow exactly where they appear and where they don't. The legend below the toolbar shows which color is which; hover a line or its legend entry to highlight the other.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">👆</div>
-      <h4>Click to Jump</h4>
-      <p>Click any segment to return to the Scene Board with that card selected and scrolled into view.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🖨</div>
-      <h4>Print</h4>
-      <p>The <strong>Print</strong> button in the chart toolbar opens a clean, full-color printable version of the current chart in a new tab.</p>
-    </div>
-  </div>
-
-  <div class="tip-box">
-    <strong>Tip:</strong> Hover any segment for a quick tooltip with the scene's title, section, and summary. Hover a section badge (snake) or wedge (circle) for a tooltip with its section name.
-  </div>
-
-  <!-- ── TIMELINE ── -->
-  <h2 id="timeline">The Timeline: Loom &amp; Path</h2>
-  <p style="color:var(--sub); margin-bottom:16px;">Every other view in SceneSetter is organized by <strong>reading order</strong> — the order scenes appear in your manuscript. The Timeline is a second, independent way to look at your story: <strong>when things actually happen</strong>, which isn't always the same order the reader sees them in. Give a scene a real date, sort your cast into storylines, and the Timeline can show you flashbacks, parallel plots, and scenes that happen at the very same moment to different characters. Open it from <strong>View &gt; Timeline</strong> (<kbd>Alt K</kbd>) or the Timeline icon in the Cards/Flow/Timeline switch at the top of the board.</p>
-
-  <h3>Storylines &amp; Anchors</h3>
-  <p style="color:var(--sub); margin-bottom:16px;">Two pieces of scene data power everything in this view — neither is required, but the more scenes that have them, the more useful the Timeline gets.</p>
-
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">🧵</div>
-      <div class="step-body">
-        <h4>Storylines</h4>
-        <p>A storyline is a plot thread or POV strand — one per major character or subplot. Click <strong>+ Storyline</strong> at the bottom of the Loom view's lane column to add one; each gets its own color. In the Scene form, set a scene's primary <strong>Storyline</strong>, and optionally mark it <strong>Also part of</strong> other storylines too, for a scene that belongs to more than one thread at once.</p>
+  <!-- ══════════════════════════════ PART: CARDS ══════════════════════════════ -->
+  <div class="part" id="part-cards">
+    <div class="part-hdr">
+      <img class="part-img" src="images/overview-library.png" alt="">
+      <div>
+        <div class="part-eyebrow">Part 1 · Data In, Laid Out</div>
+        <h2 class="part-title">Cards — Build &amp; Arrange</h2>
+        <p class="part-desc">This is where your story starts: enter the characters, locations, and themes you'll reuse, organize your board into sections, and fill it with scene cards in reading order.</p>
       </div>
     </div>
-    <div class="step">
-      <div class="step-num">📅</div>
-      <div class="step-body">
-        <h4>Anchor date &amp; time</h4>
-        <p>Open the <strong>Timing</strong> group in the Scene form and set a scene's <strong>Anchor</strong> — the in-story date it happens, with an optional time. Scenes without an anchor still get a chronological rank (drag them into place in the Chronology row), they just can't be placed on a real calendar in True scale mode. Two scenes on different storylines that share the exact same date and time are treated as simultaneous.</p>
+
+    <h2 id="build-library"><span class="num">1</span> Build Your Library</h2>
+    <p style="color:var(--sub); margin-bottom:16px;">The Library panel organizes your story's recurring elements into four categories: Characters, Locations, Themes, and Misc Items — plus a read-only POV section listing whichever names you've assigned as a scene's point of view (managed from the Scene form, not added here).</p>
+
+    <div class="shot narrow">
+      <div class="win-dots"><span></span><span></span><span></span></div>
+      <img class="shot-img" src="images/overview-library.png" alt="Library panel showing Characters, Locations, Themes, and Misc Items">
+      <div class="shot-cap">The Library panel — Characters, Locations, Themes, and Misc Items.</div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">+</div>
+        <div class="step-body">
+          <h4>Add Items</h4>
+          <p>Click the <strong>+</strong> button next to a category header to add a new entry. Give it a name and an optional note — you'll be tagging scenes with it.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">✏</div>
+        <div class="step-body">
+          <h4>Edit or Delete</h4>
+          <p>Hover over any library item to reveal action buttons. The pencil icon opens an editor where you can update the item's name and notes. You can also drag the ⠿ handle to reorder the list, or delete an item entirely. In the POV section, every name — including ones that are also Characters — can be dragged to reorder, but editing or deleting only works for custom POV names; a POV name that's also a Character is edited or deleted from the Characters list instead, so hovering it there shows a dimmed pencil and × with a tooltip pointing you to the right place.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">●</div>
+        <div class="step-body">
+          <h4>Highlight Scenes</h4>
+          <p>Click any library item to highlight every scene that contains it on the board. Click again to deselect. Use the <strong>OR / AND</strong> toggle to control whether highlighting requires any or all selected items. A <strong>Clear Highlights</strong> button appears whenever items are selected.</p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <h3>Loom View</h3>
-  <p style="color:var(--sub); margin-bottom:16px;">Loom lays your story out as two parallel rows, connected by curved wires — one wire per scene. Hover a card in either row to trace its wire and highlight its counterpart.</p>
+    <h2 id="create-sections"><span class="num">2</span> Create Sections</h2>
+    <p style="color:var(--sub); margin-bottom:16px;">Sections act as named columns on the board — Acts, Chapters, Sequences, or whatever structure suits your story.</p>
 
-  <div class="feature-grid">
-    <div class="feature-card">
-      <div class="feature-icon">🕰</div>
-      <h4>Chronology row</h4>
-      <p>"When it happened." Scenes are grouped into a horizontal lane per storyline. Drag a card to change when it happens, or to move it to a different storyline entirely.</p>
+    <div class="shot narrow">
+      <div class="win-dots"><span></span><span></span><span></span></div>
+      <img class="shot-img" src="images/overview-sections.png" alt="Sections panel with color-coded acts and a Quick Setup tool">
+      <div class="shot-cap">The Sections panel, with Quick Setup for creating several sections at once.</div>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">📖</div>
-      <h4>Narrative row</h4>
-      <p>"What the reader gets" — the same order as the Scene Board. Drag a card here to reorder your manuscript directly from the Timeline; the Scene Board updates to match.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📐</div>
-      <h4>Ordinal / True scale</h4>
-      <p><strong>Ordinal</strong> spaces every scene evenly, by rank alone. <strong>True scale</strong> positions anchored scenes along a real proportional date axis — a scene a year later sits much further along than one a day later. Drag a card in True scale to change its actual anchor date.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🎯</div>
-      <h4>Thread</h4>
-      <p>Pick a character from the <strong>Thread</strong> pulldown to draw a highlighted line connecting every scene they appear in, in chronological order — useful for following one character's journey through a large cast.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🚩</div>
-      <h4>Era markers</h4>
-      <p>Right-click empty space on the Chronology row and choose <strong>Add marker here</strong> to pin a label to that point in time — "Ten Years Later," "The Night of the Storm." Click a marker's label to rename or delete it.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">👻</div>
-      <h4>Offscreen scenes</h4>
-      <p>Check <strong>Offscreen</strong> in a scene's Timing group for something that happens but is never shown to the reader directly. It still appears in the Chronology row, but is excluded from the Narrative row, Scene Board, Scene Flow Chart, and reports.</p>
-    </div>
-  </div>
 
-  <div class="tip-box">
-    <strong>Tip:</strong> Any drag that would change reading order or timing asks you to confirm before it's saved — nothing commits until you say so, and it's a normal step in the undo history.
-  </div>
-
-  <h3>Path View</h3>
-  <p style="color:var(--sub); margin-bottom:16px;">Path plots every scene as a single connected line of nodes, colored by storyline. Switch to it with the <strong>Loom / Path</strong> icons next to the Timeline switch, then use the <strong>Chronology / Narrative</strong> toggle above the chart to choose which order the line follows.</p>
-
-  <div class="feature-grid">
-    <div class="feature-card">
-      <div class="feature-icon">📖</div>
-      <h4>Narrative mode</h4>
-      <p>Nodes are placed by reading order left-to-right, at a height that reflects each scene's chronological rank. A dashed amber segment marks a flashback or flash-forward — anywhere the line moves backward in time.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🕰</div>
-      <h4>Chronology mode</h4>
-      <p>Nodes are placed purely by when things happen — a real-time reorder editor, just like dragging cards in Loom's Chronology row. The line only ever moves forward, since "going back" has no meaning on an axis that measures nothing but itself.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">◎</div>
-      <h4>Simultaneous scenes</h4>
-      <p>Two scenes on different storylines that share the exact same anchor merge into one node in Chronology mode, titled with both scenes' names separated by a slash.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">✋</div>
-      <h4>Drag to reorder</h4>
-      <p>Drag any node to a new position — in Narrative mode this reorders your manuscript; in Chronology mode it changes when the scene happens. Both go through the same save confirmation as Loom.</p>
-    </div>
-  </div>
-
-  <h3>Conflicts</h3>
-  <p style="color:var(--sub); margin-bottom:16px;">The <strong>Conflicts</strong> badge in the Timeline header keeps a running count of two things the Timeline can catch automatically that are easy to miss by eye. Click the badge to open the panel; click any conflict to jump to and highlight the scenes involved.</p>
-
-  <div class="feature-grid">
-    <div class="feature-card">
-      <div class="feature-icon">📍</div>
-      <h4>Character in two places at once</h4>
-      <p>Flagged when a character is tagged in two scenes at different locations whose times overlap — a sign one of the anchors, locations, or character tags needs a second look.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🔮</div>
-      <h4>Reveal before foreshadow</h4>
-      <p>Flagged when a scene marked <strong>This scene reveals</strong> a payoff sits at or before, in reading order, every scene that <strong>Foreshadow</strong>s it — see below.</p>
-    </div>
-  </div>
-
-  <h3>Reveals &amp; Foreshadowing</h3>
-  <p style="color:var(--sub); margin-bottom:16px;">In the Scene form's Timing group, the <strong>Foreshadow</strong> and <strong>This scene reveals</strong> dropdowns track a piece of story information from its first hint to its eventual payoff. Mint a new reveal from either dropdown (e.g. "the will is a forgery") — it's shared across both, so any scene can reference it. Tag the early hint scene under <strong>Foreshadow</strong> and the payoff scene under <strong>This scene reveals</strong>; if you later drag the payoff ahead of every scene that foreshadows it, the Conflicts panel catches it.</p>
-
-  <!-- ── REPORTS ── -->
-  <h2 id="reports">Reports</h2>
-  <p style="color:var(--sub); margin-bottom:16px;">Use <strong>Create > Generate Report</strong> to open the report dialog. Choose a type, select which sections and options to include, and click <strong>Generate Report</strong> — a print-ready page opens in a new tab. Character, Location, Theme, and Misc Items reports can optionally include the notes you've added to each library item.</p>
-
-  <table class="rpt-table">
-    <thead>
-      <tr><th>Report</th><th>What it shows</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Scene List</td><td>All scenes with title, summary, section, and library tags — a complete scene-by-scene breakdown.</td></tr>
-      <tr><td>Character</td><td>Each character with the scenes they appear in, plus a usage count. Optionally includes character notes.</td></tr>
-      <tr><td>Location</td><td>Each location with the scenes set there, plus a usage count. Optionally includes location notes.</td></tr>
-      <tr><td>Theme</td><td>Each theme with the scenes that explore it, plus a usage count. Optionally includes theme notes.</td></tr>
-      <tr><td>Misc Items</td><td>Each miscellaneous item with the scenes it appears in, plus a usage count. Optionally includes item notes.</td></tr>
-      <tr><td>POV</td><td>Each POV name with the scenes it narrates, plus a usage count — handy for checking screen-time balance across an ensemble.</td></tr>
-      <tr><td>Cross-Reference Matrix</td><td>A grid mapping scenes against characters, locations, themes, misc items, or POV. Flip the axes to swap orientation. Columns auto-fit to the page width for clean printing across portrait and landscape.</td></tr>
-    </tbody>
-  </table>
-
-  <!-- ── TIPS ── -->
-  <h2 id="tips-shortcuts">Tips &amp; Shortcuts</h2>
-
-  <h3>Keyboard</h3>
-  <p style="color:var(--sub); font-size:14px; margin-bottom:12px;">
-    <kbd>Ctrl Z</kbd> Undo &nbsp;&nbsp;
-    <kbd>Ctrl Y</kbd> Redo &nbsp;&nbsp;
-    <kbd>Esc</kbd> Close any open dialog or clear search &nbsp;&nbsp;
-    <kbd>Alt V</kbd> Toggle Scene Flow Chart &nbsp;&nbsp;
-    <kbd>Alt K</kbd> Toggle Timeline
-  </p>
-
-  <h3>Workflow suggestions</h3>
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">💡</div>
-      <div class="step-body">
-        <h4>One project per story</h4>
-        <p>Use separate projects for separate stories. If you're working on a series, each book can have its own project — or you can duplicate a project to experiment with a different structure without touching the original.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">+</div>
+        <div class="step-body">
+          <h4>Add a Section</h4>
+          <p>Type a name in the <em>New section…</em> field at the top of the Sections panel and press <strong>+</strong> or <kbd>Enter</kbd>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">⚡</div>
+        <div class="step-body">
+          <h4>Quick Setup</h4>
+          <p>Need several sections at once? Use <strong>Quick Setup</strong> — set the count and a name prefix (e.g., "3 named Act") and press <strong>Go</strong> to create Act 1, Act 2, and Act 3 in one step.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">↕</div>
+        <div class="step-body">
+          <h4>Manage Sections</h4>
+          <p>Hover a section row and click the <strong>→</strong> button to jump to it on the Scene Board. Hover the row to shuffle, rename, recolor, or delete it. Scenes not assigned to any section appear in an <em>Unassigned</em> group at the left of the board.</p>
+        </div>
       </div>
     </div>
-    <div class="step">
-      <div class="step-num">💡</div>
-      <div class="step-body">
-        <h4>Start with the library</h4>
-        <p>Add your major characters, key locations, and core themes before creating scenes. You'll be able to tag scenes as you create them rather than going back to add tags later.</p>
+
+    <h2 id="add-scenes"><span class="num">3</span> Add Scenes</h2>
+    <p style="color:var(--sub); margin-bottom:16px;">Each scene is a card on the board. Fill in as much or as little as you need.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">📝</div>
+        <div class="step-body">
+          <h4>New Scene</h4>
+          <p>Click the <strong>New Scene</strong> tab in the Scene panel, or hover over the board and press the <strong>Add Scene</strong> button below any card. Enter a title (required), an optional summary, and assign it to a section. Tag it with items from your library, assign one or more POV names if the scene (or chapter) is narrated from a particular viewpoint, record a word count, add notes if needed, then press <strong>Save</strong>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">✏</div>
+        <div class="step-body">
+          <h4>Edit a Scene</h4>
+          <p>Click a card on the board to select it — it loads automatically into the <strong>Edit Scene</strong> tab. Make your changes and press <strong>Save Changes</strong>. Clicking outside the Scene panel while changes are in progress will cancel the edit.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">⇄</div>
+        <div class="step-body">
+          <h4>Reorder &amp; Move</h4>
+          <p>Drag a card to a new position within the same section, or drop it into a different section entirely. Scene numbers update automatically. Click multiple cards to select them as a group, then drag to move them all at once.</p>
+        </div>
       </div>
     </div>
-    <div class="step">
-      <div class="step-num">💡</div>
-      <div class="step-body">
-        <h4>Use highlighting to spot gaps</h4>
-        <p>Click a character in the library to highlight every scene they appear in. Gaps in the highlighted pattern quickly reveal where a character disappears from the story; clustering reveals overuse.</p>
-      </div>
+
+    <h2 id="tools-features">Tools &amp; Features</h2>
+    <p style="color:var(--sub); margin-bottom:16px;">Everyday tools for working the board, once your library, sections, and scenes are in place.</p>
+
+    <div class="shot">
+      <div class="win-dots"><span></span><span></span><span></span></div>
+      <img class="shot-img" src="images/overview-search.png" alt="Scene Board with a character selected in the Library, highlighting every scene she appears in">
+      <div class="shot-cap">Clicking a character in the Library highlights every scene she appears in.</div>
     </div>
-    <div class="step">
-      <div class="step-num">💡</div>
-      <div class="step-body">
-        <h4>Use AND mode for intersection</h4>
-        <p>Switch to AND highlighting and select two characters to see only scenes where both appear together — great for tracking relationships and shared screen time.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h4>Search</h4>
+        <p>Filter the board by title or summary text. Press <kbd>×</kbd> or <kbd>Esc</kbd> to clear.</p>
       </div>
-    </div>
-    <div class="step">
-      <div class="step-num">💡</div>
-      <div class="step-body">
-        <h4>Print the Cross-Reference Matrix</h4>
-        <p>Generate a cross-reference report before a draft or revision session. It gives you a visual map of which story elements appear where — a useful overview to keep at hand while writing. Columns wrap automatically so nothing is cut off when printing.</p>
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h4>Section Filter</h4>
+        <p>Use the Section filter pulldown to show only specific sections on the board. Useful for focusing on one part of your story.</p>
       </div>
-    </div>
-    <div class="step">
-      <div class="step-num">💡</div>
-      <div class="step-body">
-        <h4>Check POV balance</h4>
-        <p>If your scenes correspond to chapters with a POV narrator, run the POV report to see each name's scene count at a glance — useful for spotting a viewpoint that's carrying too much (or too little) of the story.</p>
+      <div class="feature-card">
+        <div class="feature-icon">🏷</div>
+        <h4>Card Details</h4>
+        <p>Toggle <em>Show Card Details</em> to display or hide library tags on each scene card.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">↔</div>
+        <h4>Zoom</h4>
+        <p>Use the <em>Zoom</em> slider in the board header to scale cards larger or smaller.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">↩</div>
+        <h4>Undo / Redo</h4>
+        <p>Up to 50 steps. You can also use <kbd>Ctrl Z</kbd> to undo, <kbd>Ctrl Y</kbd> to redo.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎨</div>
+        <h4>Themes</h4>
+        <p>Choose from five color schemes: Cream, Slate, Studio, Ocean, and Sunset. Your choice applies across all projects.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">↓</div>
+        <h4>Export</h4>
+        <p>Use <strong>File > Export as JSON</strong> to download the current project as a <code>.json</code> file — a full backup you can restore or share at any time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">❓</div>
+        <h4>Help Mode</h4>
+        <p>Click the <strong>?</strong> button to enter help mode. Hover any highlighted area for a plain-English description of what it does.</p>
       </div>
     </div>
   </div>
+  <div class="back-to-toc"><a href="#contents">↑ Back to Contents</a></div>
 
-  <div class="tip-box">
-    <strong>Need help?</strong> Click the <strong>?</strong> button in the top-right corner to enter help mode. Hover over any highlighted area on screen for a plain-English description of what it does.
+  <!-- ══════════════════════════════ PART: FLOW ══════════════════════════════ -->
+  <div class="part" id="part-flow">
+    <div class="part-hdr">
+      <img class="part-img" src="images/overview-snake.png" alt="">
+      <div>
+        <div class="part-eyebrow">Part 2 · Elements Through the Story</div>
+        <h2 class="part-title">Flow</h2>
+        <p class="part-desc">Step back from individual cards and see the whole story as one continuous shape — useful for spotting pacing, gaps, and exactly where a character, location, or theme appears and disappears.</p>
+      </div>
+    </div>
+
+    <h2 id="scene-flow-chart">The Scene Flow Chart</h2>
+    <p style="color:var(--sub); margin-bottom:16px;">Switch the Scene Board into a chart view to see your whole story as one continuous ribbon of scenes — useful for spotting pacing, gaps, and structure at a glance. Press <kbd>Alt V</kbd>, use <strong>View &gt; Show Scene Flow Chart</strong>, or click the Snake/Circle icon in the Cards/Snake/Circle view switch to open it. Click the Cards icon in that same switch to go back.</p>
+
+    <div class="shot-row">
+      <div class="shot">
+        <div class="win-dots"><span></span><span></span><span></span></div>
+        <img class="shot-img" src="images/overview-snake.png" alt="Scene flow chart, snake layout, showing lettered section badges">
+        <div class="shot-cap">Snake layout — scenes wind left to right, then back, coiling into rows.</div>
+      </div>
+      <div class="shot">
+        <div class="win-dots"><span></span><span></span><span></span></div>
+        <img class="shot-img" src="images/overview-circle.png" alt="Scene flow chart, circle layout, showing sections as pie-slice wedges">
+        <div class="shot-cap">Circle layout — the same scenes wrapped into a ring, sectioned into wedges.</div>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🐍</div>
+        <h4>Snake Layout</h4>
+        <p>Scenes wind left-to-right, then back, coiling into as many rows as needed. Section boundaries appear as small lettered badges (A, B, C…) right on the ribbon — hover one for its section name — including an Unassigned badge if any scenes have no section.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">◯</div>
+        <h4>Circle Layout</h4>
+        <p>The same scenes wrap into a ring — Scene 1 at 12 o'clock, running clockwise. Sections show as labeled pie-slice wedges around the center, including an Unassigned wedge when relevant.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔀</div>
+        <h4>Switch Anytime</h4>
+        <p>Use the <strong>Cards / Snake / Circle</strong> icons (top-left of the board or chart) to jump between the card board and either layout. Your last-used layout is remembered next time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h4>Size by Word Count</h4>
+        <p>Toggle <strong>Show relative word count</strong> to size each scene's segment by its word count instead of splitting the ribbon evenly — handy for spotting unusually long or short scenes at a glance. A scene with no word count is sized to the average of the ones that do, marked with a small red tick so you know that size is an estimate (explained in the legend).</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✨</div>
+        <h4>Filtering Carries Over</h4>
+        <p>Click a Library item or type in Search exactly as you would on the board — matching scenes light up in the chart instantly, using the same OR / AND highlighting rules.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧵</div>
+        <h4>Trace</h4>
+        <p>Pick a category from the <strong>Trace</strong> pulldown — Characters, Locations, Themes, Misc, or POV — then select items in the Library to draw a colored line for each one through the chart, so you can follow exactly where they appear and where they don't. The legend below the toolbar shows which color is which; hover a line or its legend entry to highlight the other.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👆</div>
+        <h4>Click to Jump</h4>
+        <p>Click any segment to return to the Scene Board with that card selected and scrolled into view.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🖨</div>
+        <h4>Print</h4>
+        <p>The <strong>Print</strong> button in the chart toolbar opens a clean, full-color printable version of the current chart in a new tab.</p>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <strong>Tip:</strong> Hover any segment for a quick tooltip with the scene's title, section, and summary. Hover a section badge (snake) or wedge (circle) for a tooltip with its section name.
+    </div>
+  </div>
+  <div class="back-to-toc"><a href="#contents">↑ Back to Contents</a></div>
+
+  <!-- ══════════════════════════════ PART: TIMELINE ══════════════════════════════ -->
+  <div class="part" id="part-timeline">
+    <div class="part-hdr">
+      <img class="part-img" src="images/overview-Loom.png" alt="">
+      <div>
+        <div class="part-eyebrow">Part 3 · Timing Structure</div>
+        <h2 class="part-title">Timeline — Loom &amp; Path</h2>
+        <p class="part-desc">Every other view is organized by reading order. The Timeline is a second, independent way to look at your story — a bird's-eye view of when things actually happen. It's especially useful if you're writing non-linear: flashbacks, braided timelines, or multiple POVs told out of chronological order. If your story already unfolds in a straight line, you may not need this view much at all.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--sub); margin-bottom:16px;">Give a scene a real date, sort your cast into storylines, and the Timeline can show you flashbacks, parallel plots, and scenes that happen at the very same moment to different characters. Open it from <strong>View &gt; Timeline</strong> (<kbd>Alt K</kbd>) or the Timeline icon in the Cards/Flow/Timeline switch at the top of the board.</p>
+
+    <h3 id="storylines-anchors">Storylines &amp; Anchors</h3>
+    <p style="color:var(--sub); margin-bottom:16px;">Two pieces of scene data power everything in this view — neither is required, but the more scenes that have them, the more useful the Timeline gets.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">🧵</div>
+        <div class="step-body">
+          <h4>Storylines</h4>
+          <p>A storyline is a plot thread or POV strand — one per major character or subplot. Click <strong>+ Storyline</strong> at the bottom of the Loom view's lane column to add one; each gets its own color. In the Scene form, set a scene's primary <strong>Storyline</strong>, and optionally mark it <strong>Also part of</strong> other storylines too, for a scene that belongs to more than one thread at once.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">📅</div>
+        <div class="step-body">
+          <h4>Anchor date &amp; time</h4>
+          <p>Open the <strong>Timing</strong> group in the Scene form and set a scene's <strong>Anchor</strong> — the in-story date it happens, with an optional time. Scenes without an anchor still get a chronological rank (drag them into place in the Chronology row), they just can't be placed on a real calendar in True scale mode. Multiple scenes on different storylines that share the exact same date and time are treated as simultaneous.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 id="loom-view">Loom View</h3>
+    <p style="color:var(--sub); margin-bottom:16px;">Loom lays your story out as two parallel rows, connected by curved wires — one wire per scene. Hover a card in either row to trace its wire and highlight its counterpart.</p>
+
+    <div class="shot">
+      <div class="win-dots"><span></span><span></span><span></span></div>
+      <img class="shot-img" src="images/overview-Loom.png" alt="Loom timeline view showing Chronology and Narrative rows connected by wires, with storyline lanes">
+      <div class="shot-cap">Loom: Chronology and Narrative rows connected by wires, one per scene, with a lane per storyline.</div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🕰</div>
+        <h4>Chronology row</h4>
+        <p>"When it happened." Scenes are grouped into a horizontal lane per storyline. Drag a card to change when it happens, or to move it to a different storyline entirely.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📖</div>
+        <h4>Narrative row</h4>
+        <p>"What the reader gets" — the same order as the Scene Board. Drag a card here to reorder your manuscript directly from the Timeline; the Scene Board updates to match.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📐</div>
+        <h4>Ordinal / True scale</h4>
+        <p><strong>Ordinal</strong> spaces every scene evenly, by rank alone. <strong>True scale</strong> positions anchored scenes along a real proportional date axis — a scene a year later sits much further along than one a day later. Drag a card in True scale to change its actual anchor date.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h4>Thread</h4>
+        <p>Pick a character from the <strong>Thread</strong> pulldown to draw a highlighted line connecting every scene they appear in, in chronological order — useful for following one character's journey through a large cast.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🚩</div>
+        <h4>Era markers</h4>
+        <p>Right-click empty space on the Chronology row and choose <strong>Add marker here</strong> to pin a label to that point in time — "Ten Years Later," "The Night of the Storm." Click a marker's label to rename or delete it.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👻</div>
+        <h4>Offscreen scenes</h4>
+        <p>Check <strong>Offscreen</strong> in a scene's Timing group for something that happens but is never shown to the reader directly. It still appears in the Chronology row, but is excluded from the Narrative row, Scene Board, Scene Flow Chart, and reports.</p>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <strong>Tip:</strong> Any drag that would change reading order or timing asks you to confirm before it's saved — nothing commits until you say so, and it's a normal step in the undo history.
+    </div>
+
+    <h3 id="path-view">Path View</h3>
+    <p style="color:var(--sub); margin-bottom:16px;">Path plots every scene as a single connected line of nodes, colored by storyline. Switch to it with the <strong>Loom / Path</strong> icons next to the Timeline switch, then use the <strong>Chronology / Narrative</strong> toggle above the chart to choose which order the line follows.</p>
+
+    <div class="shot">
+      <div class="win-dots"><span></span><span></span><span></span></div>
+      <img class="shot-img" src="images/overview-Path.png" alt="Path timeline view showing scenes connected along a single draggable line">
+      <div class="shot-cap">Path: every scene on one connected line, colored by storyline.</div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📖</div>
+        <h4>Narrative mode</h4>
+        <p>Nodes are placed by reading order left-to-right against a vertical time chart, reflecting the story as presented to the reader. A dashed amber segment marks a flashback — anywhere the story moves backward in time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🕰</div>
+        <h4>Chronology mode</h4>
+        <p>Nodes are placed purely by when things happen — a real-time reorder editor, just like dragging cards in Loom's Chronology row. The line only ever moves forward (downward), reflecting underlying events in real time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">◎</div>
+        <h4>Simultaneous scenes</h4>
+        <p>Multiple scenes on different storylines that share the exact same anchor merge into one node in Chronology mode, titled with each scene's name separated by a slash.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✋</div>
+        <h4>Drag to reorder</h4>
+        <p>Drag any node to a new position — in Narrative mode this reorders your manuscript; in Chronology mode it changes when the scene happens. Both go through the same save confirmation as Loom.</p>
+      </div>
+    </div>
+
+    <h3 id="conflicts">Conflicts</h3>
+    <p style="color:var(--sub); margin-bottom:16px;">The <strong>Conflicts</strong> badge in the Timeline header keeps a running count of two things the Timeline can catch automatically that are easy to miss by eye. Click the badge to open the panel; click any conflict to jump to and highlight the scenes involved.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📍</div>
+        <h4>Character in two places at once</h4>
+        <p>Flagged when a character is tagged in two scenes at different locations whose times overlap — a sign one of the anchors, locations, or character tags needs a second look.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔮</div>
+        <h4>Reveal before foreshadow</h4>
+        <p>Flagged when a scene marked <strong>This scene reveals</strong> a payoff sits at or before, in reading order, every scene that <strong>Foreshadow</strong>s it — see below.</p>
+      </div>
+    </div>
+
+    <h3 id="reveals-foreshadowing">Reveals &amp; Foreshadowing</h3>
+    <p style="color:var(--sub); margin-bottom:16px;">In the Scene form's Timing group, the <strong>Foreshadow</strong> and <strong>This scene reveals</strong> dropdowns track a piece of story information from its first hint to its eventual payoff. Mint a new reveal from either dropdown (e.g. "the will is a forgery") — it's shared across both, so any scene can reference it. Tag the early hint scene under <strong>Foreshadow</strong> and the payoff scene under <strong>This scene reveals</strong>; if you later drag the payoff ahead of every scene that foreshadows it, the Conflicts panel catches it.</p>
+  </div>
+  <div class="back-to-toc"><a href="#contents">↑ Back to Contents</a></div>
+
+  <!-- ══════════════════════════════ PART: REFERENCE ══════════════════════════════ -->
+  <div class="part" id="part-reference">
+    <div class="part-hdr">
+      <div>
+        <div class="part-eyebrow">Keep At Hand</div>
+        <h2 class="part-title">Reference</h2>
+        <p class="part-desc">Printable reports for reviewing your story from different angles, plus shortcuts and workflow suggestions.</p>
+      </div>
+    </div>
+
+    <h2 id="reports">Reports</h2>
+    <p style="color:var(--sub); margin-bottom:16px;">Use <strong>Create > Generate Report</strong> to open the report dialog. Choose a type, select which sections and options to include, and click <strong>Generate Report</strong> — a print-ready page opens in a new tab. Character, Location, Theme, and Misc Items reports can optionally include the notes you've added to each library item.</p>
+
+    <div class="shot-row three">
+      <div class="shot">
+        <div class="win-dots"><span></span><span></span><span></span></div>
+        <img class="shot-img" src="images/overview-report-2.png" alt="Scene List report showing each scene's title, summary, characters, locations, and themes">
+        <div class="shot-cap">Scene List</div>
+      </div>
+      <div class="shot">
+        <div class="win-dots"><span></span><span></span><span></span></div>
+        <img class="shot-img" src="images/overview-report-3.png" alt="Character report showing one character's scenes in order, with summaries">
+        <div class="shot-cap">Character</div>
+      </div>
+      <div class="shot">
+        <div class="win-dots"><span></span><span></span><span></span></div>
+        <img class="shot-img" src="images/overview-report-1.png" alt="Cross-Reference Matrix report mapping characters against scenes">
+        <div class="shot-cap">Cross-Reference Matrix</div>
+      </div>
+    </div>
+
+    <table class="rpt-table">
+      <thead>
+        <tr><th>Report</th><th>What it shows</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Scene List</td><td>All scenes with title, summary, section, and library tags — a complete scene-by-scene breakdown.</td></tr>
+        <tr><td>Character</td><td>Each character with the scenes they appear in, plus a usage count. Optionally includes character notes.</td></tr>
+        <tr><td>Location</td><td>Each location with the scenes set there, plus a usage count. Optionally includes location notes.</td></tr>
+        <tr><td>Theme</td><td>Each theme with the scenes that explore it, plus a usage count. Optionally includes theme notes.</td></tr>
+        <tr><td>Misc Items</td><td>Each miscellaneous item with the scenes it appears in, plus a usage count. Optionally includes item notes.</td></tr>
+        <tr><td>POV</td><td>Each POV name with the scenes it narrates, plus a usage count — handy for checking screen-time balance across an ensemble.</td></tr>
+        <tr><td>Cross-Reference Matrix</td><td>A grid mapping scenes against characters, locations, themes, misc items, or POV. Flip the axes to swap orientation. Columns auto-fit to the page width for clean printing across portrait and landscape.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="tips-shortcuts">Tips &amp; Shortcuts</h2>
+
+    <h3>Keyboard</h3>
+    <p style="color:var(--sub); font-size:14px; margin-bottom:12px;">
+      <kbd>Ctrl Z</kbd> Undo &nbsp;&nbsp;
+      <kbd>Ctrl Y</kbd> Redo &nbsp;&nbsp;
+      <kbd>Esc</kbd> Close any open dialog or clear search &nbsp;&nbsp;
+      <kbd>Alt V</kbd> Toggle Scene Flow Chart &nbsp;&nbsp;
+      <kbd>Alt K</kbd> Toggle Timeline
+    </p>
+
+    <h3>Workflow suggestions</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">💡</div>
+        <div class="step-body">
+          <h4>One project per story</h4>
+          <p>Use separate projects for separate stories. If you're working on a series, each book can have its own project — or you can duplicate a project to experiment with a different structure without touching the original.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">💡</div>
+        <div class="step-body">
+          <h4>Start with the library</h4>
+          <p>Add your major characters, key locations, and core themes before creating scenes. You'll be able to tag scenes as you create them rather than going back to add tags later.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">💡</div>
+        <div class="step-body">
+          <h4>Use highlighting to spot gaps</h4>
+          <p>Click a character in the library to highlight every scene they appear in. Gaps in the highlighted pattern quickly reveal where a character disappears from the story; clustering reveals overuse.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">💡</div>
+        <div class="step-body">
+          <h4>Use AND mode for intersection</h4>
+          <p>Switch to AND highlighting and select two characters to see only scenes where both appear together — great for tracking relationships and shared screen time.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">💡</div>
+        <div class="step-body">
+          <h4>Print the Cross-Reference Matrix</h4>
+          <p>Generate a cross-reference report before a draft or revision session. It gives you a visual map of which story elements appear where — a useful overview to keep at hand while writing. Columns wrap automatically so nothing is cut off when printing.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">💡</div>
+        <div class="step-body">
+          <h4>Check POV balance</h4>
+          <p>If your scenes correspond to chapters with a POV narrator, run the POV report to see each name's scene count at a glance — useful for spotting a viewpoint that's carrying too much (or too little) of the story.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <strong>Need help?</strong> Click the <strong>?</strong> button in the top-right corner to enter help mode. Hover over any highlighted area on screen for a plain-English description of what it does.
+    </div>
   </div>
 
   <footer>SceneSetter &nbsp;·&nbsp; All data is stored locally in your browser, per project — nothing is sent to any server. Export your projects regularly as backups.</footer>
 
 </div>
+
+<!-- Image enlargement modal -->
+<div class="img-modal" id="img-modal">
+  <div class="img-modal-inner">
+    <button class="img-modal-close" id="img-modal-close">×</button>
+    <img id="img-modal-img" src="" alt="Enlarged screenshot">
+  </div>
+</div>
+
+<script src="tutorial-init.js"></script>
+
 </body>
 </html>

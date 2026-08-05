@@ -3406,3 +3406,100 @@ text-dump and computed-style checks already independently confirmed correct rend
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v4 branch — Tutorial redesign (Parts/screenshots/TOC), landing-page copy, and app-wide icon rollout
+
+Multi-round follow-up to the Timeline-documentation round above, driven by direct user
+feedback across many small iterations. The TOC and section-numbering scheme from that round
+turned out to still be confusing once read as a whole page rather than one new section, so
+the Tutorial was substantially reorganized; separately, the user supplied a real app icon
+(`images/icon.png`, 1024×1024) to replace the 📝 emoji used everywhere since the app's
+earliest version, and asked for several landing-page copy trims along the way.
+
+**Touched files:** `tutorial.html` (full content/TOC restructure, screenshots, icons),
+`tutorial-init.js` (new — click-to-enlarge modal), `index.html` (hero icon, hero copy,
+Timeline-row copy, header logo), `projects.html`/`editor.html` (header logo + link),
+`styles.css` (all new icon/screenshot/part/TOC styles), `images/icon.png` (new asset,
+user-supplied).
+
+### Tutorial: Table of Contents redesign
+The prior round's two-column plain link list gave no visual grouping and no explanation of
+why some section titles were numbered (1/2/3 on the "build" steps) and others weren't.
+Reworked into five grouped "part" cards — Getting Started, Cards, Flow, Timeline, Reference
+— each with a thumbnail, a one-sentence purpose statement, and a compact row of topic links.
+Dropped the per-item one-line description used in the very first redesign attempt, per the
+user's explicit "we don't need a line for each item" — the part-level description does that
+job instead.
+
+### Tutorial: content reorganized into Parts
+The three core views — Cards (data entry/arrangement), Flow (element use across the story),
+Timeline (timing structure) — now each open with a visual "Part" banner (thumbnail, eyebrow
+label, purpose paragraph) before their existing `h2` subsections, closed out by a
+"↑ Back to Contents" link. Getting Started and Reference get the same banner treatment
+without a thumbnail. This directly answers the original "why do some have numbers"
+complaint: the 1/2/3 badges now read as steps *within* the Cards part, not a flat sequence
+spanning the whole page.
+
+### Tutorial: screenshots woven into content, click-to-enlarge
+Screenshots were previously clustered only in the TOC; moved into the actual content next to
+the feature each one illustrates (Interface, Library, Sections, Tools & Features/
+highlighting, both Scene Flow Chart layouts, Loom, Path, all three Reports), each in a
+bordered card with a caption and the same click-to-enlarge interaction the landing page
+already has. `tutorial.html`'s CSP forbids inline scripts, so this needed a new external
+file (`tutorial-init.js`) — a generalized version of `index-init.js`'s modal, binding via a
+`.shot-img` class instead of a hardcoded per-id list.
+
+One bug from this round: the Library and Sections screenshots are narrow panel crops
+(287×598 and 332×311px) and were being stretched to the ~800px content-column width by the
+existing `.shot img { width:100% }` rule. Added a `.shot.narrow` modifier (`max-width`/
+`max-height`, `width:auto`) for panel-shaped screenshots specifically.
+
+### Icon rollout
+Replaced the 📝 emoji everywhere it served as the app's identity mark:
+- Landing page: header logo (22px → 44px per a follow-up ask) and a new 128px hero icon
+  above the "Organize. Visualize. Write." tagline (also enlarged once, from an initial 96px).
+- Tutorial: hero banner icon (grew across two follow-up rounds, 84px → 108px) and the small
+  top-left nav-link icon (28px) — the nav link was missed in the first icon pass since it
+  lives in a separate element from the hero banner; not caught until the user pointed out
+  it "wasn't changed."
+- Projects and the editor (card board): header `<h1>` icon, sized to match the landing
+  page's doubled 44px logo. Per a follow-up ask, the icon + "SceneSetter" wordmark on both
+  pages is now a link back to `index.html` (`.app-logo-link`, one shared class/rule for
+  both headers), consistent with the "Home" nav link Projects already had.
+
+### Landing page & Tutorial: copy simplification
+- Landing hero paragraph: dropped "card-based" from the app description.
+- Landing Timeline feature row: cut from four dense sentences (including an era-markers
+  aside that didn't earn its place in an overview) to four shorter ones, and added an
+  explicit "especially handy if you're writing non-linear" framing, mirroring the same
+  framing added to the Tutorial's own Timeline intro in the round above.
+- Tutorial hero subtitle: "An interactive beatboard for writers" → "An interactive tool for
+  writers" — the app is no longer only a beatboard.
+
+### Tutorial: smaller copy/UI fixes
+- "Add a Section"'s step icon was a circled "1" directly under "Create Sections"'s own
+  circled "2" `h2` badge, reading as a second, conflicting numbering scheme. Changed to "+"
+  (matching the icon already used for "Add Items"/"Create a Project" elsewhere).
+- Path view's Narrative/Chronology mode descriptions reworded to the user's exact requested
+  phrasing (Narrative: "against a vertical time chart, reflecting the story as presented to
+  the reader"; Chronology: "moves forward (downward), reflecting underlying events in real
+  time").
+- Both "Two scenes on different storylines…" sentences (simultaneous-anchor merging, in the
+  Storylines/Anchors and Path-view sections) changed to "Multiple scenes…" — the merge isn't
+  limited to exactly two.
+
+### Verification
+Each round verified live in the browser. This session repeatedly hit an unrelated
+Browser-pane bug — blank screenshots at any non-zero scroll position, reproduced on fresh
+tabs, independent of the page (confirmed via `elementFromPoint`/`get_page_text` that actual
+rendered content was correct throughout) — so verification leaned on DOM/computed-style
+checks instead of screenshots wherever that bug was in the way: grid column counts, image
+`naturalWidth`/`complete` on all 18 embedded screenshots, modal `open`/`display` state
+before and after a simulated click and an Escape keypress, all 23 TOC/back-to-top anchor
+links resolving to a real element id, the narrow-screenshot fix's actual rendered size via
+`getBoundingClientRect()` (202×420 and 260×244, down from stretching to ~800px wide), and
+the new header logo links' `href` on both Projects and the editor. Screenshots were used
+successfully wherever the bug didn't interfere (page top, fresh navigations).
+
+### Not yet done
+Not merged anywhere.
