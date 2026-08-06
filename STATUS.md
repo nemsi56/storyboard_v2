@@ -3503,3 +3503,48 @@ successfully wherever the bug didn't interfere (page top, fresh navigations).
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v5 branch — PayPal donate button
+
+Forked from `thruLine_v4`. Added a PayPal donate button (hosted-button-style form, not the
+JS SDK) to the top-right header of the landing page and the Projects page, using markup
+supplied directly by the user, plus a small copy change on the landing page's closing
+section.
+
+**Touched files:** `index.html` (CSP, header donate form, closing-section copy),
+`projects.html` (CSP, header donate form), `styles.css` (`.donate-form` styling,
+`.landing-donate-line`, a mobile header fix for the now-populated spacer slot).
+
+### How it works
+- The donate button drops into each page's existing right-aligned header slot rather than
+  new markup: `.landing-hdr-spacer` on the landing page (previously an empty `aria-hidden`
+  balancing column in the header's `1fr auto 1fr` grid) and `.pm-hdr-right` on Projects
+  (already home to the Home/Tutorial links, `margin-left:auto` flex row) — so no new
+  layout structure was needed on either page.
+- The form POSTs directly to `https://www.paypal.com/donate` (PayPal's own hosted donate
+  flow), which required widening both pages' CSP: `form-action` now allows
+  `https://www.paypal.com` (was `'self'`-only) and `img-src` now allows
+  `https://www.paypalobjects.com`/`https://www.paypal.com` for the button graphic and
+  PayPal's tracking pixel — both were previously blocked and would have silently failed
+  the submission / broken-imaged the button.
+- Landing page closing section: removed "Urge to donate?" from the existing contact line
+  (now just "Thoughts? Suggestions? Issues? Or simply want to be alerted to updates?") and
+  added a new dedicated line, "If you like SceneSetter, please consider a donation to
+  continue its development.", positioned between the contact line and "Enjoy!".
+- Mobile header fix: the landing header's `<480px` rule previously hid
+  `.landing-hdr-spacer` outright (`display:none`), correct when it held nothing — now that
+  it holds a real button, changed to `justify-self:center` (matching the logo/nav treatment
+  on that breakpoint) so the donate button stays visible and centered on mobile instead of
+  disappearing.
+
+### Verification
+Verified live in the browser on both pages: no console errors, no CSP violations (the
+donate button image and PayPal pixel both load, confirming the `img-src` widening took
+effect); the closing-section copy change confirmed via a full text-content dump, in the
+correct order (contact line → donate line → "Enjoy!"); mobile layout (375px) re-checked
+after the header CSS fix — button renders centered under the nav links, not hidden.
+Did not exercise an actual PayPal checkout (out of scope for local verification — the form
+posts to PayPal's real production endpoint).
+
+### Not yet done
+Not merged anywhere.

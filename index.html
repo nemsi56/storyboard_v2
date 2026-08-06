@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SceneSetter — Interactive Story Organizer for Writers</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; connect-src 'self' https://formspree.io https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com https://www.paypalobjects.com https://www.paypal.com; connect-src 'self' https://formspree.io https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self' https://www.paypal.com">
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NNVHKFSNPG"></script>
 <script src="ga.js"></script>
@@ -20,7 +20,16 @@
       <a href="projects.html" class="landing-nav-link landing-nav-cta">Your Projects</a>
       <a href="tutorial.html" class="landing-nav-link" target="_blank" rel="noopener">Tutorial</a>
     </nav>
-    <div class="landing-hdr-spacer" aria-hidden="true"></div>
+    <div class="landing-hdr-spacer">
+      <form action="https://www.paypal.com/donate" method="post" target="_top" class="donate-form">
+        <input type="hidden" name="business" value="LSE5MGUBSYMHG" />
+        <input type="hidden" name="no_recurring" value="0" />
+        <input type="hidden" name="item_name" value="If you enjoy SceneSetter, please consider donating." />
+        <input type="hidden" name="currency_code" value="USD" />
+        <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
+        <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
+      </form>
+    </div>
   </div>
 
   <div class="landing-body">
@@ -173,9 +182,10 @@
     <!-- CLOSING -->
     <section class="landing-closing">
       <div class="landing-contact">
-        Thoughts? Suggestions? Issues? Urge to donate? Or simply want to be alerted to updates?<br>
+        Thoughts? Suggestions? Issues? Or simply want to be alerted to updates?<br>
         <a href="mailto:scenesetter@protonmail.com">Email us</a>
       </div>
+      <div class="landing-donate-line">If you like SceneSetter, please consider a donation to continue its development.</div>
       <div class="landing-enjoy">Enjoy!</div>
       <a href="projects.html" class="pm-btn pm-btn-primary landing-get-started">Get Started</a>
     </section>
