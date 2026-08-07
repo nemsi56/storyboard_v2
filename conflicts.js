@@ -323,9 +323,12 @@ function tlToggleFlagFromPanel(fingerprint) {
   if (typeof runWithDiscardGuard === 'function') runWithDiscardGuard(run); else run();
 }
 
-// ── CONFLICTS BADGE (strip header) ────────────────────────────────────────────
+// ── CONFLICTS COUNT (Inspector-panel tab label) ────────────────────────────────
+// Used to be its own badge button in the Timeline strip header — folded into
+// the Conflicts tab label itself (".tl-panel-tab.has-warn" turns it red when
+// unselected) so it no longer eats space on that row.
 function renderConflictsBadge() {
-  const btn = document.getElementById('tl-conflicts-badge');
+  const btn = document.getElementById('tl-tab-conflicts');
   if (!btn) return;
   const n = getActiveConflicts().length;
   btn.textContent = 'Conflicts (' + n + ')';
@@ -339,9 +342,6 @@ function renderConflictsBadge() {
 // (or selecting a scene with no conflict) just clears the highlight — see
 // _tlDoSelectScene (timeline.js), which re-renders this panel on every
 // selection change.
-function tlShowAllConflicts() {
-  tlSwitchTab('conflicts');
-}
 function renderConflictsPanel() {
   const body = document.getElementById('tl-conflicts-body');
   if (!body) return;

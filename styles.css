@@ -239,10 +239,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
    into the Library/Sections/New-Scene panels to its left instead of staying
    inside the board area. */
 #sbp{position:relative;flex:1;min-width:0;background:var(--sbg);display:flex;flex-direction:column;overflow:hidden}
-/* 52px, not the 46px every other panel header row uses — the extra height
-   gives the CARDS/FLOW label (see .view-toggle-lbl) breathing room above it
-   instead of sitting flush against the row's top edge. */
-#sbhdr{height:52px;border-bottom:1px solid var(--bdr);padding:0 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--sbg)}
+#sbhdr{height:46px;border-bottom:1px solid var(--bdr);padding:0 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--sbg)}
 .sbhl{display:flex;align-items:center;gap:6px;flex-shrink:0}
 #sbcnt{font-size:12px;color:var(--sub)}
 #clrsel{font-size:11px;color:var(--lv);background:none;border:none;cursor:pointer;padding:3px 7px;border-radius:5px;display:none;transition:background .12s;font-family:inherit;white-space:nowrap}
@@ -729,11 +726,22 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .email-popup-btn-submit:active{opacity:.7}
 
 /* ── MENU BAR ─────────────────────────────────────────────────────────────── */
-#menu-bar{display:flex;align-items:stretch;height:30px;background:var(--bg1);border-bottom:1px solid var(--bdr);flex-shrink:0;position:relative;z-index:100}
+/* 46px, not the old 30px — tall enough to hold #menu-center's Cards/Flow/
+   Timeline switch, whose CARDS/FLOW/TIMELINE label (.view-toggle-lbl,
+   position:absolute) floats above each icon group and needs headroom above
+   the row's top edge, same reasoning #sbhdr and #tl-chron-hdr used to need
+   before the switch lived here permanently. */
+#menu-bar{display:flex;align-items:stretch;height:46px;background:var(--bg1);border-bottom:1px solid var(--bdr);flex-shrink:0;position:relative;z-index:100}
+/* #menu-left/#menu-right are equal flex:1 spacers flanking #menu-center (same
+   technique as #hdr's .hdr-spacer) — keeps the view switch centered on the
+   row regardless of how wide the menu items or right spacer end up. */
+#menu-left{flex:1;min-width:0;display:flex;align-items:stretch}
+#menu-right{flex:1}
+#menu-center{flex-shrink:0;display:flex;align-items:center;gap:14px;padding-top:10px}
 .mi{position:relative}
-.mi-btn{height:30px;padding:0 12px;background:none;border:none;font-size:12px;font-family:inherit;color:var(--tx);cursor:pointer;white-space:nowrap;transition:background .1s}
+.mi-btn{height:100%;padding:0 12px;background:none;border:none;font-size:12px;font-family:inherit;color:var(--tx);cursor:pointer;white-space:nowrap;transition:background .1s}
 .mi-btn:hover,.mi.open .mi-btn{background:var(--s0)}
-.mi-drop{display:none;position:absolute;top:30px;left:0;min-width:210px;background:#fff;border:1px solid #d0d0d0;border-radius:0 4px 4px 4px;box-shadow:0 4px 14px rgba(0,0,0,.14);z-index:1000;padding:4px 0}
+.mi-drop{display:none;position:absolute;top:100%;left:0;min-width:210px;background:#fff;border:1px solid #d0d0d0;border-radius:0 4px 4px 4px;box-shadow:0 4px 14px rgba(0,0,0,.14);z-index:1000;padding:4px 0}
 .mi.open>.mi-drop{display:block}
 .di{display:flex;justify-content:space-between;align-items:center;width:100%;padding:6px 16px;background:none;border:none;font-size:12px;font-family:inherit;color:#1a1a1a;cursor:pointer;text-align:left;white-space:nowrap;transition:background .1s}
 .di:hover{background:#f0f0f0}
@@ -779,9 +787,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 
 /* ── SCENE FLOW CHART ────────────────────────────────────────────────────── */
 #chart-host{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;background:var(--sbg)}
-/* Matches #sbhdr's 52px so the view-toggle switch (which moves between the
-   two rows) keeps the same headroom above its CARDS/FLOW label either way. */
-#chart-toolbar{height:52px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
+#chart-toolbar{height:46px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
 #chart-legend{flex-shrink:0;display:flex;flex-wrap:wrap;align-items:center;row-gap:4px;column-gap:0;padding:5px 12px;background:var(--bg1);border-bottom:1px solid var(--bdr);font-size:11px;color:var(--sub);max-height:92px;overflow-y:auto}
 #chart-legend:empty{display:none}
 .chart-legend-item{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:1px 4px;white-space:nowrap}
@@ -796,14 +802,13 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
    above the button (within the 46px row) for the CARDS/FLOW label floating
    over it (see .view-toggle-lbl) to clear the row's top edge instead of
    getting clipped by #sbp/#chart-host's overflow:hidden. */
-#chart-type-toggle .chart-type-btn,#chart-type-timeline-toggle .chart-type-btn{display:flex;align-items:center;justify-content:center;padding:4px 10px;border:none;border-radius:0}
+#chart-type-toggle .chart-type-btn,#chart-type-timeline-toggle .chart-type-btn{display:flex;align-items:center;justify-content:center;padding:3px 8px;border:none;border-radius:0}
 #chart-type-toggle .chart-type-btn:first-child,#chart-type-timeline-toggle .chart-type-btn:first-child{border-right:1px solid var(--s1)}
 #chart-type-toggle .chart-type-btn.on svg,#chart-type-timeline-toggle .chart-type-btn.on svg{color:var(--ontx)}
 #chart-type-toggle .chart-type-btn svg,#chart-type-timeline-toggle .chart-type-btn svg{color:var(--tx);display:block}
-/* Cards/Snake/Circle view switch — lives in #sbhdr on the board and moves
-   into #chart-toolbar while the chart is open (see openChartView/
-   closeChartView in charts.js), always in the same spot relative to the
-   Snake/Circle pair so it reads as one control regardless of which view. */
+/* Cards/Flow/Timeline view switch — lives permanently in #menu-center on the
+   menu-bar row (editor.html), centered via #menu-left/#menu-right flex:1
+   spacers, so it reads as one control in the same spot regardless of view. */
 /* align-items:center here, not flex-end — the label below is pulled out of
    flow (position:absolute) specifically so this item's flex height is just
    its button, same as every sibling control in the row (Show relative word
@@ -811,12 +816,25 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
    the whole column taller than those single-line siblings, so centering it
    shifted its button down relative to everything else — the row read as
    uneven even though every item was individually centered correctly. */
-#view-toggle{display:flex;align-items:center;gap:10px;flex-shrink:0}
+#view-toggle{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .view-toggle-item{position:relative;display:flex}
-.view-toggle-lbl{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:1px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--o0);line-height:1;white-space:nowrap;pointer-events:none}
-#chart-type-cards{display:flex;align-items:center;justify-content:center;padding:4px 10px}
+/* color: var(--tx) at reduced opacity (not var(--o0)/--sub) — those two muted
+   theme colors read as low-contrast (near-blurry) against several themes'
+   backgrounds; scaling the theme's own high-contrast text color down instead
+   keeps the label reliably legible everywhere. */
+.view-toggle-lbl{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:2px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--tx);opacity:.62;line-height:1;white-space:nowrap;pointer-events:none}
+#chart-type-cards{display:flex;align-items:center;justify-content:center;padding:3px 8px}
 #chart-type-cards svg{color:var(--tx);display:block}
 #chart-type-cards.on svg{color:var(--ontx)}
+/* Dark themes: #s0/#s1 (the buttons' own fill/border) sit close in luminance
+   to #bg1 (the menu-bar's background), so the switch's buttons barely read
+   as buttons — a thin light outline restores the separation that a dark-on-
+   light border gets for free in the other themes. */
+[data-theme="slate"] #chart-type-cards,[data-theme="ocean"] #chart-type-cards,
+[data-theme="slate"] #chart-type-toggle,[data-theme="ocean"] #chart-type-toggle,
+[data-theme="slate"] #chart-type-timeline-toggle,[data-theme="ocean"] #chart-type-timeline-toggle{
+  border-color:rgba(255,255,255,.32);
+}
 #chart-trace-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)}
 #chart-trace-sel{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:4px 8px;cursor:pointer;transition:border-color .14s,box-shadow .14s}
 #chart-trace-sel:hover{border-color:var(--acc)}
@@ -883,12 +901,7 @@ body.tl-mode #sbhdr{display:none}
 
 #timeline-host{flex:1;min-width:0;display:flex;overflow:hidden}
 #tl-stage{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
-/* padding-top > padding-bottom: #tl-chron-hdr sits flush against #tl-stage's
-   own top edge (overflow:hidden), so the CARDS/FLOW/TIMELINE label floating
-   above its button (.view-toggle-lbl, position:absolute) only has this top
-   padding to render into before getting clipped — 8px wasn't enough headroom
-   for the label's own height + gap. */
-#tl-chron-hdr{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:16px 14px 8px;border-bottom:1px solid var(--s1);background:var(--bg1)}
+#tl-chron-hdr{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:10px 14px;border-bottom:1px solid var(--s1);background:var(--bg1)}
 #tl-axis-switch,#tl-braid-mode-switch{display:flex;border:1px solid var(--s1);border-radius:7px;overflow:hidden}
 .tl-axis-btn{background:var(--s0);color:var(--sub);border:none;padding:6px 10px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer}
 .tl-axis-btn.on{background:var(--acc);color:var(--ontx)}
@@ -903,9 +916,6 @@ body.tl-mode #sbhdr{display:none}
    "on" at a glance. */
 #tl-thread-sel.tl-thread-active{border-color:#e57373;box-shadow:0 0 0 3px rgba(229,115,115,.45),0 0 12px rgba(229,115,115,.7)}
 #tl-status{font-size:11px;color:var(--sub)}
-.tl-hdr-spacer{flex:1}
-#tl-conflicts-badge{background:var(--s0);border:1px solid var(--s1);border-radius:14px;padding:5px 12px;font-size:11px;font-weight:700;color:var(--sub);cursor:pointer;font-family:inherit}
-#tl-conflicts-badge.has-warn{color:var(--rd);border-color:var(--rd)}
 #tl-add-scene-btn{background:var(--acc);color:var(--ontx);border:none;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
 .tl-zoom-ctl{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.5px;color:var(--sub);font-weight:700;text-transform:uppercase}
 .tl-zoom-ctl input[type=range]{width:90px}
@@ -1240,6 +1250,10 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
 /* Inspector/Conflicts reuse the .tabs/.tab classes (New Scene/Edit Scene's own
    folder-tab look) rather than a bespoke style — .tl-panel-tabs/.tl-panel-tab
    only carry the ids JS toggles .on against now, no visual rules of their own. */
+/* :not(.on) — once the Conflicts tab is the active one, .tab.on's own accent
+   color already makes it read as selected; red is only useful as an
+   at-a-glance warning while the tab is sitting unselected. */
+.tl-panel-tab.has-warn:not(.on){color:var(--rd)}
 #tl-panel-collapse-btn{border-left:none;border-right:1px solid var(--bdr)}
 .tl-panel-body{flex:1;overflow-y:auto;min-height:0}
 #tl-inspector-footer{flex:0 0 auto;padding:10px 12px;border-top:1px solid var(--s1)}

@@ -189,7 +189,6 @@
   $('tl-add-storyline-btn').addEventListener('click', addStoryline);
   $('tl-tab-inspector').addEventListener('click', function(){ tlSwitchTab('inspector'); });
   $('tl-tab-conflicts').addEventListener('click', function(){ tlSwitchTab('conflicts'); });
-  $('tl-conflicts-badge').addEventListener('click', tlShowAllConflicts);
   // #tl-track itself (not the scroll container) has its own click listener,
   // wired once in timeline.js alongside the drag machinery — it needs the
   // _tlDragOccurred check a listener here wouldn't have, so it isn't duplicated.

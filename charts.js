@@ -108,14 +108,14 @@ function openChartView() {
   document.getElementById('det-ck-wrap').style.display = 'none';
   document.getElementById('scalew-wrap').style.display = 'none';
   // Reuse the top header line for the chart's own status text (scene/section/
-  // trace counts) in place of the board's scene count, drop the section
-  // filter down onto the chart toolbar row after the Trace dropdown, and
-  // move the Cards/Snake/Circle view switch onto that same toolbar row —
-  // moving the actual nodes (not clones) keeps their listeners and state intact.
+  // trace counts) in place of the board's scene count, and drop the section
+  // filter down onto the chart toolbar row after the Trace dropdown — moving
+  // the actual nodes (not clones) keeps their listeners and state intact.
+  // (The Cards/Snake/Circle/Timeline view switch itself no longer moves — it
+  // lives permanently in #menu-center now, see editor.html.)
   document.getElementById('sbcnt').style.display = 'none';
   document.getElementById('sbhdr').insertBefore(document.getElementById('chart-status'), document.getElementById('det-ck-wrap'));
   document.getElementById('chart-toolbar').insertBefore(document.getElementById('sec-filter-wrap'), document.getElementById('chart-print-btn'));
-  document.getElementById('chart-toolbar').insertBefore(document.getElementById('view-toggle'), document.getElementById('chart-wc-toggle'));
   updateViewToggleUI();
   updateViewMenuActiveStates();
   renderChart();
@@ -130,7 +130,6 @@ function closeChartView() {
   document.getElementById('sbcnt').style.display = '';
   document.getElementById('chart-toolbar').insertBefore(document.getElementById('chart-status'), document.getElementById('chart-print-btn'));
   document.getElementById('sbhdr').insertBefore(document.getElementById('sec-filter-wrap'), document.getElementById('srch-wrap'));
-  document.getElementById('sbhdr').insertBefore(document.getElementById('view-toggle'), document.getElementById('sbhdr').firstChild);
   updateViewToggleUI();
   updateViewMenuActiveStates();
   renderBoard();
@@ -471,6 +470,14 @@ function updateChartLegend(scenes, trace) {
         el.appendChild(item);
       }
     }
+  } else if (!(SECS.some(({ key }) => S.selections[key].size > 0) || S.selections.povs.size > 0)) {
+    // Trace off and nothing picked in the library yet — same spot the trace
+    // hint above occupies, so there's always a hint on this row until the
+    // user does one or the other.
+    chartLegendSep(el);
+    const item = document.createElement('span'); item.className = 'chart-legend-item chart-legend-hint';
+    item.textContent = 'Select items in the library to highlight them';
+    el.appendChild(item);
   }
 }
 // ── PROPORTIONAL LAYOUT (by word count) ─────────────────────────────────────────

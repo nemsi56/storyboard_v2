@@ -423,10 +423,18 @@ function _openTimelineViewImpl() {
   document.getElementById('tl-axis-switch').style.display = '';
   document.getElementById('tl-thread-wrap').style.display = '';
   document.getElementById('tl-braid-mode-switch').style.display = 'none';
-  // Cards/Snake/Circle/Timeline(Loom/Path) switch moves onto the Timeline
-  // header, same reparent-not-clone pattern openChartView() already uses for
-  // #chart-toolbar — keeps its listeners/state intact rather than duplicating them.
-  document.getElementById('tl-chron-hdr').insertBefore(document.getElementById('view-toggle'), document.getElementById('tl-chron-hdr').firstChild);
+  // Ordinal/True-scale, Chronology/Narrative, Thread, and Zoom move up onto
+  // the menu-bar row next to the Cards/Flow/Timeline switch (which lives
+  // there permanently, see editor.html) — same reparent-not-clone pattern
+  // openChartView() uses, keeps listeners/state intact rather than
+  // duplicating them. Reversed in _closeTimelineViewImpl(). Zoom goes last so
+  // it always ends up next to whichever of Thread/Chronology-Narrative is
+  // actually visible (the other one is display:none, not removed).
+  const menuCenter = document.getElementById('menu-center');
+  menuCenter.appendChild(document.getElementById('tl-axis-switch'));
+  menuCenter.appendChild(document.getElementById('tl-braid-mode-switch'));
+  menuCenter.appendChild(document.getElementById('tl-thread-wrap'));
+  menuCenter.appendChild(document.getElementById('tl-zoom-ctl'));
   updateViewToggleUI();
   updateMenuForMode();
   updateViewMenuActiveStates();
@@ -437,7 +445,14 @@ function _closeTimelineViewImpl() {
   document.body.classList.remove('tl-mode');
   document.getElementById('timeline-host').style.display = 'none';
   document.getElementById('sbscrl').style.display = '';
-  document.getElementById('sbhdr').insertBefore(document.getElementById('view-toggle'), document.getElementById('sbhdr').firstChild);
+  // Move the Timeline-only selectors back to their home in #tl-chron-hdr,
+  // ahead of #tl-status, restoring their original left-to-right order.
+  const chronHdr = document.getElementById('tl-chron-hdr');
+  const tlStatus = document.getElementById('tl-status');
+  chronHdr.insertBefore(document.getElementById('tl-axis-switch'), tlStatus);
+  chronHdr.insertBefore(document.getElementById('tl-braid-mode-switch'), tlStatus);
+  chronHdr.insertBefore(document.getElementById('tl-thread-wrap'), tlStatus);
+  chronHdr.insertBefore(document.getElementById('tl-zoom-ctl'), tlStatus);
   if (_tlFormEditHome) {
     const form = document.getElementById('form-edit');
     form.style.display = 'none';

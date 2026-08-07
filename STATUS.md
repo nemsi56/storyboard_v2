@@ -3670,3 +3670,102 @@ console throughout every round.
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v5 branch — View switch relocated to the menu bar; Timeline strip-header cleanup
+
+A direct-feedback round moving the Cards/Flow/Timeline view switch out of each view's own
+toolbar (where it used to physically move between `#sbhdr`, `#chart-toolbar`, and
+`#tl-chron-hdr` via reparenting) into a single permanent, centered spot on the menu-bar row —
+plus a follow-up cleanup of Timeline's strip header (Conflicts badge folded into its tab,
+Zoom relocated) and a polish pass (label clarity, dark-theme borders, smaller buttons, a
+Path-icon redraw, a Flow-view empty-state hint).
+
+**Touched files:** `editor.html` (`#menu-left`/`#menu-center`/`#menu-right` menu-bar
+structure, `#view-toggle` moved there permanently, Timeline strip-header markup
+reordered/trimmed, view-switch icon SVGs resized), `styles.css` (menu-bar height/centering,
+label and border styling, `.tl-panel-tab.has-warn`, various row-height/padding follow-on
+changes), `charts.js` (removed the now-unneeded view-toggle reparenting, added the Flow-view
+"no library selection" hint), `timeline.js` (reparents Timeline's own selectors—axis switch,
+braid-mode switch, thread picker, zoom—onto the menu bar instead of `#view-toggle`),
+`conflicts.js` (conflicts count moved from its own badge onto the Conflicts tab label),
+`editor-init.js` (removed the dead conflicts-badge listener).
+
+### View switch: permanent center-of-menu-bar home
+`#view-toggle` (Cards/Flow/Timeline) used to live in `#sbhdr` by default and get physically
+moved (not cloned — same reparent-not-clone pattern used throughout this codebase) into
+`#chart-toolbar` or `#tl-chron-hdr` whenever the chart or Timeline opened, so it would always
+sit at the top of whichever view was active. Per direct feedback this was a moving target;
+it now lives permanently in a new `#menu-center` on the menu-bar row itself, flanked by
+`#menu-left`/`#menu-right` (both `flex:1`, same centering trick `#hdr` already used for the
+project name) so it stays centered regardless of how wide the menu items or the row's other
+occupants are. The menu bar grew from 30px to 46px tall to fit the switch's small
+CARDS/FLOW/TIMELINE label floating above each icon group; `#sbhdr`/`#chart-toolbar` shrank
+back down to 46px now that they no longer need to reserve that headroom themselves, and
+`.mi-btn`/`.mi-drop` switched from hardcoded 30px offsets to `height:100%`/`top:100%` so the
+dropdown menus stay aligned to whatever the bar's actual height is.
+
+### Timeline's own selectors follow the switch up, plus a strip-header cleanup
+Once the view switch itself had a permanent home, Timeline's own view-scoped selectors
+(Ordinal/True scale, Chronology/Narrative, Thread, and — added in a same-round follow-up —
+Zoom) were moved to reparent onto that same `#menu-center` row next to the switch whenever
+Timeline opens (reversed on close), rather than living in `#tl-chron-hdr` as before. Zoom
+reparents last in the sequence so it always lands next to whichever of Thread or
+Chronology/Narrative is actually visible (the other is `display:none`, not removed, so DOM
+order alone determines adjacency in both Loom and Path). Separately, the strip header's own
+"Conflicts (N)" badge button was removed outright — its job folded into the Conflicts tab's
+own label (`renderConflictsBadge()` now targets `#tl-tab-conflicts` directly), which turns
+red via `.tl-panel-tab.has-warn:not(.on)` whenever there are active conflicts and the tab
+isn't the selected one (once selected, `.tab.on`'s own accent color takes over — red is only
+useful as an unselected at-a-glance warning). The now-dead `tlShowAllConflicts()` function and
+its listener were removed along with the badge button. Net effect on `#tl-chron-hdr`: with
+the axis/braid/thread/zoom controls reparented away and the badge gone, all that's left there
+by default is `#tl-status`, so its padding was simplified back to a plain `10px 14px` (the
+old asymmetric `16px 14px 8px` existed solely to clear the view-switch label that no longer
+lives there).
+
+### Polish pass: label clarity, dark-theme borders, smaller buttons, Path icon
+Four smaller direct-feedback items in the same area:
+- The CARDS/FLOW/TIMELINE label (`.view-toggle-lbl`) read as faint/blurry — its color
+  switched from the theme's dedicated-but-muted `--o0` to the theme's own high-contrast `--tx`
+  at `.62` opacity (scales consistently across all 5 themes instead of relying on each
+  theme's separately-tuned muted color, which varied in contrast), plus a font-size bump
+  (8→9px) and heavier weight (700→800).
+- Dark themes (Slate, Ocean) got a thin `rgba(255,255,255,.32)` border added to the Cards
+  button and the Flow/Timeline toggle groups — their default `--s0`/`--s1` fill/border sit too
+  close in luminance to the dark `--bg1` menu-bar background to read as distinct buttons; the
+  other three (light) themes get that contrast for free from a dark-on-light border already.
+- The view-switch buttons and their icon SVGs shrunk (~12-15% smaller icons, tighter padding,
+  smaller `#view-toggle` gap) per feedback that they were larger than necessary now that
+  they're a permanent fixture of the menu bar rather than a full toolbar row's main content.
+- The Path-view icon's connecting line thinned from `stroke-width 1.3` to `0.85` (dot radius
+  unchanged at 2.1) so it reads more like beads threaded on a string, per a supplied reference
+  image.
+
+### Flow view: empty-state hint when Trace is off
+`updateChartLegend()` (charts.js) already showed a "Select ‹category› in the library to trace
+them" hint when Trace was on but no lanes were chosen yet — but showed nothing at all in the
+far more common case of Trace being off entirely, even though library highlighting (unrelated
+to Trace, reuses the board's own `sceneMatchesLib()`) works in Flow view too. Added an `else
+if` branch: when Trace is off and no library selection is active, the same legend row now
+reads "Select items in the library to highlight them" — same spot, same styling, hidden the
+instant a library item is selected (mirroring how the trace hint disappears once a lane is
+picked).
+
+### Verification
+Every change verified live in-browser against the Dracula sample, across Cards, Flow (Snake
+and Circle), Loom, and Path (including the Chronology/Narrative sub-toggle) — centered
+positioning confirmed via bounding-rect math (not just eyeballing) showing the switch
+precisely centered on the full window width; a Path+Chronology → Cards → Path round trip
+confirmed the reparenting leaves no stray duplicate nodes and the state persists correctly;
+Slate (dark) theme confirmed for both the label-contrast fix and the new button borders,
+Ivory (light) confirmed the border rule correctly does *not* fire there; the Conflicts tab
+label tested by forcing `has-warn` + a nonzero count (real conflict count was 0 in this
+sample) — red while unselected, tab-accent color once selected; the Flow-view hint tested
+toggling library selection on/off and Trace on/off, confirming the two hints are mutually
+exclusive and each disappears/reappears correctly. One non-bug caught mid-session: a stale
+browser-cache artifact (old `conflicts.js` served after edits) that looked like a real bug
+until traced to the preview tool's HTTP cache, not the app — resolved by restarting the local
+dev server on a fresh port. Clean console throughout.
+
+### Not yet done
+Not merged anywhere.
