@@ -880,14 +880,6 @@ body.tl-mode #lp,body.tl-mode #sp,body.tl-mode #cp,
 body.tl-mode #lp-resize,body.tl-mode #sp-resize,body.tl-mode #cp-resize,
 body.tl-mode #sbhdr{display:none}
 
-/* The reparented Edit Scene form carries several fields that don't apply to
-   Timeline's own workflow (word count/POV are chart/report concerns; themes,
-   misc items, and notes are board-editing detail) — hidden here rather than
-   removed from the form, since the same #form-edit node is shared with the
-   board's own Edit Scene tab where all of these stay relevant. */
-body.tl-mode #ed-themes-field,body.tl-mode #ed-misc-field,
-body.tl-mode #ed-wordcount-field,body.tl-mode #ed-povs-field,
-body.tl-mode #ed-notes-field{display:none}
 
 #timeline-host{flex:1;min-width:0;display:flex;overflow:hidden}
 #tl-stage{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
@@ -985,7 +977,7 @@ body.tl-mode #ed-notes-field{display:none}
    scrolls via #tl-lane-scroll's own overflow-y:auto (see tlSyncLaneScroll()
    in timeline.js, which mirrors this scroll position onto #tl-track via a
    matching transform so the card rows track the labels 1:1). */
-.tl-lane-label{position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:4px 10px;border-right:2px solid var(--s1);border-bottom:1px dashed var(--s1);border-top:2px solid var(--lane-c,transparent);background:color-mix(in srgb,var(--lane-c,transparent) 5%,transparent);box-sizing:border-box;flex-shrink:0;font-size:11px;color:var(--sub);font-weight:600}
+.tl-lane-label{position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:4px 10px 4px 20px;border-right:2px solid var(--s1);border-bottom:1px dashed var(--s1);border-top:2px solid var(--lane-c,transparent);background:color-mix(in srgb,var(--lane-c,transparent) 5%,transparent);box-sizing:border-box;flex-shrink:0;font-size:11px;color:var(--sub);font-weight:600}
 .tl-lane-label .tl-sw{width:18px;height:3px;border-radius:2px}
 .tl-lane-label .tl-lane-name{color:var(--tx);cursor:text}
 .tl-lane-label .tl-lane-name input{width:100%;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:1px 4px;color:var(--tx);font-size:11px;font-family:inherit}
@@ -996,6 +988,15 @@ body.tl-mode #ed-notes-field{display:none}
 .tl-lane-del{position:absolute;top:3px;right:4px;background:none;border:none;color:var(--o0);cursor:pointer;font-size:12px;padding:1px 3px;line-height:1;opacity:0;transition:opacity .1s}
 .tl-lane-label:hover .tl-lane-del{opacity:1}
 .tl-lane-del:hover{color:var(--rd)}
+/* Drag handle — a thin strip along the label's own left edge (mirrors the
+   Sections/Library lists' own ⠿ handle, .sdh/.dh, just pinned full-height
+   here instead of sitting inline with the row's other content). */
+.tl-lane-handle{position:absolute;top:0;left:0;bottom:0;width:16px;display:flex;align-items:center;justify-content:center;color:var(--o0);opacity:.4;font-size:12px;line-height:1;cursor:grab;transition:opacity .1s,background .1s}
+.tl-lane-label:hover .tl-lane-handle{opacity:.9;background:color-mix(in srgb,var(--tx) 6%,transparent)}
+.tl-lane-handle:active{cursor:grabbing}
+.tl-lane-label.dib{border-top:2px solid var(--acc)!important}
+.tl-lane-label.dia{border-bottom:2px solid var(--acc)!important}
+.tl-lane-label.dg{opacity:.35}
 /* A normal static flex child now, sitting below #tl-lane-scroll (its sibling,
    not its ancestor) — always visible regardless of lane count or scroll
    position, since it lives outside the element that actually scrolls. The
@@ -1202,6 +1203,12 @@ body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){op
 #tl-braid-watermark{position:absolute;transform:translate(-50%,-50%);pointer-events:none;font-size:46px;font-weight:800;letter-spacing:5px;text-transform:uppercase;color:var(--sub);opacity:.13;white-space:nowrap;user-select:none}
 
 .tl-braid-node circle{transition:stroke-width .15s,transform .15s}
+/* Chronology-mode-only (the only place an offscreen scene gets a node here)
+   — dashed stroke + reduced opacity mirrors the dotted-border treatment
+   Loom's own Chronology row gives offscreen cards (.tl-scene.tl-offscreen),
+   so the same concept reads consistently across both views. */
+.tl-braid-node.tl-offscreen circle{stroke-dasharray:3 2;opacity:.7}
+.tl-braid-node.tl-offscreen text{opacity:.7}
 .tl-braid-node.tl-hi circle{stroke-width:5}
 /* Selection reads as a more emphatic state than a passing hover, not a
    lesser one — was thinner than .tl-hi's own stroke-width (4 vs 5), which
@@ -1239,6 +1246,10 @@ body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
 #tl-delete-scene-btn{width:100%;background:none;border:1px solid var(--rd);border-radius:8px;padding:9px;color:var(--rd);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .14s,color .14s}
 #tl-delete-scene-btn:hover{background:var(--rd);color:var(--ontx)}
 .tl-panel-empty{color:var(--sub);font-size:12px;text-align:center;padding:40px 14px;font-style:italic}
+.tl-panel-empty p{margin:0 0 12px}
+.tl-panel-empty-or{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--o0);margin-bottom:12px !important}
+#tl-new-scene-btn{font-style:normal;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--acc);background:none;border:1px solid var(--acc);border-radius:8px;padding:8px 18px;cursor:pointer;transition:background .14s,color .14s}
+#tl-new-scene-btn:hover{background:var(--acc);color:var(--ontx)}
 /* Conflicts tab (schema v3 §8) */
 /* No top padding on the container itself (unlike its other three sides) —
    the count header below takes over that spacing as its own padding so it

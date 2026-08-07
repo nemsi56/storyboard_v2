@@ -3548,3 +3548,125 @@ posts to PayPal's real production endpoint).
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v5 branch — Offscreen scenes reworked into a Chronology-only concept; storyline reordering
+
+A multi-round follow-up, driven by direct user bug reports and feature requests, that turned
+"offscreen" from a half-applied field (documented as excluded from several views, but
+actually shown almost everywhere with no visual distinction beyond a badge) into a
+consistently-enforced Chronology-only concept, and separately added storyline drag-reorder
+to Loom view.
+
+**Touched files:** `editor.js` (numbering, Scene Board filtering, New Scene form reuse in
+Timeline, storyline drag), `timeline.js` (Loom/Path offscreen rendering, Inspector New Scene
+flow, Chronology/Narrative persistence, storyline drag), `charts.js` (Scene Flow Chart
+filtering), `reports.js`/`conflicts.js` (display-number fallback), `editor.html` (Inspector
+empty-state button), `editor-init.js` (button wiring), `styles.css` (offscreen node styling,
+storyline drag handle/indicators), `tutorial.html` (doc update).
+
+### Offscreen scenes: no display number, and not counted toward others'
+`buildSceneNumMap()` (editor.js) now skips offscreen scenes entirely when assigning numbers,
+rather than giving them a number nobody sees — every other scene's number is a contiguous
+count of on-page scenes only, no gaps where an offscreen scene sits. Since that one function
+feeds numbering everywhere, every consumer needed updating to treat a missing map entry as
+"no number" rather than crash or show a wrong fallback: the Scene Board's card badge and drag
+ghost (badge omitted entirely), discard/save confirmation dialogs and the summary modal
+("OFFSCREEN" instead of a number), Loom's ribbon (already excluded, now naturally
+contiguous), Path view (a lone offscreen node shows no number; a merged node mixing an
+offscreen scene with on-page ones shows only the on-page number(s), e.g. "5/10"), the Scene
+Flow Chart (blank segment, no digit), and all three report types (Scene List shows
+"OFFSCREEN"; Character/Location/etc. and the Cross-Reference Matrix drop or compact the
+number to "Off"/"Off —"). Directly exercised the trickiest edge case — a trace-lane run
+consisting entirely of an offscreen scene — to confirm it degrades cleanly ("Offscreen
+scene(s)" instead of "Scene undefined").
+
+### Offscreen scenes excluded from Cards and Flow entirely
+Per direct instruction ("offscreen scenes should not appear in cards or flow views - just
+Timeline views"): `renderBoard()` now filters to on-page scenes only for all card rendering,
+and `orderedScenes()` (the single source feeding the Scene Flow Chart) does the same.
+Discovered along the way that the Scene Board previously showed offscreen scenes (with a
+badge) and the Flow Chart showed them with no marking at all — neither actually matched the
+Tutorial's long-standing claim that they were "excluded from ... Scene Board, Scene Flow
+Chart, and reports." Once offscreen scenes could no longer reach `renderCard()`/chart layout
+at all, the defensive numMap-fallback code added earlier in this same round for those two
+paths became unreachable dead code and was reverted back to its simpler pre-fallback form.
+
+### Creating an offscreen scene: a New Scene form inside the Timeline Inspector
+Hiding offscreen scenes from Cards/Flow raised an obvious question: how does a user create
+one? Added a "+ New Scene" button to the Inspector's empty state (next to "Select a scene to
+edit it here"). Rather than the old `tlCreateScene()` (created a blank "Untitled scene"
+immediately, then opened it for editing), the button now reparents Card view's own
+`#form-new` into the Inspector — the exact same reparent-not-clone pattern already used for
+`#form-edit` — so it inherits all of Card view's existing title-validation, dirty-tracking,
+and discard-guard machinery for free. (The discard guard already checked for a live New Scene
+form even before this — evidently built in anticipation of this exact feature.) Save creates
+the scene and switches the Inspector to Edit mode showing it; Cancel returns to the empty
+state; `tlCreateScene()`/`_tlCreateSceneImpl()` removed as dead code, their only call site
+(`menuNewScene()`'s timeline branch) now routes here instead.
+
+Also removed the CSS rule that hid Themes, Misc Items, Word Count, POV, and Notes from the
+reparented Edit Scene form while in Timeline mode (an earlier, now-reversed design decision
+that those were "board-editing detail") — the Inspector's forms now show the identical field
+set to Card view's own New Scene tab, as requested.
+
+### Two real bugs found via user reports, not caught by initial testing
+- **Inspector stuck showing both the empty state and a leftover form.** `_tlDoSelectScene()`
+  only ever hid `#form-edit` on select/deselect, never `#form-new`. Sequence: open "+ New
+  Scene" (form-new shown), select a scene card directly without saving/cancelling first (the
+  discard guard's fast path skips cleanup entirely when the form was never made dirty) —
+  form-edit shows correctly, but form-new is left stuck visible underneath; deselecting later
+  shows the empty-state message *on top of* that same stuck form. Fixed by having
+  `_tlDoSelectScene()` unconditionally hide `#form-new` on every select/deselect. Also fixed
+  a related crash caught during testing: the new Inspector-driven creation path called
+  `_tlDoSelectScene(newId)` without its `opts` parameter, which every other call site always
+  supplies — crashed on `opts.focusTitle`.
+- **Chronology mode silently reset to Narrative on Cards → Path, but the button didn't say
+  so.** `_openTimelineViewImpl()` resets `tlBraidChronMode` to `false` every time Timeline
+  reopens, but never synced the Narrative/Chronology toggle buttons' `.on` classes — so
+  leaving Path in Chronology mode, switching to Cards, then straight back to Path left the
+  "Chronology" button still visually highlighted from the previous session while the actual
+  render had silently gone back to Narrative (which correctly excludes offscreen scenes).
+  Clicking Narrative then Chronology was the only way to force button and state back in sync
+  — read by the user as "offscreen scenes don't show up until you toggle twice." First fix
+  synced the buttons to the (still-reset-to-false) value; a same-round follow-up request
+  ("can the toggle remain in its last state") went further and stopped resetting
+  `tlBraidChronMode` at all — it now persists across Cards/Flow ↔ Timeline switches the same
+  way a persisted Loom/Path choice would, while `tlBraidMode` itself still resets to Loom on
+  every reopen (unchanged, wasn't part of the ask).
+
+### Storyline drag-reorder (Loom view)
+A "⠿" drag handle (mirroring the exact same handle character/interaction already used for
+Sections and Library items) added to the far-left edge of each storyline lane label. New
+`tlLaneDrag` state and start/move/end functions closely mirror `sld` (editor.js's Section
+list drag) — before/after drop-indicator line while dragging, splice-reorder `S.storylines`
+on release. Unlike every other Timeline drag, this one does NOT go through the move-
+confirmation flow scene drags use, since reordering storylines is purely cosmetic (which row
+a lane appears in) and never touches any scene's own data — instant and undo-able, same as
+reordering Sections. Wired into the existing global mousemove/mouseup listeners and the
+undo/redo drag-guard alongside the three other drag types already handled there. Assessed as
+low-risk before implementing, specifically because it's the fourth instance of an
+already-proven pattern in this codebase, not a new design.
+
+### Scene Board count line simplified
+The "Showing N scenes (+M offscreen — see Timeline)" aside added earlier in this round was
+removed per direct feedback — offscreen is a Chronology-views-only concept now, so calling it
+out on the Scene Board (which never shows offscreen scenes at all) was unnecessary noise.
+
+### Verification
+Every round verified live against the Dracula sample (which has a real offscreen scene with
+an era marker anchored directly to it — a useful edge case throughout). Confirmed via direct
+DOM/state inspection rather than screenshots alone: numbering contiguous everywhere
+(Scene Board 29/30, Loom ribbon 29/29, Path Narrative 29/29, Path Chronology showing the
+offscreen node unlabeled and merged nodes correctly joined e.g. "5/10"); Scene Board and Flow
+Chart both drop to 29 segments with the offscreen one fully absent; the full Inspector New
+Scene flow (open → fill in → save → auto-selects the new scene in Edit mode → appears in
+Chronology row, absent from Scene Board) with a fresh tab to rule out stale-script-cache
+artifacts (a recurring issue in this project's own testing history); the stuck-form bug and
+its crash fix reproduced and confirmed fixed; the Chronology-persistence fix replayed against
+the user's exact reported click sequence (Path+Chronology → Cards → Path) before and after;
+storyline drag reorder tested with real dispatched mouse events (not direct function calls),
+confirming the drop indicator, the reorder itself, matching card-row order, and undo. Clean
+console throughout every round.
+
+### Not yet done
+Not merged anywhere.

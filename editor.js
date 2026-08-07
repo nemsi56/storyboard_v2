@@ -191,9 +191,10 @@ function toggleAllPanels() {
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
 function menuNewScene() {
   closeAllMenus();
-  // In timeline mode, New Scene creates immediately with defaults instead of
-  // opening the (hidden) New Scene form — schema v3 §6.1.
-  if (typeof timelineMode !== 'undefined' && timelineMode) { tlCreateScene(); return; }
+  // In timeline mode, New Scene opens the Inspector's own New Scene form
+  // (same #form-new node, reparented — see tlShowNewSceneForm) instead of
+  // Card view's Scene panel.
+  if (typeof timelineMode !== 'undefined' && timelineMode) { tlShowNewSceneForm(); return; }
   // A pending insert-zone anchor is only meant for the very next Add Scene —
   // entering the New Scene form through the menu instead is a fresh, untargeted
   // add and must not silently splice into wherever an earlier insert-zone click
@@ -592,6 +593,14 @@ function addScene() {
 
   recordDataEdit();
   saveState();
+
+  // In timeline mode, this scene was created from the Inspector's own New
+  // Scene form (tlShowNewSceneForm) — switch the Inspector over to showing
+  // it in Edit mode instead of leaving the now-reset New Scene form open.
+  if (typeof timelineMode !== 'undefined' && timelineMode && typeof _tlAfterCreateScene === 'function') {
+    _tlAfterCreateScene(newId);
+  }
+  return newId;
 }
 
 // Shared by addScene() (post-commit) and cancelNewScene() — both return the
@@ -625,6 +634,13 @@ function cancelNewScene() {
   if (secSel) secSel.value = '';
   document.getElementById('scerr').textContent = '';
   setNewSceneLive(false);
+  // In timeline mode, cancelling the Inspector's New Scene form returns to
+  // its empty state rather than leaving a blank form-new sitting there —
+  // Card view has no equivalent (it just stays on the New Scene tab).
+  if (typeof timelineMode !== 'undefined' && timelineMode) {
+    document.getElementById('form-new').style.display = 'none';
+    document.getElementById('tl-inspector-empty').style.display = '';
+  }
 }
 
 function deleteScene(id) {
@@ -751,7 +767,7 @@ function openDiscardConfirm(editActive, newLive, afterDiscard) {
   if (editActive) {
     const sc = S.scenes.find(s => s.id === S.editingId);
     msgEl.textContent = sc
-      ? `Discard changes to Scene ${sceneDisplayNum(sc.id)} — "${sc.title}"? Your edits will be lost.`
+      ? `Discard changes to ${sceneNumPrefix(sc.id)}"${sc.title}"? Your edits will be lost.`
       : 'Discard your changes? They will be lost.';
   } else {
     msgEl.textContent = 'Discard this new scene? Your entries will be lost.';
@@ -800,8 +816,7 @@ function saveEdit() {
   errEl.textContent = '';
   if (!title) { errEl.textContent = 'Please enter a title.'; titleEl.focus(); return; }
   if (S.scenes.some(s => s.id !== sc.id && s.title.toLowerCase() === title.toLowerCase())) { errEl.textContent = 'Title already exists.'; titleEl.select(); return; }
-  const sceneNum = sceneDisplayNum(sc.id);
-  document.getElementById('savecfm-msg').textContent = `Save changes to Scene ${sceneNum} — "${title}"?`;
+  document.getElementById('savecfm-msg').textContent = `Save changes to ${sceneNumPrefix(sc.id)}"${title}"?`;
   document.getElementById('savecfm-modal').classList.add('open');
 }
 function confirmSaveEdit() {
@@ -1038,7 +1053,8 @@ function toggleFormGroup(groupId) {
 function openModal(id) {
   const sc = S.scenes.find(s => s.id === id); if (!sc) return;
   const hasInfo = !!(sc.summary || sc.notes); if (!hasInfo) return;
-  document.getElementById('mnum').textContent = `Scene ${sceneDisplayNum(sc.id)}`;
+  const mnumVal = sceneDisplayNum(sc.id);
+  document.getElementById('mnum').textContent = mnumVal !== null ? `Scene ${mnumVal}` : 'Offscreen';
   document.getElementById('mtit').textContent = sc.title;
   const sumSec = document.getElementById('msum-section'), sumEl = document.getElementById('msum');
   const notesSec = document.getElementById('mnotes-section'), notesEl = document.getElementById('mnotes');
@@ -1161,6 +1177,14 @@ function renderEditCk(sec, checked=[]) { renderCkList('ek', sec, checked); }
 // board order: unassigned scenes first (leftmost), then each section in
 // S.sections order. This ensures numbers run 1…N left-to-right across ALL
 // sections regardless of the underlying S.scenes array order.
+// Offscreen scenes get NO entry at all (not just a skipped number) — they're
+// never shown to the reader, so they shouldn't occupy a slot in the reader-
+// facing numbering sequence. Every OTHER scene's number is therefore its
+// rank among on-page scenes only, with no gaps where an offscreen scene sits
+// — e.g. three on-page scenes with an offscreen one between the 2nd and 3rd
+// are numbered 1, 2, 3, not 1, 2, 4. Callers must treat a missing map entry
+// (sceneDisplayNum() returning null) as "this scene has no display number,"
+// not as an error.
 // Callers that need every scene's number in the same pass (rendering all
 // cards, or all chart segments) should build this once and look up by id,
 // rather than each calling sceneDisplayNum() — which rebuilds this same
@@ -1176,11 +1200,23 @@ function buildSceneNumMap() {
       ...S.sections.flatMap(sec => S.scenes.filter(s => s.sectionId === sec.id)), // each section in order
     ];
   }
-  ordered.forEach((s, i) => map.set(s.id, i + 1));
+  let n = 1;
+  ordered.forEach(s => { if (!s.offscreen) map.set(s.id, n++); });
   return map;
 }
+// Returns null (not a fallback number) for an offscreen or otherwise-unknown
+// scene id — callers must handle that case explicitly rather than assume
+// every scene has a display number.
 function sceneDisplayNum(sceneId) {
-  return buildSceneNumMap().get(sceneId) ?? 1;
+  return buildSceneNumMap().get(sceneId) ?? null;
+}
+// "Scene N — " prefix for a scene id, or "" for an offscreen (no display
+// number) scene — callers prepend this directly before the scene's title
+// instead of hardcoding "Scene ${sceneDisplayNum(id)} — " everywhere and
+// having to separately remember to handle the null case.
+function sceneNumPrefix(sceneId) {
+  const n = sceneDisplayNum(sceneId);
+  return n !== null ? `Scene ${n} — ` : '';
 }
 // The manuscript order (schema v3 §5.1), as a scene array rather than a
 // number map: exactly renderBoard()'s / buildSceneNumMap()'s display order,
@@ -1237,9 +1273,10 @@ function renderCard(container, scene, idx, numMap, libMaps) {
   sumbtn.addEventListener('click', e => { e.stopPropagation(); if (hasInfo) openModal(scene.id); });
   editbtn.addEventListener('mousedown', e => e.stopPropagation());
   editbtn.addEventListener('click', e => { e.stopPropagation(); openEditMode(scene.id); });
-  const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${numMap.get(scene.id) ?? 1}`;
-  const off  = scene.offscreen ? document.createElement('div') : null;
-  if (off) { off.className = 'off-badge'; off.textContent = 'Offscreen'; }
+  // renderBoard() only ever calls this with on-page (non-offscreen) scenes —
+  // offscreen scenes live only in Timeline's Chronology views — so every
+  // scene reaching here is guaranteed a real display number.
+  const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${numMap.get(scene.id)}`;
   const tit  = document.createElement('div'); tit.className  = 'ctit'; tit.textContent = scene.title;
   const meta = document.createElement('div'); meta.className = 'cmeta';
   SECS.forEach(({ key, label, tag }) => {
@@ -1266,7 +1303,7 @@ function renderCard(container, scene, idx, numMap, libMaps) {
     row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
   }
   card.appendChild(bar); card.appendChild(badge); card.appendChild(warnDot); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
-  card.appendChild(num); if (off) card.appendChild(off); card.appendChild(tit); card.appendChild(meta);
+  card.appendChild(num); card.appendChild(tit); card.appendChild(meta);
   card.addEventListener('mousedown', e => onCardDown(e, scene.id));
   container.appendChild(card);
 }
@@ -1292,7 +1329,11 @@ function renderBoard() {
   updateCount();
   const hasSecs = S.sections.length > 0;
   board.classList.toggle('has-secs', hasSecs);
-  if (!S.scenes.length) { emp.style.display='flex'; return; }
+  // Offscreen scenes are never shown to the reader, so they have no place on
+  // the Scene Board (a reading-order view) — only in Timeline's Chronology
+  // views. Create/edit them from the Timeline Inspector instead.
+  const onPageScenes = S.scenes.filter(s => !s.offscreen);
+  if (!onPageScenes.length) { emp.style.display='flex'; return; }
   emp.style.display = 'none';
 
   // Built once per render pass and shared by every card below, instead of
@@ -1303,14 +1344,14 @@ function renderBoard() {
 
   if (!hasSecs) {
     // Original flat layout
-    S.scenes.forEach((scene, idx) => renderCard(board, scene, idx, numMap, libMaps));
+    onPageScenes.forEach((scene, idx) => renderCard(board, scene, idx, numMap, libMaps));
   } else {
     // Section group layout
     const validSecIds = new Set(S.sections.map(s => s.id));
-    const unassigned  = S.scenes.filter(s => !validSecIds.has(s.sectionId));
+    const unassigned  = onPageScenes.filter(s => !validSecIds.has(s.sectionId));
     const allGroups   = [
       { id: null, name: 'Unassigned', scenes: unassigned, isUnasgn: true },
-      ...S.sections.map(sec => ({ id: sec.id, name: sec.name, scenes: S.scenes.filter(s => s.sectionId === sec.id), isUnasgn: false })),
+      ...S.sections.map(sec => ({ id: sec.id, name: sec.name, scenes: onPageScenes.filter(s => s.sectionId === sec.id), isUnasgn: false })),
     ];
     let groups;
     if (secFilterIds.size === 0) {
@@ -1450,19 +1491,22 @@ function updateSecPins() {
 }
 
 function updateCount() {
-  let shown;
+  let secScoped;
   if (S.sections.length === 0 || secFilterIds.size === 0) {
-    shown = S.scenes;
+    secScoped = S.scenes;
   } else {
     const validSecIds = new Set(S.sections.map(s => s.id));
-    shown = S.scenes.filter(s => {
+    secScoped = S.scenes.filter(s => {
       const secId = validSecIds.has(s.sectionId) ? s.sectionId : 'unassigned';
       return secFilterIds.has(secId);
     });
   }
+  // Offscreen scenes are never rendered on the board itself (see renderBoard's
+  // onPageScenes) — offscreen is a Chronology-views-only concept, so it's not
+  // called out here at all.
+  const shown = secScoped.filter(s => !s.offscreen);
   const n = shown.length;
-  const off = shown.filter(s => s.offscreen).length;
-  document.getElementById('sbcnt').textContent = `Showing ${n} scene${n !== 1 ? 's' : ''}` + (off > 0 ? ` (${off} offscreen)` : '');
+  document.getElementById('sbcnt').textContent = `Showing ${n} scene${n !== 1 ? 's' : ''}`;
 }
 
 // ── SECTION SELECTS (forms + filter) ──────────────────────────────────────────
@@ -1952,6 +1996,8 @@ function beginCardDrag(id, e) {
   drag.ox = e.clientX - r.left; drag.oy = e.clientY - r.top;
   const sc = S.scenes.find(s => s.id === id), ghost = document.getElementById('ghost');
   ghost.innerHTML = '';
+  // Only an on-board (non-offscreen) card can start a board drag in the
+  // first place, so it's always guaranteed a real display number here.
   const n = document.createElement('div'); n.className = 'cnum'; n.textContent = `Scene ${sceneDisplayNum(sc.id)}`;
   const t = document.createElement('div'); t.className = 'ctit'; t.textContent = sc.title;
   ghost.appendChild(n); ghost.appendChild(t);
@@ -2148,7 +2194,7 @@ document.addEventListener('mousemove', e => {
   // wherever the cursor happens to be. e.buttons reflects the CURRENT button
   // state on every mousemove regardless of where the release happened, so a
   // stuck drag self-heals on the next mouse movement inside the window.
-  if (e.buttons === 0 && (ptr.down || ld.on || sld.on || lpDr.on || cpDr.on || spDr.on)) {
+  if (e.buttons === 0 && (ptr.down || ld.on || sld.on || (typeof tlLaneDrag !== 'undefined' && tlLaneDrag.on) || lpDr.on || cpDr.on || spDr.on)) {
     if (ptr.down) {
       if (ptr.dragging) {
         drag.on = false; drag.ids = []; drag.dropId = null; drag.dropSecId = null;
@@ -2164,6 +2210,7 @@ document.addEventListener('mousemove', e => {
     // skip their mutating branch whenever dropIdx is null or unchanged).
     if (ld.on)  { ld.dropIdx = null; endLibDrag(); }
     if (sld.on) { sld.dropIdx = null; endSecListDrag(); }
+    if (typeof tlLaneDrag !== 'undefined' && tlLaneDrag.on) { tlLaneDrag.dropIdx = null; endStorylineDrag(); }
     [lpDr, cpDr, spDr].forEach(dr => {
       if (!dr.on) return;
       dr.on = false;
@@ -2180,6 +2227,7 @@ document.addEventListener('mousemove', e => {
   }
   if (ld.on)  moveLibDrag(e);
   if (sld.on) moveSecListDrag(e);
+  if (typeof tlLaneDrag !== 'undefined' && tlLaneDrag.on) moveStorylineDrag(e);
   [lpDr, cpDr, spDr].forEach(dr => {
     if (!dr.on) return;
     const newW = Math.max(dr.min, Math.min(dr.max, dr.startW + (e.clientX - dr.startX)));
@@ -2194,6 +2242,7 @@ document.addEventListener('mouseup', e => {
   }
   if (ld.on)  endLibDrag();
   if (sld.on) endSecListDrag();
+  if (typeof tlLaneDrag !== 'undefined' && tlLaneDrag.on) endStorylineDrag();
   [lpDr, cpDr, spDr].forEach(dr => {
     if (!dr.on) return;
     dr.on = false;
@@ -2320,7 +2369,7 @@ document.addEventListener('keydown', e => {
     // rebuilds S.scenes and re-renders out from under an active drag, and the
     // eventual mouseup would then commit a reorder against post-undo state and
     // clobber the redo stack.
-    if (!inInput && !drag.on && !ld.on && !sld.on && !(typeof isTlDragActive === 'function' && isTlDragActive())) {
+    if (!inInput && !drag.on && !ld.on && !sld.on && !(typeof tlLaneDrag !== 'undefined' && tlLaneDrag.on) && !(typeof isTlDragActive === 'function' && isTlDragActive())) {
       if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (typeof undo === 'function') undo(); return; }
       if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); if (typeof redo === 'function') redo(); return; }
     }

@@ -232,6 +232,7 @@
   $('tl-panel-strip-btn').addEventListener('click', function(){ togglePanel('tl-panel'); });
   $('tl-panel-collapse-btn').addEventListener('click', function(){ togglePanel('tl-panel'); });
   $('tl-delete-scene-btn').addEventListener('click', tlDeleteSelectedScene);
+  $('tl-new-scene-btn').addEventListener('click', tlShowNewSceneForm);
   // Cancel/Save Changes dim to "nothing to do" while the form is clean (Timeline
   // only — refreshTlSaveCancelState() itself no-ops outside timelineMode). Any
   // field change, checkbox-dropdown toggle, or the Anchor "Clear" button needs

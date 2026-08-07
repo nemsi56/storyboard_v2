@@ -216,7 +216,7 @@ function buildSceneListReport(secSet) {
   } else {
     scenes.forEach(sc => {
       html += `<div class="scene-block">`;
-      html += `<div class="scene-num">Scene ${numMap.get(sc.id) ?? 1}</div>`;
+      html += `<div class="scene-num">${numMap.has(sc.id) ? 'Scene ' + numMap.get(sc.id) : 'Offscreen'}</div>`;
       html += `<div class="scene-title">${rptEsc(sc.title || '(Untitled)')}</div>`;
       if (inc.section)                       html += rptFieldRow('Section',    rptEsc(rptSecName(sc.sectionId)));
       if (inc.summary    && sc.summary)      html += rptFieldRow('Summary',    rptEsc(sc.summary));
@@ -284,7 +284,7 @@ function buildLibItemReport(secSet, type) {
           const extra = cfg.extraMeta(inc, sc);
           if (extra) meta.push(extra);
           html += `<div class="scene-entry">`;
-          html += `<span class="scene-entry-title">Scene ${numMap.get(sc.id) ?? 1} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
+          html += `<span class="scene-entry-title">${rptEsc(sceneNumPrefix(sc.id))}${rptEsc(sc.title || '(Untitled)')}</span>`;
           if (meta.length) html += ` <span class="scene-entry-meta">· ${meta.join(' · ')}</span>`;
           if (inc.summary && sc.summary) html += `<div class="scene-entry-summary">${rptEsc(sc.summary)}</div>`;
           html += `</div>`;
@@ -334,7 +334,7 @@ function buildMatrixReport(secSet) {
     html += `</tr></thead><tbody>`;
     scenes.forEach(sc => {
       const secStr = showSec ? ` <span class="mx-scene-sec" style="font-weight:400">· ${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
-      html += `<tr><td class="mx-row-hdr" style="width:200px;max-width:200px"><div class="mx-row-wrap"><span class="mx-row-num">${numMap.get(sc.id) ?? 1} —</span><span class="mx-row-title">${rptEsc(sc.title||'(Untitled)')}${secStr}</span></div></td>`;
+      html += `<tr><td class="mx-row-hdr" style="width:200px;max-width:200px"><div class="mx-row-wrap"><span class="mx-row-num">${numMap.has(sc.id) ? numMap.get(sc.id) + ' —' : 'Off —'}</span><span class="mx-row-title">${rptEsc(sc.title||'(Untitled)')}${secStr}</span></div></td>`;
       axisItems.forEach(item => {
         html += (sc[axis] || []).includes(item.id) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
       });
@@ -346,7 +346,7 @@ function buildMatrixReport(secSet) {
     html += `<table id="mx-full"><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
     scenes.forEach(sc => {
       const secStr = showSec ? `<span class="mx-scene-sec" style="display:block;white-space:nowrap">${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
-      html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">Sc ${numMap.get(sc.id) ?? 1}</span>${secStr}</th>`;
+      html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">${numMap.has(sc.id) ? 'Sc ' + numMap.get(sc.id) : 'Off'}</span>${secStr}</th>`;
     });
     html += `</tr></thead><tbody>`;
     axisItems.forEach(item => {

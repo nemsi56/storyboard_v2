@@ -307,12 +307,19 @@ let tlBraidChronMode = false; // Narrative vs. Chronology axis within Braid, sam
 let tlSelectedId = null;
 let tlActiveTab = 'inspector'; // in-memory only, not persisted (§6.6)
 let _tlFormEditHome = null; // { parent, next } captured once, restored on leave
+let _tlFormNewHome = null; // same idea, for the New Scene form (see tlShowNewSceneForm)
 
 function _tlCaptureFormEditHome() {
   if (_tlFormEditHome) return;
   const form = document.getElementById('form-edit');
   if (!form) return;
   _tlFormEditHome = { parent: form.parentElement, next: form.nextSibling };
+}
+function _tlCaptureFormNewHome() {
+  if (_tlFormNewHome) return;
+  const form = document.getElementById('form-new');
+  if (!form) return;
+  _tlFormNewHome = { parent: form.parentElement, next: form.nextSibling };
 }
 
 // A dirty New-Scene form or open Edit form guards every mode switch and every
@@ -384,11 +391,34 @@ function _openTimelineViewImpl() {
   // already applied to openChartView(), charts.js).
   document.querySelectorAll('.sec-pin').forEach(p => p.remove());
   _tlCaptureFormEditHome();
+  _tlCaptureFormNewHome();
   document.getElementById('tl-inspector-body').appendChild(document.getElementById('form-edit'));
+  document.getElementById('tl-inspector-body').appendChild(document.getElementById('form-new'));
+  // Both forms carry over whatever display state Card view last left them in
+  // (e.g. mid-edit before switching to Timeline) — force a clean "nothing
+  // selected" default every time Timeline opens, rather than trusting
+  // leftover state from wherever they came from.
+  document.getElementById('form-edit').style.display = 'none';
+  document.getElementById('form-new').style.display = 'none';
+  document.getElementById('tl-inspector-empty').style.display = '';
   tlSwitchTab('inspector');
   tlSelectedId = null;
   tlBraidMode = false;
-  tlBraidChronMode = false;
+  // tlBraidChronMode is intentionally NOT reset here — Narrative vs.
+  // Chronology is a user preference within Path view, and should survive a
+  // trip through Cards/Flow and back the same way the Loom/Path choice
+  // itself would if it persisted. (tlBraidMode above still resets to Loom on
+  // every reopen — that part's unchanged; only the axis choice inside Path
+  // carries over.) The mode-switch buttons (#tl-braid-mode-switch) need their
+  // .on classes re-synced to the CURRENT (carried-over) value explicitly
+  // here, rather than via setTlBraidChronMode() (which would also call
+  // renderTimeline() before the rest of this function has finished setting
+  // up the just-reopened view) — otherwise they'd keep showing whatever the
+  // DOM happened to look like from before this reopen, independent of what
+  // tlBraidChronMode's value actually is.
+  document.querySelectorAll('#tl-braid-mode-switch .tl-axis-btn').forEach(b => {
+    b.classList.toggle('on', (b.dataset.braidMode === 'chronology') === tlBraidChronMode);
+  });
   document.getElementById('tl-stage').classList.remove('tl-braid-active');
   document.getElementById('tl-axis-switch').style.display = '';
   document.getElementById('tl-thread-wrap').style.display = '';
@@ -413,6 +443,11 @@ function _closeTimelineViewImpl() {
     form.style.display = 'none';
     if (_tlFormEditHome.next) _tlFormEditHome.parent.insertBefore(form, _tlFormEditHome.next);
     else _tlFormEditHome.parent.appendChild(form);
+  }
+  if (_tlFormNewHome) {
+    const formNew = document.getElementById('form-new');
+    if (_tlFormNewHome.next) _tlFormNewHome.parent.insertBefore(formNew, _tlFormNewHome.next);
+    else _tlFormNewHome.parent.appendChild(formNew);
   }
   // Timeline may have left these disabled (clean-form state) — board's own
   // Edit Scene form never sets this attribute, so nothing else clears it.
@@ -643,6 +678,9 @@ function renderStorylineLanes() {
     label.style.height = laneH + 'px';
     label.style.setProperty('--lane-c', slColor(st.paletteIndex));
     label.dataset.storylineId = st.id;
+    label.dataset.idx = i;
+    const handle = document.createElement('span'); handle.className = 'tl-lane-handle'; handle.textContent = '⠿'; handle.title = 'Drag to reorder storylines';
+    handle.addEventListener('mousedown', e => startStorylineDrag(e, i));
     const sw = document.createElement('span'); sw.className = 'tl-sw'; sw.style.background = slColor(st.paletteIndex);
     const nameWrap = document.createElement('span'); nameWrap.className = 'tl-lane-name'; nameWrap.textContent = st.name;
     nameWrap.title = 'Click to rename';
@@ -650,10 +688,58 @@ function renderStorylineLanes() {
     const countEl = document.createElement('i'); countEl.textContent = count + (count === 1 ? ' scene' : ' scenes');
     const delBtn = document.createElement('button'); delBtn.className = 'tl-lane-del'; delBtn.textContent = '×'; delBtn.title = 'Delete storyline';
     delBtn.addEventListener('click', e => { e.stopPropagation(); deleteStoryline(st.id); });
-    label.appendChild(sw); label.appendChild(nameWrap); label.appendChild(countEl); label.appendChild(delBtn);
+    label.appendChild(handle); label.appendChild(sw); label.appendChild(nameWrap); label.appendChild(countEl); label.appendChild(delBtn);
     laneScroll.appendChild(label);
   });
   tlSyncLaneScroll();
+}
+
+// ── STORYLINE LANE DRAG (reorder, Loom view) ──────────────────────────────────
+// Mirrors editor.js's sld (Section list drag)/ld (Library item drag): a plain
+// {on, fromIdx, dropIdx, before} state, a drag-handle mousedown to start, and
+// global mousemove/mouseup (wired below, alongside the chron/manuscript/braid
+// drag checks) to drive it. Purely cosmetic — reordering S.storylines only
+// changes which row a storyline's lane appears in, never any scene's own
+// data — so unlike every other Timeline drag it does NOT need the move-
+// confirmation flow scene drags use; it's instant and undo-able, same as
+// reordering Sections.
+const tlLaneDrag = { on: false, fromIdx: null, dropIdx: null, before: true };
+function startStorylineDrag(e, idx) {
+  if (e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  tlLaneDrag.on = true; tlLaneDrag.fromIdx = idx; tlLaneDrag.dropIdx = null;
+}
+function moveStorylineDrag(e) {
+  const laneScroll = document.getElementById('tl-lane-scroll'); if (!laneScroll) return;
+  const items = [...laneScroll.querySelectorAll('.tl-lane-label')];
+  items.forEach(i => i.classList.remove('dib', 'dia', 'dg'));
+  const fromEl = items.find(i => +i.dataset.idx === tlLaneDrag.fromIdx);
+  if (fromEl) fromEl.classList.add('dg');
+  let ni = null, nb = true;
+  for (const item of items) {
+    if (+item.dataset.idx === tlLaneDrag.fromIdx) continue;
+    const r = item.getBoundingClientRect();
+    if (e.clientY >= r.top && e.clientY <= r.bottom) { ni = +item.dataset.idx; nb = e.clientY < r.top + r.height / 2; break; }
+  }
+  if (ni !== null) { const tgt = items.find(i => +i.dataset.idx === ni); if (tgt) tgt.classList.add(nb ? 'dib' : 'dia'); }
+  tlLaneDrag.dropIdx = ni; tlLaneDrag.before = nb;
+}
+function endStorylineDrag() {
+  const laneScroll = document.getElementById('tl-lane-scroll');
+  if (laneScroll) laneScroll.querySelectorAll('.tl-lane-label').forEach(i => i.classList.remove('dib', 'dia', 'dg'));
+  if (tlLaneDrag.dropIdx !== null && tlLaneDrag.dropIdx !== tlLaneDrag.fromIdx) {
+    pushHistory('Reorder storylines');
+    const arr = S.storylines;
+    const [item] = arr.splice(tlLaneDrag.fromIdx, 1);
+    let ti = tlLaneDrag.dropIdx > tlLaneDrag.fromIdx ? tlLaneDrag.dropIdx - 1 : tlLaneDrag.dropIdx;
+    if (!tlLaneDrag.before) ti++;
+    arr.splice(ti, 0, item);
+    recordDataEdit();
+    saveState();
+    renderTimeline();
+    if (typeof refreshNewSceneStorylineField === 'function') refreshNewSceneStorylineField();
+  }
+  tlLaneDrag.on = false; tlLaneDrag.fromIdx = null; tlLaneDrag.dropIdx = null;
 }
 
 // Mirrors #tl-lane-scroll's scrollTop onto #tl-track via a matching
@@ -859,7 +945,10 @@ function renderManuscriptRibbon() {
   if (!row) return;
   row.innerHTML = '';
   const storylineById = new Map(S.storylines.map(st => [st.id, st]));
-  const scenes = manuscriptOrder();
+  // Offscreen scenes are never shown to the reader, so they have no place on
+  // the Narrative row (reading order) — only the Chronology row (see
+  // renderChronTrack above, which renders every scene unfiltered).
+  const scenes = manuscriptOrder().filter(s => !s.offscreen);
   const numMap = buildSceneNumMap();
   const validSecIds = new Set(S.sections.map(s => s.id));
 
@@ -903,8 +992,10 @@ function renderManuscriptRibbon() {
 }
 
 function buildRibbonCard(s, num, storylineById) {
+  // s is never offscreen here — renderManuscriptRibbon() already filters
+  // offscreen scenes out before calling this.
   const card = document.createElement('div');
-  card.className = 'tl-ms-card' + (s.offscreen ? ' tl-offscreen' : '');
+  card.className = 'tl-ms-card';
   card.dataset.sceneId = s.id;
   const st = storylineById.get(s.storylineId);
   card.style.setProperty('--c', st ? slColor(st.paletteIndex) : 'var(--acc)');
@@ -915,7 +1006,6 @@ function buildRibbonCard(s, num, storylineById) {
   const warnDot = document.createElement('div'); warnDot.className = 'tl-warn-dot'; card.appendChild(warnDot);
   const ch = document.createElement('div'); ch.className = 'tl-ch'; ch.textContent = 'Sc ' + num; card.appendChild(ch);
   const title = document.createElement('div'); title.className = 'tl-t'; title.textContent = s.title; card.appendChild(title);
-  if (s.offscreen) { const chip = document.createElement('div'); chip.className = 'tl-off-chip'; chip.textContent = 'Offscreen'; card.appendChild(chip); }
 
   const convDots = renderConvDots(s, storylineById);
   if (convDots) card.appendChild(convDots);
@@ -2042,8 +2132,12 @@ function renderBraid() {
   const msScenes = manuscriptOrder().filter(s => !s.offscreen);
   const msOrder = msScenes.map(s => s.id);
   const sceneById = new Map(S.scenes.map(s => [s.id, s]));
-  const chronOrder = S.chronOrder || []; // unfiltered: Narrative mode's row axis, unchanged
-  const N = chronOrder.length;
+  // Raw, unfiltered — Chronology mode's own column axis uses this directly
+  // (offscreen scenes get their own column there, same as Loom's Chronology
+  // row). Narrative mode's row axis (chronIndex, below) derives a filtered
+  // view from this instead of using it directly.
+  const chronOrder = S.chronOrder || [];
+  const N = msOrder.length;
 
   renderBraidLegend();
 
@@ -2059,20 +2153,41 @@ function renderBraid() {
   _braidColIds = [];
   if (!tlBraidMode) return;
 
+  // Narrative-mode row lookup: every id in chronOrder maps to a row number on
+  // an offscreen-filtered row axis, matching msOrder's own column axis
+  // (which already excludes offscreen scenes) — an on-page scene gets its
+  // real rank among on-page scenes; an offscreen scene gets the SAME rank
+  // the next on-page scene after it gets. That fallback matters for markers
+  // (below): an era marker anchored right before an offscreen scene still
+  // resolves to a sensible row instead of vanishing, even though the
+  // offscreen scene itself never becomes a column/node in Narrative mode.
+  // (Building this on the raw, unfiltered chronOrder — not skipping
+  // offscreen ids outright — is what fixes the old "skipped lines" bug: the
+  // previous version ranked every scene including offscreen ones, so two
+  // consecutive on-page scenes could land more than one row apart purely
+  // because an invisible offscreen scene's rank sat between them.)
   const chronIndex = new Map();
-  chronOrder.forEach((id, i) => chronIndex.set(id, i));
+  let visRank = 0;
+  chronOrder.forEach(id => {
+    const s = sceneById.get(id);
+    chronIndex.set(id, visRank);
+    if (s && !s.offscreen) visRank++;
+  });
 
   // colIds: one entry per column, left to right. rowOf(col, i): a column's
   // row rank (0-based) — i is the column's own index in colIds, only used by
   // the Chronology branch. rowCount: number of distinct row slots (drives
   // rowH/gridlines).
-  // Narrative mode (unchanged): one scene per column (msOrder), row = the
-  // scene's own rank in chronological order — an independent value from its
-  // column position, which is what lets the connecting path show flashbacks
-  // (a later column with an earlier row).
-  // Chronology mode: one column per exact-anchor group (walking
-  // S.chronOrder, offscreen scenes excluded same as msOrder always was), and
-  // the row axis stays Chronology too — but here it's simply each column's
+  // Narrative mode: one scene per column (msOrder, offscreen already
+  // excluded), row = the scene's own rank in chronological order (chronIndex
+  // above) — an independent value from its column position, which is what
+  // lets the connecting path show flashbacks (a later column with an earlier
+  // row).
+  // Chronology mode: one column per exact-anchor group, walking the RAW
+  // chronOrder — offscreen scenes get their own column here (unlike every
+  // other reading-order-based view, this is exactly where an offscreen scene
+  // belongs: "when it happened," matching Loom's own Chronology row) — and
+  // the row axis stays Chronology too, but here it's simply each column's
   // OWN position (row = i), not a second independent value. Column order and
   // row order are therefore the same sequence by construction: dragging a
   // node reorders S.chronOrder directly (same effect as Loom's own
@@ -2085,8 +2200,7 @@ function renderBraid() {
     rowOf = col => chronIndex.get(col.ids[0]);
     rowCount = N;
   } else {
-    const visibleChronOrder = chronOrder.filter(id => { const s = sceneById.get(id); return s && !s.offscreen; });
-    colIds = braidChronColumns(visibleChronOrder, sceneById);
+    colIds = braidChronColumns(chronOrder, sceneById);
     rowOf = (col, i) => i;
     rowCount = colIds.length;
   }
@@ -2330,6 +2444,10 @@ function renderBraid() {
     if (String(id) === String(tlSelectedId)) g.classList.add('tl-sel');
     if (scenes.some(s => typeof sceneHasWarning === 'function' && sceneHasWarning(s.id))) g.classList.add('tl-warn');
     if (flagActive && scenes.some(s => flaggedIds.includes(s.id))) g.classList.add('tl-flag');
+    // Only meaningful in Chronology mode (the only place an offscreen scene
+    // gets a node here) — a dedicated merged-node color already applies when
+    // scenes.length > 1, so this only ever fires for a lone offscreen scene.
+    if (!merged && scenes[0].offscreen) g.classList.add('tl-offscreen');
 
     const circle = document.createElementNS(SVGNS, 'circle');
     circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', nodeR);
@@ -2343,13 +2461,20 @@ function renderBraid() {
     circle.style.color = color;
     g.appendChild(circle);
 
-    if (showNodeNum) {
+    // Offscreen scenes have no display number (buildSceneNumMap skips them
+    // entirely) — filtered out of the join rather than falling back to '?',
+    // so a lone offscreen node shows no number at all (matching Loom's own
+    // Chronology row, which never numbers offscreen cards either) and a
+    // merged node mixing an offscreen scene with on-page ones just shows the
+    // on-page number(s).
+    const nodeNums = ids.map(sid => numMap.get(sid)).filter(n => n !== undefined).join('/');
+    if (showNodeNum && nodeNums) {
       const num = document.createElementNS(SVGNS, 'text');
       num.setAttribute('x', x); num.setAttribute('y', y);
       num.setAttribute('font-size', 10); num.setAttribute('font-weight', 'bold'); num.setAttribute('text-anchor', 'middle');
       num.setAttribute('dominant-baseline', 'central'); num.setAttribute('pointer-events', 'none');
       num.style.fill = 'var(--tx)';
-      num.textContent = ids.map(sid => numMap.get(sid) ?? '?').join('/');
+      num.textContent = nodeNums;
       g.appendChild(num);
     }
 
@@ -2392,7 +2517,7 @@ function renderBraid() {
     timeLabel.setAttribute('font-size', 9.5); timeLabel.setAttribute('text-anchor', anchor); timeLabel.setAttribute('pointer-events', 'none');
     applyBraidLabelHalo(timeLabel);
     timeLabel.style.fill = 'var(--sub)';
-    timeLabel.textContent = fmtAnchor(scenes[0].anchor) || '—';
+    timeLabel.textContent = (fmtAnchor(scenes[0].anchor) || '—') + (g.classList.contains('tl-offscreen') ? '  ·  Offscreen' : '');
     g.appendChild(timeLabel);
 
     g.style.cursor = 'pointer';
@@ -2576,6 +2701,14 @@ function _tlDoSelectScene(sceneId, opts) {
   });
   const emptyEl = document.getElementById('tl-inspector-empty');
   const form = document.getElementById('form-edit');
+  // Selecting or deselecting a scene always means "not creating a new scene
+  // right now" — hide #form-new unconditionally rather than only in the
+  // (sceneId == null) branch, since it can also be left visible-but-blank
+  // when the New Scene form was open but never made dirty (runWithDiscardGuard's
+  // fast path skips cancelNewScene() entirely when nothing needs discarding),
+  // then a scene gets selected directly. Previously left it stuck visible
+  // underneath the empty-state message once the scene was later deselected.
+  document.getElementById('form-new').style.display = 'none';
   if (sceneId == null) {
     emptyEl.style.display = '';
     form.style.display = 'none';
@@ -2637,41 +2770,40 @@ function tlDeleteSelectedScene() {
   deleteScene(S.editingId);
 }
 
-// Auto-unique "Untitled scene"/"Untitled scene N" (case-insensitive, matching
-// the New Scene form's own title-uniqueness rule, editor.js addScene()).
-function tlUniqueUntitledName() {
-  let n = 0;
-  for (;;) {
-    const name = n === 0 ? 'Untitled scene' : 'Untitled scene ' + (n + 1);
-    if (!S.scenes.some(s => s.title.toLowerCase() === name.toLowerCase())) return name;
-    n++;
-  }
+// Create -> New Scene / the Inspector's own "+ New Scene" button (shown in
+// its empty state, next to "Select a scene to edit it here"), while in
+// timeline mode (§6.1): opens the same New Scene form Card view uses (see
+// _openTimelineViewImpl's reparenting of #form-new alongside #form-edit),
+// rather than creating a scene immediately with blank defaults — matches
+// the reader's mental model ("fill in a new scene, then save it") and
+// avoids leaving an untitled orphan scene behind if the user backs out.
+// Routed through the same discard guard as every other selection/mode-switch
+// entry point in timeline mode, since opening this form discards whatever
+// the Inspector was showing before (a dirty edit, or an already-live New
+// Scene draft).
+function tlShowNewSceneForm() {
+  runWithDiscardGuard(_tlShowNewSceneFormImpl);
 }
-// Create -> New Scene / the strip header's "+ Scene" button, while in timeline
-// mode (§6.1): creates immediately with §2.5 defaults instead of opening the
-// (hidden) New Scene form. Routed through the same discard guard as every
-// other selection/mode-switch entry point in timeline mode — creating a scene
-// immediately re-selects it (_tlDoSelectScene), which would otherwise discard
-// a dirty Inspector edit silently instead of prompting.
-function tlCreateScene() {
-  runWithDiscardGuard(_tlCreateSceneImpl);
+function _tlShowNewSceneFormImpl() {
+  tlSelectedId = null;
+  document.querySelectorAll('.tl-scene, .tl-ms-card, .tl-braid-node').forEach(el => el.classList.remove('tl-sel'));
+  document.getElementById('tl-inspector-empty').style.display = 'none';
+  switchTab('new');
+  const tlPanel = document.getElementById('tl-panel');
+  if (tlPanel && tlPanel.classList.contains('collapsed')) togglePanel('tl-panel');
+  updateTlInspectorFooter();
+  redrawWires(); // clears any stale "selected" wire highlight (mirrors _tlDoSelectScene's own trailing call)
+  setTimeout(() => { const t = document.getElementById('sc-title'); if (t) t.focus(); }, 40);
 }
-function _tlCreateSceneImpl() {
-  const title = tlUniqueUntitledName();
-  pushHistory('Add scene "' + title + '"');
-  if (typeof trackSceneAdded === 'function') trackSceneAdded();
-  const id = S.nextId++;
-  const newScene = {
-    id, title, summary: '', notes: '', characters: [], locations: [], themes: [], misc: [],
-    sectionId: null, wordCount: null, povs: [],
-    storylineId: S.storylines[0].id, alsoStorylineIds: [], anchor: null, durationMin: null,
-    offscreen: false, reveals: [], requires: [],
-  };
-  S.scenes.push(newScene);
-  S.chronOrder.push(id);
-  recordDataEdit(); saveState();
+// Timeline-specific follow-up once addScene() (editor.js) successfully
+// creates a scene from the Inspector's own New Scene form: switches the
+// Inspector from "new" back to "edit", showing the scene that was just
+// created. renderTimeline() runs first so the new scene's card actually
+// exists in the DOM before _tlDoSelectScene() tries to select/scroll to it.
+function _tlAfterCreateScene(newId) {
+  document.getElementById('form-new').style.display = 'none';
   renderTimeline();
-  _tlDoSelectScene(id, { focusTitle: true });
+  _tlDoSelectScene(newId, {});
 }
 
 // ── SCROLL / RESIZE WIRING (§7.6, §9) ─────────────────────────────────────────

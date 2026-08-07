@@ -12,7 +12,7 @@ function computeConflicts() {
   (S.chronOrder || []).forEach((id, i) => chronIndexMap.set(id, i));
 
   const title = id => { const s = sceneById.get(id); return s ? s.title : '?'; };
-  const sceneLabel = id => 'Scene ' + sceneDisplayNum(id) + ' — "' + title(id) + '"';
+  const sceneLabel = id => sceneNumPrefix(id) + '"' + title(id) + '"';
   const fp = (type, ids, extraKey) => type + ':' + [...ids].sort((a, b) => a - b).join(',') + ':' + (extraKey ?? '');
 
   const byFingerprint = new Map();

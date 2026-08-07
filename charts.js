@@ -161,12 +161,16 @@ function setChartTrace(cat) {
 }
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
+// Offscreen scenes are never shown to the reader, so they have no place on
+// the Scene Flow Chart (a reading-order view, same as the Scene Board) —
+// only in Timeline's Chronology views.
 function orderedScenes() {
-  if (!S.sections.length) return [...S.scenes];
+  const onPage = S.scenes.filter(s => !s.offscreen);
+  if (!S.sections.length) return onPage;
   const validSecIds = new Set(S.sections.map(s => s.id));
   const groups = [
-    { id: null, isUnasgn: true,  scenes: S.scenes.filter(s => !validSecIds.has(s.sectionId)) },
-    ...S.sections.map(sec => ({ id: sec.id, isUnasgn: false, scenes: S.scenes.filter(s => s.sectionId === sec.id) })),
+    { id: null, isUnasgn: true,  scenes: onPage.filter(s => !validSecIds.has(s.sectionId)) },
+    ...S.sections.map(sec => ({ id: sec.id, isUnasgn: false, scenes: onPage.filter(s => s.sectionId === sec.id) })),
   ];
   const visible = secFilterIds.size === 0
     ? groups
@@ -217,7 +221,9 @@ function computeTraceLanes(scenes) {
 // numMap is caller-built (once per chart render pass, not per lane) — see
 // addSnakeTraceLanes/addCircleTraceLanes, which can call this once per traced
 // lane (up to LANE_SANITY_CAP times) and would otherwise rebuild the same
-// O(scenes) map that many times over.
+// O(scenes) map that many times over. layout is always built from
+// orderedScenes(), which excludes offscreen scenes, so every scene here is
+// guaranteed a real display number.
 function computeLaneRuns(layout, id, numMap) {
   const runs = [];
   layout.forEach(({ scene, offset, len }) => {
@@ -782,7 +788,7 @@ function addSnakeNumbers(svg, centerline, layout, total) {
     if (len < 26) return; // segment too small on screen to fit a number legibly
     const mid = centerline.getPointAtLength(offset + len / 2);
     const matched = chartSegFilterActive() && segIsMatched(scene);
-    drawChartNum(svg, mid.x, mid.y, String(numMap.get(scene.id) ?? 1), scene.id, matched);
+    drawChartNum(svg, mid.x, mid.y, String(numMap.get(scene.id)), scene.id, matched);
   });
 }
 
@@ -892,7 +898,7 @@ function addCircleNumbers(svg, layout, cx, cy, R, total) {
     const rad = angleDeg * Math.PI / 180;
     const x = cx + R * Math.cos(rad), y = cy + R * Math.sin(rad);
     const matched = chartSegFilterActive() && segIsMatched(scene);
-    drawChartNum(svg, x, y, String(numMap.get(scene.id) ?? 1), scene.id, matched);
+    drawChartNum(svg, x, y, String(numMap.get(scene.id)), scene.id, matched);
   });
 }
 
@@ -1006,7 +1012,7 @@ function showChartTip(e, scene) {
   const tip = document.getElementById('chart-tip');
   tip.innerHTML = '';
   const t1 = document.createElement('div'); t1.className = 'chart-tip-title';
-  t1.textContent = `Scene ${sceneDisplayNum(scene.id)} — ${scene.title}`;
+  t1.textContent = `${sceneNumPrefix(scene.id)}${scene.title}`;
   tip.appendChild(t1);
   const secName = sceneSectionName(scene);
   if (secName) { const t2 = document.createElement('div'); t2.className = 'chart-tip-sec'; t2.textContent = secName; tip.appendChild(t2); }
