@@ -3769,3 +3769,50 @@ dev server on a fresh port. Clean console throughout.
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v5 branch — Chronology report type
+
+Adds a "Chronology" report next to "Scene List" in the Generate Report modal, with the same
+Include Fields checkboxes (Section, Summary, Notes, Characters, Locations, Themes, Misc
+Items, POV) and the same shared Sections-to-Include filter. Where Scene List walks reading
+order, Chronology walks the Path view's own Chronology axis — one entry per exact-anchor
+node, in `S.chronOrder` order, noting offscreen scenes and merging simultaneous ones.
+
+**Touched files:** `editor.html` (report-type button + `rpt-opts-chronology` panel, `rpt-cl-`
+prefixed checkboxes mirroring `rpt-sl-`), `editor-init.js` (button wiring), `reports.js`
+(`buildChronologyReport()`, dispatch in `generateReport()`, two small CSS rules for the new
+per-node date header).
+
+### How it works
+Reuses `braidChronColumns(S.chronOrder, sceneById)` (timeline.js) — the exact function Path
+view's Chronology axis renders its nodes from — rather than reimplementing the grouping
+logic. Each returned `{ids}` group becomes one report entry: a date header (`fmtAnchor()`,
+or "No date set" for an unanchored scene, which never groups with anything per
+`_tlAnchorKey()`'s null-never-matches rule) followed by one `.scene-block` per scene in the
+group, reusing Scene List's existing block markup/CSS as-is. A group with 2+ ids (simultaneous
+scenes on different storylines sharing one exact anchor) gets a "Simultaneous — N scenes"
+note above its scene blocks. Offscreen scenes get their own node here — the one place they
+belong, matching Path/Loom's own Chronology axis — labeled "Offscreen" via the same
+`numMap.has(id) ? 'Scene N' : 'Offscreen'` fallback Scene List already uses (`buildSceneNumMap()`
+skips offscreen scenes when assigning numbers). The shared section filter is applied by
+building a Set from `rptFilterScenes(secSet)` and filtering each node's `ids` against it,
+dropping a node entirely if none of its scenes survive the filter — same net effect as every
+other report type's section filter, just applied per-id instead of per-array-element since a
+node can mix scenes from different sections.
+
+### Verification
+Investigated originally to answer a user question ("why is no conflict showing" on an
+imported project) that surfaced how the reveal-order conflict check reads reading order, not
+chronology — which is what motivated this report (a plain-text substitute for eyeballing the
+Path view). Verified live against Dracula: confirmed via `DOMParser`-based structural checks
+(not just eyeballing) that node count, per-node dates, and scene-to-node grouping exactly
+match `braidChronColumns()`'s own output, including a real simultaneous-scene merge ("May 24,
+1893 · Simultaneous — 2 scenes") and the project's one real offscreen scene ("The Demeter
+Wrecks at Whitby") correctly labeled "Offscreen" under its own chronology date; confirmed the
+shared section filter drops the right scenes/nodes; rendered the generated HTML directly (the
+sandboxed preview browser blocks `window.open()` popups, so verification bypassed that and
+inspected/rendered the returned HTML string directly) to confirm visual output matches Scene
+List's styling. Clean console throughout.
+
+### Not yet done
+Not merged anywhere.

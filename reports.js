@@ -78,6 +78,7 @@ function generateReport() {
   const secSet = rptSelectedSecs();
   let html = '';
   if (rptType === 'scenelist') html = buildSceneListReport(secSet);
+  if (rptType === 'chronology') html = buildChronologyReport(secSet);
   if (rptType === 'character') html = buildCharacterReport(secSet);
   if (rptType === 'location')  html = buildLocationReport(secSet);
   if (rptType === 'theme')     html = buildThemeReport(secSet);
@@ -126,6 +127,10 @@ function rptBaseCSS() {
     .tag-t{background:#e8dff7;color:#5a2f90}
     .tag-m{background:#fdecd5;color:#8f5520}
     .tag-p{background:#d6f0ea;color:#0e7c6b}
+    .chron-node{margin:16px 0 2px}
+    .chron-node:first-child{margin-top:0}
+    .chron-node-date{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#555;padding-bottom:3px;border-bottom:1px solid #ddd}
+    .chron-node-note{font-size:10px;color:#999;font-style:italic;margin:3px 0 2px}
     .scene-entry{margin:3px 0;padding:4px 8px;border-left:2px solid #ccc}
     .scene-entry-title{font-weight:600;color:#222;font-size:11px}
     .scene-entry-meta{color:#666;font-size:11px}
@@ -229,6 +234,61 @@ function buildSceneListReport(secSet) {
       html += `</div>`;
     });
   }
+  return html + '</body></html>';
+}
+
+// Chronology mode's own node list (Path view, Chronology axis) — one entry
+// per exact-anchor group, via braidChronColumns() (timeline.js), the same
+// function that view itself renders from. Unlike Scene List's reading order,
+// this includes offscreen scenes as their own nodes (that's exactly the one
+// place they belong — "when it happened" — matching Path/Loom's own
+// Chronology axis) and can merge 2+ simultaneous scenes (different
+// storylines, identical anchor) into one node.
+function buildChronologyReport(secSet) {
+  const inc = {
+    section:    document.getElementById('rpt-cl-section').checked,
+    summary:    document.getElementById('rpt-cl-summary').checked,
+    notes:      document.getElementById('rpt-cl-notes').checked,
+    characters: document.getElementById('rpt-cl-characters').checked,
+    locations:  document.getElementById('rpt-cl-locations').checked,
+    themes:     document.getElementById('rpt-cl-themes').checked,
+    misc:       document.getElementById('rpt-cl-misc').checked,
+    pov:        document.getElementById('rpt-cl-pov').checked,
+  };
+  const includedIds = new Set(rptFilterScenes(secSet).map(s => s.id));
+  const numMap = buildSceneNumMap();
+  const sceneById = new Map(S.scenes.map(s => [s.id, s]));
+  const nodes = braidChronColumns(S.chronOrder || [], sceneById)
+    .map(col => ({ ids: col.ids.filter(id => includedIds.has(id)) }))
+    .filter(col => col.ids.length);
+
+  let html = rptPageHeader('Chronology');
+  if (!nodes.length) {
+    html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No scenes match the selected sections.</p>';
+    return html + '</body></html>';
+  }
+  nodes.forEach(node => {
+    const scenes = node.ids.map(id => sceneById.get(id)).filter(Boolean);
+    const merged = scenes.length > 1;
+    html += `<div class="chron-node">`;
+    html += `<div class="chron-node-date">${rptEsc(fmtAnchor(scenes[0].anchor) || 'No date set')}</div>`;
+    if (merged) html += `<div class="chron-node-note">Simultaneous — ${scenes.length} scenes</div>`;
+    scenes.forEach(sc => {
+      html += `<div class="scene-block">`;
+      html += `<div class="scene-num">${numMap.has(sc.id) ? 'Scene ' + numMap.get(sc.id) : 'Offscreen'}</div>`;
+      html += `<div class="scene-title">${rptEsc(sc.title || '(Untitled)')}</div>`;
+      if (inc.section)                       html += rptFieldRow('Section',    rptEsc(rptSecName(sc.sectionId)));
+      if (inc.summary    && sc.summary)      html += rptFieldRow('Summary',    rptEsc(sc.summary));
+      if (inc.notes      && sc.notes)        html += rptFieldRow('Notes',      rptEsc(sc.notes));
+      if (inc.characters && sc.characters?.length) html += rptFieldRow('Characters', rptTagsHtml(rptNamesOf(sc.characters, 'characters'), 'tag-c'));
+      if (inc.locations  && sc.locations?.length)  html += rptFieldRow('Locations',  rptTagsHtml(rptNamesOf(sc.locations,  'locations'),  'tag-l'));
+      if (inc.themes     && sc.themes?.length)     html += rptFieldRow('Themes',      rptTagsHtml(rptNamesOf(sc.themes,     'themes'),     'tag-t'));
+      if (inc.misc       && sc.misc?.length)       html += rptFieldRow('Misc Items',  rptTagsHtml(rptNamesOf(sc.misc,       'misc'),       'tag-m'));
+      if (inc.pov        && sc.povs?.length)       html += rptFieldRow('POV',         rptTagsHtml(rptPovNamesOf(sc.povs),                  'tag-p'));
+      html += `</div>`;
+    });
+    html += `</div>`;
+  });
   return html + '</body></html>';
 }
 

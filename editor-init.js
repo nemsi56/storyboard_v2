@@ -278,6 +278,7 @@
   $('rpt-close').addEventListener('click', closeReportModal);
   [
     ['rpt-type-scenelist','scenelist'],
+    ['rpt-type-chronology','chronology'],
     ['rpt-type-character','character'],
     ['rpt-type-location','location'],
     ['rpt-type-theme','theme'],
