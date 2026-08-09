@@ -390,7 +390,16 @@ function duplicateProject(id) {
   const entry = index.find(p => p.id === id);
   const newId = genProjId();
   const now = new Date().toISOString();
-  localStorage.setItem(projKey(newId), raw);
+  // Same ordering/guard as createAndOpenProject: write the blob first and
+  // bail on failure (quota exceeded, storage disabled) before ever touching
+  // the index, so a failed duplicate can't leave a phantom index entry
+  // pointing at data that was never actually written.
+  try {
+    localStorage.setItem(projKey(newId), raw);
+  } catch(e) {
+    alert('Could not duplicate the project (browser storage is full or unavailable). Please free up space and try again.');
+    return;
+  }
   index.push({
     id: newId, name: (entry ? entry.name : 'Project') + ' (Copy)',
     createdAt: now, modifiedAt: now,
@@ -579,8 +588,18 @@ function validateV3Import(d) {
     if (!sc || typeof sc !== 'object' || !Number.isInteger(sc.id) || !isStr(sc.title)) {
       return 'Invalid project structure. Scene ' + n + ' needs a numeric "id" and a string "title".';
     }
+    // wordCount isn't checked here — loadState()'s normalizeWordCount() already
+    // treats anything that doesn't round to a positive integer as null, so a
+    // stray non-numeric value self-heals on load with no crash risk. summary/
+    // notes have no such normalization anywhere downstream, and a non-string
+    // reaches sceneMatchesSearch()'s `.toLowerCase()` call (editor.js) as-is —
+    // e.g. an imported number there throws instead of just being harmless bad
+    // data, so this one is worth rejecting up front.
+    if ((sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes))) {
+      return 'Invalid project structure. Scene ' + n + ' "summary"/"notes" must be strings when present.';
+    }
     sceneIds.add(sc.id);
-    for (const key of ['characters', 'locations', 'themes', 'misc', 'povs', 'reveals', 'requires']) {
+    for (const key of ['characters', 'locations', 'themes', 'misc', 'povs', 'foreshadows', 'payoffs']) {
       if (sc[key] != null && !isIntArr(sc[key])) return 'Invalid project structure. Scene ' + n + ' "' + key + '" must be an array of integer ids.';
     }
     if ((sc.characters || []).some(id => !charIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown character id.';
@@ -588,7 +607,7 @@ function validateV3Import(d) {
     if ((sc.themes || []).some(id => !themeIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown theme id.';
     if ((sc.misc || []).some(id => !miscIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown misc id.';
     if ((sc.povs || []).some(id => !povIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown POV id.';
-    if ((sc.reveals || []).some(id => !revealIds.has(id)) || (sc.requires || []).some(id => !revealIds.has(id))) {
+    if ((sc.foreshadows || []).some(id => !revealIds.has(id)) || (sc.payoffs || []).some(id => !revealIds.has(id))) {
       return 'Invalid project structure. Scene ' + n + ' references an unknown reveal id.';
     }
     if (!Number.isInteger(sc.storylineId) || !storylineIds.has(sc.storylineId)) return 'Invalid project structure. Scene ' + n + ' "storylineId" does not resolve to a storyline.';
@@ -825,7 +844,18 @@ function importProjectJSON(inputEl) {
         d.revision = d.revision || 0;
         const id = genProjId();
         const now = new Date().toISOString();
-        localStorage.setItem(projKey(id), JSON.stringify(d));
+        // These dialog-button callbacks run after the reader.onload try/catch
+        // below has already returned, so a storage failure here isn't caught
+        // by it — without its own guard it would throw uncaught and silently
+        // fail (the dialog closes either way, so the user would see nothing
+        // and assume the import worked). Same write-before-index-entry
+        // ordering as createAndOpenProject/duplicateProject.
+        try {
+          localStorage.setItem(projKey(id), JSON.stringify(d));
+        } catch(e) {
+          alert('Could not import the project (browser storage is full or unavailable). Please free up space and try again.');
+          return;
+        }
         const index = loadProjectIndex();
         index.push({ id, name, createdAt: now, modifiedAt: now, sceneCount: d.scenes.length, theme: d.theme || 'ivory' });
         saveProjectIndex(index);
@@ -836,7 +866,13 @@ function importProjectJSON(inputEl) {
 
       // Overwrite the matching local project with the file's contents.
       const replaceExisting = (existing) => {
-        localStorage.setItem(projKey(existing.entry.id), JSON.stringify(d));
+        // See finishAsNew's comment above — same uncaught-storage-failure risk.
+        try {
+          localStorage.setItem(projKey(existing.entry.id), JSON.stringify(d));
+        } catch(e) {
+          alert('Could not update the local copy (browser storage is full or unavailable). Please free up space and try again.');
+          return;
+        }
         const index = loadProjectIndex();
         const entry = index.find(p => p.id === existing.entry.id);
         if (entry) {

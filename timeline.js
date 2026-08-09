@@ -260,30 +260,6 @@ function chronXTrueScale() {
   return map;
 }
 
-function chronTrueScaleGapDivider(xMap) {
-  const order = S.chronOrder || [];
-  const sceneById = new Map(S.scenes.map(s => [s.id, s]));
-  const anchored = [];
-  order.forEach(id => {
-    const s = sceneById.get(id); if (!s) return;
-    const ts = anchorTs(s.anchor);
-    if (ts !== null) anchored.push({ id, ts });
-  });
-  if (anchored.length < 2) return null;
-  const byTs = [...anchored].sort((a, b) => a.ts - b.ts);
-  const gaps = [];
-  for (let i = 1; i < byTs.length; i++) gaps.push({ ms: byTs[i].ts - byTs[i - 1].ts, from: byTs[i - 1], to: byTs[i] });
-  if (!gaps.length) return null;
-  const sortedMs = gaps.map(g => g.ms).sort((a, b) => a - b);
-  const mid = Math.floor(sortedMs.length / 2);
-  const median = sortedMs.length % 2 ? sortedMs[mid] : (sortedMs[mid - 1] + sortedMs[mid]) / 2;
-  const largest = gaps.reduce((best, g) => (!best || g.ms > best.ms) ? g : best, null);
-  if (!largest || median <= 0 || largest.ms <= median * 5) return null;
-  const xFrom = xMap.get(largest.from.id), xTo = xMap.get(largest.to.id);
-  if (xFrom === undefined || xTo === undefined) return null;
-  return { x: (xFrom + xTo) / 2, ms: largest.ms, fromId: largest.from.id, toId: largest.to.id };
-}
-
 const TL_MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtAnchor(anchor) {
   if (!anchor || !anchor.date) return null;
@@ -293,13 +269,6 @@ function fmtAnchor(anchor) {
   if (anchor.time) out += ' · ' + anchor.time;
   return out;
 }
-function fmtGap(ms) {
-  const day = 24 * 60 * 60 * 1000, year = 365.25 * day;
-  if (ms >= year) { const yrs = Math.round(ms / year); return '≈ ' + yrs + ' yr' + (yrs === 1 ? '' : 's'); }
-  const days = Math.round(ms / day);
-  return days + ' day' + (days === 1 ? '' : 's');
-}
-
 // ── MODE STATE ─────────────────────────────────────────────────────────────────
 let timelineMode = false;
 let tlBraidMode = false; // Strip vs. Braid, ephemeral like chartMode — resets on project open
@@ -831,12 +800,6 @@ function renderChronStrip() {
   // the callout would otherwise linger, anchored to a now-detached element.
   clearTimeout(_tlCalloutTimer); tlHideCallout();
   track.querySelectorAll('.tl-scene, .tl-lane-row, #tl-thread-svg, .tl-markers-layer').forEach(el => el.remove());
-
-  const scenesByStoryline = new Map(S.storylines.map(st => [st.id, []]));
-  S.chronOrder.forEach(id => {
-    const s = S.scenes.find(x => x.id === id);
-    if (s && scenesByStoryline.has(s.storylineId)) scenesByStoryline.get(s.storylineId).push(s);
-  });
 
   const laneCount = S.storylines.length || 1;
   // Was a flat 96px regardless of zoom — at the auto-fit low end of the zoom
@@ -2832,7 +2795,17 @@ if (document.getElementById('timeline-host')) {
   const scheduleTlRerender = () => {
     if (!timelineMode) return;
     clearTimeout(tlResizeTimer);
-    tlResizeTimer = setTimeout(renderTimeline, 150);
+    // Same mid-drag destruction hazard scheduleConflictsRecompute() guards
+    // against (see conflicts.js): renderTimeline() tears down and rebuilds
+    // #tl-track/#tl-ms-row, destroying a live drag's ghost/insert-line
+    // elements. This debounced resize path calls the identical
+    // renderTimeline() but was missing the same guard — a resize (or an
+    // Inspector-panel collapse/expand, which resizes #tl-stage) firing within
+    // 150ms of a drag starting silently killed the drag's visual feedback.
+    tlResizeTimer = setTimeout(() => {
+      if (typeof isTlDragActive === 'function' && isTlDragActive()) return;
+      renderTimeline();
+    }, 150);
   };
   if (typeof ResizeObserver !== 'undefined') {
     new ResizeObserver(scheduleTlRerender).observe(document.getElementById('tl-stage'));

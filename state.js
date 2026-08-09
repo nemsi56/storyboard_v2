@@ -181,8 +181,8 @@ function migrateV2toV3(d) {
     sc.anchor = null;
     sc.durationMin = null;
     sc.offscreen = false;
-    sc.reveals = [];
-    sc.requires = [];
+    sc.foreshadows = [];
+    sc.payoffs = [];
   });
   d.revealsLib = [];
   d.constraints = [];
@@ -250,17 +250,13 @@ function loadState(storageKey) {
         anchor: (sc.anchor && typeof sc.anchor === 'object') ? { date: sc.anchor.date, time: sc.anchor.time ?? null } : null,
         durationMin: (Number.isInteger(sc.durationMin) && sc.durationMin > 0) ? sc.durationMin : null,
         offscreen: !!sc.offscreen,
-        // scene.reveals/requires are named the OPPOSITE of what they mean in
-        // the UI and to the conflict engine (conflicts.js's reveal-order
-        // check): `reveals` is the "Foreshadow" field (the early hint) and
-        // `requires` is "This scene reveals" (the later payoff, which
-        // requires the foreshadow to already be known). Deliberate historical
-        // relabeling — the UI copy changed, the field names didn't, to avoid
-        // a schema migration for a cosmetic rename. Easy to get backwards
-        // when touching this data directly (sample-project authoring has
-        // gotten it wrong at least once); see editor.js's REVEAL_CK_BOXES
-        // comment for the full explanation.
-        reveals: arr(sc.reveals), requires: arr(sc.requires),
+        // Renamed from reveals/requires (which were named the OPPOSITE of what
+        // they meant in the UI — see git history / STATUS.md for the full
+        // writeup) before schema v3 ever shipped publicly, so no saved/exported
+        // project anywhere used the old names except this branch's own test
+        // data — hence the fallback read below rather than a version bump.
+        foreshadows: arr(sc.foreshadows ?? sc.reveals),
+        payoffs: arr(sc.payoffs ?? sc.requires),
       };
     });
     S.nextId    = d.nextId    || 1;
@@ -379,9 +375,7 @@ const S = {
   povCustom: [],
   povOrder: [],
   storylines: [],
-  // See the reveals/requires comment on scene loading above (loadState()) —
-  // the two scene fields that reference an entry here are named the opposite
-  // of their UI labels.
+  // Shared library referenced by every scene's foreshadows/payoffs id arrays.
   revealsLib: [],
   constraints: [],
   markers: [],
@@ -406,7 +400,7 @@ function snapshot() {
       themes:[...s.themes],         misc:[...s.misc],
       povs:[...(s.povs||[])],
       alsoStorylineIds:[...(s.alsoStorylineIds||[])],
-      reveals:[...(s.reveals||[])], requires:[...(s.requires||[])],
+      foreshadows:[...(s.foreshadows||[])], payoffs:[...(s.payoffs||[])],
       anchor: s.anchor ? {...s.anchor} : null,
     })),
     nextId: S.nextId,
@@ -443,7 +437,7 @@ function applySnapshot(snap) {
     themes:[...s.themes],         misc:[...s.misc],
     povs:[...(s.povs||[])],
     alsoStorylineIds:[...(s.alsoStorylineIds||[])],
-    reveals:[...(s.reveals||[])], requires:[...(s.requires||[])],
+    foreshadows:[...(s.foreshadows||[])], payoffs:[...(s.payoffs||[])],
     anchor: s.anchor ? {...s.anchor} : null,
   }));
   S.nextId    = snap.nextId;

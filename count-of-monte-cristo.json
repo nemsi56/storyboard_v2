@@ -3,17 +3,17 @@
   "projectName": "The Count of Monte Cristo",
   "characters": [
     {
-      "name": "Edmond Dantès",
+      "name": "Edmond Dant\u00e8s",
       "notes": "Sailor, falsely imprisoned. Becomes the Count. Seeks justice through elaborate revenge.",
       "id": 100
     },
     {
-      "name": "Mercédès",
-      "notes": "Edmond's fiancée. Becomes wife of Fernand. Later recognizes the Count.",
+      "name": "Merc\u00e9d\u00e8s",
+      "notes": "Edmond's fianc\u00e9e. Becomes wife of Fernand. Later recognizes the Count.",
       "id": 101
     },
     {
-      "name": "Abbé Faria",
+      "name": "Abb\u00e9 Faria",
       "notes": "Political prisoner who befriends Edmond. Teaches him and reveals treasure location.",
       "id": 102
     },
@@ -48,12 +48,12 @@
       "id": 108
     },
     {
-      "name": "Héloïse de Villefort",
+      "name": "H\u00e9lo\u00efse de Villefort",
       "notes": "Villefort's wife. Poisoner. Instrument of revenge through family tragedy.",
       "id": 109
     },
     {
-      "name": "Haydée",
+      "name": "Hayd\u00e9e",
       "notes": "Slave girl, daughter of Ali Pasha. Loves the Count. Symbol of redemption.",
       "id": 110
     },
@@ -73,7 +73,7 @@
       "id": 113
     },
     {
-      "name": "Franz d'Épinay",
+      "name": "Franz d'\u00c9pinay",
       "notes": "Young nobleman. Engaged to Valentine initially. Rejects her.",
       "id": 114
     }
@@ -85,7 +85,7 @@
       "id": 115
     },
     {
-      "name": "Château d'If",
+      "name": "Ch\u00e2teau d'If",
       "notes": "Island fortress prison. Where Edmond spends 14 years.",
       "id": 116
     },
@@ -96,7 +96,7 @@
     },
     {
       "name": "Rome",
-      "notes": "Where the Count encounters bandits and meets Haydée.",
+      "notes": "Where the Count encounters bandits and meets Hayd\u00e9e.",
       "id": 118
     },
     {
@@ -111,7 +111,7 @@
     },
     {
       "name": "Morcerf's House",
-      "notes": "Where Fernand/Count de Morcerf lives with Mercédès.",
+      "notes": "Where Fernand/Count de Morcerf lives with Merc\u00e9d\u00e8s.",
       "id": 121
     },
     {
@@ -133,7 +133,7 @@
   "themes": [
     {
       "name": "Revenge and Justice",
-      "notes": "The central conflict—is the Count's revenge justified? Where is the line?",
+      "notes": "The central conflict\u2014is the Count's revenge justified? Where is the line?",
       "id": 125
     },
     {
@@ -163,7 +163,7 @@
     },
     {
       "name": "Love and Sacrifice",
-      "notes": "Love as redemption—Haydée's love offers escape from revenge.",
+      "notes": "Love as redemption\u2014Hayd\u00e9e's love offers escape from revenge.",
       "id": 131
     },
     {
@@ -185,7 +185,7 @@
     },
     {
       "name": "The Will",
-      "notes": "Abbé Faria's map and instructions to the treasure.",
+      "notes": "Abb\u00e9 Faria's map and instructions to the treasure.",
       "id": 135
     },
     {
@@ -200,7 +200,7 @@
     },
     {
       "name": "The Rope and Sack",
-      "notes": "Dantès' escape method from Château d'If.",
+      "notes": "Dant\u00e8s' escape method from Ch\u00e2teau d'If.",
       "id": 138
     }
   ],
@@ -208,7 +208,7 @@
     {
       "id": 1,
       "title": "The Betrothal Feast",
-      "summary": "Edmond Dantès and Mercédès celebrate their wedding. Edmond is arrested as a Bonapartist conspirator and taken to prison.",
+      "summary": "Edmond Dant\u00e8s and Merc\u00e9d\u00e8s celebrate their wedding. Edmond is arrested as a Bonapartist conspirator and taken to prison.",
       "notes": "The inciting incident. Edmond's happiness is shattered by the denunciation letter.",
       "characters": [
         100,
@@ -239,13 +239,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 2,
       "title": "The Prison Ship",
-      "summary": "Edmond is transported to Château d'If. He meets soldiers and begins his prison journey.",
+      "summary": "Edmond is transported to Ch\u00e2teau d'If. He meets soldiers and begins his prison journey.",
       "notes": "Edmond's entry into the fortress prison. His despair begins.",
       "characters": [
         100
@@ -272,12 +272,12 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 3,
-      "title": "Arrival at Château d'If",
+      "title": "Arrival at Ch\u00e2teau d'If",
       "summary": "Edmond is thrown into cell. The governor treats him as a dangerous political prisoner.",
       "notes": "Edmond's first night in prison. Introduction to the fortress's cruelty.",
       "characters": [
@@ -304,8 +304,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 4,
@@ -336,12 +336,12 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 5,
-      "title": "The Abbé's Tunneling Sound",
+      "title": "The Abb\u00e9's Tunneling Sound",
       "summary": "Edmond hears digging from an adjacent cell. He begins to tunnel toward it, finding hope and purpose.",
       "notes": "Hope returns to Edmond. The beginning of his salvation.",
       "characters": [
@@ -368,13 +368,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 6,
-      "title": "Edmond Meets Abbé Faria",
-      "summary": "Edmond breaks through to Faria's cell. The abbé becomes his mentor and friend.",
+      "title": "Edmond Meets Abb\u00e9 Faria",
+      "summary": "Edmond breaks through to Faria's cell. The abb\u00e9 becomes his mentor and friend.",
       "notes": "A turning point. Faria gives Edmond purpose through education and the promise of treasure.",
       "characters": [
         100,
@@ -401,13 +401,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 7,
       "title": "Faria's Lessons and Secrets",
-      "summary": "Abbé Faria teaches Edmond languages, science, and politics. He reveals the location of Ali Pasha's treasure.",
+      "summary": "Abb\u00e9 Faria teaches Edmond languages, science, and politics. He reveals the location of Ali Pasha's treasure.",
       "notes": "Edmond's transformation begins. He becomes educated and ambitious.",
       "characters": [
         100,
@@ -437,13 +437,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 8,
       "title": "Faria's Death",
-      "summary": "Abbé Faria dies. Edmond inherits his knowledge of the treasure and his dreams of freedom.",
+      "summary": "Abb\u00e9 Faria dies. Edmond inherits his knowledge of the treasure and his dreams of freedom.",
       "notes": "Faria's death is Edmond's last connection to his past life. He must now act alone.",
       "characters": [
         100,
@@ -472,8 +472,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 9,
@@ -505,12 +505,12 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 10,
-      "title": "Escape from Château d'If",
+      "title": "Escape from Ch\u00e2teau d'If",
       "summary": "Edmond is thrown into the sea in the sack. He escapes and swims to safety.",
       "notes": "Freedom at last. Edmond is reborn from the sea.",
       "characters": [
@@ -537,8 +537,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 11,
@@ -568,8 +568,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 12,
@@ -602,8 +602,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 13,
@@ -636,8 +636,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 14,
@@ -670,8 +670,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 15,
@@ -707,8 +707,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 16,
@@ -744,8 +744,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 17,
@@ -780,10 +780,10 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [
+      "foreshadows": [
         144
       ],
-      "requires": []
+      "payoffs": []
     },
     {
       "id": 18,
@@ -815,8 +815,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 19,
@@ -849,8 +849,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 20,
@@ -886,14 +886,14 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 21,
       "title": "The Count's First Revenge: Fernand's Exposure",
       "summary": "The Count orchestrates the revelation of Fernand Mondego's war crimes and cowardly past.",
-      "notes": "Fernand's shame and loss of military honor is the first major revenge. Mercédès recognizes Edmond.",
+      "notes": "Fernand's shame and loss of military honor is the first major revenge. Merc\u00e9d\u00e8s recognizes Edmond.",
       "characters": [
         100,
         103,
@@ -920,14 +920,14 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 22,
-      "title": "Mercédès Recognizes Her Lover",
-      "summary": "Mercédès realizes the Count is Edmond Dantès. She keeps his secret and leaves Fernand.",
-      "notes": "Mercédès represents the past. Her recognition haunts the Count.",
+      "title": "Merc\u00e9d\u00e8s Recognizes Her Lover",
+      "summary": "Merc\u00e9d\u00e8s realizes the Count is Edmond Dant\u00e8s. She keeps his secret and leaves Fernand.",
+      "notes": "Merc\u00e9d\u00e8s represents the past. Her recognition haunts the Count.",
       "characters": [
         100,
         101,
@@ -954,8 +954,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": [
+      "foreshadows": [],
+      "payoffs": [
         144
       ]
     },
@@ -990,8 +990,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 24,
@@ -1024,14 +1024,14 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 25,
-      "title": "Héloïse's Poisoning Campaign",
-      "summary": "The Count discovers that Villefort's wife, Héloïse, has been poisoning family members for inheritance.",
-      "notes": "The Count realizes that Villefort's family is destroying itself through Héloïse's actions.",
+      "title": "H\u00e9lo\u00efse's Poisoning Campaign",
+      "summary": "The Count discovers that Villefort's wife, H\u00e9lo\u00efse, has been poisoning family members for inheritance.",
+      "notes": "The Count realizes that Villefort's family is destroying itself through H\u00e9lo\u00efse's actions.",
       "characters": [
         100,
         109,
@@ -1060,15 +1060,15 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [
+      "foreshadows": [
         145
       ],
-      "requires": []
+      "payoffs": []
     },
     {
       "id": 26,
       "title": "Valentine in Danger",
-      "summary": "Héloïse moves toward poisoning Valentine, the innocent, kind daughter who has done nothing wrong.",
+      "summary": "H\u00e9lo\u00efse moves toward poisoning Valentine, the innocent, kind daughter who has done nothing wrong.",
       "notes": "Valentine's innocence becomes the Count's turning point. He must intervene.",
       "characters": [
         109,
@@ -1098,15 +1098,15 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": [
+      "foreshadows": [],
+      "payoffs": [
         145
       ]
     },
     {
       "id": 27,
       "title": "The Count Saves Valentine",
-      "summary": "The Count secretly administers antidotes to Valentine, saving her life from Héloïse's poison.",
+      "summary": "The Count secretly administers antidotes to Valentine, saving her life from H\u00e9lo\u00efse's poison.",
       "notes": "The Count chooses mercy over complete destruction. His humanity reasserts itself.",
       "characters": [
         100,
@@ -1135,8 +1135,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 28,
@@ -1169,8 +1169,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 29,
@@ -1202,8 +1202,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 30,
@@ -1234,14 +1234,14 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 31,
-      "title": "Haydée Reveals Herself",
-      "summary": "Haydée, the slave girl, reveals herself to be the daughter of Ali Pasha. She declares her love for the Count.",
-      "notes": "Haydée offers the Count redemption through love. She is his path to healing.",
+      "title": "Hayd\u00e9e Reveals Herself",
+      "summary": "Hayd\u00e9e, the slave girl, reveals herself to be the daughter of Ali Pasha. She declares her love for the Count.",
+      "notes": "Hayd\u00e9e offers the Count redemption through love. She is his path to healing.",
       "characters": [
         100,
         110
@@ -1267,8 +1267,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 32,
@@ -1299,8 +1299,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 33,
@@ -1332,8 +1332,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 34,
@@ -1364,13 +1364,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 35,
-      "title": "The Ball—Society's Last Judgment",
-      "summary": "At a final grand ball, the Count is revealed as Edmond Dantès. Society reacts with shock and disbelief.",
+      "title": "The Ball\u2014Society's Last Judgment",
+      "summary": "At a final grand ball, the Count is revealed as Edmond Dant\u00e8s. Society reacts with shock and disbelief.",
       "notes": "The Count's revelation of identity is the climax of his revenge plot.",
       "characters": [
         100,
@@ -1404,8 +1404,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 36,
@@ -1438,8 +1438,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 37,
@@ -1471,13 +1471,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 38,
       "title": "The Count's Choice",
-      "summary": "The Count chooses Haydée and love over continued revenge. He accepts that justice has been served.",
+      "summary": "The Count chooses Hayd\u00e9e and love over continued revenge. He accepts that justice has been served.",
       "notes": "The Count's transformation is complete. He moves from vengeance to hope.",
       "characters": [
         100,
@@ -1504,14 +1504,14 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 39,
       "title": "The Final Escape",
-      "summary": "The Count and Haydée sail away from Paris toward a new life together.",
-      "notes": "Edmond Dantès is reborn again—not as a count of vengeance, but as a man capable of love.",
+      "summary": "The Count and Hayd\u00e9e sail away from Paris toward a new life together.",
+      "notes": "Edmond Dant\u00e8s is reborn again\u2014not as a count of vengeance, but as a man capable of love.",
       "characters": [
         100,
         110
@@ -1538,8 +1538,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     }
   ],
   "nextId": 40,
@@ -1609,38 +1609,38 @@
   "revealsLib": [
     {
       "id": 144,
-      "label": "the Count of Monte Cristo is secretly Edmond Dantès"
+      "label": "the Count of Monte Cristo is secretly Edmond Dant\u00e8s"
     },
     {
       "id": 145,
-      "label": "Héloïse is poisoning Valentine, not a mysterious illness"
+      "label": "H\u00e9lo\u00efse is poisoning Valentine, not a mysterious illness"
     }
   ],
   "constraints": [],
   "markers": [
     {
       "id": 146,
-      "label": "1815 — BETRAYAL AND ARREST",
+      "label": "1815 \u2014 BETRAYAL AND ARREST",
       "beforeSceneId": 1
     },
     {
       "id": 147,
-      "label": "1815–1829 — FOURTEEN YEARS IMPRISONED",
+      "label": "1815\u20131829 \u2014 FOURTEEN YEARS IMPRISONED",
       "beforeSceneId": 4
     },
     {
       "id": 148,
-      "label": "1829 — ESCAPE AND THE TREASURE",
+      "label": "1829 \u2014 ESCAPE AND THE TREASURE",
       "beforeSceneId": 9
     },
     {
       "id": 149,
-      "label": "1838 — THE COUNT RETURNS TO PARIS",
+      "label": "1838 \u2014 THE COUNT RETURNS TO PARIS",
       "beforeSceneId": 15
     },
     {
       "id": 150,
-      "label": "1838 — THE REVENGE UNFOLDS",
+      "label": "1838 \u2014 THE REVENGE UNFOLDS",
       "beforeSceneId": 37
     }
   ],

@@ -162,7 +162,7 @@
   var detToggle = $('det-toggle');
   detToggle.addEventListener('change', function(){ toggleDetails(detToggle.checked); });
   $('sec-filter-btn').addEventListener('click', toggleSecFilter);
-  $('srch-inp').addEventListener('input', onSearch);
+  $('srch-inp').addEventListener('input', onSearchInput);
   $('srch-scope').addEventListener('change', onSearch);
   $('srch-clr').addEventListener('click', clearSearch);
   var scaler = $('scaler');

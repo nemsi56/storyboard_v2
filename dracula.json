@@ -10,7 +10,7 @@
     {
       "id": 2,
       "name": "Mina Murray",
-      "notes": "Jonathan's fiancée, then wife. Schoolteacher with a sharp mind — compiles the group's journals into one narrative."
+      "notes": "Jonathan's fianc\u00e9e, then wife. Schoolteacher with a sharp mind \u2014 compiles the group's journals into one narrative."
     },
     {
       "id": 3,
@@ -25,7 +25,7 @@
     {
       "id": 5,
       "name": "Arthur Holmwood",
-      "notes": "Lucy's fiancé, later Lord Godalming. Devoted, and devastated by what he must do to save her soul."
+      "notes": "Lucy's fianc\u00e9, later Lord Godalming. Devoted, and devastated by what he must do to save her soul."
     },
     {
       "id": 6,
@@ -82,7 +82,7 @@
     {
       "id": 16,
       "name": "Carfax Estate",
-      "notes": "The derelict property the Count has bought — and filled with boxes of his native earth."
+      "notes": "The derelict property the Count has bought \u2014 and filled with boxes of his native earth."
     },
     {
       "id": 17,
@@ -99,7 +99,7 @@
     {
       "id": 19,
       "name": "Ancient Evil vs. Modern Science",
-      "notes": "Diaries, typewriters, blood transfusions, telegrams — and none of it enough without old-world faith."
+      "notes": "Diaries, typewriters, blood transfusions, telegrams \u2014 and none of it enough without old-world faith."
     },
     {
       "id": 20,
@@ -109,7 +109,7 @@
     {
       "id": 21,
       "name": "Faith and the Sacred",
-      "notes": "Crucifixes, communion wafers, holy water — belief as a weapon when science fails."
+      "notes": "Crucifixes, communion wafers, holy water \u2014 belief as a weapon when science fails."
     },
     {
       "id": 22,
@@ -136,12 +136,12 @@
     {
       "id": 26,
       "name": "Boxes of Consecrated Earth",
-      "notes": "Fifty boxes of Transylvanian soil, shipped to Carfax — the Count's only safe resting places in England."
+      "notes": "Fifty boxes of Transylvanian soil, shipped to Carfax \u2014 the Count's only safe resting places in England."
     },
     {
       "id": 27,
       "name": "Van Helsing's Bag",
-      "notes": "Garlic, crucifixes, a stake and hammer, communion wafers — old-world tools for a very old evil."
+      "notes": "Garlic, crucifixes, a stake and hammer, communion wafers \u2014 old-world tools for a very old evil."
     },
     {
       "id": 28,
@@ -156,7 +156,7 @@
     {
       "id": 30,
       "name": "The Communion Wafer",
-      "notes": "Used to seal the boxes of earth — and, devastatingly, to mark Mina's own forehead."
+      "notes": "Used to seal the boxes of earth \u2014 and, devastatingly, to mark Mina's own forehead."
     }
   ],
   "scenes": [
@@ -189,8 +189,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 2,
@@ -221,15 +221,15 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [
+      "foreshadows": [
         35
       ],
-      "requires": []
+      "payoffs": []
     },
     {
       "id": 3,
       "title": "Arrival at Castle Dracula",
-      "summary": "The Count receives Jonathan with unsettling grace — cold hands, no servants in sight, and food only for his guest.",
+      "summary": "The Count receives Jonathan with unsettling grace \u2014 cold hands, no servants in sight, and food only for his guest.",
       "notes": "",
       "characters": [
         1,
@@ -255,8 +255,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 4,
@@ -289,8 +289,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": [
+      "foreshadows": [],
+      "payoffs": [
         35
       ]
     },
@@ -325,8 +325,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 6,
@@ -357,13 +357,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 7,
       "title": "Dracula Departs Wearing Jonathan's Clothes",
-      "summary": "Fifty boxes of earth are loaded for shipment. Jonathan watches the Count descend the castle wall like a lizard — dressed, unmistakably, in Jonathan's own suit.",
+      "summary": "Fifty boxes of earth are loaded for shipment. Jonathan watches the Count descend the castle wall like a lizard \u2014 dressed, unmistakably, in Jonathan's own suit.",
       "notes": "",
       "characters": [
         1,
@@ -391,8 +391,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 8,
@@ -425,8 +425,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 9,
@@ -457,8 +457,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 10,
@@ -491,8 +491,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 11,
@@ -523,8 +523,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 12,
@@ -556,8 +556,8 @@
       },
       "durationMin": null,
       "offscreen": true,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 13,
@@ -588,8 +588,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 14,
@@ -621,13 +621,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 15,
       "title": "Dr. Seward Summons Van Helsing",
-      "summary": "Baffled by two small puncture wounds that won't heal, Seward wires his old teacher — a man who believes in things Seward doesn't.",
+      "summary": "Baffled by two small puncture wounds that won't heal, Seward wires his old teacher \u2014 a man who believes in things Seward doesn't.",
       "notes": "",
       "characters": [
         4,
@@ -653,13 +653,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 16,
       "title": "Renfield's Strange Fixation",
-      "summary": "Seward's patient Renfield catalogs flies, then spiders, then birds — each fed to the next, climbing toward something he calls 'the Master.'",
+      "summary": "Seward's patient Renfield catalogs flies, then spiders, then birds \u2014 each fed to the next, climbing toward something he calls 'the Master.'",
       "notes": "",
       "characters": [
         9,
@@ -685,15 +685,15 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [
+      "foreshadows": [
         36
       ],
-      "requires": []
+      "payoffs": []
     },
     {
       "id": 17,
       "title": "The First Blood Transfusion",
-      "summary": "Van Helsing arrives, examines Lucy's wounds in silence, and gives Arthur his own blood to save her — telling him almost nothing of why.",
+      "summary": "Van Helsing arrives, examines Lucy's wounds in silence, and gives Arthur his own blood to save her \u2014 telling him almost nothing of why.",
       "notes": "",
       "characters": [
         3,
@@ -721,8 +721,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 18,
@@ -753,13 +753,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 19,
       "title": "Lucy's Mother Removes the Garlic",
-      "summary": "Not knowing what it protects against, Lucy's mother clears the flowers away for the night air — the one night Van Helsing isn't there to stop her.",
+      "summary": "Not knowing what it protects against, Lucy's mother clears the flowers away for the night air \u2014 the one night Van Helsing isn't there to stop her.",
       "notes": "",
       "characters": [
         3
@@ -784,13 +784,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 20,
       "title": "Lucy Dies",
-      "summary": "Despite three transfusions and every precaution, Lucy slips away in the night — and, for one unsettling moment before the end, seems almost to smile with teeth too sharp.",
+      "summary": "Despite three transfusions and every precaution, Lucy slips away in the night \u2014 and, for one unsettling moment before the end, seems almost to smile with teeth too sharp.",
       "notes": "",
       "characters": [
         3,
@@ -818,8 +818,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 21,
@@ -851,15 +851,15 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": [
+      "foreshadows": [],
+      "payoffs": [
         36
       ]
     },
     {
       "id": 22,
       "title": "Jonathan and Mina Return, Married",
-      "summary": "Recovered at last, Jonathan marries Mina in Budapest, and the two return to England together — his journal still unread by anyone but him.",
+      "summary": "Recovered at last, Jonathan marries Mina in Budapest, and the two return to England together \u2014 his journal still unread by anyone but him.",
       "notes": "",
       "characters": [
         1,
@@ -887,8 +887,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 23,
@@ -922,13 +922,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 24,
       "title": "Mina Compiles the Documents",
-      "summary": "Mina types every diary and letter into one continuous, dated account — and is the first to notice how the pieces actually fit together.",
+      "summary": "Mina types every diary and letter into one continuous, dated account \u2014 and is the first to notice how the pieces actually fit together.",
       "notes": "",
       "characters": [
         2,
@@ -958,8 +958,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 25,
@@ -989,13 +989,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 26,
       "title": "Dracula Attacks Mina",
-      "summary": "The men break into the Harkers' room to find the Count forcing Mina to drink his own blood — and know, watching, exactly what it means.",
+      "summary": "The men break into the Harkers' room to find the Count forcing Mina to drink his own blood \u2014 and know, watching, exactly what it means.",
       "notes": "",
       "characters": [
         2,
@@ -1027,8 +1027,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 27,
@@ -1064,8 +1064,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 28,
@@ -1100,8 +1100,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 29,
@@ -1136,13 +1136,13 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 30,
       "title": "Dracula's Destruction",
-      "summary": "A knife through the heart and a throat cut in the same instant turn the Count to dust — but not before Quincey Morris falls defending them.",
+      "summary": "A knife through the heart and a throat cut in the same instant turn the Count to dust \u2014 but not before Quincey Morris falls defending them.",
       "notes": "",
       "characters": [
         1,
@@ -1173,8 +1173,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     }
   ],
   "nextId": 31,
@@ -1245,27 +1245,27 @@
   "markers": [
     {
       "id": 37,
-      "label": "MAY 1893 — INTO TRANSYLVANIA",
+      "label": "MAY 1893 \u2014 INTO TRANSYLVANIA",
       "beforeSceneId": 1
     },
     {
       "id": 38,
-      "label": "AUGUST 1893 — THE DEMETER ARRIVES",
+      "label": "AUGUST 1893 \u2014 THE DEMETER ARRIVES",
       "beforeSceneId": 12
     },
     {
       "id": 39,
-      "label": "SEPTEMBER 1893 — LUCY'S DECLINE",
+      "label": "SEPTEMBER 1893 \u2014 LUCY'S DECLINE",
       "beforeSceneId": 14
     },
     {
       "id": 40,
-      "label": "OCTOBER 1893 — THE FELLOWSHIP FORMS",
+      "label": "OCTOBER 1893 \u2014 THE FELLOWSHIP FORMS",
       "beforeSceneId": 21
     },
     {
       "id": 41,
-      "label": "NOVEMBER 1893 — THE FINAL PURSUIT",
+      "label": "NOVEMBER 1893 \u2014 THE FINAL PURSUIT",
       "beforeSceneId": 27
     }
   ],

@@ -112,8 +112,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 2,
@@ -139,8 +139,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 3,
@@ -169,8 +169,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": [
+      "foreshadows": [],
+      "payoffs": [
         20
       ]
     },
@@ -201,8 +201,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 5,
@@ -230,8 +230,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 6,
@@ -259,8 +259,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 7,
@@ -287,8 +287,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 8,
@@ -315,8 +315,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 9,
@@ -344,8 +344,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 10,
@@ -372,8 +372,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 11,
@@ -402,10 +402,10 @@
       },
       "durationMin": 240,
       "offscreen": false,
-      "reveals": [
+      "foreshadows": [
         20
       ],
-      "requires": []
+      "payoffs": []
     },
     {
       "id": 12,
@@ -431,8 +431,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 13,
@@ -459,8 +459,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 14,
@@ -486,8 +486,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 15,
@@ -514,8 +514,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 16,
@@ -542,10 +542,10 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [
+      "foreshadows": [
         21
       ],
-      "requires": []
+      "payoffs": []
     },
     {
       "id": 17,
@@ -574,8 +574,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 18,
@@ -602,8 +602,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 19,
@@ -629,8 +629,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 20,
@@ -657,10 +657,10 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [
+      "foreshadows": [
         22
       ],
-      "requires": []
+      "payoffs": []
     },
     {
       "id": 21,
@@ -688,8 +688,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 22,
@@ -716,8 +716,8 @@
       },
       "durationMin": 480,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 23,
@@ -745,8 +745,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": [
+      "foreshadows": [],
+      "payoffs": [
         22
       ]
     },
@@ -775,8 +775,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 25,
@@ -798,8 +798,8 @@
       "anchor": null,
       "durationMin": null,
       "offscreen": true,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 26,
@@ -828,8 +828,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     },
     {
       "id": 27,
@@ -858,8 +858,8 @@
       },
       "durationMin": null,
       "offscreen": false,
-      "reveals": [],
-      "requires": []
+      "foreshadows": [],
+      "payoffs": []
     }
   ],
   "nextId": 28,

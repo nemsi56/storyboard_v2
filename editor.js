@@ -2,6 +2,7 @@
 
 // ── SEARCH ────────────────────────────────────────────────────────────────────
 let searchQ = '', searchScope = 'both';
+let _searchDebounceTimer = null;
 
 function onSearch() {
   searchQ    = document.getElementById('srch-inp').value.trim().toLowerCase();
@@ -10,8 +11,19 @@ function onSearch() {
   document.getElementById('srch-wrap').classList.toggle('srch-active', !!searchQ);
   renderBoard();
 }
+// Debounced entry point for the search box's own 'input' event (fires once
+// per keystroke). renderBoard() is a full rebuild — innerHTML wipe plus a
+// fresh renderCard() (new DOM nodes + listeners) for every visible scene —
+// which is wasteful to redo on every keystroke on a large project. The scope
+// <select>'s 'change' event (one per selection, not a hot path) still calls
+// onSearch() directly below for instant feedback.
+function onSearchInput() {
+  clearTimeout(_searchDebounceTimer);
+  _searchDebounceTimer = setTimeout(onSearch, 150);
+}
 
 function clearSearch() {
+  clearTimeout(_searchDebounceTimer); // a keystroke's debounced onSearch() must not re-fire after this and stomp the clear
   document.getElementById('srch-inp').value = '';
   searchQ = '';
   document.getElementById('srch-clr').style.display = 'none';
@@ -457,8 +469,8 @@ function confirmLibDel() {
   removeItem(s, id);
 }
 // Delete a reveal — mirrors removePovCustomId() above field-for-field,
-// scoped to S.revealsLib/scene.reveals+requires instead of S.povCustom/
-// scene.povs. Removing it from a scene's reveals/requires here is exactly
+// scoped to S.revealsLib/scene.foreshadows+payoffs instead of S.povCustom/
+// scene.povs. Removing it from a scene's foreshadows/payoffs here is exactly
 // the same cleanup confirmSaveEdit()'s post-save GC does for an
 // unchecked-then-orphaned reveal — just triggered by deletion instead.
 function removeRevealItem(id) {
@@ -466,8 +478,8 @@ function removeRevealItem(id) {
   pushHistory('Remove reveal "' + entry.label + '"');
   S.revealsLib = S.revealsLib.filter(r => r.id !== id);
   S.scenes.forEach(sc => {
-    sc.reveals  = (sc.reveals  || []).filter(v => v !== id);
-    sc.requires = (sc.requires || []).filter(v => v !== id);
+    sc.foreshadows = (sc.foreshadows || []).filter(v => v !== id);
+    sc.payoffs     = (sc.payoffs     || []).filter(v => v !== id);
   });
   REVEAL_CK_BOXES.forEach(boxId => { if (document.getElementById(boxId)) renderRevealCk(boxId, ckBoxChecked(boxId).filter(v => v !== id)); });
   recordDataEdit();
@@ -539,14 +551,14 @@ function addScene() {
   const anchor = readAnchorFromForm('sc');
   const durationMin = parseWordCount(document.getElementById('sc-duration').value);
   const offscreen = document.getElementById('sc-offscreen').checked;
-  const reveals = ckBoxChecked('sc-reveals');
-  const requires = ckBoxChecked('sc-requires');
+  const foreshadows = ckBoxChecked('sc-reveals');
+  const payoffs = ckBoxChecked('sc-requires');
   pushHistory('Add scene "' + truncStr(title, 22) + '"');
   trackSceneAdded();
   const newId = S.nextId++;
   const newScene = {
     id: newId, title, summary, notes, ...row, sectionId, wordCount, povs,
-    storylineId, alsoStorylineIds, anchor, durationMin, offscreen, reveals, requires,
+    storylineId, alsoStorylineIds, anchor, durationMin, offscreen, foreshadows, payoffs,
   };
   S.chronOrder.push(newId);
   if (pendingInsert !== null) {
@@ -704,8 +716,8 @@ function openEditMode(id) {
   document.getElementById('ed-anchor-time').value = (sc.anchor && sc.anchor.time) ? sc.anchor.time : '';
   document.getElementById('ed-duration').value = sc.durationMin || '';
   document.getElementById('ed-offscreen').checked = !!sc.offscreen;
-  renderRevealCk('ed-reveals', sc.reveals || []);
-  renderRevealCk('ed-requires', sc.requires || []);
+  renderRevealCk('ed-reveals', sc.foreshadows || []);
+  renderRevealCk('ed-requires', sc.payoffs || []);
   document.getElementById('tab-edit').disabled = false;
   document.getElementById('tab-edit').classList.remove('dim');
   switchTab('edit');
@@ -747,12 +759,12 @@ function isEditFormDirty() {
   if (JSON.stringify(readAnchorFromForm()) !== JSON.stringify(sc.anchor || null)) return true;
   if (parseWordCount(document.getElementById('ed-duration').value) !== (sc.durationMin || null)) return true;
   if (document.getElementById('ed-offscreen').checked !== !!sc.offscreen) return true;
-  const checkedReveals  = ckBoxChecked('ed-reveals').sort(numSort);
-  const originalReveals = [...(sc.reveals || [])].sort(numSort);
-  if (JSON.stringify(checkedReveals) !== JSON.stringify(originalReveals)) return true;
-  const checkedRequires  = ckBoxChecked('ed-requires').sort(numSort);
-  const originalRequires = [...(sc.requires || [])].sort(numSort);
-  if (JSON.stringify(checkedRequires) !== JSON.stringify(originalRequires)) return true;
+  const checkedForeshadows  = ckBoxChecked('ed-reveals').sort(numSort);
+  const originalForeshadows = [...(sc.foreshadows || [])].sort(numSort);
+  if (JSON.stringify(checkedForeshadows) !== JSON.stringify(originalForeshadows)) return true;
+  const checkedPayoffs  = ckBoxChecked('ed-requires').sort(numSort);
+  const originalPayoffs = [...(sc.payoffs || [])].sort(numSort);
+  if (JSON.stringify(checkedPayoffs) !== JSON.stringify(originalPayoffs)) return true;
   return false;
 }
 // ── DISCARD CONFIRMATION (unsaved New/Edit scene) ─────────────────────────────
@@ -836,12 +848,12 @@ function confirmSaveEdit() {
   sc.anchor = readAnchorFromForm();
   sc.durationMin = parseWordCount(document.getElementById('ed-duration').value);
   sc.offscreen = document.getElementById('ed-offscreen').checked;
-  sc.reveals = ckBoxChecked('ed-reveals');
-  sc.requires = ckBoxChecked('ed-requires');
+  sc.foreshadows = ckBoxChecked('ed-reveals');
+  sc.payoffs = ckBoxChecked('ed-requires');
   // A revealsLib entry referenced by no scene in either list is garbage-
   // collected on save (schema v3 §7) — keeps the library from accumulating
   // orphans left by minting a reveal and then never tagging/untagging it.
-  const usedRevealIds = new Set(S.scenes.flatMap(s => [...(s.reveals || []), ...(s.requires || [])]));
+  const usedRevealIds = new Set(S.scenes.flatMap(s => [...(s.foreshadows || []), ...(s.payoffs || [])]));
   S.revealsLib = S.revealsLib.filter(r => usedRevealIds.has(r.id));
   // If section changed, move scene to end of new section so numbering stays sequential
   if (S.sections.length && sectionId !== oldSecId) {
@@ -967,13 +979,11 @@ function renderAlsoStorylineCk(primaryId, checked=[], prefix='ed') {
 // regardless of which box it was opened from, so minting from any of them
 // re-renders all four to keep them in sync.
 const REVEAL_CK_BOXES = ['ed-reveals', 'ed-requires', 'sc-reveals', 'sc-requires'];
-// Display labels are the OPPOSITE of these box-id suffixes: the *-requires
-// box (backed by scene.requires — "this scene assumes the reader already
-// knows X") is labeled "This scene reveals" (the payoff/disclosure moment),
-// and the *-reveals box (backed by scene.reveals — "this scene discloses X
-// to the reader") is labeled "Foreshadow" (the earlier setup). Deliberate:
-// the ids/data fields and the conflict engine are unchanged, only the
-// display strings are swapped — see editor.html's matching swapped <label>s.
+// The box-id suffixes here are legacy DOM ids, not data fields — the *-reveals
+// box (labeled "Foreshadow" in the UI) backs scene.foreshadows, and the
+// *-requires box (labeled "This scene reveals") backs scene.payoffs. Only the
+// element ids are unrenamed; the data fields and this function's `kind`
+// return value both match their UI labels.
 function revealBoxKind(boxId) { return boxId.endsWith('-requires') ? 'reveal' : 'foreshadow'; }
 function renderRevealCk(boxId, checked=[]) {
   const wrap = document.getElementById(boxId + '-wrap');
@@ -1560,11 +1570,18 @@ function orderedUsedPovEntities() {
   const used = usedPovEntities();
   const usedIds = used.map(e => e.id);
   const newOnes = usedIds.filter(id => !S.povOrder.includes(id));
-  if (newOnes.length) {
-    S.povOrder = [...S.povOrder, ...newOnes];
-    recordDataEdit();
-    saveState();
-  }
+  // In-memory repair only — this runs as a side effect of rendering (called
+  // from renderPovLibSec, itself called from many places), not a user action,
+  // so it must not call recordDataEdit()/saveState() here: doing so used to
+  // mark a project "edited" and bump its revision the instant it was merely
+  // opened and rendered, which both falsely dirtied the backup-status nag and
+  // (via ensureSampleProjects()'s revision-0 check) permanently excluded any
+  // sample the user had only looked at from future SAMPLES_VERSION refreshes.
+  // S.povOrder still gets appended in memory so ordering is correct this
+  // session; it's persisted for real on whatever the next genuine edit is,
+  // the same lazy-repair pattern loadState() already uses for other
+  // invariants (chronOrder, stale POV ids, etc).
+  if (newOnes.length) S.povOrder = [...S.povOrder, ...newOnes];
   const usedSet = new Set(usedIds);
   const byId = new Map(used.map(e => [e.id, e]));
   return S.povOrder.filter(id => usedSet.has(id)).map(id => byId.get(id));
@@ -2368,8 +2385,14 @@ document.addEventListener('keydown', e => {
     // library/section-list/chron-strip drag is in progress — the app's undo
     // rebuilds S.scenes and re-renders out from under an active drag, and the
     // eventual mouseup would then commit a reorder against post-undo state and
-    // clobber the redo stack.
-    if (!inInput && !drag.on && !ld.on && !sld.on && !(typeof tlLaneDrag !== 'undefined' && tlLaneDrag.on) && !(typeof isTlDragActive === 'function' && isTlDragActive())) {
+    // clobber the redo stack. Also blocked while any modal is open: the
+    // Library/POV Edit modal (openLibEditModal/openPovEditModal) captures an
+    // array index at open time and writes back to S[sec][idx] on Save — an
+    // undo firing while it's open (e.g. focus has moved to a modal button, so
+    // inInput is false) can reorder/shrink that array underneath it, so Save
+    // then silently overwrites the wrong entity. Matches the Alt-shortcut
+    // handler below, which already excludes open modals for the same reason.
+    if (!inInput && !anyModalOpen() && !drag.on && !ld.on && !sld.on && !(typeof tlLaneDrag !== 'undefined' && tlLaneDrag.on) && !(typeof isTlDragActive === 'function' && isTlDragActive())) {
       if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (typeof undo === 'function') undo(); return; }
       if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); if (typeof redo === 'function') redo(); return; }
     }

@@ -3928,3 +3928,168 @@ restarting the dev server on a fresh port, never a real app bug.
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v6 branch — Full-app audit (efficiency, bugs, security/data) and fixes
+
+Requested directly: an audit of the whole app for code efficiency and solidity, any
+bugs/issues, and security/data integrity — plus a specific question about whether the
+long-standing `scene.reveals`/`scene.requires` field-vs-UI-label swap (documented but never
+fixed, see the `thruLine_v4` "Documenting the reveals/requires field swap" entry above) was
+worth fixing now, given it was originally rejected as a breaking change.
+
+Delegated across three parallel sub-audits to keep each one focused — `timeline.js` (Loom/
+Path rendering, drag, conflicts-cache wiring); `editor.js`/`editor-init.js`/`ui.js` (Cards/
+Flow, the New/Edit Scene forms, entity libraries, modals); and `charts.js`/`reports.js`/
+`conflicts.js`/the small init/misc files (Snake/Circle charts, printable reports, the
+conflict engine, tracking/backup/build) — each explicitly told to verify every finding
+against the actual code (callers/callees) before reporting, not speculate. Every finding
+that made it into the final report was independently re-verified (grep for callers, read the
+surrounding code, or reproduce live in the browser) before being trusted or acted on; several
+agent-reported claims that didn't survive that check were dropped rather than passed through.
+
+### Security/data verdict: strong, no vulnerabilities found
+CSP intact on all five pages (`script-src 'self'`, `object-src 'none'`, `base-uri 'self'`,
+PayPal `form-action`/`img-src` scoped only to the two pages with donate forms). Every
+user-data interpolation was checked for XSS: `projects.js`'s project-grid renderer escapes
+via `esc()`, `reports.js`'s `document.write()`-built report windows route everything through
+`rptEsc()` (including attribute-quote coverage), and `charts.js`/`timeline.js`/`conflicts.js`
+use `textContent`/`createElement` throughout — zero `innerHTML` sinks fed by untrusted
+(imported-JSON) data anywhere in the app. The v3 import validator (`validateV3Import` in
+`projects.js`) is genuinely rigorous: cross-collection id uniqueness, referential integrity on
+every id array, real-calendar-date anchor validation, counter auto-repair rather than
+rejection. No vulnerabilities found.
+
+### The reveals/requires rename — done
+Checked `main` and `release` directly: both are still on schema v2, with zero `reveals`/
+`requires` references anywhere — schema v3 (all of the Timeline work) has never shipped
+publicly. That fact reverses the earlier "breaking change" rejection, which assumed shipped
+v3 data that turns out not to exist; this branch's own local/exported test data was the only
+real v3 data anywhere, making this the last point where the rename is nearly free. Renamed
+`scene.reveals` → `scene.foreshadows` and `scene.requires` → `scene.payoffs` (matching their
+already-correct UI labels, "Foreshadow" and "This scene reveals") across `state.js`,
+`editor.js`, `conflicts.js`, `projects.js`, and all four sample project JSON files
+(`dracula.json`, `frankenstein.json`, `count-of-monte-cristo.json`, `longfellow-job.json`).
+`loadState()` gained a `sc.foreshadows ?? sc.reveals` / `sc.payoffs ?? sc.requires` fallback
+so any pre-rename local project or exported file still loads correctly and self-heals to the
+new field names on its next save. DOM element ids (`sc-reveals`, `ed-requires`, etc.) were
+deliberately left unrenamed — internal wiring only, never serialized or user-visible, and
+`revealBoxKind()`'s own comment now documents the id-to-field mapping directly rather than
+requiring the old field-vs-label explanation. The three stale swap-explanation comments (in
+`state.js`, `conflicts.js`, `editor.js`'s `REVEAL_CK_BOXES`) were removed as part of the same
+change, now that there's nothing backwards left to explain.
+
+### Bugs found and fixed
+- **Phantom data-edit on project open.** `orderedUsedPovEntities()` (editor.js) — called from
+  `renderPovLibSec()`, itself called from many render paths including plain project-open —
+  was calling `recordDataEdit()`/`saveState()` as a side effect of its own POV-order
+  self-repair. Reproduced live: opening a freshly seeded sample bumped `revision` 0→1 and
+  showed "1 change since backup" with zero user interaction. Worse than just a UI lie: since
+  all four sample JSONs ship `povOrder: []` with POVs already in use, *every* sample triggered
+  this on first open, and `ensureSampleProjects()` treats `revision !== 0` as "user edited
+  this, never auto-refresh it again" — so merely opening a sample permanently excluded it from
+  future `SAMPLES_VERSION` refreshes. Fixed by making the repair in-memory only (still appends
+  to `S.povOrder` for correct ordering this session, just doesn't persist/dirty until whatever
+  the next *real* edit is) — the same lazy-repair pattern `loadState()` already uses for its
+  other invariants (`chronOrder`, stale POV ids). Verified: reseeded from scratch, opened
+  Dracula, confirmed "Backed up Just now" and `revision: 0` instead of the dirty state.
+- **Ctrl+Z could corrupt the wrong Library/POV entity.** The undo/redo keyboard guard
+  (editor.js) excluded active drags and focused text inputs but not open modals — unlike the
+  Alt-shortcut handler right below it, which already checks `anyModalOpen()` for the same
+  reason. `openLibEditModal`/`openPovEditModal` capture an array index at open time and
+  `saveLibEdit`/`savePovEdit` write back to `S[sec][idx]`/`S.povCustom[idx]` on Save, never
+  re-resolving by id. Sequence: reorder a library (pushes an undo entry) → open Edit on some
+  entry (captures the index) → focus lands on a modal button, not an input → Ctrl+Z fires,
+  restoring the pre-reorder array under the still-open modal → Save writes the typed text onto
+  whatever entity now sits at that stale index. Fixed by adding the same `anyModalOpen()`
+  check to the undo/redo guard. Verified with real keyboard events (not synthetic
+  `dispatchEvent`, which this app's `document`-level keydown listener doesn't reliably receive
+  in headless testing): reordered characters, opened Edit on one, focused Cancel, sent a real
+  Ctrl+Z — history and array order both stayed untouched with the modal still open; closing
+  the modal and repeating confirmed undo still fires normally otherwise.
+- **Window/panel resize during a Timeline drag could destroy the drag's ghost.**
+  `scheduleTlRerender`'s `ResizeObserver` callback (timeline.js) calls the same
+  `renderTimeline()` that tears down and rebuilds `#tl-track`/`#tl-ms-row` — including a live
+  drag's ghost/insert-line elements — that `scheduleConflictsRecompute()` (conflicts.js)
+  already guards against via `isTlDragActive()`, with a comment explaining exactly this
+  hazard. The resize path was missing the identical guard. Fixed by adding it. Verified via a
+  marker-element technique (a `.tl-scene`-classed div appended to `#tl-track`, since
+  `renderChronStrip()` only removes elements matching that selector, not a blanket
+  `innerHTML=''`): with `_tlDrag.active` forced true, a forced layout change left the marker
+  in place; with it false, the marker was correctly wiped on the next render — confirming both
+  the guard and the test methodology. The actual browser `ResizeObserver` didn't fire
+  reliably from this environment's programmatic viewport/class changes (a test-harness
+  limitation, not an app bug), so the guard's mechanical correctness was confirmed via direct
+  code parity with the already-proven `conflicts.js` pattern plus the marker technique above.
+- **`pruneDismissed()` doubled the cost of every save once anything was dismissed.**
+  `saveState()` calls `pruneDismissed()` synchronously before every write, and `pruneDismissed`
+  itself ran a full fresh `computeConflicts()` pass whenever `S.dismissed` was non-empty — on
+  top of the debounced recompute `saveState()` already schedules via
+  `scheduleConflictsRecompute()`. Since "mark intentional" (dismissing a conflict) is an
+  encouraged, normal workflow, any user who used it paid for two full conflict computations on
+  every subsequent edit, one of them synchronous/blocking. Fixed by pruning against the
+  existing cached `_tlActiveConflicts` list instead of recomputing — trade-off is a one-save
+  lag before a just-fixed dismissed conflict drops out of the list (harmless: a stale
+  fingerprint matching nothing just sits inert). Verified live: dismissed a real conflict in
+  Frankenstein's sample, fixed the underlying scene data, confirmed the fingerprint survived
+  the save that fixed it (as expected) and was gone after the *next* save once the 150ms
+  debounce had refreshed the cache.
+- **Search rebuilt the entire board on every keystroke.** `onSearch()` (editor.js), wired to
+  the search box's `input` event, called `renderBoard()` — a full `innerHTML` wipe plus fresh
+  `renderCard()` for every visible scene — per keystroke, undebounced. Split into `onSearch()`
+  (unchanged) and a new debounced `onSearchInput()` (150ms) for the `input` listener; the
+  scope `<select>`'s `change` listener still calls `onSearch()` directly since it's not a hot
+  path. `clearSearch()` now also cancels any pending debounce so a stale keystroke can't
+  re-fire and stomp the clear. Verified live by instrumenting `renderBoard` as a call counter:
+  6 rapid keystrokes produced exactly 1 call (would have been 6 before the fix), and clicking
+  clear produced no extra call after waiting past the debounce window.
+- **Bilocation check missed an instant scene at the exact start of another scene's window.**
+  `intervalsOverlap()`'s (conflicts.js) plain half-open `[start, end)` test always evaluates a
+  zero-duration scene's own `start < end` as false, so an instant sitting exactly at the START
+  of another scene's duration window — a real bilocation — went unflagged. Rewrote to treat a
+  degenerate (start===end) interval as a point that must fall within `[otherStart, otherEnd)`
+  rather than as a second proper interval; both-instants-same-time (already handled) and
+  two-proper-intervals (unchanged) cases preserved. Verified live with constructed scene data
+  (shared character, disjoint locations, one instant scene anchored at the exact start
+  timestamp of another scene's hour-long window): the conflict now fires.
+- **v3 import didn't type-check `summary`/`notes`.** `wordCount` self-heals via
+  `normalizeWordCount()` regardless of what garbage is imported, but `summary`/`notes` have no
+  such normalization anywhere downstream — a non-string value would reach
+  `sceneMatchesSearch()`'s `.toLowerCase()` call as-is and throw. Added a type check to
+  `validateV3Import()` rejecting non-string `summary`/`notes` up front, matching how every
+  other scene field is already validated.
+- **`duplicateProject()` and the import dialog's deferred callbacks had no storage-failure
+  guard.** Every other project-creation path (`createAndOpenProject`, and now
+  `duplicateProject`) writes the data blob first inside a try/catch and bails before touching
+  the project index on failure — `duplicateProject()` didn't, and neither did the "Update
+  Local Copy"/"Keep Both" import-dialog callbacks (`finishAsNew`/`replaceExisting`), which run
+  as button `onClick` handlers *after* the reader's own try/catch has already returned, so a
+  quota/storage failure there was previously uncaught and silently swallowed. Added matching
+  try/catch + alert to all three, consistent with the existing pattern.
+
+### Efficiency fixes
+The reveal-order conflict check (conflicts.js) rescanned all of `readerOrder` per `payoffs`
+reference (O(N×R)) to find that item's foreshadowers; replaced with one upfront pass building
+a `reveal id → its foreshadowers, in reader order` map, looked up directly per payoff
+reference instead. Verified identical conflict output before/after on real sample data (the
+Frankenstein sample's genuine reveal-order conflict still fires, same fingerprint/message).
+Four confirmed-dead code paths removed after a repo-wide grep confirmed zero callers each:
+`chronTrueScaleGapDivider()`/`fmtGap()` (timeline.js — an apparently unshipped "time-skip
+divider" feature for the True-scale axis), `toggleFlagMode()` (conflicts.js — superseded by
+`tlToggleFlagFromPanel`), and an unused `scenesByStoryline` map rebuilt from scratch (O(n)
+`.find()` inside an O(n) loop) on every single Timeline render with its result never read.
+
+### Verification
+Every fix verified live in the browser via a local preview server, re-seeded from a cleared
+`localStorage` between rounds — Cards, Loom, Path, Snake, Circle, Duplicate, and Import all
+exercised with a clean console throughout. Same stale-browser-cache issue as the prior
+session's note (this environment's dev-server setup serves stale JS from Chrome's HTTP cache
+after edits with no explicit cache-control headers) recurred and was worked around the same
+way, by restarting the preview on a fresh port — not a real app bug, but worth remembering for
+future sessions testing this app. The rename was spot-checked end-to-end: opened a sample with
+real foreshadow/payoff data, confirmed the Edit Scene form's "Foreshadow"/"This scene reveals"
+checkboxes show the correct pre-checked state, and confirmed the conflict engine still
+correctly flags a genuine reveal-order violation (both organically, in Frankenstein's real
+sample data, and via a constructed test case) using the renamed fields end to end.
+
+### Not yet done
+Not merged anywhere.

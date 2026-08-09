@@ -132,10 +132,19 @@ function computeConflicts() {
     const durMs = (s.durationMin || 0) * 60000; // no duration -> instant
     return { start: ts, end: ts + durMs };
   }
+  // Both intervals are half-open [start, end) EXCEPT an instant scene
+  // (durationMin unset, so start === end): the plain half-open test always
+  // evaluates a zero-length interval's own "iv.start < iv.end" as false, so
+  // an instant sitting exactly at the START of the other scene's window (the
+  // physically-real case of "arrives right as the other scene begins") was
+  // silently missed — treated below as a point that must fall within
+  // [otherStart, otherEnd) rather than as a second proper interval.
   function intervalsOverlap(iv1, iv2) {
-    if (iv1.start < iv2.end && iv2.start < iv1.end) return true;
-    if (iv1.start === iv1.end && iv2.start === iv2.end && iv1.start === iv2.start) return true;
-    return false;
+    const p1 = iv1.start === iv1.end, p2 = iv2.start === iv2.end;
+    if (p1 && p2) return iv1.start === iv2.start;
+    if (p1) return iv1.start >= iv2.start && iv1.start < iv2.end;
+    if (p2) return iv2.start >= iv1.start && iv2.start < iv1.end;
+    return iv1.start < iv2.end && iv2.start < iv1.end;
   }
   const characterById = new Map(S.characters.map(c => [c.id, c]));
   const locationById = new Map(S.locations.map(l => [l.id, l]));
@@ -170,12 +179,19 @@ function computeConflicts() {
   // an offscreen scene neither contributes a reveal nor triggers a requires
   // check, matching §9's "excluded from reader-knowledge checks" in both
   // directions) ────────────────────────────────────────────────────────────
-  // Read the code below literally, not by field name: a scene's .requires is
-  // the PAYOFF (the "this scene reveals" moment in the UI) and .reveals is
-  // the FORESHADOW (the earlier hint) — opposite of what the names suggest.
-  // See state.js's loadState() for the full explanation.
   const revealById = new Map(S.revealsLib.map(r => [r.id, r]));
   const readerOrder = manuscriptOrder().filter(s => !s.offscreen);
+  // One pass building rvId -> its foreshadowers (in reader order), instead of
+  // rescanning all of readerOrder per payoff reference below. This runs on
+  // every edit via computeConflicts(); the old per-payoff O(N) rescan
+  // compounded on any project with many reveal references.
+  const revealersByRvId = new Map();
+  readerOrder.forEach((s2, idx2) => {
+    (s2.foreshadows || []).forEach(rvId => {
+      if (!revealersByRvId.has(rvId)) revealersByRvId.set(rvId, []);
+      revealersByRvId.get(rvId).push({ s2, idx2 });
+    });
+  });
   // Not a single "seen at least one foreshadow of this item yet" flag — that
   // broke down the moment an item was foreshadowed on more than one scene
   // (e.g. several hints building toward one payoff): the flag latched true at
@@ -187,9 +203,8 @@ function computeConflicts() {
   // item and flag it if ANY of them still sits at or after the payoff —
   // reported against the nearest (first) such still-pending one.
   readerOrder.forEach((s, sIdx) => {
-    (s.requires || []).forEach(rvId => {
-      const revealers = [];
-      readerOrder.forEach((s2, idx2) => { if ((s2.reveals || []).includes(rvId)) revealers.push({ s2, idx2 }); });
+    (s.payoffs || []).forEach(rvId => {
+      const revealers = revealersByRvId.get(rvId) || [];
       const label = (revealById.get(rvId) || {}).label || rvId;
       if (!revealers.length) {
         push({
@@ -271,9 +286,20 @@ function sceneHasWarning(sceneId) {
 }
 // Stale dismissed fingerprints (no longer produced) are pruned on save.
 function pruneDismissed() {
-  if (!S.dismissed.length) return; // nothing to prune — skip the full O(n²) recompute saveState would otherwise force on every save
-  const active = computeConflicts().map(c => c.fingerprint);
-  S.dismissed = S.dismissed.filter(fp => active.includes(fp));
+  if (!S.dismissed.length) return; // nothing to prune — skip the recompute entirely
+  // Prune against the cached conflict list rather than a fresh
+  // computeConflicts() pass. This runs synchronously inside saveState() on
+  // every single save, and saveState() already schedules its own debounced
+  // recompute (scheduleConflictsRecompute) — recomputing again here would
+  // double the cost of every save once anything's dismissed. Trade-off: a
+  // dismissed conflict fixed by the very edit that's now saving won't drop
+  // out of S.dismissed until the next save, once the debounced recompute has
+  // caught the cache up. Harmless lag, not a correctness issue — a stale
+  // fingerprint that matches no real conflict just sits inert in the list
+  // (getActiveConflicts()/getDismissedConflicts() only ever look up
+  // fingerprints that are still in _tlActiveConflicts to begin with).
+  const activeFingerprints = new Set(_tlActiveConflicts.map(c => c.fingerprint));
+  S.dismissed = S.dismissed.filter(fp => activeFingerprints.has(fp));
 }
 
 // ── FLAG MODE (§8) ─────────────────────────────────────────────────────────
@@ -299,10 +325,6 @@ function clearFlagMode() {
   document.body.classList.remove('flagging');
   document.querySelectorAll('.tl-flag').forEach(el => el.classList.remove('tl-flag'));
   if (typeof redrawWires === 'function') redrawWires();
-}
-function toggleFlagMode(fingerprint) {
-  if (_tlFlaggedFingerprint === fingerprint) clearFlagMode();
-  else setFlagMode(fingerprint);
 }
 // Entry point for the Conflicts panel specifically (row click / "show
 // scenes") — card selection and "show scenes" flag mode used to be two
