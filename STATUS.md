@@ -3816,3 +3816,115 @@ List's styling. Clean console throughout.
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v5 branch — Help-mode Timeline coverage, Tutorial correctness pass, shortcut cleanup, landing page merge
+
+Four smaller rounds: filling a real gap in the `?` help-mode overlay (Timeline had zero
+coverage), a multi-round Tutorial accuracy/wording pass driven entirely by direct user
+corrections, removing keyboard-shortcut references that don't reliably work, and merging two
+landing-page feature blocks into one.
+
+**Touched files:** `ui.js` (`HELP_ZONES`), `tutorial.html` (many small text fixes throughout),
+`editor.html` (menu shortcut labels removed), `index.html` (Library/Sections features merged
+and renumbered).
+
+### Help mode: Timeline had no coverage at all
+`HELP_ZONES` (the `?`-button hover-tooltip system) covered every Cards/Flow control but not a
+single Timeline element — Loom and Path were completely undocumented in help mode. Added nine
+new zones (`#tl-axis-switch`, `#tl-braid-mode-switch`, `#tl-thread-wrap`, `#tl-zoom-ctl`,
+`#tl-lane-labels`, `#tl-chron-scroll-wrap`, `#tl-ms-scroll`, `#tl-braid-scroll`,
+`.tl-panel-tabs`) and fixed two stale ones: `#view-toggle`'s tip still said "Cards / Snake /
+Circle" with no mention of Timeline at all, and `#chart-legend`'s tip didn't know about the
+new Flow-view highlight hint (previous round, this same branch). Verified per-zone visibility
+is automatic and needed no new show/hide logic — `openHelp()` already skips any zone whose
+element measures near-zero size, which is exactly how Timeline already hides whichever of
+Ordinal/True-Scale vs. Chronology/Narrative isn't active; confirmed via direct DOM query
+(not eyeballing) that Cards, Flow, Loom, and Path each show precisely the zones relevant to
+that state and nothing else.
+
+### Tutorial: a dozen-plus direct corrections, verified against the real code before writing
+Every item below was raised as a specific "this looks wrong" by the user; each was checked
+against the actual DOM/JS/CSS before being fixed, not just reworded on faith — two of the
+user's own proposed replacement texts turned out to contain small factual errors (caught and
+corrected, flagged back rather than silently "fixed"):
+- **Edit a Scene** was wrong about the actual interaction — a plain card click only selects
+  a card (for drag/multi-select); editing requires the pencil (✏️) icon specifically
+  (confirmed via `editbtn.addEventListener('click', ...)` — the only call site of
+  `openEditMode()`). Corrected.
+- **Search caption/alt text** reworded to gender-neutral, category-general phrasing per direct
+  request ("Selecting items in the Library highlights the scenes they appear in").
+- **Theme scope** — Tutorial claimed theme choice "applies across all projects." Verified
+  empirically (not just from reading `state.js`): set Dracula to Slate, switched projects,
+  confirmed Frankenstein stayed Ivory. Theme is per-project (`saveState()`); only the *default*
+  for a brand-new project comes from the global last-used value (`saveGlobalPrefs()`).
+  Corrected to state the real per-project scope.
+- **Storylines / Anchor date & time** said "Scene form" — inside the Timeline part of the
+  Tutorial that's wrong; Timeline reparents the Edit/New Scene forms into the **Inspector
+  panel**, so that's what a Timeline user actually sees. Corrected both mentions.
+- **Path view drag-to-reorder** — Chronology-mode wording iterated twice per direct feedback,
+  landing on "it changes the real-time order of underlying events (which may or may not be the
+  order the reader sees)" — clearer than either of the two earlier phrasings about distinguishing
+  event time from reading order.
+- **Conflicts section** — described a "Conflicts badge in the Timeline header," which no longer
+  exists (removed to a Conflicts *tab* on the Inspector panel two rounds earlier, this same
+  branch — see the "Timeline strip header cleanup" entry above). Corrected to describe the
+  actual current UI, including that the tab's own label carries the live count and turns red.
+- **Reveal before foreshadow** — said a payoff is flagged when it sits before *every* foreshadow
+  scene; the actual engine (`conflicts.js`) flags it if it sits before *any* one of them
+  (`revealers.find(r => r.idx2 >= sIdx)` — first match, not all). Corrected "every" → "a".
+- **Reveals & Foreshadowing** — replaced with user-dictated text, but checked against the
+  form's actual markup first: the dictated text said "Timing group," but Foreshadow/This scene
+  reveals actually live under the separate **Reveals** group (`ed-reveals-group`, distinct from
+  `ed-timing-group`) — corrected and flagged back rather than publishing the wrong group name.
+- **Reports table** gained a Chronology row (matching the new report type added earlier this
+  branch), and Scene List's own row now says "in reading order" to contrast against it.
+- **Workflow suggestions** gained two new tips (Scene Flow Chart pacing check, reaching for
+  Timeline on non-linear stories) — previously every tip was Cards/Reports-only, with neither
+  of the other two views mentioned at all.
+- **Keyboard reference**: first pass grouped shortcuts by the app's real Ctrl-vs-Alt convention
+  (universal editing actions vs. SceneSetter-specific ones) and filled in several real
+  shortcuts that were bound in code but missing from the docs. Second pass reversed course
+  per direct report that "a number of the shortcuts don't work" — removed every shortcut
+  mention except Undo/Redo, both from this reference list and two stray inline "(Alt V)"/
+  "(Alt K)" callouts elsewhere in the Timeline/Flow-chart sections that would otherwise have
+  gone stale against the trimmed list.
+
+### Shortcut labels removed from the app's own menus (not just the Tutorial)
+Same "these don't reliably work" report extended to the live UI: every `<span class="di-sc">`
+shortcut hint was removed from the File/Create/View menu items (Export as JSON, New Scene,
+Add Character/Location/Theme/Misc, Generate Report, Zoom In/Out/Reset, Scene Flow Chart,
+Timeline) and the Loom button's `title`/`data-title-mac` tooltip, leaving only Undo and Redo
+labeled. Scoped deliberately to *display* only, per the user's own wording ("remove all of
+them... from the menu") — the underlying `Alt`-key handlers in `editor.js`'s keydown listener
+were left untouched rather than assuming they should be ripped out too; flagged this scoping
+choice back to the user rather than silently going further.
+
+### Landing page: Library + Sections merged into one feature, renumbered
+Per direct request ("combine ... into one as #2, just as we combine Scene Flow chart or
+timeline"): the two single-image features "Character & Element Library" (was #02) and
+"Sections & Organization" (was #04) merged into one "Library & Sections" feature at #02,
+using the exact same two-screenshot side-by-side layout (`landing-feature-media-multi` +
+`landing-img-half`) Scene Flow Chart and Timeline already use for their own two-screenshot
+pairs — rather than inventing a new layout pattern. Everything after renumbered down by one
+(Search & Analysis stays #03; Flow Chart, Timeline, Reports become #04/#05/#06), going from
+7 numbered features to 6. The merged pair intentionally kept its original non-enlargeable
+compact presentation (no `id`/click-to-enlarge hint) rather than gaining the modal-enlarge
+behavior Search's and Timeline's images have — matching what the two source features already
+did, not a new capability.
+
+### Verification
+Help zones: verified via direct DOM query per view state (Cards/Flow/Loom/Path), not
+eyeballing — confirmed exact zone-selector lists match expectations in each state, plus a
+live hover confirming tooltip text. Tutorial/menu edits: each factual claim (theme scope,
+Edit-a-Scene interaction, Reveals-group location, "every" vs. "a" foreshadow logic) verified
+against running app state or source before being published, not taken on faith from the
+user's own phrasing. Landing page: confirmed via computed style that both merged images
+render at equal half-width side by side, and via full-page text extraction that the
+"01 → 02 → 03 → 04 → 05 → 06" sequence has no gaps or duplicates. Clean console throughout
+every round. One recurring non-bug worth remembering for future sessions: this local preview
+setup's browser cache repeatedly served stale JS/HTML after edits, surfacing as
+`ReferenceError: X is not defined` or edits silently "not applying" — resolved every time by
+restarting the dev server on a fresh port, never a real app bug.
+
+### Not yet done
+Not merged anywhere.
