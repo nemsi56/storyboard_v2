@@ -4154,10 +4154,9 @@ Confirmed a true no-op for the (already-correct) Chromium behavior: identical fi
 widths before and after the fix (860px/581px/581px/581px across Dracula's four sections) at
 the same zoom level, and re-checked across a window resize and toggling Show Card Details
 off/on. Firefox itself isn't available in this environment's testing tool, so the fix could
-only be verified indirectly (matching the documented cross-engine divergence precisely, and
-confirmed harmless on the engine that does work here) — live confirmation from the reporting
-user is the remaining step.
+only be verified indirectly there (matching the documented cross-engine divergence precisely,
+and confirmed harmless on the engine that does work here) — the reporting user then confirmed
+live in their own Firefox browser that the clipped-card issue is resolved.
 
 ### Not yet done
-Not merged anywhere. Awaiting the reporting user's confirmation that this actually resolves
-the issue in their own Firefox browser.
+Not merged anywhere.
