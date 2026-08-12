@@ -1438,20 +1438,34 @@ function renderBoard() {
 // After render, measure each sec-body's actual card extent (including overflow columns)
 // and set explicit widths on the header and group so the header spans all card columns.
 function alignSecHeaders() {
-  // Clear any previously-set explicit widths first so natural layout takes effect
+  const cs = parseFloat(document.getElementById('board').style.getPropertyValue('--cs') || '1') || 1;
+  const minW = Math.ceil((174 + 24) * cs); // at minimum: one card width + 12px padding each side
+  // Force each group to a guaranteed-generous width before measuring, rather
+  // than clearing to '' (auto) and trusting the browser to size a
+  // flex-direction:column;flex-wrap:wrap container (.sec-body) to fit every
+  // wrapped column on its own. Chromium/Safari do that correctly, but
+  // Firefox doesn't reliably expand such a container's auto/intrinsic width
+  // past its first column or two — clearing to '' and measuring there would
+  // capture cards Firefox has already squeezed on top of each other, and the
+  // explicit width this function sets afterward would just pin that wrong,
+  // too-narrow layout in place permanently (nothing re-measures until this
+  // function runs again, which is exactly why the resulting clipped card
+  // stayed stuck regardless of scroll position). Worst case every card needs
+  // its own column, so cardCount columns' worth of width is always enough
+  // headroom, without depending on any browser's particular auto-sizing
+  // behavior for the actual measurement below.
   document.querySelectorAll('.sec-group').forEach(grp => {
-    grp.style.width = '';
+    const cardCount = grp.querySelectorAll('.sc').length;
+    grp.style.width = Math.max(minW, cardCount * minW) + 'px';
     const h = grp.querySelector('.sec-hdr');
     if (h) h.style.width = '';
   });
-  // One rAF: browser re-lays-out with cleared widths, then we measure card extents.
+  // One rAF: browser re-lays-out at the generous width, then we measure card extents.
   // Read every group's target width first, then write all of them — writing
   // group i's width would invalidate the layout group i+1 is about to read,
   // forcing one synchronous reflow per group instead of a single reflow for
   // the whole pass.
   requestAnimationFrame(() => {
-    const cs = parseFloat(document.getElementById('board').style.getPropertyValue('--cs') || '1') || 1;
-    const minW = Math.ceil((174 + 24) * cs); // at minimum: one card width + 12px padding each side
     const measurements = [...document.querySelectorAll('.sec-group')].map(grp => {
       const hdr = grp.querySelector('.sec-hdr');
       if (!hdr) return null;

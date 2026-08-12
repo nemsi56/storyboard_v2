@@ -4093,3 +4093,71 @@ sample data, and via a constructed test case) using the renamed fields end to en
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v6 branch — Firefox-only bug: cards clipped behind the next section
+
+User-reported: on the Scene Board, cards near the end of a section sometimes rendered as if
+clipped by the next section starting too early — "lost in the divider" — at certain Zoom
+slider positions (reported around 20-25% of the slider's range), and once it appeared it
+stayed stuck regardless of scrolling.
+
+### Investigation
+Initial hypothesis (the section-name sticky pin's default coloring being low-contrast against
+an adjacent section's similarly light header background) was tested and disproven directly —
+forcing the pin to loud colors at its real coordinates showed it rendering exactly where
+expected, just genuinely hard to notice, so that was a real but separate minor issue, not the
+cause of an actual missing/clipped card.
+
+Extensive live reproduction was attempted in the local Chromium-based testing tool: direct
+`setScale()` calls across the full zoom range, a rapid-fire sequence simulating a dragged
+slider, a real mouse-drag on the slider element itself (landing at the user's own reported
+20-25% range), and a synchronous bypass of `alignSecHeaders()`'s `requestAnimationFrame` to
+rule out timing entirely. Every attempt came back clean — every card correctly contained
+within its own section's box, with the intended ~12px safety margin. (One genuine timing
+finding along the way, specific to this testing tool and not the app: `requestAnimationFrame`
+callbacks don't fire in this remote browser tool's tab until something forces an actual paint,
+such as a screenshot request — several early "reproductions" turned out to be artifacts of
+that, not real bugs, and had to be discarded once caught.)
+
+The consistent failure to reproduce on Chromium despite hitting the user's exact reported
+zoom range, combined with the user confirming their browser zoom was 100% (ruling out a page-
+zoom rounding theory) and then naming their actual browser — Firefox — pointed to a genuine
+cross-engine rendering difference rather than a timing race or app-level logic bug.
+
+### Root cause
+Firefox has a known divergence from Chromium/Safari for `flex-direction:column;
+flex-wrap:wrap` containers (`.sec-body`, styles.css — each section's card area): it doesn't
+reliably expand such a container's auto/intrinsic width to include every wrapped column, only
+the first one or two. `alignSecHeaders()` (editor.js) worked by clearing each section's width
+to `''` (auto), measuring where the cards landed, then pinning an explicit width from that
+measurement. On Chromium/Safari the cleared/auto state correctly reflects every wrapped
+column, so the measurement — and this testing tool's exhaustive attempts to catch it doing
+something wrong — was always correct. On Firefox, the auto state itself is already
+too-narrow, so the measurement captures cards Firefox has already squeezed on top of each
+other, and the resulting explicit width permanently pins that broken layout in place — nothing
+ever re-triggers a correct re-measurement afterward, exactly matching the "stuck regardless of
+scroll" report. Whether it's visible at a given zoom level depends on how many columns that
+section actually needs at that card size relative to whatever Firefox's under-sized first pass
+allows.
+
+### Fix
+`alignSecHeaders()` no longer relies on any browser's auto-sizing behavior for the
+measurement at all. Before measuring, every section is first forced to a guaranteed-generous
+*explicit* width (worst case: one column per card, so `cardCount * minCardWidth` is always
+enough headroom regardless of the real column count) — sidestepping the Firefox divergence
+entirely, since "how many columns fit in a known, given width" is well-defined and consistent
+across engines, unlike "what's my own auto width." The real needed width is then measured
+within that generous space and the explicit width is shrunk down to it, same as before.
+
+### Verification
+Confirmed a true no-op for the (already-correct) Chromium behavior: identical final pixel
+widths before and after the fix (860px/581px/581px/581px across Dracula's four sections) at
+the same zoom level, and re-checked across a window resize and toggling Show Card Details
+off/on. Firefox itself isn't available in this environment's testing tool, so the fix could
+only be verified indirectly (matching the documented cross-engine divergence precisely, and
+confirmed harmless on the engine that does work here) — live confirmation from the reporting
+user is the remaining step.
+
+### Not yet done
+Not merged anywhere. Awaiting the reporting user's confirmation that this actually resolves
+the issue in their own Firefox browser.
