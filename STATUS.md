@@ -4160,3 +4160,124 @@ live in their own Firefox browser that the clipped-card issue is resolved.
 
 ### Not yet done
 Not merged anywhere.
+
+## thruLine_v6 branch — Second full-app audit, and fixing every open finding from the first
+
+Requested directly: a closing re-audit of the whole app (efficiency, bugs, security/data),
+same standard as the first — delegate the broad sweeps, verify everything personally before
+trusting it. Same three-way split as before (Timeline; Editor/board+init+ui;
+Conflicts/Charts/Reports/misc), each sub-audit explicitly told to re-verify the five specific
+changes the first audit made (the rename, the two save-skip fixes, the search debounce, the
+Firefox width fix) rather than just re-describe them, plus hunt generally. Every finding that
+reached this writeup was independently re-verified — grep for callers, read the surrounding
+code, or reproduce live — before being trusted or acted on.
+
+### Security/data verdict: clean, again
+No new sinks, no XSS regressions, no old `reveals`/`requires` stragglers anywhere (data,
+tests, or code) beyond the two intentional load-time fallback reads. CSP, escaping, and the
+v3 import validator's rigor all held up under a second look.
+
+### The one real regression, from this session's own earlier fix — found and fixed
+The conflicts sub-audit caught a real bug in the first audit's own `pruneDismissed()` change
+(pruning against a cached conflict list instead of a fresh recompute, to stop doubling the
+cost of every save once anything's dismissed): `undo()`/`redo()` (state.js) call `saveState()`
+right after `applySnapshot()` restores an older snapshot, **without** refreshing the conflicts
+cache first. Sequence: dismiss a conflict ("mark intentional") → make an edit that fixes it
+(the cache catches up 150ms later and drops it) → hit Undo. The restored data has the conflict
+active again, and the restored `S.dismissed` still contains it — but the save that follows
+prunes that restored dismissal against the *stale* (post-fix) cache and strips it, silently
+losing the user's "mark intentional" with no error and no action that looks like "un-dismiss."
+Fixed by calling `conflictsCacheRefreshNow()` immediately after `applySnapshot()` in both
+`undo()` and `redo()`, before their own `saveState()` runs — this also fixes undo's warn-dot
+rendering being one debounce cycle stale, for free. Verified live with the exact sequence in
+both directions: dismissed a real conflict, fixed its underlying data, confirmed the
+dismissal now survives the undo that restores the conflict (in memory, in the fresh cache, and
+in the persisted blob), and confirmed redo still correctly (and now immediately, not one save
+later) prunes a genuinely-fixed one.
+
+### Every other open finding from the first audit's report, fixed this round
+- **New Scene inline "+ Add" flows left Save/Cancel disabled.** Minting a character/location/
+  theme/misc, a custom POV name, or a reveal/foreshadow straight from a New Scene checklist
+  auto-checks the new item by setting `.checked` directly — which fires no `input`/`change`
+  event, the only events `checkNewSceneLive()` listens for. `confirmAdd()`, `confirmPovAdd()`,
+  and the reveal-mint closure inside `renderRevealCk()` (all editor.js) now call
+  `checkNewSceneLive()` explicitly right after auto-checking, when the return checklist
+  belongs to the New Scene form. Verified live: minting a character from a blank New Scene
+  form now correctly enables Save immediately.
+- **Library drag-reorder left an open scene form's POV dropdown stale.** `endLibDrag()`'s
+  Characters-reorder branch was the one Characters-library mutator that didn't refresh both
+  POV checklists afterward (every other one — `confirmAdd`, `removeItem`, `saveLibEdit` —
+  already does, since `povEntities()` derives its order from `S.characters`' own array order).
+  Added the same refresh.
+- **Deleting a POV-referenced character lost its dragged position in the POV row.**
+  `removeItem()` re-homes a deleted character's scene POV references to a freshly-minted
+  `povCustom` entry with a new id, but `S.povOrder` still held the old (now-gone) character
+  id — `orderedUsedPovEntities()`'s append-only repair would tack the new id onto the *end* on
+  next render, silently moving it from wherever the user had manually dragged it. Fixed by
+  swapping the new id into the old id's exact slot in `S.povOrder` directly, when present.
+  Verified live: deleted a POV-referenced character at `povOrder` position 0, confirmed the
+  new custom-entry id took that same position 0, not the end.
+- **`updateAxisAvailability()` corrected `timelinePrefs.axis` without saving it.** Added a
+  `saveState()` call matching every sibling `timelinePrefs` mutator in timeline.js — fires
+  once per genuine ordinal-fallback transition, not per render (the guard stops matching the
+  moment the correction lands).
+- **`renderBraid()` did real work on every zoom-slider tick regardless of Braid being
+  visible.** Its `!tlBraidMode` early-return used to come after a `manuscriptOrder()` pass and
+  a full legend rebuild — both invisible while Loom/Strip is the active mode, since
+  `#tl-braid-scroll`/`#tl-braid-legend` are `display:none` until `.tl-braid-active` is set, and
+  `setTlViewMode()` always re-renders fresh the moment Braid does become active. Moved the
+  early-return to the top of the function.
+- **Zoom-slider ticks rebuilt the storyline-lane labels and thread picker for nothing.**
+  Neither depends on zoom at all (`renderStorylineLanes()`'s row height is a hardcoded 92px;
+  the thread picker is just a character-name `<select>`) — both read only `S.storylines`/
+  `S.characters`, never `--cs`/zoomPos. Split `renderTimeline()`'s pipeline into a shared
+  `_renderTimelineCommon()` tail plus two entry points: the full `renderTimeline()`
+  (unchanged, still does everything) and a new `renderTimelineZoomOnly()` that skips those two
+  pieces. `setTlZoom()` — the zoom `<input>`'s handler, firing once per pixel of drag — now
+  calls the lean path.
+- **Chron/manuscript card drags forced a synchronous layout reflow on every mousemove.**
+  `_tlFindDropBeforeId`/`_tlInsertionX` (and their manuscript-row equivalents) re-queried
+  `getBoundingClientRect()` on every visible card, on every single mousemove, *after* the
+  drag ghost's own style had already been written that same tick — forcing the browser to
+  flush layout synchronously each time, the exact jank problem the Braid drag's own caching
+  comment already described (and had already fixed for Braid, but not chron/manuscript). Since
+  no render can happen while a drag is active, card positions are provably stable for the
+  whole gesture: `_tlDragBegin()`/`_tlMsDragBegin()` now cache every card's position relative
+  to its track in one read at drag-start, and the drop-target/insertion-point functions read
+  from that cache instead of the live DOM on every move. Verified live via direct event
+  dispatch (mousedown → mousemove past the 4px threshold → mousemove to a target position →
+  mouseup): the cache populated with the correct card count and positions, the drop target
+  resolved correctly, and the move-confirmation modal opened as expected, for both the chron
+  strip and the manuscript ribbon.
+- **`validateV3Import` didn't validate the legacy `reveals`/`requires` keys.** Pre-rename
+  files fall back through `sc.foreshadows ?? sc.reveals` on load (state.js), but the importer
+  only type/id-checked the new key names — a hand-edited or very old exported file using the
+  old names could carry malformed data straight through the fallback path unvalidated. Now
+  validates `reveals`/`requires` the same way when present, and checks referential integrity
+  against whichever pair (new or legacy) actually has data.
+- **`test-init.js`'s Editor/Projects-Page test blocks never ran.** They were gated behind
+  `isEditor`/`isProjects` checks keyed on `#app-storyboard`/`#proj-mgr`, elements that only
+  exist on editor.html/projects.html — never on test.html, so the gates were always false and
+  7 of the suite's 24 tests silently never executed despite the page reporting "all tests
+  passed." Every assertion inside only checks `typeof X === 'function'`, nothing page-specific,
+  so the gating served no purpose; removed it and made them run unconditionally. Also caught
+  and fixed a second, previously-invisible bug the same investigation surfaced: test.html's
+  own `<script>` list was missing `timeline.js` and `conflicts.js` (present on the real
+  editor.html but not here), so editor.js's top-level `ESCAPE_ACTIONS` array — which
+  references `closeMarkerPopover` (timeline.js) directly — threw a `ReferenceError` and halted
+  the rest of editor.js's execution the moment the newly-unhidden tests actually tried to run.
+  Added both scripts to test.html, matching editor.html's real load order. Verified: reloaded
+  test.html — 24/24 tests pass, zero console errors (previously the uncaught `ReferenceError`
+  was firing silently in the background even while the visible test count read as passing,
+  since none of the 24 *reachable* assertions happened to depend on the code after the throw).
+
+### Verification
+Every fix checked live via a fresh preview-server port (same stale-Chrome-HTTP-cache
+workaround as prior sessions). Re-seeded from cleared `localStorage`, exercised Loom, Path,
+zoom (real slider drag), chron/manuscript drag-to-reorder (via direct mouse-event dispatch,
+crossing the real 4px drag threshold, through to the move-confirmation modal and a clean
+discard), the New Scene inline-add flows, the POV-position-preserving delete, and test.html's
+full suite — clean console throughout every check.
+
+### Not yet done
+Not merged anywhere.

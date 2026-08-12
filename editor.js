@@ -102,6 +102,14 @@ function confirmAdd() {
     renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
     renderPovCk('ed', ckCurrentlyChecked('ed', 'povs'));
   }
+  // Auto-checking the new item above sets each checkbox's .checked property
+  // directly, which fires no 'input'/'change' event — the only events
+  // #form-new's own live-state listener responds to (checkNewSceneLive()) —
+  // so minting straight from a New Scene checklist previously left Save/
+  // Cancel disabled and the discard guard skipped until some other field
+  // was touched. Only relevant when the return checklist was 'ck' (New
+  // Scene); 'ek' (Edit Scene) has no such live-state gate to keep in sync.
+  if (apReturnCk && apReturnCk.sec === apSec && apReturnCk.prefix === 'ck') checkNewSceneLive();
   closeAddPopup();
   recordDataEdit();
   saveState();
@@ -270,6 +278,14 @@ function removeItem(sec, id) {
     const newPovId = S.nextEntId++;
     S.povCustom.push({ id: newPovId, name: item.name });
     S.scenes.forEach(sc => { sc.povs = (sc.povs || []).map(v => v === id ? newPovId : v); });
+    // Swap in place rather than leaving S.povOrder's append-only repair
+    // (orderedUsedPovEntities()) to tack the new id onto the end — the old
+    // character id's manually-dragged position in the Library panel's POV
+    // row would otherwise be silently lost the moment the character is
+    // deleted, even though the same POV name is still present, just under a
+    // new custom-entry id.
+    const povOrderIdx = S.povOrder.indexOf(id);
+    if (povOrderIdx !== -1) S.povOrder[povOrderIdx] = newPovId;
   }
   if (sec === 'characters' && S.timelinePrefs.threadCharId === id) S.timelinePrefs.threadCharId = null;
   const newCkChecked = ckCurrentlyChecked('ck', sec).filter(v => v !== id);
@@ -1007,6 +1023,9 @@ function renderRevealCk(boxId, checked=[]) {
       const c = ckBoxChecked(id2).concat(id2 === boxId ? [id] : []);
       renderRevealCk(id2, c);
     });
+    // Same reasoning as confirmAdd()/confirmPovAdd(): auto-checking sets
+    // .checked directly, firing no event checkNewSceneLive() would catch.
+    if (boxId.startsWith('sc-')) checkNewSceneLive();
   };
   btn.addEventListener('click', e => { e.stopPropagation(); mint(); });
   inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); mint(); } });
@@ -1696,6 +1715,9 @@ function confirmPovAdd() {
   if (povAddReturnPrefix === 'sc') scChecked.push(id);
   if (povAddReturnPrefix === 'ed') edChecked.push(id);
   renderPovCk('sc', scChecked); renderPovCk('ed', edChecked);
+  // Same reasoning as confirmAdd() above: auto-checking sets .checked
+  // directly, firing no event checkNewSceneLive() would otherwise catch.
+  if (povAddReturnPrefix === 'sc') checkNewSceneLive();
   closePovAddModal();
   recordDataEdit();
   saveState();
@@ -2192,6 +2214,16 @@ function endLibDrag() {
       if (!ld.before) ti++;
       arr.splice(ti, 0, item);
       renderLibSec(ld.sec); renderCk(ld.sec, ckCurrentlyChecked('ck', ld.sec)); renderEditCk(ld.sec, ckCurrentlyChecked('ek', ld.sec));
+      // povEntities() derives the combined character+custom-name POV list
+      // from S.characters' own array order — every other mutator that can
+      // reorder/rename/add/remove a character (confirmAdd, removeItem,
+      // saveLibEdit) already refreshes both POV checklists for this same
+      // reason; this drag-reorder path was the one gap, leaving an
+      // already-open scene form's POV dropdown showing the pre-drag order.
+      if (ld.sec === 'characters') {
+        renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
+        renderPovCk('ed', ckCurrentlyChecked('ed', 'povs'));
+      }
     }
     recordDataEdit();
     saveState();

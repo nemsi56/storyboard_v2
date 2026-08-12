@@ -525,11 +525,28 @@ function updateTlPanelMenuState() {
 function renderTimeline() {
   if (!timelineMode) return;
   renderStorylineLanes();
+  renderThreadPicker();
+  _renderTimelineCommon();
+}
+// Zoom-slider-only render: skips renderStorylineLanes()/renderThreadPicker(),
+// the two pieces of the pipeline with no zoom dependency at all — lane labels
+// are a fixed 92px row height regardless of card scale (S.storylines' own
+// name/color/count/order is all they read), and the thread picker is just a
+// character-name <select>. The zoom <input> fires once per pixel of drag, so
+// renderTimeline() rebuilding every lane-label DOM node (with fresh drag/
+// rename/delete listeners) and re-filtering S.scenes per storyline on every
+// tick was pure waste while dragging. Everything else in the pipeline (chron/
+// manuscript card widths, wires, Braid column spacing, scroll-arrow
+// visibility) does depend on zoom and stays exactly as it was.
+function renderTimelineZoomOnly() {
+  if (!timelineMode) return;
+  _renderTimelineCommon();
+}
+function _renderTimelineCommon() {
   renderChronStrip();
   renderManuscriptRibbon();
   redrawWires();
   renderBraid();
-  renderThreadPicker();
   updateAxisAvailability();
   const zoomEl = document.getElementById('tl-zoom');
   if (zoomEl && document.activeElement !== zoomEl) zoomEl.value = S.timelinePrefs.zoomPos;
@@ -1008,6 +1025,11 @@ function updateAxisAvailability() {
   btn.title = available ? '' : 'Anchor at least two scenes to dates to enable true scale.';
   if (!available && S.timelinePrefs.axis === 'true') {
     S.timelinePrefs.axis = 'ordinal';
+    // Same as setTlAxis()'s own direct save below — timelinePrefs is view
+    // state (excluded from undo) but still persisted. Runs once per genuine
+    // transition, not per render: the guard above stops matching as soon as
+    // axis reads back 'ordinal', so this doesn't turn into a save-per-render.
+    saveState();
     document.querySelectorAll('#tl-axis-switch .tl-axis-btn').forEach(b => b.classList.toggle('on', b.dataset.axis === 'ordinal'));
   }
 }
@@ -1032,7 +1054,7 @@ function setTlZoom(pos) {
   S.timelinePrefs.zoomPos = pos;
   clearTimeout(_tlZoomSaveTimer);
   _tlZoomSaveTimer = setTimeout(saveState, 300);
-  renderTimeline();
+  renderTimelineZoomOnly();
 }
 
 function renderThreadPicker() {
@@ -1141,6 +1163,22 @@ function _tlDragBegin(e) {
   line.style.display = 'none';
   track.appendChild(line);
   d.insertLineEl = line;
+
+  // Cache every other card's position relative to the track once, up front,
+  // rather than having _tlFindDropBeforeId/_tlInsertionX re-query live DOM
+  // rects on every card on every _tlDragMove() call. Reading
+  // getBoundingClientRect() right after the ghost's own style write (set
+  // first thing in that function) forces a synchronous layout reflow, and
+  // doing that for every card on every mousemove during a drag is the same
+  // jank problem the Braid drag's own caching comment above describes. No
+  // render can happen while a drag is active (isTlDragActive() guards every
+  // trigger that would), so card positions are stable for the whole gesture
+  // — one read here is exact for the whole drag, not an approximation.
+  const trackRect0 = track.getBoundingClientRect();
+  d.cardRects = [...track.querySelectorAll('.tl-scene:not(.tl-drag-ghost)')].map(el => {
+    const r = el.getBoundingClientRect();
+    return { id: el.dataset.sceneId, left: r.left - trackRect0.left, right: r.right - trackRect0.left, cx: r.left + r.width / 2 - trackRect0.left };
+  });
 }
 
 function _tlMsDragBegin(d) {
@@ -1166,38 +1204,38 @@ function _tlMsDragBegin(d) {
   line.style.display = 'none';
   row.appendChild(line);
   d.insertLineEl = line;
+
+  // Same caching rationale as _tlDragBegin() above.
+  const rowRect0 = row.getBoundingClientRect();
+  d.cardRects = [...row.querySelectorAll('.tl-ms-card:not(.tl-drag-ghost)')].map(el => {
+    const r = el.getBoundingClientRect();
+    return { id: el.dataset.sceneId, left: r.left - rowRect0.left, right: r.right - rowRect0.left, cx: r.left + r.width / 2 - rowRect0.left };
+  });
 }
 
 // Nearest scene to the right of the cursor ACROSS ALL LANES by x — the drop
-// slot is a position in chronOrder, not per-lane. Reads real card rects (not
-// the xMap) so it's correct regardless of ordinal overlap.
+// slot is a position in chronOrder, not per-lane. Reads from the card-rect
+// cache _tlDragBegin() built once at drag-start (not live DOM rects) so it's
+// correct regardless of ordinal overlap without forcing a reflow per card
+// per mousemove.
 function _tlFindDropBeforeId(localX, excludeId) {
-  const track = document.getElementById('tl-track');
-  const trackRect = track.getBoundingClientRect();
-  const cards = [...track.querySelectorAll('.tl-scene:not(.tl-drag-ghost)')];
   let best = null, bestX = Infinity;
-  cards.forEach(el => {
-    const id = el.dataset.sceneId;
-    if (!id || id === excludeId) return;
-    const r = el.getBoundingClientRect();
-    const cx = r.left + r.width / 2 - trackRect.left;
-    if (cx >= localX && cx < bestX) { bestX = cx; best = id; }
+  (_tlDrag.cardRects || []).forEach(c => {
+    if (c.id === excludeId) return;
+    if (c.cx >= localX && c.cx < bestX) { bestX = c.cx; best = c.id; }
   });
   return best; // null = insert at the end of chronOrder
 }
 
-function _tlInsertionX(track, trackRect, beforeId, excludeId) {
+function _tlInsertionX(beforeId, excludeId) {
   if (beforeId) {
-    const el = track.querySelector('.tl-scene[data-scene-id="' + beforeId + '"]');
-    if (el) { const r = el.getBoundingClientRect(); return r.left - trackRect.left - 4; }
+    const c = (_tlDrag.cardRects || []).find(c => c.id === beforeId);
+    if (c) return c.left - 4;
   }
-  const cards = [...track.querySelectorAll('.tl-scene:not(.tl-drag-ghost)')];
   let maxRight = 0;
-  cards.forEach(el => {
-    if (el.dataset.sceneId === excludeId) return;
-    const r = el.getBoundingClientRect();
-    const rx = r.right - trackRect.left;
-    if (rx > maxRight) maxRight = rx;
+  (_tlDrag.cardRects || []).forEach(c => {
+    if (c.id === excludeId) return;
+    if (c.right > maxRight) maxRight = c.right;
   });
   return maxRight + 4;
 }
@@ -1228,7 +1266,7 @@ function _tlDragMove(e) {
   if (S.timelinePrefs.axis !== 'true') {
     const beforeId = _tlFindDropBeforeId(localX, String(d.sceneId));
     d.targetBeforeId = beforeId;
-    d.insertLineEl.style.left = _tlInsertionX(track, trackRect, beforeId, String(d.sceneId)) + 'px';
+    d.insertLineEl.style.left = _tlInsertionX(beforeId, String(d.sceneId)) + 'px';
     d.insertLineEl.style.display = '';
   } else {
     // True scale: there's no "slot" to snap to — the drop position itself is
@@ -1249,33 +1287,25 @@ function _tlDragMove(e) {
 }
 
 // Single row, no lanes — the reading-order equivalent of _tlFindDropBeforeId/
-// _tlInsertionX above, just simpler (one axis, one track of cards).
+// _tlInsertionX above, just simpler (one axis, one track of cards). Same
+// card-rect cache from _tlMsDragBegin(), same reflow-avoidance reasoning.
 function _tlMsFindDropBeforeId(localX, excludeId) {
-  const row = document.getElementById('tl-ms-row');
-  const cards = [...row.querySelectorAll('.tl-ms-card:not(.tl-drag-ghost)')];
   let best = null, bestX = Infinity;
-  cards.forEach(el => {
-    const id = el.dataset.sceneId;
-    if (!id || id === excludeId) return;
-    const r = el.getBoundingClientRect();
-    const rowRect = row.getBoundingClientRect();
-    const cx = r.left + r.width / 2 - rowRect.left;
-    if (cx >= localX && cx < bestX) { bestX = cx; best = id; }
+  (_tlDrag.cardRects || []).forEach(c => {
+    if (c.id === excludeId) return;
+    if (c.cx >= localX && c.cx < bestX) { bestX = c.cx; best = c.id; }
   });
   return best; // null = insert at the end
 }
-function _tlMsInsertionX(row, rowRect, beforeId, excludeId) {
+function _tlMsInsertionX(beforeId, excludeId) {
   if (beforeId) {
-    const el = row.querySelector('.tl-ms-card[data-scene-id="' + beforeId + '"]');
-    if (el) { const r = el.getBoundingClientRect(); return r.left - rowRect.left - 4; }
+    const c = (_tlDrag.cardRects || []).find(c => c.id === beforeId);
+    if (c) return c.left - 4;
   }
-  const cards = [...row.querySelectorAll('.tl-ms-card:not(.tl-drag-ghost)')];
   let maxRight = 0;
-  cards.forEach(el => {
-    if (el.dataset.sceneId === excludeId) return;
-    const r = el.getBoundingClientRect();
-    const rx = r.right - rowRect.left;
-    if (rx > maxRight) maxRight = rx;
+  (_tlDrag.cardRects || []).forEach(c => {
+    if (c.id === excludeId) return;
+    if (c.right > maxRight) maxRight = c.right;
   });
   return maxRight + 4;
 }
@@ -1289,7 +1319,7 @@ function _tlMsDragMove(d, e) {
 
   const beforeId = _tlMsFindDropBeforeId(localX, String(d.sceneId));
   d.targetBeforeId = beforeId;
-  d.insertLineEl.style.left = _tlMsInsertionX(row, rowRect, beforeId, String(d.sceneId)) + 'px';
+  d.insertLineEl.style.left = _tlMsInsertionX(beforeId, String(d.sceneId)) + 'px';
   d.insertLineEl.style.display = '';
 }
 
@@ -2106,6 +2136,16 @@ function renderBraid() {
   const scroll = document.getElementById('tl-braid-scroll');
   const svg = document.getElementById('tl-braid-svg');
   if (!scroll || !svg || !timelineMode) return;
+  // #tl-braid-scroll/#tl-braid-legend are both display:none unless
+  // #tl-stage carries .tl-braid-active (styles.css), so none of this
+  // function's work is visible while Braid isn't the active mode — and
+  // setTlViewMode() always calls renderTimeline() (→ this function) again
+  // right after flipping tlBraidMode on, so switching back to Braid never
+  // sees stale content. This function used to do a full manuscriptOrder()
+  // pass, legend rebuild, and axis/watermark text writes on every single
+  // renderTimeline() call regardless of mode — including on every zoom-
+  // slider tick — for zero visible effect while in Loom/Strip mode.
+  if (!tlBraidMode) { svg.textContent = ''; _braidColIds = []; return; }
 
   const msScenes = manuscriptOrder().filter(s => !s.offscreen);
   const msOrder = msScenes.map(s => s.id);
@@ -2129,7 +2169,6 @@ function renderBraid() {
 
   svg.textContent = '';
   _braidColIds = [];
-  if (!tlBraidMode) return;
 
   // Narrative-mode row lookup: every id in chronOrder maps to a row number on
   // an offscreen-filtered row axis, matching msOrder's own column axis

@@ -474,6 +474,14 @@ function undo() {
   const entry = hist.past.pop();
   hist.future.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
+  // The conflicts cache still reflects the pre-undo data; saveState() below
+  // prunes S.dismissed against that cache (pruneDismissed), so restoring a
+  // snapshot where a dismissed conflict is active again — while the stale
+  // cache says it no longer exists — would silently strip the user's "mark
+  // intentional" from the restored data. Refreshing here (before the renders,
+  // which also read the cache for warn-dots) keeps prune and paint consistent
+  // with the data that was just restored.
+  if (typeof conflictsCacheRefreshNow === 'function') conflictsCacheRefreshNow();
   buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovCk("sc", []); renderPovCk("ed", []); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   // New Scene form's storyline field (§7) isn't itself undo-tracked (it's a
   // blank draft, not saved data) but must stay valid if the storylines list
@@ -493,6 +501,8 @@ function redo() {
   const entry = hist.future.pop();
   hist.past.push({ snap: snapshot(), desc: entry.desc });
   applySnapshot(entry.snap);
+  // Same stale-cache hazard as undo() above — see the comment there.
+  if (typeof conflictsCacheRefreshNow === 'function') conflictsCacheRefreshNow();
   buildLibPanel(); renderAllLib(); renderAllCk(); renderSecPanel(); renderSectionSelects(); renderPovCk("sc", []); renderPovCk("ed", []); renderBoard(); updateLibClearBtn(); updateUndoRedo();
   // New Scene form's storyline field (§7) isn't itself undo-tracked (it's a
   // blank draft, not saved data) but must stay valid if the storylines list

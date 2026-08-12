@@ -110,54 +110,52 @@ function runAllTests() {
   });
 
   // Test 9: Page-Specific Functions
-  const pageTests = () => {
-    const isEditor = !!document.getElementById('app-storyboard');
-    const isProjects = !!document.getElementById('proj-mgr');
+  // These used to be gated behind isEditor/isProjects checks keyed on
+  // #app-storyboard/#proj-mgr — elements that only exist on editor.html/
+  // projects.html, never on this page, so the gates were always false and
+  // this whole block silently never ran despite the suite reporting "all
+  // tests passed." editor.js and projects.js are loaded on this page
+  // regardless (see test.html's own <script> tags), and every assertion
+  // below only checks `typeof X === 'function'` — none touch page-specific
+  // DOM — so there's no real reason these needed gating at all; running them
+  // unconditionally restores the coverage the gate was silently discarding.
+  test('Editor Page: scene editor functions exist', () => {
+    assert(typeof addScene === 'function', 'addScene not defined');
+    assert(typeof buildLibPanel === 'function', 'buildLibPanel not defined');
+    assert(typeof renderBoard === 'function', 'renderBoard not defined');
+  });
 
-    if (isEditor) {
-      test('Editor Page: scene editor functions exist', () => {
-        assert(typeof addScene === 'function', 'addScene not defined');
-        assert(typeof buildLibPanel === 'function', 'buildLibPanel not defined');
-        assert(typeof renderBoard === 'function', 'renderBoard not defined');
-      });
+  test('Editor Page: library functions exist', () => {
+    assert(typeof toggleLibItem === 'function', 'toggleLibItem not defined');
+    assert(typeof removeItem === 'function', 'removeItem not defined');
+  });
 
-      test('Editor Page: library functions exist', () => {
-        assert(typeof toggleLibItem === 'function', 'toggleLibItem not defined');
-        assert(typeof removeItem === 'function', 'removeItem not defined');
-      });
+  test('Editor Page: section functions exist', () => {
+    assert(typeof addSection === 'function', 'addSection not defined');
+    assert(typeof deleteSection === 'function', 'deleteSection not defined');
+  });
 
-      test('Editor Page: section functions exist', () => {
-        assert(typeof addSection === 'function', 'addSection not defined');
-        assert(typeof deleteSection === 'function', 'deleteSection not defined');
-      });
+  test('Editor Page: search functions exist', () => {
+    assert(typeof onSearchInput === 'function', 'onSearchInput not defined');
+    assert(typeof clearSearch === 'function', 'clearSearch not defined');
+  });
 
-      test('Editor Page: search functions exist', () => {
-        assert(typeof onSearch === 'function', 'onSearch not defined');
-        assert(typeof clearSearch === 'function', 'clearSearch not defined');
-      });
+  test('Editor Page: report functions exist', () => {
+    assert(typeof openReportModal === 'function', 'openReportModal not defined');
+    assert(typeof closeReportModal === 'function', 'closeReportModal not defined');
+    assert(typeof generateReport === 'function', 'generateReport not defined');
+  });
 
-      test('Editor Page: report functions exist', () => {
-        assert(typeof openReportModal === 'function', 'openReportModal not defined');
-        assert(typeof closeReportModal === 'function', 'closeReportModal not defined');
-        assert(typeof generateReport === 'function', 'generateReport not defined');
-      });
-    }
+  test('Projects Page: project manager functions exist', () => {
+    assert(typeof renderProjectGrid === 'function', 'renderProjectGrid not defined');
+    assert(typeof createAndOpenProject === 'function', 'createAndOpenProject not defined');
+  });
 
-    if (isProjects) {
-      test('Projects Page: project manager functions exist', () => {
-        assert(typeof renderProjectGrid === 'function', 'renderProjectGrid not defined');
-        assert(typeof createAndOpenProject === 'function', 'createAndOpenProject not defined');
-      });
-
-      test('Projects Page: project actions exist', () => {
-        assert(typeof confirmProjRename === 'function', 'confirmProjRename not defined');
-        assert(typeof confirmProjDel === 'function', 'confirmProjDel not defined');
-        assert(typeof exportProjectJSON === 'function', 'exportProjectJSON not defined');
-      });
-    }
-  };
-
-  pageTests();
+  test('Projects Page: project actions exist', () => {
+    assert(typeof confirmProjRename === 'function', 'confirmProjRename not defined');
+    assert(typeof confirmProjDel === 'function', 'confirmProjDel not defined');
+    assert(typeof exportProjectJSON === 'function', 'exportProjectJSON not defined');
+  });
 
   // Test 10: GA Integration
   test('GA Integration: gtag function exists', () => {

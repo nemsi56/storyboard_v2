@@ -599,7 +599,12 @@ function validateV3Import(d) {
       return 'Invalid project structure. Scene ' + n + ' "summary"/"notes" must be strings when present.';
     }
     sceneIds.add(sc.id);
-    for (const key of ['characters', 'locations', 'themes', 'misc', 'povs', 'foreshadows', 'payoffs']) {
+    // reveals/requires are the pre-rename field names (see state.js
+    // loadState()'s `sc.foreshadows ?? sc.reveals` fallback) — validated the
+    // same way when present, so a hand-edited or very old exported file that
+    // still uses them can't sneak malformed data through that fallback path
+    // unvalidated. Only ever relevant when the new key is absent.
+    for (const key of ['characters', 'locations', 'themes', 'misc', 'povs', 'foreshadows', 'payoffs', 'reveals', 'requires']) {
       if (sc[key] != null && !isIntArr(sc[key])) return 'Invalid project structure. Scene ' + n + ' "' + key + '" must be an array of integer ids.';
     }
     if ((sc.characters || []).some(id => !charIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown character id.';
@@ -607,7 +612,9 @@ function validateV3Import(d) {
     if ((sc.themes || []).some(id => !themeIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown theme id.';
     if ((sc.misc || []).some(id => !miscIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown misc id.';
     if ((sc.povs || []).some(id => !povIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown POV id.';
-    if ((sc.foreshadows || []).some(id => !revealIds.has(id)) || (sc.payoffs || []).some(id => !revealIds.has(id))) {
+    const effectiveForeshadows = sc.foreshadows ?? sc.reveals ?? [];
+    const effectivePayoffs = sc.payoffs ?? sc.requires ?? [];
+    if (effectiveForeshadows.some(id => !revealIds.has(id)) || effectivePayoffs.some(id => !revealIds.has(id))) {
       return 'Invalid project structure. Scene ' + n + ' references an unknown reveal id.';
     }
     if (!Number.isInteger(sc.storylineId) || !storylineIds.has(sc.storylineId)) return 'Invalid project structure. Scene ' + n + ' "storylineId" does not resolve to a storyline.';
