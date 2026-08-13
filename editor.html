@@ -17,7 +17,7 @@
 
 <!-- HEADER -->
 <div id="hdr">
-  <h1>📝 SceneSetter</h1>
+  <h1><a href="index.html" class="app-logo-link"><img src="images/icon.png" alt="" class="app-logo-icon">SceneSetter</a></h1>
   <div class="hdr-spacer"></div>
   <div id="proj-name-wrap">
     <span id="proj-name-title" class="pn-title"></span>
@@ -31,11 +31,12 @@
 
 <!-- MENU BAR -->
 <div id="menu-bar">
+<div id="menu-left">
   <!-- File -->
   <div class="mi" id="mi-file">
     <button class="mi-btn" id="mi-btn-file">File</button>
     <div class="mi-drop" id="drop-file">
-      <button class="di" id="mi-export-json">Export as JSON<span class="di-sc">Ctrl+⇧E</span></button>
+      <button class="di" id="mi-export-json">Export as JSON</button>
       <button class="di" id="mi-import-json">Import from JSON…</button>
     </div>
   </div>
@@ -43,22 +44,22 @@
   <div class="mi" id="mi-edit">
     <button class="mi-btn" id="mi-btn-edit">Edit</button>
     <div class="mi-drop" id="drop-edit">
-      <button class="di" id="mi-undo-btn"><span id="mdi-undo-lbl">Undo</span><span class="di-sc">Ctrl+Z</span></button>
-      <button class="di" id="mi-redo-btn"><span id="mdi-redo-lbl">Redo</span><span class="di-sc">Ctrl+⇧Z</span></button>
+      <button class="di" id="mi-undo-btn"><span id="mdi-undo-lbl">Undo</span><span class="di-sc" data-sc-mac="⌘Z">Ctrl+Z</span></button>
+      <button class="di" id="mi-redo-btn"><span id="mdi-redo-lbl">Redo</span><span class="di-sc" data-sc-mac="⌘⇧Z">Ctrl+⇧Z</span></button>
     </div>
   </div>
   <!-- Create (scene/library actions) -->
   <div class="mi" id="mi-scene">
     <button class="mi-btn" id="mi-btn-scene">Create</button>
     <div class="mi-drop" id="drop-scene">
-      <button class="di" id="mi-new-scene">New Scene…<span class="di-sc">Alt+N</span></button>
+      <button class="di" id="mi-new-scene">New Scene…</button>
       <div class="di-sep"></div>
-      <button class="di" id="mi-add-char">Add Character<span class="di-sc">Alt+C</span></button>
-      <button class="di" id="mi-add-loc">Add Location<span class="di-sc">Alt+L</span></button>
-      <button class="di" id="mi-add-theme">Add Theme<span class="di-sc">Alt+T</span></button>
-      <button class="di" id="mi-add-misc">Add Misc Item<span class="di-sc">Alt+M</span></button>
+      <button class="di" id="mi-add-char">Add Character</button>
+      <button class="di" id="mi-add-loc">Add Location</button>
+      <button class="di" id="mi-add-theme">Add Theme</button>
+      <button class="di" id="mi-add-misc">Add Misc Item</button>
       <div class="di-sep"></div>
-      <button class="di" id="mi-gen-report">Generate Report<span class="di-sc">Alt+R</span></button>
+      <button class="di" id="mi-gen-report">Generate Report</button>
     </div>
   </div>
   <!-- View -->
@@ -75,18 +76,21 @@
       <div class="di-sep"></div>
       <!-- Zoom only affects scene cards, which aren't on screen in chart view — hidden there by updateZoomMenuState(). -->
       <div id="menu-zoom-group">
-        <button class="di" id="zoomin-btn">Zoom In<span class="di-sc">Ctrl+=</span></button>
-        <button class="di" id="zoomout-btn">Zoom Out<span class="di-sc">Ctrl+−</span></button>
-        <button class="di" id="zoomreset-btn">Reset Zoom<span class="di-sc">Ctrl+0</span></button>
+        <button class="di" id="zoomin-btn">Zoom In</button>
+        <button class="di" id="zoomout-btn">Zoom Out</button>
+        <button class="di" id="zoomreset-btn">Reset Zoom</button>
         <div class="di-sep"></div>
       </div>
       <button class="di" id="menu-show-library"><span id="menu-lib-text">Hide Library Panel</span></button>
       <button class="di" id="menu-show-sections"><span id="menu-sec-text">Hide Sections Panel</span></button>
       <button class="di" id="menu-show-scene"><span id="menu-scn-text">Hide Scene Panel</span></button>
+      <button class="di" id="menu-show-inspector"><span id="menu-insp-text">Hide Inspector Panel</span></button>
       <div class="di-sep"></div>
       <button class="di" id="menu-show-all-panels"><span id="menu-all-text">Hide All Panels</span></button>
       <div class="di-sep"></div>
-      <button class="di" id="menu-chart"><span id="menu-chart-text">Show Scene Flow Chart</span><span class="di-sc">Alt+V</span></button>
+      <button class="di" id="menu-view-board">Card Board</button>
+      <button class="di" id="menu-view-chart">Scene Flow Chart</button>
+      <button class="di" id="menu-view-timeline">Timeline</button>
     </div>
   </div>
   <!-- Help -->
@@ -98,6 +102,44 @@
       <button class="di" id="mi-help-features">Feature Descriptions</button>
     </div>
   </div>
+</div>
+<!-- Cards/Flow/Timeline view switch — permanent home is here, centered on the
+     menu-bar row (see #menu-center); Timeline's own Ordinal/Thread/Chronology
+     selectors reparent in next to it while Timeline is open (see
+     _openTimelineViewImpl()/_closeTimelineViewImpl() in timeline.js). -->
+<div id="menu-center">
+  <div id="view-toggle">
+    <div class="view-toggle-item">
+      <span class="view-toggle-lbl">Cards</span>
+      <button id="chart-type-cards" class="chart-type-btn on" title="Card view" aria-label="Card view">
+        <svg viewBox="0 0 20 20" width="14" height="14"><rect x="2" y="2" width="6" height="6" rx="1.3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="12" y="2" width="6" height="6" rx="1.3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="2" y="12" width="6" height="6" rx="1.3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="12" y="12" width="6" height="6" rx="1.3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+    </div>
+    <div class="view-toggle-item">
+      <span class="view-toggle-lbl">Flow</span>
+      <div id="chart-type-toggle">
+        <button id="chart-type-snake" class="chart-type-btn" title="Snake view" aria-label="Snake view">
+          <svg viewBox="0 0 20 18" width="17" height="15"><path d="M2 3 H14 A3 3 0 0 1 14 9 H4 A3 3 0 0 0 4 15 H16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <button id="chart-type-circle" class="chart-type-btn" title="Circle view" aria-label="Circle view">
+          <svg viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="view-toggle-item">
+      <span class="view-toggle-lbl">Timeline</span>
+      <div id="chart-type-timeline-toggle">
+        <button id="tl-view-loom" class="chart-type-btn" title="Loom view" aria-label="Loom view">
+          <svg viewBox="0 0 18 18" width="15" height="15"><path d="M4 2 C4 9 14 9 14 16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/><path d="M14 2 C14 9 4 9 4 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2 2.3"/></svg>
+        </button>
+        <button id="tl-view-path" class="chart-type-btn" title="Path view" aria-label="Path view">
+          <svg viewBox="0 0 19 12" width="24" height="15"><path d="M2 9 C4 3 5 2 7 2 C9 2 10 8 12 8 C14 8 15 4 17 3" fill="none" stroke="currentColor" stroke-width="0.85" stroke-linecap="round"/><circle cx="2" cy="9" r="2.1" fill="currentColor"/><circle cx="7" cy="2" r="2.1" fill="currentColor"/><circle cx="12" cy="8" r="2.1" fill="currentColor"/><circle cx="17" cy="3" r="2.1" fill="currentColor"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="menu-right"></div>
 </div>
 <!-- Hidden file input for JSON import -->
 <input type="file" id="menu-import-input" accept=".json" style="display:none">
@@ -191,7 +233,7 @@
       <!-- New Scene form -->
       <div id="form-new" class="p-body">
         <div class="cp-form-hdr">
-          <div class="form-btns"><button id="new-cancel">Cancel</button><button id="asb">Save</button></div>
+          <div class="form-btns"><button id="new-cancel" disabled>Cancel</button><button id="asb" disabled>Save</button></div>
           <div class="errmsg" id="scerr"></div>
         </div>
         <div class="cp-form-fields">
@@ -205,6 +247,32 @@
           <div class="ff"><label>Word Count</label><input type="number" id="sc-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
           <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="sc-povs-wrap"><button class="ck-drop-btn" type="button" id="sc-povs-btn">No POV selected</button><div class="ck-drop-list" id="sc-povs"></div></div></div>
           <div class="ff"><label>Notes</label><textarea id="sc-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+
+          <div class="ffg" id="sc-timing-group">
+            <button type="button" class="ffg-hdr" id="sc-timing-toggle" aria-expanded="true">Timing <span class="ffg-car">▾</span></button>
+            <div class="ffg-body" id="sc-timing-body">
+              <div class="ff"><label>Storyline</label><select id="sc-storyline" class="ff-sel"></select></div>
+              <div class="ff"><label>Also part of</label><div class="ck-drop-wrap" id="sc-also-sl-wrap"><button class="ck-drop-btn" type="button" id="sc-also-sl-btn">No other storylines</button><div class="ck-drop-list" id="sc-also-sl"></div></div></div>
+              <div class="ff">
+                <label>Anchor</label>
+                <div class="anchor-row">
+                  <input type="date" id="sc-anchor-date">
+                  <input type="time" id="sc-anchor-time">
+                  <button type="button" id="sc-anchor-clear">Clear</button>
+                </div>
+              </div>
+              <div class="ff"><label>Duration (minutes)</label><input type="number" id="sc-duration" min="1" max="999999" placeholder="e.g. 5"></div>
+              <label class="ff-ck-row"><input type="checkbox" id="sc-offscreen"> Offscreen (happens, but the reader never sees it)</label>
+            </div>
+          </div>
+
+          <div class="ffg" id="sc-reveals-group">
+            <button type="button" class="ffg-hdr" id="sc-reveals-toggle" aria-expanded="true">Reveals <span class="ffg-car">▾</span></button>
+            <div class="ffg-body" id="sc-reveals-body">
+              <div class="ff"><label>Foreshadow</label><div class="ck-drop-wrap" id="sc-reveals-wrap"><button class="ck-drop-btn" type="button" id="sc-reveals-btn">No foreshadow selected</button><div class="ck-drop-list" id="sc-reveals"></div></div></div>
+              <div class="ff"><label>This scene reveals</label><div class="ck-drop-wrap" id="sc-requires-wrap"><button class="ck-drop-btn" type="button" id="sc-requires-btn">No reveals selected</button><div class="ck-drop-list" id="sc-requires"></div></div></div>
+            </div>
+          </div>
         </div>
       </div>
       <!-- Edit Scene form -->
@@ -218,15 +286,41 @@
         </div>
         <div class="cp-form-fields">
           <div class="ff"><label>Title</label><textarea id="ed-title" class="ta-title" rows="2" placeholder="Scene title…" maxlength="120"></textarea></div>
-          <div class="ff"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
+          <div class="ff" id="ed-summary-field"><label>Summary</label><textarea id="ed-summary" class="ta-summary" placeholder="Optional brief description…"></textarea></div>
           <div class="ff" id="ed-sec-wrap" style="display:none"><label>Section</label><select id="ed-section" class="ff-sel"><option value="">Unassigned</option></select></div>
           <div class="ff"><label>Characters</label><div class="ck-drop-wrap" id="ek-characters-wrap"><button class="ck-drop-btn" type="button" id="ek-characters-btn">No characters selected</button><div class="ck-drop-list" id="ek-characters"></div></div></div>
           <div class="ff"><label>Locations</label><div class="ck-drop-wrap" id="ek-locations-wrap"><button class="ck-drop-btn" type="button" id="ek-locations-btn">No locations selected</button><div class="ck-drop-list" id="ek-locations"></div></div></div>
-          <div class="ff"><label>Themes</label><div class="ck-drop-wrap" id="ek-themes-wrap"><button class="ck-drop-btn" type="button" id="ek-themes-btn">No themes selected</button><div class="ck-drop-list" id="ek-themes"></div></div></div>
-          <div class="ff"><label>Misc Items</label><div class="ck-drop-wrap" id="ek-misc-wrap"><button class="ck-drop-btn" type="button" id="ek-misc-btn">No misc items selected</button><div class="ck-drop-list" id="ek-misc"></div></div></div>
-          <div class="ff"><label>Word Count</label><input type="number" id="ed-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
-          <div class="ff"><label>POV</label><div class="ck-drop-wrap" id="ed-povs-wrap"><button class="ck-drop-btn" type="button" id="ed-povs-btn">No POV selected</button><div class="ck-drop-list" id="ed-povs"></div></div></div>
-          <div class="ff"><label>Notes</label><textarea id="ed-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+          <div class="ff" id="ed-themes-field"><label>Themes</label><div class="ck-drop-wrap" id="ek-themes-wrap"><button class="ck-drop-btn" type="button" id="ek-themes-btn">No themes selected</button><div class="ck-drop-list" id="ek-themes"></div></div></div>
+          <div class="ff" id="ed-misc-field"><label>Misc Items</label><div class="ck-drop-wrap" id="ek-misc-wrap"><button class="ck-drop-btn" type="button" id="ek-misc-btn">No misc items selected</button><div class="ck-drop-list" id="ek-misc"></div></div></div>
+          <div class="ff" id="ed-wordcount-field"><label>Word Count</label><input type="number" id="ed-wordcount" min="0" max="999999" placeholder="e.g. 2500"></div>
+          <div class="ff" id="ed-povs-field"><label>POV</label><div class="ck-drop-wrap" id="ed-povs-wrap"><button class="ck-drop-btn" type="button" id="ed-povs-btn">No POV selected</button><div class="ck-drop-list" id="ed-povs"></div></div></div>
+          <div class="ff" id="ed-notes-field"><label>Notes</label><textarea id="ed-notes" class="ta-summary" placeholder="Optional production notes…"></textarea></div>
+
+          <div class="ffg" id="ed-timing-group">
+            <button type="button" class="ffg-hdr" id="ed-timing-toggle" aria-expanded="true">Timing <span class="ffg-car">▾</span></button>
+            <div class="ffg-body" id="ed-timing-body">
+              <div class="ff"><label>Storyline</label><select id="ed-storyline" class="ff-sel"></select></div>
+              <div class="ff"><label>Also part of</label><div class="ck-drop-wrap" id="ed-also-sl-wrap"><button class="ck-drop-btn" type="button" id="ed-also-sl-btn">No other storylines</button><div class="ck-drop-list" id="ed-also-sl"></div></div></div>
+              <div class="ff">
+                <label>Anchor</label>
+                <div class="anchor-row">
+                  <input type="date" id="ed-anchor-date">
+                  <input type="time" id="ed-anchor-time">
+                  <button type="button" id="ed-anchor-clear">Clear</button>
+                </div>
+              </div>
+              <div class="ff"><label>Duration (minutes)</label><input type="number" id="ed-duration" min="1" max="999999" placeholder="e.g. 5"></div>
+              <label class="ff-ck-row"><input type="checkbox" id="ed-offscreen"> Offscreen (happens, but the reader never sees it)</label>
+            </div>
+          </div>
+
+          <div class="ffg" id="ed-reveals-group">
+            <button type="button" class="ffg-hdr" id="ed-reveals-toggle" aria-expanded="true">Reveals <span class="ffg-car">▾</span></button>
+            <div class="ffg-body" id="ed-reveals-body">
+              <div class="ff"><label>Foreshadow</label><div class="ck-drop-wrap" id="ed-reveals-wrap"><button class="ck-drop-btn" type="button" id="ed-reveals-btn">No foreshadow selected</button><div class="ck-drop-list" id="ed-reveals"></div></div></div>
+              <div class="ff"><label>This scene reveals</label><div class="ck-drop-wrap" id="ed-requires-wrap"><button class="ck-drop-btn" type="button" id="ed-requires-btn">No reveals selected</button><div class="ck-drop-list" id="ed-requires"></div></div></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -236,25 +330,6 @@
   <!-- SCENE BOARD PANEL -->
   <div id="sbp">
     <div id="sbhdr">
-      <div id="view-toggle">
-        <div class="view-toggle-item">
-          <span class="view-toggle-lbl">Cards</span>
-          <button id="chart-type-cards" class="chart-type-btn on" title="Card view" aria-label="Card view">
-            <svg viewBox="0 0 20 20" width="16" height="16"><rect x="2" y="2" width="6" height="6" rx="1.3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="12" y="2" width="6" height="6" rx="1.3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="2" y="12" width="6" height="6" rx="1.3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="12" y="12" width="6" height="6" rx="1.3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-          </button>
-        </div>
-        <div class="view-toggle-item">
-          <span class="view-toggle-lbl">Flow</span>
-          <div id="chart-type-toggle">
-            <button id="chart-type-snake" class="chart-type-btn" title="Snake view" aria-label="Snake view">
-              <svg viewBox="0 0 20 18" width="20" height="18"><path d="M2 3 H14 A3 3 0 0 1 14 9 H4 A3 3 0 0 0 4 15 H16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            </button>
-            <button id="chart-type-circle" class="chart-type-btn" title="Circle view" aria-label="Circle view">
-              <svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-            </button>
-          </div>
-        </div>
-      </div>
       <div class="sbhl">
         <span id="sbcnt">0 scenes</span>
         <button id="clrsel">Clear selection</button>
@@ -302,6 +377,74 @@
       <div id="chart-legend"></div>
       <div id="chart-scroll"><div id="chart-canvas"></div></div>
       <div id="chart-tip" role="tooltip"></div>
+    </div>
+    <!-- Timeline view (schema v3 §6) -->
+    <div id="timeline-host" style="display:none">
+      <div id="tl-stage">
+        <svg id="tl-wires"></svg>
+        <div id="tl-chron-hdr">
+          <div id="tl-axis-switch">
+            <button class="tl-axis-btn on" id="tl-axis-ordinal" data-axis="ordinal">Ordinal</button>
+            <button class="tl-axis-btn" id="tl-axis-true" data-axis="true">True scale</button>
+          </div>
+          <div id="tl-braid-mode-switch" style="display:none">
+            <button class="tl-axis-btn" id="tl-braid-mode-chronology" data-braid-mode="chronology">Chronology</button>
+            <button class="tl-axis-btn on" id="tl-braid-mode-narrative" data-braid-mode="narrative">Narrative</button>
+          </div>
+          <label id="tl-thread-wrap">Thread
+            <select id="tl-thread-sel"><option value="">None</option></select>
+          </label>
+          <div class="tl-zoom-ctl" id="tl-zoom-ctl">Zoom <span class="tl-zoom-wrap"><input type="range" id="tl-zoom" min="0" max="100" step="1" value="62" title="Double-click to reset to the midpoint"><span class="tl-zoom-tick" aria-hidden="true"></span></span></div>
+          <span id="tl-status"></span>
+        </div>
+        <div id="tl-chron-body">
+          <div id="tl-lane-labels">
+            <div id="tl-lane-scroll"></div>
+            <button id="tl-add-storyline-btn" title="Add storyline">+ Storyline</button>
+          </div>
+          <div id="tl-chron-scroll-wrap">
+            <div id="tl-chron-scroll"><div id="tl-track"></div></div>
+            <button class="tl-scroll-arrow tl-scroll-arrow-left" id="tl-chron-arrow-left" aria-label="Scroll left">‹</button>
+            <button class="tl-scroll-arrow tl-scroll-arrow-right" id="tl-chron-arrow-right" aria-label="Scroll right">›</button>
+          </div>
+        </div>
+        <div id="tl-wires-zone">
+          <div class="tl-row-caption tl-row-caption-top">Chronology — when it happened</div>
+          <div class="tl-row-caption tl-row-caption-bottom">Narrative — what the reader gets</div>
+        </div>
+        <div id="tl-ms-scroll-wrap">
+          <div id="tl-ms-scroll"><div id="tl-ms-row"></div></div>
+          <button class="tl-scroll-arrow tl-scroll-arrow-left" id="tl-ms-arrow-left" aria-label="Scroll left">‹</button>
+          <button class="tl-scroll-arrow tl-scroll-arrow-right" id="tl-ms-arrow-right" aria-label="Scroll right">›</button>
+        </div>
+        <div id="tl-braid-legend"></div>
+        <div id="tl-braid-scroll"><div id="tl-braid-axis-hud"><div id="tl-braid-top-bar"></div><div id="tl-braid-left-bar"></div><div class="tl-braid-axis-top">READING ORDER →</div><div class="tl-braid-axis-left"><span>CHRONOLOGY</span><span class="tl-braid-axis-arrow">↓</span></div></div><div id="tl-braid-watermark"></div><svg id="tl-braid-svg"></svg><div id="tl-braid-markers-hud"></div><div id="tl-braid-section-hud"></div></div>
+      </div>
+      <div class="panel" id="tl-panel">
+        <button class="p-strip" id="tl-panel-strip-btn" aria-label="Expand Inspector panel">
+          <span class="sl" aria-hidden="true">Inspector</span><span aria-hidden="true">◀</span>
+        </button>
+        <div class="p-content">
+          <div class="tabs tl-panel-tabs">
+            <button class="cbtn tab-cbtn" id="tl-panel-collapse-btn" title="Collapse" aria-label="Collapse Inspector panel">▶</button>
+            <button class="tab tl-panel-tab on" id="tl-tab-inspector">Inspector</button>
+            <button class="tab tl-panel-tab" id="tl-tab-conflicts">Conflicts (0)</button>
+          </div>
+          <div class="tl-panel-body" id="tl-inspector-body">
+            <div id="tl-inspector-empty" class="tl-panel-empty">
+              <p>Select a scene to edit it here.</p>
+              <p class="tl-inspector-empty-or">or</p>
+              <button id="tl-new-scene-btn">+ New Scene</button>
+            </div>
+          </div>
+          <div class="tl-panel-body" id="tl-conflicts-body" style="display:none">
+            <div class="tl-panel-empty">Conflict checking arrives in a later update.</div>
+          </div>
+          <div id="tl-inspector-footer" style="display:none">
+            <button id="tl-delete-scene-btn">Delete Scene</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -391,6 +534,17 @@
   </div>
 </div>
 
+<!-- Timeline Move Confirm Modal (chron drag reorder/re-lane) -->
+<div id="tl-move-cfm-modal" class="cfm-modal" role="dialog" aria-modal="true" aria-labelledby="tl-move-cfm-msg">
+  <div class="cfm-box">
+    <div id="tl-move-cfm-msg" class="cfm-msg"></div>
+    <div class="ap-btns">
+      <button id="tl-move-cfm-discard">Discard</button>
+      <button id="tl-move-cfm-save">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Discard Scene Confirm Modal -->
 <div id="discard-cfm-modal" class="cfm-modal" role="dialog" aria-modal="true" aria-labelledby="discard-cfm-msg">
   <div class="cfm-box">
@@ -422,6 +576,7 @@
       <div class="rpt-blk-hdr">Report Type</div>
       <div class="rpt-type-btns">
         <button class="rpt-type-btn on" id="rpt-type-scenelist">Scene List</button>
+        <button class="rpt-type-btn"    id="rpt-type-chronology">Chronology</button>
         <button class="rpt-type-btn"    id="rpt-type-character">Character</button>
         <button class="rpt-type-btn"    id="rpt-type-location">Location</button>
         <button class="rpt-type-btn"    id="rpt-type-theme">Theme</button>
@@ -443,6 +598,21 @@
         <label class="rpt-ck"><input type="checkbox" id="rpt-sl-themes"     checked> Themes</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-sl-misc"       checked> Misc Items</label>
         <label class="rpt-ck"><input type="checkbox" id="rpt-sl-pov"        checked> POV</label>
+      </div>
+    </div>
+
+    <!-- Chronology options -->
+    <div class="rpt-opts-panel" id="rpt-opts-chronology">
+      <div class="rpt-blk-hdr">Include Fields</div>
+      <div class="rpt-ck-row">
+        <label class="rpt-ck"><input type="checkbox" id="rpt-cl-section"    checked> Section</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-cl-summary"    checked> Summary</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-cl-notes"      checked> Notes</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-cl-characters" checked> Characters</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-cl-locations"  checked> Locations</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-cl-themes"     checked> Themes</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-cl-misc"       checked> Misc Items</label>
+        <label class="rpt-ck"><input type="checkbox" id="rpt-cl-pov"        checked> POV</label>
       </div>
     </div>
 
@@ -560,8 +730,10 @@
 <script src="backup.js"></script>
 <script src="reports.js"></script>
 <script src="ui.js"></script>
+<script src="timeline.js"></script>
 <script src="charts.js"></script>
 <script src="editor.js"></script>
+<script src="conflicts.js"></script>
 <script src="projects.js"></script>
 <script src="main.js"></script>
 <script src="app.js"></script>

@@ -91,14 +91,9 @@ if (document.getElementById('chart-host')) {
 function toggleChartView() {
   if (chartMode) closeChartView(); else openChartView();
 }
-// Cards/Snake/Circle read as one 3-way switch (see #view-toggle) even though
-// only two of the buttons live in chartType — the third state is "chart
-// isn't open at all".
-function updateViewToggleUI() {
-  document.getElementById('chart-type-cards').classList.toggle('on', !chartMode);
-  document.getElementById('chart-type-snake').classList.toggle('on', chartMode && chartType === 'snake');
-  document.getElementById('chart-type-circle').classList.toggle('on', chartMode && chartType === 'circle');
-}
+// updateViewToggleUI() — reads Cards/Snake/Circle/Timeline as one 4-way
+// switch — now lives in timeline.js (schema v3 §6.1), since it needs to know
+// about timelineMode too. Defined there so it stays a single source of truth.
 function openChartView() {
   chartMode = true;
   document.getElementById('sbscrl').style.display = 'none';
@@ -113,16 +108,16 @@ function openChartView() {
   document.getElementById('det-ck-wrap').style.display = 'none';
   document.getElementById('scalew-wrap').style.display = 'none';
   // Reuse the top header line for the chart's own status text (scene/section/
-  // trace counts) in place of the board's scene count, drop the section
-  // filter down onto the chart toolbar row after the Trace dropdown, and
-  // move the Cards/Snake/Circle view switch onto that same toolbar row —
-  // moving the actual nodes (not clones) keeps their listeners and state intact.
+  // trace counts) in place of the board's scene count, and drop the section
+  // filter down onto the chart toolbar row after the Trace dropdown — moving
+  // the actual nodes (not clones) keeps their listeners and state intact.
+  // (The Cards/Snake/Circle/Timeline view switch itself no longer moves — it
+  // lives permanently in #menu-center now, see editor.html.)
   document.getElementById('sbcnt').style.display = 'none';
   document.getElementById('sbhdr').insertBefore(document.getElementById('chart-status'), document.getElementById('det-ck-wrap'));
   document.getElementById('chart-toolbar').insertBefore(document.getElementById('sec-filter-wrap'), document.getElementById('chart-print-btn'));
-  document.getElementById('chart-toolbar').insertBefore(document.getElementById('view-toggle'), document.getElementById('chart-wc-toggle'));
   updateViewToggleUI();
-  setChartMenuLabel();
+  updateViewMenuActiveStates();
   renderChart();
 }
 function closeChartView() {
@@ -135,14 +130,9 @@ function closeChartView() {
   document.getElementById('sbcnt').style.display = '';
   document.getElementById('chart-toolbar').insertBefore(document.getElementById('chart-status'), document.getElementById('chart-print-btn'));
   document.getElementById('sbhdr').insertBefore(document.getElementById('sec-filter-wrap'), document.getElementById('srch-wrap'));
-  document.getElementById('sbhdr').insertBefore(document.getElementById('view-toggle'), document.getElementById('sbhdr').firstChild);
   updateViewToggleUI();
-  setChartMenuLabel();
+  updateViewMenuActiveStates();
   renderBoard();
-}
-function setChartMenuLabel() {
-  const lbl = document.getElementById('menu-chart-text');
-  if (lbl) lbl.textContent = chartMode ? 'Hide Scene Flow Chart' : 'Show Scene Flow Chart';
 }
 function setChartType(type) {
   if (type !== 'snake' && type !== 'circle') return;
@@ -170,12 +160,16 @@ function setChartTrace(cat) {
 }
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
+// Offscreen scenes are never shown to the reader, so they have no place on
+// the Scene Flow Chart (a reading-order view, same as the Scene Board) —
+// only in Timeline's Chronology views.
 function orderedScenes() {
-  if (!S.sections.length) return [...S.scenes];
+  const onPage = S.scenes.filter(s => !s.offscreen);
+  if (!S.sections.length) return onPage;
   const validSecIds = new Set(S.sections.map(s => s.id));
   const groups = [
-    { id: null, isUnasgn: true,  scenes: S.scenes.filter(s => !validSecIds.has(s.sectionId)) },
-    ...S.sections.map(sec => ({ id: sec.id, isUnasgn: false, scenes: S.scenes.filter(s => s.sectionId === sec.id) })),
+    { id: null, isUnasgn: true,  scenes: onPage.filter(s => !validSecIds.has(s.sectionId)) },
+    ...S.sections.map(sec => ({ id: sec.id, isUnasgn: false, scenes: onPage.filter(s => s.sectionId === sec.id) })),
   ];
   const visible = secFilterIds.size === 0
     ? groups
@@ -198,37 +192,41 @@ function sceneSectionName(scene) {
 }
 
 // ── TRACE LANES ─────────────────────────────────────────────────────────────────
-function traceItemNames() {
-  // All item names in the traced category, in stable library order.
+function traceItems() {
+  // All {id, name} entries in the traced category, in stable library order.
   if (traceCat === 'povs') {
     const used = new Set(S.scenes.flatMap(s => s.povs || []));
-    return S.characters.map(c => c.name).concat(S.povCustomNames || [])
-      .filter(n => used.has(n));
+    return povEntities().filter(e => used.has(e.id));
   }
-  return S[traceCat].map(item => item.name);
+  return S[traceCat].map(item => ({ id: item.id, name: item.name }));
 }
 
 function computeTraceLanes(scenes) {
-  // Returns { lanes: [{name, color}], overflow: number }. Lanes are only the
-  // items the user has explicitly selected in the traced category — nothing
-  // selected means no lanes (see updateChartLegend for the hint shown then).
-  // There's no small design cap on lane count: the tube widens and bands thin
-  // continuously as more are selected (see traceThickness/traceLaneWidth).
-  // LANE_SANITY_CAP only guards against a pathological selection (hundreds of
-  // items), not normal use.
+  // Returns { lanes: [{id, name, color}], overflow: number }. Lanes are only
+  // the items the user has explicitly selected in the traced category —
+  // nothing selected means no lanes (see updateChartLegend for the hint shown
+  // then). There's no small design cap on lane count: the tube widens and
+  // bands thin continuously as more are selected (see traceThickness/
+  // traceLaneWidth). LANE_SANITY_CAP only guards against a pathological
+  // selection (hundreds of items), not normal use.
   if (!traceActive()) return { lanes: [], overflow: 0 };
-  const inScenes = name => scenes.some(sc => (sc[traceCat] || []).includes(name));
+  const inScenes = id => scenes.some(sc => (sc[traceCat] || []).includes(id));
   const selected = S.selections[traceCat];
-  const names = traceItemNames().filter(n => selected.has(n) && inScenes(n));
-  const overflow = Math.max(0, names.length - LANE_SANITY_CAP);
-  return { lanes: names.slice(0, LANE_SANITY_CAP).map((name, i) => ({ name, color: TRACE_COLORS[i % TRACE_COLORS.length] })), overflow };
+  const items = traceItems().filter(e => selected.has(e.id) && inScenes(e.id));
+  const overflow = Math.max(0, items.length - LANE_SANITY_CAP);
+  return { lanes: items.slice(0, LANE_SANITY_CAP).map((e, i) => ({ id: e.id, name: e.name, color: TRACE_COLORS[i % TRACE_COLORS.length] })), overflow };
 }
 
-function computeLaneRuns(layout, name) {
-  const numMap = buildSceneNumMap();
+// numMap is caller-built (once per chart render pass, not per lane) — see
+// addSnakeTraceLanes/addCircleTraceLanes, which can call this once per traced
+// lane (up to LANE_SANITY_CAP times) and would otherwise rebuild the same
+// O(scenes) map that many times over. layout is always built from
+// orderedScenes(), which excludes offscreen scenes, so every scene here is
+// guaranteed a real display number.
+function computeLaneRuns(layout, id, numMap) {
   const runs = [];
   layout.forEach(({ scene, offset, len }) => {
-    const has = (scene[traceCat] || []).includes(name);
+    const has = (scene[traceCat] || []).includes(id);
     if (!has) return;
     const last = runs[runs.length - 1];
     if (last && Math.abs(last.end - offset) < 0.001) {
@@ -294,7 +292,7 @@ function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane, laneW
     const len = Math.max(2, e - s - 2 * inset);
     const clone = lanePathEl.cloneNode(false);
     clone.classList.add('chart-lane');
-    clone.dataset.lane = lane.name;
+    clone.dataset.lane = lane.id;
     clone.setAttribute('stroke', lane.color);
     clone.setAttribute('stroke-width', laneW);
     clone.dataset.baseWidth = laneW; // highlightLaneLegend widens relative to this, not a fixed px value
@@ -303,9 +301,9 @@ function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane, laneW
     clone.setAttribute('stroke-dasharray', len + ' ' + Math.max(0, laneTotal - len));
     clone.setAttribute('stroke-dashoffset', String(-(s + inset)));
     clone.style.pointerEvents = 'stroke';
-    clone.addEventListener('mouseenter', e2 => { showLaneTip(e2, lane, run); highlightLaneLegend(lane.name, true); });
+    clone.addEventListener('mouseenter', e2 => { showLaneTip(e2, lane, run); highlightLaneLegend(lane.id, true); });
     clone.addEventListener('mousemove', moveChartTip);
-    clone.addEventListener('mouseleave', () => { hideChartTip(); highlightLaneLegend(lane.name, false); });
+    clone.addEventListener('mouseleave', () => { hideChartTip(); highlightLaneLegend(lane.id, false); });
     container.appendChild(clone);
   });
 }
@@ -313,13 +311,13 @@ function drawLaneRuns(container, lanePathEl, laneTotal, total, runs, lane, laneW
 // than to a fixed absolute value — a fixed target (e.g. "5px") stops reading
 // as a highlight once bands are naturally that thick or thicker on their own,
 // which is common now that lanes can grow well past their old 3px max.
-function highlightLaneLegend(name, on) {
-  document.querySelectorAll('.chart-lane[data-lane="' + CSS.escape(name) + '"]').forEach(l => {
+function highlightLaneLegend(id, on) {
+  document.querySelectorAll('.chart-lane[data-lane="' + CSS.escape(String(id)) + '"]').forEach(l => {
     l.classList.toggle('chart-lane-hl', on);
     const base = parseFloat(l.dataset.baseWidth) || LANE_W_MIN;
     l.setAttribute('stroke-width', on ? base * 1.6 + 1.5 : base);
   });
-  const el = document.querySelector('.chart-legend-item[data-lane="' + CSS.escape(name) + '"]');
+  const el = document.querySelector('.chart-legend-item[data-lane="' + CSS.escape(String(id)) + '"]');
   if (el) el.classList.toggle('chart-legend-hl', on);
 }
 function showLaneTip(e, lane, run) {
@@ -397,9 +395,15 @@ function sectionLetter(idx) {
   return idx < 26 ? String.fromCharCode(65 + idx) : String(idx + 1);
 }
 
+// Checked against orderedScenes() (the actual filtered/rendered scene list),
+// not all of S.scenes — otherwise, filtering the section dropdown to exclude
+// "Unassigned" would still shift every real section's letter by one and leave
+// a phantom "Unassigned" entry in the legend, even though no unassigned scene
+// is ever drawn.
 function hasUnassignedScenes() {
+  if (!S.sections.length) return false;
   const validSecIds = new Set(S.sections.map(s => s.id));
-  return S.sections.length > 0 && S.scenes.some(s => !validSecIds.has(s.sectionId));
+  return orderedScenes().some(s => !validSecIds.has(s.sectionId));
 }
 
 function chartLegendSections() {
@@ -450,12 +454,12 @@ function updateChartLegend(scenes, trace) {
     } else {
       trace.lanes.forEach(lane => {
         chartLegendSep(el);
-        const item = document.createElement('span'); item.className = 'chart-legend-item'; item.dataset.lane = lane.name;
+        const item = document.createElement('span'); item.className = 'chart-legend-item'; item.dataset.lane = lane.id;
         const swatch = document.createElement('span'); swatch.className = 'chart-legend-swatch'; swatch.style.background = lane.color;
         const nameEl = document.createElement('span'); nameEl.className = 'chart-legend-name'; nameEl.textContent = lane.name;
         item.appendChild(swatch); item.appendChild(nameEl);
-        item.addEventListener('mouseenter', () => highlightLaneLegend(lane.name, true));
-        item.addEventListener('mouseleave', () => highlightLaneLegend(lane.name, false));
+        item.addEventListener('mouseenter', () => highlightLaneLegend(lane.id, true));
+        item.addEventListener('mouseleave', () => highlightLaneLegend(lane.id, false));
         el.appendChild(item);
       });
       if (trace.overflow > 0) {
@@ -466,6 +470,14 @@ function updateChartLegend(scenes, trace) {
         el.appendChild(item);
       }
     }
+  } else if (!(SECS.some(({ key }) => S.selections[key].size > 0) || S.selections.povs.size > 0)) {
+    // Trace off and nothing picked in the library yet — same spot the trace
+    // hint above occupies, so there's always a hint on this row until the
+    // user does one or the other.
+    chartLegendSep(el);
+    const item = document.createElement('span'); item.className = 'chart-legend-item chart-legend-hint';
+    item.textContent = 'Select items in the library to highlight them';
+    el.appendChild(item);
   }
 }
 // ── PROPORTIONAL LAYOUT (by word count) ─────────────────────────────────────────
@@ -700,13 +712,14 @@ function snakeLenToLaneLen(lenC, N, W, thickness, d) {
 function addSnakeTraceLanes(svg, N, W, trace, layout, total, thickness, laneW) {
   if (!trace || !trace.lanes.length) return;
   const offsets = laneOffsets(trace.lanes.length, thickness, laneW);
+  const numMap = buildSceneNumMap(); // once for every lane, not once per lane
   trace.lanes.forEach((lane, i) => {
     const path = document.createElementNS(SVGNS, 'path');
     path.setAttribute('d', buildSnakeLanePathD(N, W, offsets[i], thickness));
     path.setAttribute('stroke', 'none'); path.setAttribute('fill', 'none');
     svg.appendChild(path);
     const laneTotal = path.getTotalLength();
-    const runs = computeLaneRuns(layout, lane.name);
+    const runs = computeLaneRuns(layout, lane.id, numMap);
     const mapLen = len => snakeLenToLaneLen(len, N, W, thickness, offsets[i]);
     drawLaneRuns(svg, path, laneTotal, total, runs, lane, laneW, mapLen);
   });
@@ -782,7 +795,7 @@ function addSnakeNumbers(svg, centerline, layout, total) {
     if (len < 26) return; // segment too small on screen to fit a number legibly
     const mid = centerline.getPointAtLength(offset + len / 2);
     const matched = chartSegFilterActive() && segIsMatched(scene);
-    drawChartNum(svg, mid.x, mid.y, String(numMap.get(scene.id) ?? 1), scene.id, matched);
+    drawChartNum(svg, mid.x, mid.y, String(numMap.get(scene.id)), scene.id, matched);
   });
 }
 
@@ -834,13 +847,14 @@ function addSnakeEstimatedTicks(svg, centerline, layout, total) {
 function addCircleTraceLanes(g, layout, cx, cy, R, total, trace, thickness, laneW) {
   if (!trace || !trace.lanes.length) return;
   const offsets = laneOffsets(trace.lanes.length, thickness, laneW);
+  const numMap = buildSceneNumMap(); // once for every lane, not once per lane
   trace.lanes.forEach((lane, i) => {
     const path = document.createElementNS(SVGNS, 'circle');
     path.setAttribute('cx', cx); path.setAttribute('cy', cy); path.setAttribute('r', R + offsets[i]);
     path.setAttribute('stroke', 'none'); path.setAttribute('fill', 'none');
     g.appendChild(path);
     const laneTotal = path.getTotalLength();
-    const runs = computeLaneRuns(layout, lane.name);
+    const runs = computeLaneRuns(layout, lane.id, numMap);
     drawLaneRuns(g, path, laneTotal, total, runs, lane, laneW);
   });
 }
@@ -891,7 +905,7 @@ function addCircleNumbers(svg, layout, cx, cy, R, total) {
     const rad = angleDeg * Math.PI / 180;
     const x = cx + R * Math.cos(rad), y = cy + R * Math.sin(rad);
     const matched = chartSegFilterActive() && segIsMatched(scene);
-    drawChartNum(svg, x, y, String(numMap.get(scene.id) ?? 1), scene.id, matched);
+    drawChartNum(svg, x, y, String(numMap.get(scene.id)), scene.id, matched);
   });
 }
 
@@ -1005,7 +1019,7 @@ function showChartTip(e, scene) {
   const tip = document.getElementById('chart-tip');
   tip.innerHTML = '';
   const t1 = document.createElement('div'); t1.className = 'chart-tip-title';
-  t1.textContent = `Scene ${sceneDisplayNum(scene.id)} — ${scene.title}`;
+  t1.textContent = `${sceneNumPrefix(scene.id)}${scene.title}`;
   tip.appendChild(t1);
   const secName = sceneSectionName(scene);
   if (secName) { const t2 = document.createElement('div'); t2.className = 'chart-tip-sec'; t2.textContent = secName; tip.appendChild(t2); }

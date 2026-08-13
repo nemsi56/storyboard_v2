@@ -1,10 +1,10 @@
 /* ══ 5 THEMES ═══════════════════════════════════════════════════════════════ */
 /* --bl=chars --gr=locs --clt=themes-cat --am=misc --pv=pov --acc=UI accent --yl=highlight --sbg=storyboard bg */
-[data-theme="slate"]  {--bg0:#0d1117;--bg1:#161b22;--bg2:#0d1117;--s0:#21262d;--s1:#30363d;--o0:#6e7681;--o1:#8d96a0;--tx:#e6edf3;--sub:#8d96a0;--acc:#b07ef8;--bl:#58a6ff;--gr:#3fb950;--clt:#b07ef8;--am:#f0883e;--pv:#f472b6;--yl:#e3b341;--rd:#f85149;--lv:#79c0ff;--bdr:#21262d;--cbg:#161b22;--cbdr:#30363d;--mbg:#0d1117;--mov:rgba(0,0,0,.76);--ontx:#000;--sbg:#070a0f;--tex-c:rgba(255,255,255,0.065)}
-[data-theme="ivory"]  {--bg0:#f8f6f2;--bg1:#f0ece6;--bg2:#faf9f6;--s0:#e4dfd8;--s1:#d4cfc8;--o0:#8a7e70;--o1:#5a4e40;--tx:#2c2416;--sub:#5c5044;--acc:#9b4a1a;--bl:#1a5a9b;--gr:#2d7a3a;--clt:#8b1a4a;--am:#b55810;--pv:#5d248f;--yl:#b06a00;--rd:#c0321a;--lv:#4a4a9b;--bdr:#d4cfc8;--cbg:#faf8f5;--cbdr:#c5bfb7;--mbg:#faf9f6;--mov:rgba(0,0,0,.42);--ontx:#fff;--sbg:#e8e3dc;--tex-c:rgba(0,0,0,0.05)}
-[data-theme="studio"] {--bg0:#f0f2f5;--bg1:#ffffff;--bg2:#f8f9fa;--s0:#e4e6ea;--s1:#d8dadd;--o0:#9da3aa;--o1:#6c737a;--tx:#1a1a2e;--sub:#495057;--acc:#7c3aed;--bl:#2563eb;--gr:#16a34a;--clt:#7c3aed;--am:#ea580c;--pv:#e4259e;--yl:#d97706;--rd:#dc2626;--lv:#6366f1;--bdr:#e4e6ea;--cbg:#ffffff;--cbdr:#e4e6ea;--mbg:#f8f9fa;--mov:rgba(0,0,0,.38);--ontx:#fff;--sbg:#e4e8ed;--tex-c:rgba(0,0,0,0.041)}
-[data-theme="ocean"]  {--bg0:#051820;--bg1:#072030;--bg2:#041418;--s0:#0e3848;--s1:#184858;--o0:#508090;--o1:#78a8b8;--tx:#c8e8f0;--sub:#90b8c8;--acc:#06b6d4;--bl:#93c5fd;--gr:#6ee7b7;--clt:#e879f9;--am:#fde68a;--pv:#f98b9d;--yl:#fde68a;--rd:#f87171;--lv:#a5b4fc;--bdr:#0e3848;--cbg:#072030;--cbdr:#0e3848;--mbg:#041418;--mov:rgba(0,0,0,.78);--ontx:#000;--sbg:#020c10;--tex-c:rgba(255,255,255,0.055)}
-[data-theme="sunset"] {--bg0:#fff8f0;--bg1:#fff0e0;--bg2:#fffaf4;--s0:#f0dfc8;--s1:#e8d0b0;--o0:#a08060;--o1:#705030;--tx:#2a1a08;--sub:#604020;--acc:#ea580c;--bl:#4338ca;--gr:#059669;--clt:#e11d48;--am:#d97706;--pv:#c722d3;--yl:#b45309;--rd:#dc2626;--lv:#7c3aed;--bdr:#e8d0b0;--cbg:#fff0e0;--cbdr:#e8d0b0;--mbg:#fffaf4;--mov:rgba(0,0,0,.4);--ontx:#fff;--sbg:#f0e5d4;--tex-c:rgba(0,0,0,0.041)}
+[data-theme="slate"]  {--bg0:#0d1117;--bg1:#161b22;--bg2:#0d1117;--s0:#21262d;--s1:#30363d;--o0:#6e7681;--o1:#8d96a0;--lbl:#9aa4b0;--tx:#e6edf3;--sub:#8d96a0;--acc:#b07ef8;--bl:#58a6ff;--gr:#3fb950;--clt:#b07ef8;--am:#f0883e;--pv:#f472b6;--yl:#e3b341;--rd:#f85149;--lv:#79c0ff;--bdr:#21262d;--cbg:#161b22;--cbdr:#30363d;--mbg:#0d1117;--mov:rgba(0,0,0,.76);--ontx:#000;--sbg:#070a0f;--tex-c:rgba(255,255,255,0.065)}
+[data-theme="ivory"]  {--bg0:#f8f6f2;--bg1:#f0ece6;--bg2:#faf9f6;--s0:#e4dfd8;--s1:#d4cfc8;--o0:#8a7e70;--o1:#5a4e40;--lbl:#8a7e70;--tx:#2c2416;--sub:#5c5044;--acc:#9b4a1a;--bl:#1a5a9b;--gr:#2d7a3a;--clt:#8b1a4a;--am:#b55810;--pv:#5d248f;--yl:#b06a00;--rd:#c0321a;--lv:#4a4a9b;--bdr:#d4cfc8;--cbg:#faf8f5;--cbdr:#c5bfb7;--mbg:#faf9f6;--mov:rgba(0,0,0,.42);--ontx:#fff;--sbg:#e8e3dc;--tex-c:rgba(0,0,0,0.05)}
+[data-theme="studio"] {--bg0:#f0f2f5;--bg1:#ffffff;--bg2:#f8f9fa;--s0:#e4e6ea;--s1:#d8dadd;--o0:#9da3aa;--o1:#6c737a;--lbl:#9da3aa;--tx:#1a1a2e;--sub:#495057;--acc:#7c3aed;--bl:#2563eb;--gr:#16a34a;--clt:#7c3aed;--am:#ea580c;--pv:#e4259e;--yl:#d97706;--rd:#dc2626;--lv:#6366f1;--bdr:#e4e6ea;--cbg:#ffffff;--cbdr:#e4e6ea;--mbg:#f8f9fa;--mov:rgba(0,0,0,.38);--ontx:#fff;--sbg:#e4e8ed;--tex-c:rgba(0,0,0,0.041)}
+[data-theme="ocean"]  {--bg0:#051820;--bg1:#072030;--bg2:#041418;--s0:#0e3848;--s1:#184858;--o0:#508090;--o1:#78a8b8;--lbl:#7bb3c4;--tx:#c8e8f0;--sub:#90b8c8;--acc:#06b6d4;--bl:#93c5fd;--gr:#6ee7b7;--clt:#e879f9;--am:#fde68a;--pv:#f98b9d;--yl:#fde68a;--rd:#f87171;--lv:#a5b4fc;--bdr:#0e3848;--cbg:#072030;--cbdr:#0e3848;--mbg:#041418;--mov:rgba(0,0,0,.78);--ontx:#000;--sbg:#020c10;--tex-c:rgba(255,255,255,0.055)}
+[data-theme="sunset"] {--bg0:#fff8f0;--bg1:#fff0e0;--bg2:#fffaf4;--s0:#f0dfc8;--s1:#e8d0b0;--o0:#a08060;--o1:#705030;--lbl:#a08060;--tx:#2a1a08;--sub:#604020;--acc:#ea580c;--bl:#4338ca;--gr:#059669;--clt:#e11d48;--am:#d97706;--pv:#c722d3;--yl:#b45309;--rd:#dc2626;--lv:#7c3aed;--bdr:#e8d0b0;--cbg:#fff0e0;--cbdr:#e8d0b0;--mbg:#fffaf4;--mov:rgba(0,0,0,.4);--ontx:#fff;--sbg:#f0e5d4;--tex-c:rgba(0,0,0,0.041)}
 
 
 /* ══ BASE ═══════════════════════════════════════════════════════════════════ */
@@ -14,7 +14,10 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 
 /* ══ HEADER ═════════════════════════════════════════════════════════════════ */
 #hdr{background:var(--bg1);border-bottom:1px solid var(--bdr);height:50px;padding:0 16px;display:flex;align-items:center;gap:16px;flex-shrink:0;z-index:20;justify-content:space-between}
-#hdr h1{font-size:18px;font-weight:700;color:var(--acc);white-space:nowrap;flex-shrink:0;margin:0}
+#hdr h1{font-size:18px;font-weight:700;color:var(--acc);white-space:nowrap;flex-shrink:0;margin:0;display:flex;align-items:center;gap:8px}
+.app-logo-icon{width:44px;height:44px;border-radius:10px;object-fit:cover}
+.app-logo-link{display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none;transition:opacity .12s}
+.app-logo-link:hover{opacity:.8}
 .hdr-spacer{flex:1}
 #hdr .tip{font-size:11px;color:var(--o0);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
@@ -174,6 +177,11 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #asb:active,#saveedit:active{transform:scale(.98)}
 #canceledit,#new-cancel{background:var(--s0);color:var(--sub);border:1px solid var(--s1);border-radius:8px;padding:9px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .14s}
 #canceledit:hover,#new-cancel:hover{background:var(--s1)}
+/* Timeline-only: disabled attribute is set/cleared by timeline.js based on
+   isEditFormDirty() (nothing to Save/Cancel while the form is clean); board's
+   own Edit Scene form never sets this attribute on these same shared buttons,
+   so this never affects board behavior. */
+#canceledit:disabled,#saveedit:disabled,#new-cancel:disabled,#asb:disabled{opacity:.4;cursor:default;pointer-events:none}
 .lib-rename-inp{flex:1;min-width:0;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:1px 5px;color:var(--tx);font-size:12px;font-family:inherit;outline:none}
 .lib-hint{font-style:italic;font-size:11px;color:var(--sub);text-align:center;margin:0 0 8px;line-height:1.4;padding:0 4px;flex-shrink:0}
 .ck-drop-wrap{position:relative}
@@ -185,20 +193,53 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .ck-drop-item{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:5px;cursor:pointer;font-size:12px;color:var(--tx);user-select:none}
 .ck-drop-item:hover{background:var(--s0)}
 .ck-drop-item input{cursor:pointer;accent-color:var(--acc)}
+/* Reveal library items (This scene reveals / Foreshadow) get inline edit/delete
+   buttons — reuses .iedit/.idel (see the library-panel .li rule above) but
+   reveals on this row's own hover instead, since these buttons live in a
+   .ck-drop-item, not a .li. */
+.ck-drop-item:hover .idel,.ck-drop-item:hover .iedit{opacity:1}
 .ck-drop-empty{font-size:11px;color:var(--sub);padding:6px 7px;font-style:italic}
 .ck-drop-add{display:block;width:100%;text-align:left;background:none;border:none;border-radius:5px;padding:6px 7px;margin-bottom:4px;font-size:12px;font-weight:600;font-family:inherit;color:var(--acc);cursor:pointer}
 .ck-drop-add:hover{background:var(--s0)}
+/* Timing / Reveals collapsible form groups (schema v3 §7) */
+.ffg{border-top:1px solid var(--s1);margin-top:10px;padding-top:6px}
+.ffg-hdr{display:flex;align-items:center;gap:6px;width:100%;background:none;border:none;padding:6px 2px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--sub);cursor:pointer;font-family:inherit}
+.ffg-hdr:hover{color:var(--tx)}
+.ffg-car{font-size:16px;line-height:1;transition:transform .13s}
+.ffg.collapsed .ffg-car{transform:rotate(-90deg)}
+.ffg.collapsed .ffg-body{display:none}
+/* flex-wrap:wrap (not nowrap) — at #tl-panel's 300px width (narrower still
+   in #cp's 258px), date + time + the Clear button can't all fit on one line
+   without shrinking the date/time inputs below their native rendering
+   width, which clips the year/AM-PM instead of just reflowing. A native
+   date/time input can't shrink gracefully like text can, so give them a
+   real min-width and let the Clear button wrap to its own line instead. */
+.anchor-row{display:flex;flex-wrap:wrap;gap:6px}
+.anchor-row input[type=date],.anchor-row input[type=time]{flex:1 1 118px;min-width:118px;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:7px 8px;color:var(--tx);font-size:12px;font-family:inherit;outline:none}
+.anchor-row input[type=date]:focus,.anchor-row input[type=time]:focus{border-color:var(--acc)}
+.anchor-row button{flex:0 0 auto;background:var(--s0);color:var(--sub);border:1px solid var(--s1);border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit;cursor:pointer}
+.anchor-row button:hover{background:var(--s1)}
+.ff-ck-row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tx);cursor:pointer;line-height:1.4;margin-top:2px}
+.ff-ck-row input{accent-color:var(--acc);cursor:pointer;flex-shrink:0}
+.ck-drop-mint{display:flex;gap:5px;padding:0 2px 6px}
+.ck-drop-mint input{flex:1;min-width:0;background:var(--s0);border:1px solid var(--s1);border-radius:5px;padding:5px 7px;color:var(--tx);font-size:12px;font-family:inherit;outline:none}
+.ck-drop-mint input:focus{border-color:var(--acc)}
+.ck-drop-mint button{background:var(--acc);color:var(--ontx);border:none;border-radius:5px;padding:5px 9px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
 #msum-section,#mnotes-section{margin-top:12px}
 .m-sec-hdr{font-size:11px;font-weight:700;text-decoration:underline;text-transform:uppercase;color:var(--sub);margin-bottom:5px;letter-spacing:0.06em}
 #mnotes{font-size:13px;color:var(--sub);line-height:1.7;white-space:pre-wrap}
 .errmsg{font-size:11px;color:var(--rd);margin-top:5px;min-height:14px}
 
 /* ══ STORYBOARD PANEL ══════════════════════════════════════════════════════ */
-#sbp{flex:1;min-width:0;background:var(--sbg);display:flex;flex-direction:column;overflow:hidden}
-/* 52px, not the 46px every other panel header row uses — the extra height
-   gives the CARDS/FLOW label (see .view-toggle-lbl) breathing room above it
-   instead of sitting flush against the row's top edge. */
-#sbhdr{height:52px;border-bottom:1px solid var(--bdr);padding:0 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--sbg)}
+/* position:relative — #sbemp below is position:absolute expecting THIS panel
+   as its containing block (inset:46px 0 0 0, meant to center the empty-state
+   message under #sbp's own header). Without it, #sbemp falls back to the
+   nearest positioned ancestor, which is none — the initial containing block
+   (viewport) — so the message centers across the whole window, straddling
+   into the Library/Sections/New-Scene panels to its left instead of staying
+   inside the board area. */
+#sbp{position:relative;flex:1;min-width:0;background:var(--sbg);display:flex;flex-direction:column;overflow:hidden}
+#sbhdr{height:46px;border-bottom:1px solid var(--bdr);padding:0 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--sbg)}
 .sbhl{display:flex;align-items:center;gap:6px;flex-shrink:0}
 #sbcnt{font-size:12px;color:var(--sub)}
 #clrsel{font-size:11px;color:var(--lv);background:none;border:none;cursor:pointer;padding:3px 7px;border-radius:5px;display:none;transition:background .12s;font-family:inherit;white-space:nowrap}
@@ -241,6 +282,11 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 /* Card badges & buttons */
 .sbadge{position:absolute;top:6px;left:6px;width:14px;height:14px;background:var(--lv);border-radius:50%;display:none;align-items:center;justify-content:center;font-size:9px;color:#000;font-weight:900}
 .sc.sel .sbadge{display:flex}
+/* Conflict-engine warn-dot (schema v3 §8) — visible regardless of which view
+   is active, so a bilocation/constraint/reveal-order problem is discoverable
+   without opening the timeline. */
+.warn-dot{position:absolute;top:-4px;right:-4px;width:8px;height:8px;border-radius:50%;background:var(--rd);border:2px solid var(--cbg);display:none;z-index:3}
+.sc.sc-warn .warn-dot{display:block}
 .cdel,.csum,.cedit{position:absolute;top:5px;background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:4px;opacity:0;transition:opacity .1s,color .1s;line-height:1;color:var(--o0)}
 .cdel{right:5px;font-size:15px}
 .csum{right:24px;font-size:13px}
@@ -250,6 +296,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .csum:hover,.cedit:hover{color:var(--acc)!important}
 .csum.hs{opacity:.5;color:var(--acc)}
 .sc:hover .csum.hs{opacity:1}
+/* Offscreen badge (schema v3 §9) */
+.off-badge{display:inline-block;font-size:calc(9px * var(--cs,1));font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sub);background:var(--s0);border:1px solid var(--s1);border-radius:4px;padding:1px 5px;margin-bottom:4px}
 /* Card text */
 .cnum{font-size:calc(9px * var(--cs,1));font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--o0);margin-bottom:4px}
 .ctit{font-size:calc(13px * var(--cs,1));font-weight:600;color:var(--tx);margin-bottom:calc(8px * var(--cs,1));line-height:1.35;word-break:break-word;white-space:pre-wrap}
@@ -474,7 +522,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 /* ══ PROJECT MANAGER ═══════════════════════════════════════════════════════ */
 #proj-mgr{display:flex;flex-direction:column;height:100vh;background:var(--bg0);overflow:hidden}
 .pm-hdr{background:var(--bg1);border-bottom:1px solid var(--bdr);padding:0 24px;height:56px;display:flex;align-items:center;gap:12px;flex-shrink:0}
-.pm-hdr h1{font-size:20px;font-weight:800;color:var(--acc);white-space:nowrap}
+.pm-hdr h1{font-size:20px;font-weight:800;color:var(--acc);white-space:nowrap;display:flex;align-items:center;gap:8px}
 .pm-hdr .pm-sub{font-size:12px;color:var(--sub);margin-left:2px}
 .pm-hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .pm-body{flex:1;overflow-y:auto;padding:32px 24px 48px}
@@ -529,7 +577,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 #landing{
   --lbg:#0a0c11; --lbg2:#12141c; --lcard:#161922; --lcard-bdr:rgba(255,255,255,.08);
   --ltx:#f3efe9; --lsub:#9d968f; --lacc:#f0975a; --lacc2:#ffb37a;
-  --lbl:#6fa8dc; --lgr:#7cc99a; --lpv:#b98ee0; --lam:#f0b24a; --llv:#9098e8;
+  --lbl:#6fa8dc; --lgr:#7cc99a; --lpv:#b98ee0; --lam:#f0b24a; --llv:#9098e8; --lrd:#e8776f;
   display:flex;flex-direction:column;height:100vh;background:var(--lbg);color:var(--ltx);
 }
 /* 1fr/auto/1fr with the nav in the center column and an empty spacer
@@ -538,7 +586,8 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
    so content passing underneath (this header stays put; only .landing-body
    scrolls) reads as "floating above" rather than a flat divider line. */
 .landing-hdr{background:rgba(10,12,17,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);padding:10px 24px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;flex-shrink:0;z-index:5}
-.landing-logo{font-size:15px;font-weight:700;color:var(--lacc);white-space:nowrap;margin:0;justify-self:start}
+.landing-logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--lacc);white-space:nowrap;margin:0;justify-self:start}
+.landing-logo-icon{width:44px;height:44px;border-radius:10px;object-fit:cover}
 .landing-nav{display:flex;gap:28px;align-items:center;justify-self:center}
 .landing-nav-link{position:relative;font-size:13px;color:var(--lsub);text-decoration:none;font-family:'Inter','Segoe UI',system-ui,sans-serif;transition:color .12s;padding-bottom:2px}
 .landing-nav-link::after{content:'';position:absolute;left:0;right:100%;bottom:0;height:1px;background:currentColor;transition:right .18s ease}
@@ -558,6 +607,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .landing-hero-v2::after{background:radial-gradient(circle,var(--lbl),transparent 70%);bottom:-220px;right:6%;animation-delay:-9s}
 @keyframes landing-blob-float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(36px,-28px) scale(1.12)}}
 .landing-hero-inner{max-width:680px;margin:0 auto}
+.landing-hero-icon{width:128px;height:128px;border-radius:26px;box-shadow:0 16px 40px -10px rgba(0,0,0,.55);margin-bottom:24px;animation:landing-fade-up .6s ease both}
 .landing-tagline{font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--lacc);line-height:1.6;margin-bottom:18px;animation:landing-fade-up .6s ease both}
 .landing-welcome{font-size:42px;font-weight:800;margin-bottom:20px;letter-spacing:-0.01em;animation:landing-fade-up .6s .1s ease both;background:linear-gradient(120deg,var(--ltx) 40%,var(--lacc2));-webkit-background-clip:text;background-clip:text;color:transparent}
 .landing-hero-p{font-size:14px;color:var(--lsub);line-height:1.7;max-width:560px;margin:0 auto 12px;animation:landing-fade-up .6s .2s ease both}
@@ -594,6 +644,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .landing-feature[data-accent="pv"]{--landing-accent:var(--lpv)}
 .landing-feature[data-accent="am"]{--landing-accent:var(--lam)}
 .landing-feature[data-accent="lv"]{--landing-accent:var(--llv)}
+.landing-feature[data-accent="rd"]{--landing-accent:var(--lrd)}
 /* "Window chrome" framing around every screenshot — a dark card with three
    traffic-light dots, so a plain screenshot reads as an app window rather
    than a bare cropped image floating on the page. */
@@ -616,7 +667,10 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .landing-contact{font-size:12px;line-height:1.6;color:var(--lsub)}
 .landing-contact a{color:var(--lacc);text-decoration:none;font-weight:600}
 .landing-contact a:hover{text-decoration:underline}
+.landing-donate-line{margin-top:18px;font-size:13px;line-height:1.6;color:var(--lsub)}
 .landing-enjoy{margin-top:14px;font-size:13px;font-weight:600;color:var(--ltx)}
+.donate-form{display:flex;align-items:center}
+.donate-form input[type="image"]{display:block;height:34px;width:auto}
 .landing-get-started{text-decoration:none;display:inline-block;padding:12px 34px;font-size:14px;margin-top:24px;font-weight:700;color:#1a0e04;background:linear-gradient(135deg,var(--lacc2),var(--lacc));border-radius:9px;box-shadow:0 10px 30px -8px color-mix(in srgb,var(--lacc) 65%,transparent);transition:transform .15s ease,box-shadow .15s ease}
 .landing-get-started:hover{transform:translateY(-2px);box-shadow:0 14px 36px -6px color-mix(in srgb,var(--lacc) 75%,transparent)}
 
@@ -629,8 +683,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 }
 @media (max-width:480px){
   .landing-hdr{grid-template-columns:1fr;justify-items:center;gap:8px;padding:12px 16px}
-  .landing-logo,.landing-nav{justify-self:center}
-  .landing-hdr-spacer{display:none}
+  .landing-logo,.landing-nav,.landing-hdr-spacer{justify-self:center}
   .landing-hero-v2{padding:44px 20px 36px}
   .landing-hero-v2::before,.landing-hero-v2::after{width:300px;height:300px}
 }
@@ -673,11 +726,22 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .email-popup-btn-submit:active{opacity:.7}
 
 /* ── MENU BAR ─────────────────────────────────────────────────────────────── */
-#menu-bar{display:flex;align-items:stretch;height:30px;background:var(--bg1);border-bottom:1px solid var(--bdr);flex-shrink:0;position:relative;z-index:100}
+/* 46px, not the old 30px — tall enough to hold #menu-center's Cards/Flow/
+   Timeline switch, whose CARDS/FLOW/TIMELINE label (.view-toggle-lbl,
+   position:absolute) floats above each icon group and needs headroom above
+   the row's top edge, same reasoning #sbhdr and #tl-chron-hdr used to need
+   before the switch lived here permanently. */
+#menu-bar{display:flex;align-items:stretch;height:46px;background:var(--bg1);border-bottom:1px solid var(--bdr);flex-shrink:0;position:relative;z-index:100}
+/* #menu-left/#menu-right are equal flex:1 spacers flanking #menu-center (same
+   technique as #hdr's .hdr-spacer) — keeps the view switch centered on the
+   row regardless of how wide the menu items or right spacer end up. */
+#menu-left{flex:1;min-width:0;display:flex;align-items:stretch}
+#menu-right{flex:1}
+#menu-center{flex-shrink:0;display:flex;align-items:center;gap:14px;padding-top:10px}
 .mi{position:relative}
-.mi-btn{height:30px;padding:0 12px;background:none;border:none;font-size:12px;font-family:inherit;color:var(--tx);cursor:pointer;white-space:nowrap;transition:background .1s}
+.mi-btn{height:100%;padding:0 12px;background:none;border:none;font-size:12px;font-family:inherit;color:var(--tx);cursor:pointer;white-space:nowrap;transition:background .1s}
 .mi-btn:hover,.mi.open .mi-btn{background:var(--s0)}
-.mi-drop{display:none;position:absolute;top:30px;left:0;min-width:210px;background:#fff;border:1px solid #d0d0d0;border-radius:0 4px 4px 4px;box-shadow:0 4px 14px rgba(0,0,0,.14);z-index:1000;padding:4px 0}
+.mi-drop{display:none;position:absolute;top:100%;left:0;min-width:210px;background:#fff;border:1px solid #d0d0d0;border-radius:0 4px 4px 4px;box-shadow:0 4px 14px rgba(0,0,0,.14);z-index:1000;padding:4px 0}
 .mi.open>.mi-drop{display:block}
 .di{display:flex;justify-content:space-between;align-items:center;width:100%;padding:6px 16px;background:none;border:none;font-size:12px;font-family:inherit;color:#1a1a1a;cursor:pointer;text-align:left;white-space:nowrap;transition:background .1s}
 .di:hover{background:#f0f0f0}
@@ -723,9 +787,7 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 
 /* ── SCENE FLOW CHART ────────────────────────────────────────────────────── */
 #chart-host{position:relative;display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;background:var(--sbg)}
-/* Matches #sbhdr's 52px so the view-toggle switch (which moves between the
-   two rows) keeps the same headroom above its CARDS/FLOW label either way. */
-#chart-toolbar{height:52px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
+#chart-toolbar{height:46px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--bdr)}
 #chart-legend{flex-shrink:0;display:flex;flex-wrap:wrap;align-items:center;row-gap:4px;column-gap:0;padding:5px 12px;background:var(--bg1);border-bottom:1px solid var(--bdr);font-size:11px;color:var(--sub);max-height:92px;overflow-y:auto}
 #chart-legend:empty{display:none}
 .chart-legend-item{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:1px 4px;white-space:nowrap}
@@ -735,19 +797,18 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-type-btn{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:5px 12px;cursor:pointer;transition:background .12s,border-color .12s}
 .chart-type-btn:hover{border-color:var(--acc)}
 .chart-type-btn.on{background:var(--acc);color:var(--ontx);border-color:var(--acc)}
-#chart-type-toggle{display:flex;border:1px solid var(--s1);border-radius:6px;overflow:hidden}
+#chart-type-toggle,#chart-type-timeline-toggle{display:flex;border:1px solid var(--s1);border-radius:6px;overflow:hidden}
 /* Shorter than the base .chart-type-btn padding — frees enough headroom
    above the button (within the 46px row) for the CARDS/FLOW label floating
    over it (see .view-toggle-lbl) to clear the row's top edge instead of
    getting clipped by #sbp/#chart-host's overflow:hidden. */
-#chart-type-toggle .chart-type-btn{display:flex;align-items:center;justify-content:center;padding:4px 10px;border:none;border-radius:0}
-#chart-type-toggle .chart-type-btn:first-child{border-right:1px solid var(--s1)}
-#chart-type-toggle .chart-type-btn.on svg{color:var(--ontx)}
-#chart-type-toggle .chart-type-btn svg{color:var(--tx);display:block}
-/* Cards/Snake/Circle view switch — lives in #sbhdr on the board and moves
-   into #chart-toolbar while the chart is open (see openChartView/
-   closeChartView in charts.js), always in the same spot relative to the
-   Snake/Circle pair so it reads as one control regardless of which view. */
+#chart-type-toggle .chart-type-btn,#chart-type-timeline-toggle .chart-type-btn{display:flex;align-items:center;justify-content:center;padding:3px 8px;border:none;border-radius:0}
+#chart-type-toggle .chart-type-btn:first-child,#chart-type-timeline-toggle .chart-type-btn:first-child{border-right:1px solid var(--s1)}
+#chart-type-toggle .chart-type-btn.on svg,#chart-type-timeline-toggle .chart-type-btn.on svg{color:var(--ontx)}
+#chart-type-toggle .chart-type-btn svg,#chart-type-timeline-toggle .chart-type-btn svg{color:var(--tx);display:block}
+/* Cards/Flow/Timeline view switch — lives permanently in #menu-center on the
+   menu-bar row (editor.html), centered via #menu-left/#menu-right flex:1
+   spacers, so it reads as one control in the same spot regardless of view. */
 /* align-items:center here, not flex-end — the label below is pulled out of
    flow (position:absolute) specifically so this item's flex height is just
    its button, same as every sibling control in the row (Show relative word
@@ -755,12 +816,25 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
    the whole column taller than those single-line siblings, so centering it
    shifted its button down relative to everything else — the row read as
    uneven even though every item was individually centered correctly. */
-#view-toggle{display:flex;align-items:center;gap:10px;flex-shrink:0}
+#view-toggle{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .view-toggle-item{position:relative;display:flex}
-.view-toggle-lbl{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:1px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--o0);line-height:1;white-space:nowrap;pointer-events:none}
-#chart-type-cards{display:flex;align-items:center;justify-content:center;padding:4px 10px}
+/* color: var(--tx) at reduced opacity (not var(--o0)/--sub) — those two muted
+   theme colors read as low-contrast (near-blurry) against several themes'
+   backgrounds; scaling the theme's own high-contrast text color down instead
+   keeps the label reliably legible everywhere. */
+.view-toggle-lbl{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:2px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--tx);opacity:.62;line-height:1;white-space:nowrap;pointer-events:none}
+#chart-type-cards{display:flex;align-items:center;justify-content:center;padding:3px 8px}
 #chart-type-cards svg{color:var(--tx);display:block}
 #chart-type-cards.on svg{color:var(--ontx)}
+/* Dark themes: #s0/#s1 (the buttons' own fill/border) sit close in luminance
+   to #bg1 (the menu-bar's background), so the switch's buttons barely read
+   as buttons — a thin light outline restores the separation that a dark-on-
+   light border gets for free in the other themes. */
+[data-theme="slate"] #chart-type-cards,[data-theme="ocean"] #chart-type-cards,
+[data-theme="slate"] #chart-type-toggle,[data-theme="ocean"] #chart-type-toggle,
+[data-theme="slate"] #chart-type-timeline-toggle,[data-theme="ocean"] #chart-type-timeline-toggle{
+  border-color:rgba(255,255,255,.32);
+}
 #chart-trace-wrap{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)}
 #chart-trace-sel{background:var(--s0);border:1px solid var(--s1);border-radius:6px;color:var(--tx);font-size:12px;font-family:inherit;padding:4px 8px;cursor:pointer;transition:border-color .14s,box-shadow .14s}
 #chart-trace-sel:hover{border-color:var(--acc)}
@@ -810,5 +884,494 @@ button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid 
 .chart-lane.chart-lane-hl{filter:brightness(1.35) saturate(1.3)}
 .chart-legend-swatch{display:inline-block;flex-shrink:0;width:14px;height:3px;border-radius:2px}
 .chart-legend-hint{opacity:.75;font-style:italic}
+
+/* ══ TIMELINE VIEW (schema v3 §6) ═══════════════════════════════════════════ */
+/* Board-mode's menu items disabled in timeline mode (§6.1) — reuses the menu
+   dropdown's own .di button styling, just dims/blocks it. */
+.di:disabled{opacity:.38;cursor:default;pointer-events:none}
+/* Timeline mode takes the whole stage (§6.1): hide the three left panels and
+   their resize handles (not their own collapse state — a body-level class,
+   so whatever open/collapsed state each panel had is untouched and restored
+   exactly on leaving timeline mode) and the board's own toolbar, which the
+   timeline replaces with its own header. */
+body.tl-mode #lp,body.tl-mode #sp,body.tl-mode #cp,
+body.tl-mode #lp-resize,body.tl-mode #sp-resize,body.tl-mode #cp-resize,
+body.tl-mode #sbhdr{display:none}
+
+
+#timeline-host{flex:1;min-width:0;display:flex;overflow:hidden}
+#tl-stage{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
+#tl-chron-hdr{flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:10px 14px;border-bottom:1px solid var(--s1);background:var(--bg1)}
+#tl-axis-switch,#tl-braid-mode-switch{display:flex;border:1px solid var(--s1);border-radius:7px;overflow:hidden}
+.tl-axis-btn{background:var(--s0);color:var(--sub);border:none;padding:6px 10px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer}
+.tl-axis-btn.on{background:var(--acc);color:var(--ontx)}
+.tl-axis-btn:disabled{opacity:.4;cursor:default}
+#tl-thread-wrap{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--sub);font-weight:600}
+#tl-thread-sel{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 8px;color:var(--tx);font-size:12px;font-family:inherit;cursor:pointer;transition:box-shadow .16s,border-color .16s}
+/* Active = a character is currently traced (S.timelinePrefs.threadCharId set) —
+   toggled by renderThreadPicker()/setTlThread(). */
+/* Same literal color as the trace line itself (#e57373, timeline.js's
+   THREAD_COLOR) rather than the accent — and more prominent than the accent
+   version was (wider ring, stronger glow), so the control reads as clearly
+   "on" at a glance. */
+#tl-thread-sel.tl-thread-active{border-color:#e57373;box-shadow:0 0 0 3px rgba(229,115,115,.45),0 0 12px rgba(229,115,115,.7)}
+#tl-status{font-size:11px;color:var(--sub)}
+#tl-add-scene-btn{background:var(--acc);color:var(--ontx);border:none;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
+.tl-zoom-ctl{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.5px;color:var(--sub);font-weight:700;text-transform:uppercase}
+.tl-zoom-ctl input[type=range]{width:90px}
+.tl-zoom-wrap{position:relative;display:inline-flex;align-items:center}
+/* Marks the slider's midpoint (50) — the feature's original fixed minimum,
+   see tlZoomSliderToPx() — approximate against the native track's small end
+   margins, not pixel-exact, but close enough to read as "the middle." */
+/* var(--tx) (not --o0) plus a background-colored halo — --tx is this theme's
+   own high-contrast "ink" color (inverts appropriately dark/light per theme),
+   and the halo keeps it visible against the native slider track's own middle
+   grey on dark themes specifically, where --o0 alone read as too low-contrast. */
+.tl-zoom-tick{position:absolute;left:50%;top:50%;width:2px;height:9px;background:var(--tx);box-shadow:0 0 0 1px var(--bg0);transform:translate(-50%,-50%);pointer-events:none}
+
+/* flex:0 0 auto (content-sized) — a prior version made this flex:1 1 auto so
+   the lane column would fill down to the cap even with only a few
+   storylines, which fixed an early complaint (rows stopping short, the
+   button appearing to cut off well above the wires zone) but overcorrected:
+   it meant EVERY project's chron-body claimed the full max-height:65%
+   regardless of actual content, pushing the +Storyline button and the
+   "Chronology" caption below it down by a large fixed amount even for a
+   1-2-storyline project with nothing to fill that space. Content-sizing
+   instead means the box starts right under the header and grows only as
+   storylines are added — max-height:65% now acts purely as a ceiling for
+   many-storyline projects (so they still can't starve the wires zone past
+   its min-height), not a target every project gets stretched to. The small
+   amount of breathing room the button needs above it (so it doesn't read as
+   "cut off" immediately after the last row) comes from a fixed margin on
+   #tl-add-storyline-btn itself now, not from stretching this whole box.
+   flex-shrink still enabled so a short window shrinks this box first rather
+   than rigidly holding content height and pushing the wires zone's own
+   min-height floor into overflowing #tl-stage instead. */
+#tl-chron-body{flex:0 0 auto;max-height:65%;min-height:0;display:flex;overflow:hidden}
+/* z-index:6 + an opaque background — #tl-wires (styles.css, z-index:5) is a
+   full-#tl-stage overlay connecting every scene's chronology position to its
+   manuscript-row position, so it always has a line endpoint sitting at each
+   scene card regardless of whether that card is currently scrolled out of
+   view behind this column. Cards themselves get clipped for free by #tl-
+   chron-scroll's own overflow-x, but #tl-wires isn't inside that scrollable
+   region — it's a sibling covering the whole stage — so nothing clipped it
+   here before; it just happened to go unnoticed while lanes past the first
+   few were unreachable. Explicit z-index (beats #tl-wires' z-index:auto-
+   losing z-index:5 the same way any explicit value beats z-index:auto)
+   plus an opaque bg masks any wire segment that geometrically falls under
+   this column, matching how cards already disappear here. */
+#tl-lane-labels{position:relative;z-index:6;background:var(--bg0);flex:0 0 132px;height:100%;display:flex;flex-direction:column;border-right:none;overflow:hidden}
+/* #tl-lane-scroll is the actual scrolling region — split out from
+   #tl-lane-labels (which now just arranges [scroll region, footer button]
+   vertically) so the +Storyline button below can sit OUTSIDE the scrolled
+   content as a real flex sibling. A position:absolute button anchored to an
+   ancestor that itself scrolls still scrolls away with that ancestor's
+   content (position:absolute only escapes NORMAL FLOW, not the scrollable
+   overflow region of its own containing block) — the old floating-overlay
+   button relied on #tl-lane-labels never actually scrolling (excess just
+   clipped, unreachable) to stay put; now that lanes past the cap are
+   reachable via scroll, the button needs to live one level up to stay fixed
+   regardless of scroll position. flex:1/min-height:0 so it fills #tl-chron-
+   body's available height (same fill-down as before) and only engages its
+   own scrollbar once content exceeds that. */
+#tl-lane-scroll{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+#tl-lane-scroll::-webkit-scrollbar{width:4px}
+#tl-lane-scroll::-webkit-scrollbar-thumb{background:var(--s0);border-radius:2px}
+/* flex-shrink:0 on .tl-lane-label (below) is load-bearing: #tl-lane-scroll is
+   a flex column, and without this, flex's default shrink-to-fit squeezes
+   every label below its declared height the moment total lane height
+   exceeds the available space — the chron track's own rows/cards are
+   absolutely positioned, immune to that shrink, so they'd stay at their true
+   92px spacing while the labels silently drifted out of alignment with them,
+   worse with each subsequent lane. With shrink disabled, excess instead
+   scrolls via #tl-lane-scroll's own overflow-y:auto (see tlSyncLaneScroll()
+   in timeline.js, which mirrors this scroll position onto #tl-track via a
+   matching transform so the card rows track the labels 1:1). */
+.tl-lane-label{position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:4px 10px 4px 20px;border-right:2px solid var(--s1);border-bottom:1px dashed var(--s1);border-top:2px solid var(--lane-c,transparent);background:color-mix(in srgb,var(--lane-c,transparent) 5%,transparent);box-sizing:border-box;flex-shrink:0;font-size:11px;color:var(--sub);font-weight:600}
+.tl-lane-label .tl-sw{width:18px;height:3px;border-radius:2px}
+.tl-lane-label .tl-lane-name{color:var(--tx);cursor:text}
+.tl-lane-label .tl-lane-name input{width:100%;background:var(--cbg);border:1px solid var(--acc);border-radius:4px;padding:1px 4px;color:var(--tx);font-size:11px;font-family:inherit}
+/* --sub (not --o0) — --o0 is meant for faint/subtle chrome and read as too
+   low-contrast in both light and dark themes for a number that's actually
+   worth reading at a glance. */
+.tl-lane-label i{font-style:normal;font-size:9.5px;color:var(--sub);font-weight:600}
+.tl-lane-del{position:absolute;top:3px;right:4px;background:none;border:none;color:var(--o0);cursor:pointer;font-size:12px;padding:1px 3px;line-height:1;opacity:0;transition:opacity .1s}
+.tl-lane-label:hover .tl-lane-del{opacity:1}
+.tl-lane-del:hover{color:var(--rd)}
+/* Drag handle — a thin strip along the label's own left edge (mirrors the
+   Sections/Library lists' own ⠿ handle, .sdh/.dh, just pinned full-height
+   here instead of sitting inline with the row's other content). */
+.tl-lane-handle{position:absolute;top:0;left:0;bottom:0;width:16px;display:flex;align-items:center;justify-content:center;color:var(--o0);opacity:.4;font-size:12px;line-height:1;cursor:grab;transition:opacity .1s,background .1s}
+.tl-lane-label:hover .tl-lane-handle{opacity:.9;background:color-mix(in srgb,var(--tx) 6%,transparent)}
+.tl-lane-handle:active{cursor:grabbing}
+.tl-lane-label.dib{border-top:2px solid var(--acc)!important}
+.tl-lane-label.dia{border-bottom:2px solid var(--acc)!important}
+.tl-lane-label.dg{opacity:.35}
+/* A normal static flex child now, sitting below #tl-lane-scroll (its sibling,
+   not its ancestor) — always visible regardless of lane count or scroll
+   position, since it lives outside the element that actually scrolls. The
+   box-shadow (a faint shadow cast upward) keeps the same visual separation
+   from scrolled content that the old floating-overlay version had. */
+/* margin-top:24px (not 8px, like the other three sides) — #tl-chron-body is
+   content-sized now, so without this the button would sit immediately
+   against the last lane row with no breathing room at all. A fixed gap
+   rather than stretching the whole box to fill available height (see
+   #tl-chron-body above). */
+#tl-add-storyline-btn{flex:0 0 auto;margin:24px 8px 8px;background:var(--bg1);border:1px dashed var(--s1);border-radius:6px;color:var(--sub);font-size:11px;font-weight:600;font-family:inherit;padding:6px;cursor:pointer;box-shadow:0 -4px 8px -2px var(--bg1)}
+#tl-add-storyline-btn:hover{border-color:var(--acc);color:var(--acc)}
+
+/* Wrap (not the scrolling element itself) carries the flex sizing and hosts
+   the scroll-arrow buttons positioned absolute on top — buttons living
+   inside the scrolling element itself would scroll away with its content. */
+#tl-chron-scroll-wrap{flex:1;min-width:0;position:relative}
+#tl-chron-scroll{width:100%;height:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}
+#tl-chron-scroll::-webkit-scrollbar{display:none}
+#tl-track{position:relative;min-width:100%;height:100%}
+/* Small bubble scroll affordance for trackpad-less users, since the native
+   scrollbar is hidden above — shown only on the side there's actually more
+   to see (tlUpdateScrollArrows()), not permanently. */
+.tl-scroll-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);z-index:6;
+  width:26px;height:26px;border-radius:50%;border:1px solid var(--s1);
+  background:color-mix(in srgb,var(--bg1) 85%,transparent);color:var(--tx);
+  font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .15s;box-shadow:0 2px 6px rgba(0,0,0,.2);
+}
+.tl-scroll-arrow.visible{opacity:1;pointer-events:auto}
+.tl-scroll-arrow:hover{background:var(--acc);color:var(--ontx);border-color:var(--acc)}
+.tl-scroll-arrow-left{left:6px}
+.tl-scroll-arrow-right{right:6px}
+/* Soft gradient glows (not hard lines) at each row's top/bottom edge, fading the
+   lane color into the row's own tint — a flat 2px solid border here read as a
+   third kind of stroke competing visually with the wire curves that cross this
+   same area (both are thin, colored, roughly the same hue family), making the
+   two easy to mistake for each other. A soft fade has no crisp edge to confuse
+   with a wire's stroke. */
+.tl-lane-row{
+  position:absolute;left:0;right:0;box-sizing:border-box;
+  border-bottom:1px dashed var(--s1);
+  background-color:color-mix(in srgb,var(--lane-c,transparent) 5%,transparent);
+  background-image:
+    linear-gradient(to bottom,color-mix(in srgb,var(--lane-c,transparent) 65%,transparent),transparent 18px),
+    linear-gradient(to top,color-mix(in srgb,var(--lane-c,transparent) 65%,transparent),transparent 18px);
+  background-repeat:no-repeat;
+}
+.tl-lane-row.tl-drop-target{outline:2px dashed var(--acc);outline-offset:-2px}
+
+/* overflow:hidden makes this a scroll container (even with nothing to scroll)
+   so overscroll-behavior-x actually applies — without it, a trackpad swipe
+   over the wire gap (between the chron and manuscript rows, which have their
+   own overscroll-behavior-x:contain) falls through to the document and
+   triggers the browser's back/forward navigation gesture. */
+#tl-wires-zone{flex:1;min-height:100px;position:relative;border-bottom:1px solid var(--s1);overflow:hidden;overscroll-behavior-x:contain}
+.tl-row-caption{position:absolute;left:0;right:0;text-align:center;font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--lbl);pointer-events:none;z-index:1}
+.tl-row-caption-top{top:4px}
+.tl-row-caption-bottom{bottom:4px}
+/* #tl-wires is a direct child of #tl-stage (not nested in #tl-wires-zone) so its
+   coordinate space covers chron+gap+manuscript together, like ThruLine's own
+   #wires (a direct child of #stage). redrawWires() anchors each wire to the
+   card's real edge (ar.bottom/br.top) rather than the gap's top/bottom, which
+   only lines up with the zone boundary for cards in the bottommost chron lane
+   — every other lane's wire would visually stop short of the actual card. */
+#tl-wires{position:absolute;inset:0;pointer-events:none;z-index:5}
+
+/* Content-sized like #tl-chron-body above — a single row of cards, not
+   dependent on leftover flex space (see #tl-ms-row's height:auto below). */
+#tl-ms-scroll-wrap{flex:0 0 auto;max-height:30%;min-height:0;position:relative;margin-left:132px;background:var(--bg1)}
+#tl-ms-scroll{width:100%;height:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}
+#tl-ms-scroll::-webkit-scrollbar{display:none}
+/* Left/right padding wide enough (38px) to clear the scroll-arrow buttons
+   (26px wide, inset 6px from the edge — .tl-scroll-arrow) — at 10px the
+   first/last card rendered right under the arrow, hiding real content. */
+#tl-ms-row{position:relative;display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start;min-width:100%;padding:10px 38px 22px;height:auto;box-sizing:border-box}
+.tl-sep{flex:0 0 auto;align-self:stretch;width:0;border-left:1px dashed var(--o0);margin:4px 2px 0;position:relative}
+/* Same positioning as .tl-sep, minus the dashed divider line — used only for
+   the row's very first section, which has nothing before it to divide from
+   but still needs its name shown (see renderManuscriptRibbon). */
+.tl-sep-lead{flex:0 0 auto;align-self:stretch;width:0;margin:4px 2px 0;position:relative}
+.tl-sep-label{position:absolute;bottom:-15px;left:3px;font-size:8.5px;letter-spacing:.06em;color:var(--sub);white-space:nowrap;font-weight:700}
+
+.tl-scene,.tl-ms-card{
+  background:var(--cbg);border:1px solid var(--s1);border-radius:7px;
+  border-top:3px solid var(--c,var(--acc));cursor:pointer;user-select:none;
+  transition:opacity .13s,box-shadow .13s,border-color .13s;
+}
+.tl-scene{position:absolute;z-index:2;transform:translate(-50%,-50%);width:96px;padding:5px 7px 4px}
+.tl-ms-card{position:relative;flex:0 0 auto;width:96px;padding:5px 7px 4px}
+.tl-scene .tl-t,.tl-ms-card .tl-t{font-size:10.5px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--tx)}
+.tl-scene .tl-m{font-size:9px;color:var(--sub);margin-top:3px}
+.tl-ms-card .tl-ch{font-size:9px;letter-spacing:.6px;color:var(--o0);font-weight:700}
+.tl-ms-card.tl-offscreen{opacity:.4}
+.tl-scene.tl-offscreen{opacity:1}
+.tl-scene.tl-offscreen,.tl-ms-card.tl-offscreen{border-left:2px dotted var(--o0);border-right:2px dotted var(--o0)}
+.tl-scene .tl-off-chip,.tl-ms-card .tl-off-chip{font-size:8px;font-weight:700;color:var(--sub)}
+
+.tl-warn-dot{position:absolute;top:-5px;right:-5px;width:9px;height:9px;border-radius:50%;background:var(--rd);border:2px solid var(--sbg);display:none}
+.tl-scene.tl-warn .tl-warn-dot,.tl-ms-card.tl-warn .tl-warn-dot{display:block}
+
+.tl-conv-dots{position:absolute;bottom:-4px;right:-4px;display:flex;align-items:center;gap:2px}
+/* Bigger (6px→9px) and a dark ring on top of the existing --cbg border — the
+   --sbg border alone was too close in value to a light theme's own card
+   background to read as a distinct dot. */
+.tl-conv-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--cbg);box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.tl-conv-more{font-size:8px;color:var(--o0)}
+
+body.hovering .tl-scene:not(.tl-hi):not(.tl-flag),
+body.hovering .tl-ms-card:not(.tl-hi):not(.tl-flag){opacity:.28}
+.tl-scene.tl-hi,.tl-ms-card.tl-hi{box-shadow:0 0 0 1px var(--c,var(--acc)),0 4px 14px rgba(0,0,0,.3);border-color:var(--c,var(--acc));opacity:1}
+/* Same treatment as hover (same color source, same shadow), just a heavier
+   ring — selection is a more emphatic state than a passing hover, not a
+   different one, so it shouldn't read as a different color/style. */
+.tl-scene.tl-sel,.tl-ms-card.tl-sel{box-shadow:0 0 0 3px var(--c,var(--acc)),0 4px 14px rgba(0,0,0,.3);border-color:var(--c,var(--acc));opacity:1}
+.tl-scene.tl-flag,.tl-ms-card.tl-flag{box-shadow:0 0 0 2px var(--rd),0 4px 14px rgba(0,0,0,.3);border-color:var(--rd);opacity:1}
+body.flagging .tl-scene:not(.tl-flag),body.flagging .tl-ms-card:not(.tl-flag){opacity:.25}
+
+/* ==================================================================
+   Braid view — read-only structure chart, toggled inside Timeline view
+   ================================================================== */
+#tl-braid-scroll{display:none;flex:1;min-height:0;overflow:auto;overscroll-behavior-x:contain;position:relative}
+#tl-stage.tl-braid-active #tl-chron-body,
+#tl-stage.tl-braid-active #tl-wires-zone,
+#tl-stage.tl-braid-active #tl-ms-scroll,
+#tl-stage.tl-braid-active #tl-wires{display:none}
+#tl-stage.tl-braid-active #tl-braid-scroll{display:block}
+/* position:relative (no offset needed) makes this a positioned element in
+   the same local stacking layer as #tl-braid-watermark, so DOM order (this
+   comes after the watermark in the HTML) decides paint order between the
+   two — the watermark stays behind. Without this, the svg is a plain
+   non-positioned element, which per CSS paints BEFORE any positioned
+   sibling regardless of DOM order or z-index sign — a negative z-index on
+   the watermark to "go behind" would escape this container entirely and
+   land behind some ancestor's opaque background instead (confirmed live:
+   the watermark disappeared completely, not just faded, the first time
+   this was tried with z-index:-1). */
+#tl-braid-svg{display:block;position:relative}
+/* Storyline-color legend, always visible at the top of the chart (not inside
+   the scrollable area) — reuses the Flow Chart's own .chart-legend-item/
+   -swatch/-name classes for a consistent look rather than a bespoke style. */
+#tl-braid-legend{display:none;flex-shrink:0;flex-wrap:wrap;align-items:center;row-gap:4px;column-gap:14px;padding:6px 16px;background:var(--bg1);border-bottom:1px solid var(--s1);font-size:11px;color:var(--sub)}
+#tl-stage.tl-braid-active #tl-braid-legend{display:flex}
+.tl-braid-legend-swatch{display:inline-block;flex-shrink:0;width:13px;height:13px;border-radius:50%;background:var(--cbg);border:3.5px solid var(--o0);box-sizing:border-box}
+/* Era-marker labels live in an HTML overlay, not the SVG, so they can be
+   horizontally re-pinned to the viewport's left edge on scroll
+   (tlBraidUpdateMarkerHud()) — the dashed marker LINE stays in the SVG and
+   scrolls normally; only the label needs to stay readable while scrolled right. */
+#tl-braid-markers-hud{position:absolute;top:0;left:0;right:0;pointer-events:none}
+.tl-braid-marker-label{position:absolute;font-size:9px;letter-spacing:.6px;font-weight:700;color:var(--lbl);white-space:nowrap;background:var(--bg1);padding:1px 4px;border-radius:3px}
+
+/* Section labels live in their own HTML overlay for the opposite reason
+   markers do: their divider is a full-height VERTICAL line, so the label
+   should track horizontal scroll normally (stay above its own divider) but
+   get vertically re-pinned near the top on scroll (tlBraidUpdateSectionHud())
+   instead of scrolling away with the chart's own height. */
+/* z-index:7, above #tl-braid-axis-hud's 6 — section labels now share the top
+   margin bar (#tl-braid-top-bar lives inside axis-hud) and must paint above
+   it, not get hidden behind it; DOM order alone isn't enough once a sibling
+   has an explicit z-index. */
+#tl-braid-section-hud{position:absolute;top:0;left:0;right:0;pointer-events:none;z-index:7}
+.tl-braid-section-label{position:absolute;font-size:10px;font-weight:700;white-space:nowrap;background:var(--bg1);padding:1px 6px;border-radius:3px;border-left:3px solid var(--acc)}
+
+/* Axis labels ("READING ORDER →" / "CHRONOLOGY") always belong in the exact
+   same top-left corner regardless of scroll — unlike markers/sections, which
+   track a moving target on one axis, these need no per-scroll recompute:
+   position:sticky with both top and left set pins them to that corner in
+   both scroll directions at once. */
+#tl-braid-axis-hud{position:sticky;top:0;left:0;width:0;height:0;overflow:visible;z-index:6;pointer-events:none}
+/* Opaque bars spanning the full visible width/height of the viewport (sized
+   in JS — tlBraidUpdateAxisBars() — to the scroll container's own
+   clientWidth/clientHeight, not just as wide as the label text) so gridlines/
+   paths/markers that scroll into these margins render fully hidden behind
+   them, instead of cluttering the space around the axis labels. The labels
+   themselves need no background of their own now — they just sit on the bar. */
+/* Tall enough to cover both the "READING ORDER →" row and the section-label
+   row below it (see tlBraidUpdateSectionHud()'s +30 offset) — previously the
+   bar only covered the first row, so the section-label row sat in a gap
+   between the bar and the section pills' own (much smaller) individual
+   backgrounds, leaving gridlines/paths visible around them. */
+#tl-braid-top-bar{position:absolute;top:0;left:0;height:54px;background:var(--bg1)}
+#tl-braid-left-bar{position:absolute;top:0;left:0;width:54px;background:var(--bg1)}
+.tl-braid-axis-top{position:absolute;top:6px;left:60px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--lbl);white-space:nowrap}
+/* top:60px (not 38px) — #tl-braid-top-bar (above) grew to 54px to cover both
+   the "READING ORDER →" row and the section-label row beneath it, but this
+   label's own offset was never adjusted to match, so its top few pixels sat
+   under that taller bar and got cut off by #tl-braid-section-hud's z-index:7
+   painting over it. 60px clears the bar with the same 6px margin used on
+   the left. flex-direction:row-reverse (not column) — writing-mode:vertical-
+   rl swaps which axis is "main" vs "cross" for a flex column, so column
+   actually laid these two items out side-by-side (cross axis) rather than
+   stacked, landing the arrow vertically centered next to the word's middle
+   instead of below it. row-reverse stacks them in the intended order (word,
+   then arrow below it) AND centers the arrow on the word's own axis for
+   free, via align-items:center now doing what it was meant to. */
+.tl-braid-axis-left{position:absolute;top:60px;left:6px;display:flex;flex-direction:row-reverse;align-items:center;gap:4px;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--lbl);white-space:nowrap;writing-mode:vertical-rl;transform:rotate(180deg)}
+.tl-braid-axis-arrow{writing-mode:horizontal-tb;transform:rotate(180deg);font-size:11px;font-weight:400;letter-spacing:0}
+/* Centered in the current viewport of #tl-braid-scroll (position recomputed
+   on scroll/render by tlBraidUpdateWatermark(), same pattern as the axis
+   bars) — sits behind the SVG in DOM order so nodes/gridlines/paths draw
+   over it and it only reads clearly in genuinely empty grid space, exactly
+   where it's meant to be seen. */
+#tl-braid-watermark{position:absolute;transform:translate(-50%,-50%);pointer-events:none;font-size:46px;font-weight:800;letter-spacing:5px;text-transform:uppercase;color:var(--sub);opacity:.13;white-space:nowrap;user-select:none}
+
+.tl-braid-node circle{transition:stroke-width .15s,transform .15s}
+/* Chronology-mode-only (the only place an offscreen scene gets a node here)
+   — dashed stroke + reduced opacity mirrors the dotted-border treatment
+   Loom's own Chronology row gives offscreen cards (.tl-scene.tl-offscreen),
+   so the same concept reads consistently across both views. */
+.tl-braid-node.tl-offscreen circle{stroke-dasharray:3 2;opacity:.7}
+.tl-braid-node.tl-offscreen text{opacity:.7}
+.tl-braid-node.tl-hi circle{stroke-width:5}
+/* Selection reads as a more emphatic state than a passing hover, not a
+   lesser one — was thinner than .tl-hi's own stroke-width (4 vs 5), which
+   made a selected node look less prominent than one you're just hovering.
+   Deliberately does NOT override stroke color (unlike .tl-flag below) —
+   selection should look more prominent, not recolored away from the node's
+   own storyline color. The glow uses currentColor (set via circle.style.color
+   in renderBraid(), same value as its stroke) for the same reason: a fixed
+   accent-colored halo around a differently-colored node read as a color
+   change, not emphasis. scale() needs fill-box/center (the default SVG
+   transform origin is the viewport's own 0,0, which would fling the circle
+   across the chart instead of growing it in place). */
+.tl-braid-node.tl-sel circle{stroke-width:6;transform-box:fill-box;transform-origin:center;transform:scale(1.25);filter:drop-shadow(0 0 3px currentColor)}
+.tl-braid-node.tl-flag circle{stroke:var(--rd) !important}
+body.hovering .tl-braid-node:not(.tl-hi){opacity:.28}
+body.flagging .tl-braid-node:not(.tl-flag){opacity:.25}
+
+/* width (not flex-basis) so the shared .panel.collapsed{width:28px!important}
+   rule (see the Library/Sections/Scene panels above) can actually override it —
+   a flex-basis wins over width in the flex sizing algorithm, which would have
+   silently no-opped the collapse. */
+/* bg2 (not bg1) — matches .tab.on's own background so the active Inspector/
+   Conflicts tab reads as attached to its body, same relationship the New/
+   Edit Scene pane already has (#cp is bg2 too, under the same .tab.on). */
+#tl-panel{width:300px;flex-shrink:0;background:var(--bg2);border-left:1px solid var(--s1);display:flex;flex-direction:column;min-height:0}
+/* tl-panel sits at the right edge of the window (unlike Library/Sections on the
+   left), so its collapsed strip's divider belongs on its left side, not right. */
+#tl-panel.panel .p-strip{border-right:none;border-left:2px solid var(--s1)}
+/* Inspector/Conflicts reuse the .tabs/.tab classes (New Scene/Edit Scene's own
+   folder-tab look) rather than a bespoke style — .tl-panel-tabs/.tl-panel-tab
+   only carry the ids JS toggles .on against now, no visual rules of their own. */
+/* :not(.on) — once the Conflicts tab is the active one, .tab.on's own accent
+   color already makes it read as selected; red is only useful as an
+   at-a-glance warning while the tab is sitting unselected. */
+.tl-panel-tab.has-warn:not(.on){color:var(--rd)}
+#tl-panel-collapse-btn{border-left:none;border-right:1px solid var(--bdr)}
+.tl-panel-body{flex:1;overflow-y:auto;min-height:0}
+#tl-inspector-footer{flex:0 0 auto;padding:10px 12px;border-top:1px solid var(--s1)}
+#tl-delete-scene-btn{width:100%;background:none;border:1px solid var(--rd);border-radius:8px;padding:9px;color:var(--rd);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .14s,color .14s}
+#tl-delete-scene-btn:hover{background:var(--rd);color:var(--ontx)}
+.tl-panel-empty{color:var(--sub);font-size:12px;text-align:center;padding:40px 14px;font-style:italic}
+.tl-panel-empty p{margin:0 0 12px}
+.tl-panel-empty-or{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--o0);margin-bottom:12px !important}
+#tl-new-scene-btn{font-style:normal;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--acc);background:none;border:1px solid var(--acc);border-radius:8px;padding:8px 18px;cursor:pointer;transition:background .14s,color .14s}
+#tl-new-scene-btn:hover{background:var(--acc);color:var(--ontx)}
+/* Conflicts tab (schema v3 §8) */
+/* No top padding on the container itself (unlike its other three sides) —
+   the count header below takes over that spacing as its own padding so it
+   can sit flush against the scroll edge and stick there, same trick as
+   #tl-inspector-body's frozen Title field above. */
+#tl-conflicts-body{padding:0 12px 12px}
+.conflictCountHdr{position:sticky;top:0;z-index:2;background:var(--bg2);font-size:11px;letter-spacing:.06em;color:var(--sub);font-weight:700;text-transform:uppercase;padding:12px 0 10px;margin:0 0 10px;border-bottom:1px solid var(--s1)}
+.conflictList{display:flex;flex-direction:column;gap:8px}
+.conflictGroupHeader{font-size:10.5px;letter-spacing:.06em;color:var(--sub);font-weight:700;text-transform:uppercase;margin:10px 0 2px}
+.conflictRow{background:var(--s0);border:1px solid var(--s1);border-radius:8px;padding:8px 10px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.conflictRow:hover{border-color:var(--o0)}
+.conflictRow.flagActive{border-color:var(--rd);box-shadow:0 0 0 1px var(--rd)}
+/* The row for whichever conflict involves the currently-selected scene card —
+   same red treatment as clicking the row directly (flagActive), just a
+   heavier ring, so both read as the same kind of "this conflict is active"
+   state rather than two different colors. */
+.conflictRow.conflictSelMatch{border-color:var(--rd);box-shadow:0 0 0 2px var(--rd)}
+.conflictRow.dismissed{opacity:.55;cursor:default}
+.conflictHead{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.conflictDot{width:8px;height:8px;border-radius:50%;background:var(--rd);flex-shrink:0}
+.conflictTitle{font-size:12.5px;font-weight:700;color:var(--tx)}
+.conflictMsg{font-size:12px;color:var(--sub);line-height:1.45}
+.conflictActions{display:flex;gap:12px;margin-top:6px}
+.linkBtn{background:none;border:none;color:var(--acc);font-size:11.5px;font-weight:600;cursor:pointer;padding:0;font-family:inherit}
+.linkBtn:hover{text-decoration:underline}
+/* Visibility while reparented here is driven entirely by inline style.display
+   (timeline.js's _tlDoSelectScene) — no !important override, or the "select a
+   scene" placeholder could never actually hide the (would-be-empty) form. */
+/* display:flex (not the shared .tl-panel-body's own overflow-y:auto) — #form-edit
+   needs a bounded height so ITS internal split (.cp-form-hdr fixed, .cp-form-fields
+   scrolling) is what actually overflows. Without an explicit height here,
+   #form-edit only ever grows to fit its content, .cp-form-fields never runs out
+   of room to overflow, and #tl-inspector-body's own overflow-y:auto becomes the
+   one that engages instead — scrolling the whole form, header included, right
+   past the point where Cancel/Save Changes were supposed to stay put. */
+#tl-inspector-body{padding:0;display:flex;flex-direction:column;overflow:hidden}
+/* #form-edit is reparented here from #cp (timeline.js's _tlCaptureFormEditHome/
+   _tlDoSelectScene) — #cp .p-body supplies its display:flex;flex-direction:column
+   box model normally, but that ancestor-scoped rule stops matching once the node
+   moves outside #cp, so it needs the same rule re-declared scoped to this
+   container (mirrors #cp .p-body / #lp .p-body below). Without it, .cp-form-hdr
+   and .cp-form-fields fall back to flex-direction's row default and render side
+   by side instead of stacked, with .cp-form-fields collapsing to a narrow column
+   that doesn't cover the visible panel — clicks in the resulting dead space fall
+   through to the timeline canvas underneath and deselect the scene. flex:1;
+   min-height:0 is the piece above this comment depends on. */
+#tl-inspector-body .p-body{padding:0;display:flex;flex-direction:column;overflow:hidden;flex:1;min-height:0}
+#tl-inspector-body .cp-form-hdr{padding:12px 12px 8px}
+#tl-inspector-body .cp-form-fields{padding:0 12px 12px}
+/* Title stays visible while the rest of the form scrolls — sticky to the
+   scrolling .cp-form-fields' own top (which sits flush, since that container
+   has zero top padding), not the header (kept there since the shared
+   #form-edit node is also used, unmodified, by the board's own Scene panel).
+   Background is --bg1 (the panel's own ambient tone), not --cbg (the card/
+   input tone, noticeably lighter) — --cbg read as an unwanted extra "white
+   box" wrapped around the label, distinct from both the surrounding panel
+   and the title field's own --s0 input background. No padding-top/negative-
+   margin trick needed either — .cp-form-fields already has zero top padding,
+   so the sticky element already sits flush with nothing to cover above it. */
+/* The divider belongs on the STICKY element's own bottom edge, not Summary's
+   top — a border-top on Summary (inside the scrolling region) scrolls away
+   with Summary itself, leaving the frozen Title area with no visible
+   boundary the moment the user scrolls past it. Living on Title's own box
+   means it's frozen right along with it. */
+#tl-inspector-body .cp-form-fields > .ff:first-child{position:sticky;top:0;z-index:2;background:var(--bg2);margin-bottom:4px;border-bottom:1px solid var(--s1);padding-bottom:10px}
+
+.tl-popover{position:fixed;z-index:300;background:var(--cbg);border:1px solid var(--s1);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;width:200px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.tl-popover input[type=text]{width:100%;background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:6px 8px;color:var(--tx);font-family:inherit}
+.tl-popover .tl-popover-row{display:flex;justify-content:flex-end}
+.tl-popover button{background:var(--s0);border:1px solid var(--s1);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--tx);cursor:pointer;font-family:inherit}
+.tl-popover button.tl-danger{color:var(--rd)}
+
+/* Read-only hover callout for chron/manuscript cards (timeline.js
+   tlShowCallout()) — separate from .tl-popover above (that one's an editable
+   form opened by click, this is transient info shown after a hover delay).
+   pointer-events:none since it should never itself be interactive or steal
+   the mouseleave that would otherwise dismiss it; z-index:400 clears
+   .tl-popover's 300 and everything else in the Timeline view. Exists
+   specifically so a card that's been shrunk down for a tight fit-to-window
+   zoom level (see tlApplyCardWidth()) still has its full info reachable via
+   hover, without needing to be legible at its rendered size. */
+.tl-callout{position:fixed;z-index:400;max-width:240px;background:var(--cbg);border:1px solid var(--s1);border-radius:8px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.28);pointer-events:none;font-size:11px;line-height:1.4;color:var(--tx)}
+.tl-callout-title{font-size:12.5px;font-weight:700;margin-bottom:3px}
+.tl-callout-meta{font-size:10px;color:var(--sub);margin-bottom:6px}
+.tl-callout-summary{margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.tl-callout-row{font-size:10px;color:var(--sub);margin-top:3px}
+.tl-callout-row b{color:var(--tx);font-weight:600}
+.tl-callout-offscreen{font-size:9.5px;font-weight:700;color:var(--sub);margin-bottom:4px}
+/* top:20px (not 4px) leaves room for the label's top:-15px offset above the
+   line — at 4px the label ended up 11px above the track's own top edge,
+   clipped away entirely by #tl-chron-scroll's overflow-y:hidden regardless
+   of z-index, since that's an overflow clip, not a stacking issue. */
+.tl-marker-line{position:absolute;top:20px;bottom:0;width:0;border-left:1px dashed var(--o0);z-index:1}
+/* Solid background chip — at low zoom the top lane's cards can render close
+   enough behind the label (both live near the track's very top edge, see
+   the .tl-marker-line comment above) that plain text with no background
+   read as "covered" by the card behind it even though it's already
+   stacked on top (z-index). The chip guarantees legibility regardless of
+   what's behind it. */
+.tl-marker-label{position:absolute;top:-15px;left:4px;font-size:9px;letter-spacing:1px;color:var(--lbl);white-space:nowrap;cursor:pointer;font-weight:700;background:var(--bg1);padding:1px 4px;border-radius:3px;box-shadow:0 0 0 1px var(--s1)}
+.tl-marker-label:hover{color:var(--tx)}
+.tl-gap-divider{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed var(--o0);z-index:1;pointer-events:none}
+.tl-gap-label{position:absolute;top:50%;left:4px;transform:translateY(-50%);font-size:9px;color:var(--lbl);white-space:nowrap;font-weight:700}
+.tl-drag-ghost{position:absolute;z-index:50;pointer-events:none;opacity:.85;transform:translate(-50%,-50%);cursor:grabbing}
+.tl-ms-drag-ghost{position:fixed;z-index:300;pointer-events:none;opacity:.9;transform:translate(-50%,-50%);cursor:grabbing}
+.tl-insert-line{position:absolute;top:0;bottom:0;width:2px;background:var(--acc);z-index:3;pointer-events:none;opacity:.9;border-radius:1px}
+.tl-ms-insert-line{position:fixed;width:2px;background:var(--acc);z-index:300;pointer-events:none;opacity:.9;border-radius:1px}
+.tl-scene.tl-drag-source,.tl-ms-card.tl-drag-source{opacity:.35}
+.tl-braid-node.tl-drag-source{opacity:.35}
 
 

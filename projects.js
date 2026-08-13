@@ -12,7 +12,7 @@ function migrateExistingData() {
         const od = JSON.parse(old);
         if (od && od.v === '1') {
           raw = JSON.stringify({
-            v: DATA_VERSION,
+            v: '2',
             characters: od.characters||[], locations: od.locations||[], themes: od.themes||[], misc: od.misc||[],
             scenes: (od.scenes||[]).map(sc => ({...sc, sectionId: null})),
             nextId: od.nextId||1, andOr: od.andOr, theme: od.theme,
@@ -24,7 +24,9 @@ function migrateExistingData() {
   }
   if (raw) {
     try {
-      const d = JSON.parse(raw);
+      let d = JSON.parse(raw);
+      if (d && d.v === '2') d = migrateV2toV3(d);
+      raw = JSON.stringify(d);
       const id = genProjId();
       localStorage.setItem(projKey(id), raw);
       const now = new Date().toISOString();
@@ -133,9 +135,14 @@ function resetState() {
   S.characters = []; S.locations = []; S.themes = []; S.misc = [];
   S.scenes = []; S.nextId = 1; S.andOr = 'OR';
   S.sections = []; S.nextSecId = 1;
-  S.povCustomNames = [];
+  S.nextEntId = 1;
+  S.povCustom = [];
   S.povOrder = [];
+  S.storylines = []; S.revealsLib = []; S.constraints = []; S.markers = [];
+  S.chronOrder = []; S.dismissed = [];
+  S.timelinePrefs = { axis: 'ordinal', threadCharId: null, zoomPos: 62 };
   SECS.forEach(({ key }) => S.selections[key].clear());
+  S.selections.povs.clear();
   S.selIds.clear(); S.editingId = null;
   S.projectUid = null; S.revision = 0;
   S.lastExportedAt = null; S.editsSinceExport = 0;
@@ -146,6 +153,13 @@ function initStoryboard() {
   syncAndOrUI();
   buildLibPanel(); renderAllLib(); renderAllCk();
   renderSecPanel(); renderSectionSelects(); renderPovCk('sc', []); renderPovCk('ed', []);
+  // New Scene form's Timing/Reveals fields (§7) — blank-draft defaults, same
+  // as every other New Scene field on a fresh project load.
+  if (typeof refreshNewSceneStorylineField === 'function') refreshNewSceneStorylineField();
+  if (typeof renderRevealCk === 'function') { renderRevealCk('sc-reveals', []); renderRevealCk('sc-requires', []); }
+  // Primed once on load so the very first renderBoard() below (which shows
+  // warn-dots) isn't stuck with an empty conflicts cache for the first 150ms.
+  if (typeof conflictsCacheRefreshNow === 'function') conflictsCacheRefreshNow();
   renderBoard(); updateLibClearBtn(); updateUndoRedo();
   document.getElementById('board').classList.add('hide-details');
   document.getElementById('det-toggle').checked = false;
@@ -213,6 +227,7 @@ function openProject(id) {
   if (typeof secFilterIds !== 'undefined') secFilterIds.clear();
   if (typeof clearSearch === 'function') clearSearch();
   if (typeof closeChartView === 'function') closeChartView();
+  if (typeof closeTimelineView === 'function') closeTimelineView(true);
   updateProjectNameDisplay();
   initStoryboard();
   showStoryboard();
@@ -242,6 +257,26 @@ function createAndOpenProject(name) {
   trackProjectCreated();
   const id = genProjId();
   const now = new Date().toISOString();
+  // Blob written before the index entry (and guarded), same ordering every
+  // other project-creation path uses (duplicateProject, finishAsNew,
+  // ensureSampleProjects) — a quota/storage failure here must not leave a
+  // permanent index entry pointing at data that was never actually written.
+  try {
+    localStorage.setItem(projKey(id), JSON.stringify({
+      v: DATA_VERSION, characters:[], locations:[], themes:[], misc:[],
+      scenes:[], nextId:1, andOr:'OR', theme: document.documentElement.dataset.theme,
+      sections:[], nextSecId:1,
+      nextEntId: 2,
+      povCustom:[], povOrder:[],
+      storylines: [{ id: 1, name: 'Main', paletteIndex: 0 }],
+      revealsLib:[], constraints:[], markers:[], chronOrder:[], dismissed:[],
+      timelinePrefs: { axis:'ordinal', threadCharId:null, zoomPos:62 },
+      projectUid: genProjUid(), revision: 0,
+    }));
+  } catch(e) {
+    alert('Could not create the project (browser storage is full or unavailable). Please free up space and try again.');
+    return;
+  }
   const index = loadProjectIndex();
   index.push({ id, name, createdAt: now, modifiedAt: now, sceneCount: 0, theme: document.documentElement.dataset.theme });
   saveProjectIndex(index);
@@ -249,12 +284,6 @@ function createAndOpenProject(name) {
   if (index.length === 2) {
     trackMilestone('2nd_project_created');
   }
-  localStorage.setItem(projKey(id), JSON.stringify({
-    v: DATA_VERSION, characters:[], locations:[], themes:[], misc:[],
-    scenes:[], nextId:1, andOr:'OR', theme: document.documentElement.dataset.theme,
-    sections:[], nextSecId:1,
-    projectUid: genProjUid(), revision: 0,
-  }));
   if (_page === 'projects') {
     sessionStorage.setItem('ss_open_project', id);
     window.location.href = 'editor.html';
@@ -291,8 +320,14 @@ function closeProjRename() { document.getElementById('proj-rename-modal').classL
 
 function confirmProjRename() {
   if (!renamingProjId) return;
-  const name = document.getElementById('proj-rename-input').value.trim();
-  if (!name) return;
+  const input = document.getElementById('proj-rename-input');
+  const name = input.value.trim();
+  // No error slot in this modal (unlike the New Scene/Edit Scene forms) — an
+  // empty name isn't defaulted the way createAndOpenProject defaults to
+  // "Untitled Project", since here the user is explicitly renaming something
+  // that already has a name; re-focusing at least signals the click did
+  // something instead of silently doing nothing.
+  if (!name) { input.focus(); input.select(); return; }
   const index = loadProjectIndex();
   const entry = index.find(p => p.id === renamingProjId);
   if (entry) { entry.name = name; saveProjectIndex(index); }
@@ -355,7 +390,16 @@ function duplicateProject(id) {
   const entry = index.find(p => p.id === id);
   const newId = genProjId();
   const now = new Date().toISOString();
-  localStorage.setItem(projKey(newId), raw);
+  // Same ordering/guard as createAndOpenProject: write the blob first and
+  // bail on failure (quota exceeded, storage disabled) before ever touching
+  // the index, so a failed duplicate can't leave a phantom index entry
+  // pointing at data that was never actually written.
+  try {
+    localStorage.setItem(projKey(newId), raw);
+  } catch(e) {
+    alert('Could not duplicate the project (browser storage is full or unavailable). Please free up space and try again.');
+    return;
+  }
   index.push({
     id: newId, name: (entry ? entry.name : 'Project') + ' (Copy)',
     createdAt: now, modifiedAt: now,
@@ -475,6 +519,167 @@ function closeImportChoiceDialog() {
   document.querySelector('.pm-modal-dynamic.open')?.remove();
 }
 
+// Full schema v3 import validation (spec §11). Returns an error message
+// string to alert() and reject the import, or null if the file is well-
+// formed. Never mutates d except the trusted nextEntId auto-repair, mirroring
+// the existing nextId/nextSecId auto-repair for v2 imports above.
+function validateV3Import(d) {
+  const isStr = v => typeof v === 'string';
+  const isPosInt = v => Number.isInteger(v) && v > 0;
+  const isIntArr = v => Array.isArray(v) && v.every(Number.isInteger);
+
+  const arrayFields = ['characters', 'locations', 'themes', 'misc', 'scenes', 'sections',
+    'povCustom', 'storylines', 'revealsLib', 'constraints', 'markers', 'chronOrder', 'dismissed'];
+  const missingFields = arrayFields.filter(f => !Array.isArray(d[f]));
+  if (missingFields.length) return 'Invalid project structure. Missing required arrays: ' + missingFields.join(', ');
+  if (!Number.isInteger(d.nextEntId)) return 'Invalid project structure. "nextEntId" must be an integer.';
+  if (!isIntArr(d.povOrder)) return 'Invalid project structure. "povOrder" must be an array of integers.';
+
+  // Every id-bearing collection shares one counter (schema v3 §2.1) — ids
+  // must be unique across all of them combined, not just within each array.
+  const idBearing = [
+    ['characters', d.characters], ['locations', d.locations], ['themes', d.themes], ['misc', d.misc],
+    ['povCustom', d.povCustom], ['storylines', d.storylines], ['revealsLib', d.revealsLib],
+    ['constraints', d.constraints], ['markers', d.markers],
+  ];
+  const allIds = [];
+  for (const [field, arr] of idBearing) {
+    for (const item of arr) {
+      if (!item || typeof item !== 'object' || !isPosInt(item.id)) return 'Invalid project structure. Every entry in "' + field + '" needs a positive integer "id".';
+      allIds.push(item.id);
+    }
+  }
+  if (new Set(allIds).size !== allIds.length) return 'Invalid project structure. Entity ids must be unique across the whole file.';
+  const maxEntId = allIds.reduce((m, id) => Math.max(m, id), 0);
+  if (d.nextEntId <= maxEntId) d.nextEntId = maxEntId + 1;
+
+  // Sections use their own id space (nextSecId), separate from the entity
+  // counter above — validated the same way the v2 import branch below already
+  // validates its own d.sections (dup ids merge distinct sections into one
+  // group on the board; a non-string name reaches the DOM as-is elsewhere).
+  if (!d.sections.every(sec => sec && typeof sec === 'object' && isPosInt(sec.id) && isStr(sec.name))) {
+    return 'Invalid project structure. Every entry in "sections" needs a positive integer "id" and a string "name".';
+  }
+  if (new Set(d.sections.map(sec => sec.id)).size !== d.sections.length) {
+    return 'Invalid project structure. Section "id" values must be unique.';
+  }
+
+  for (const f of ['characters', 'locations', 'themes', 'misc', 'povCustom']) {
+    if (!d[f].every(x => isStr(x.name))) return 'Invalid project structure. Every entry in "' + f + '" needs a string "name".';
+  }
+  if (!d.revealsLib.every(r => isStr(r.label))) return 'Invalid project structure. Every entry in "revealsLib" needs a string "label".';
+  if (!d.storylines.length) return 'Invalid project structure. "storylines" must not be empty.';
+  if (!d.storylines.every(st => isStr(st.name))) return 'Invalid project structure. Every storyline needs a string "name".';
+  if (!d.storylines.every(st => Number.isInteger(st.paletteIndex) && st.paletteIndex >= 0 && st.paletteIndex <= 9)) {
+    return 'Invalid project structure. Every storyline needs a "paletteIndex" integer 0-9.';
+  }
+
+  const charIds = new Set(d.characters.map(c => c.id));
+  const locIds = new Set(d.locations.map(l => l.id));
+  const themeIds = new Set(d.themes.map(t => t.id));
+  const miscIds = new Set(d.misc.map(m => m.id));
+  const povIds = new Set([...charIds, ...d.povCustom.map(p => p.id)]);
+  const storylineIds = new Set(d.storylines.map(s => s.id));
+  const revealIds = new Set(d.revealsLib.map(r => r.id));
+
+  const sceneIds = new Set();
+  for (let i = 0; i < d.scenes.length; i++) {
+    const sc = d.scenes[i], n = i + 1;
+    if (!sc || typeof sc !== 'object' || !Number.isInteger(sc.id) || !isStr(sc.title)) {
+      return 'Invalid project structure. Scene ' + n + ' needs a numeric "id" and a string "title".';
+    }
+    // wordCount isn't checked here — loadState()'s normalizeWordCount() already
+    // treats anything that doesn't round to a positive integer as null, so a
+    // stray non-numeric value self-heals on load with no crash risk. summary/
+    // notes have no such normalization anywhere downstream, and a non-string
+    // reaches sceneMatchesSearch()'s `.toLowerCase()` call (editor.js) as-is —
+    // e.g. an imported number there throws instead of just being harmless bad
+    // data, so this one is worth rejecting up front.
+    if ((sc.summary != null && !isStr(sc.summary)) || (sc.notes != null && !isStr(sc.notes))) {
+      return 'Invalid project structure. Scene ' + n + ' "summary"/"notes" must be strings when present.';
+    }
+    sceneIds.add(sc.id);
+    // reveals/requires are the pre-rename field names (see state.js
+    // loadState()'s `sc.foreshadows ?? sc.reveals` fallback) — validated the
+    // same way when present, so a hand-edited or very old exported file that
+    // still uses them can't sneak malformed data through that fallback path
+    // unvalidated. Only ever relevant when the new key is absent.
+    for (const key of ['characters', 'locations', 'themes', 'misc', 'povs', 'foreshadows', 'payoffs', 'reveals', 'requires']) {
+      if (sc[key] != null && !isIntArr(sc[key])) return 'Invalid project structure. Scene ' + n + ' "' + key + '" must be an array of integer ids.';
+    }
+    if ((sc.characters || []).some(id => !charIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown character id.';
+    if ((sc.locations || []).some(id => !locIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown location id.';
+    if ((sc.themes || []).some(id => !themeIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown theme id.';
+    if ((sc.misc || []).some(id => !miscIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown misc id.';
+    if ((sc.povs || []).some(id => !povIds.has(id))) return 'Invalid project structure. Scene ' + n + ' references an unknown POV id.';
+    const effectiveForeshadows = sc.foreshadows ?? sc.reveals ?? [];
+    const effectivePayoffs = sc.payoffs ?? sc.requires ?? [];
+    if (effectiveForeshadows.some(id => !revealIds.has(id)) || effectivePayoffs.some(id => !revealIds.has(id))) {
+      return 'Invalid project structure. Scene ' + n + ' references an unknown reveal id.';
+    }
+    if (!Number.isInteger(sc.storylineId) || !storylineIds.has(sc.storylineId)) return 'Invalid project structure. Scene ' + n + ' "storylineId" does not resolve to a storyline.';
+    const also = sc.alsoStorylineIds || [];
+    if (sc.alsoStorylineIds != null && !isIntArr(also)) return 'Invalid project structure. Scene ' + n + ' "alsoStorylineIds" must be an array of integers.';
+    if (also.includes(sc.storylineId)) return 'Invalid project structure. Scene ' + n + ' "alsoStorylineIds" contains its own storylineId.';
+    if (new Set(also).size !== also.length) return 'Invalid project structure. Scene ' + n + ' "alsoStorylineIds" contains duplicates.';
+    if (also.some(id => !storylineIds.has(id))) return 'Invalid project structure. Scene ' + n + ' "alsoStorylineIds" references an unknown storyline.';
+    if (sc.anchor != null) {
+      if (typeof sc.anchor !== 'object' || !isStr(sc.anchor.date)) return 'Invalid project structure. Scene ' + n + ' has a malformed anchor.';
+      const dt = new Date(sc.anchor.date + 'T00:00:00Z');
+      if (isNaN(dt.getTime()) || dt.toISOString().slice(0, 10) !== sc.anchor.date) return 'Invalid project structure. Scene ' + n + ' anchor date is not a real calendar date.';
+      if (sc.anchor.time != null && (!isStr(sc.anchor.time) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(sc.anchor.time))) {
+        return 'Invalid project structure. Scene ' + n + ' anchor time must be "HH:MM" between 00:00 and 23:59.';
+      }
+    }
+    if (sc.durationMin != null && !(Number.isInteger(sc.durationMin) && sc.durationMin > 0)) return 'Invalid project structure. Scene ' + n + ' "durationMin" must be null or a positive integer.';
+    if (sc.offscreen != null && typeof sc.offscreen !== 'boolean') return 'Invalid project structure. Scene ' + n + ' "offscreen" must be a boolean.';
+    // Not required to resolve to an actual section (an id that doesn't match
+    // any entry is already treated as "unassigned" everywhere a validSecIds
+    // set is checked) — just type-checked, same leniency as sc.durationMin.
+    if (sc.sectionId != null && !Number.isInteger(sc.sectionId)) return 'Invalid project structure. Scene ' + n + ' "sectionId" must be null or an integer.';
+  }
+  if (new Set(d.scenes.map(s => s.id)).size !== d.scenes.length) return 'Invalid project structure. Scene "id" values must be unique.';
+
+  // Same reasoning as nextEntId above: a missing/stale nextId or nextSecId
+  // would let the next Add Scene/Add Section mint an id that collides with
+  // one already in the file, silently corrupting every id-based lookup from
+  // then on. Repaired (not rejected), mirroring the v2 import branch's own
+  // nextId/nextSecId auto-repair below.
+  const maxSceneId = d.scenes.reduce((m, sc) => Math.max(m, sc.id), 0);
+  if (typeof d.nextId !== 'number' || d.nextId <= maxSceneId) d.nextId = maxSceneId + 1;
+  const maxSecId = d.sections.reduce((m, sec) => Math.max(m, sec.id), 0);
+  if (typeof d.nextSecId !== 'number' || d.nextSecId <= maxSecId) d.nextSecId = maxSecId + 1;
+
+  for (const c of d.constraints) {
+    if (!['before', 'same-time', 'offset'].includes(c.type)) return 'Invalid project structure. Constraint ' + c.id + ' has an invalid "type".';
+    if (!sceneIds.has(c.a) || !sceneIds.has(c.b)) return 'Invalid project structure. Constraint ' + c.id + ' references an unknown scene.';
+    if (c.type === 'offset' && !isPosInt(c.offsetMin)) return 'Invalid project structure. Constraint ' + c.id + ' needs a positive integer "offsetMin".';
+  }
+  for (const m of d.markers) {
+    if (!isStr(m.label)) return 'Invalid project structure. Marker ' + m.id + ' needs a string "label".';
+    if (m.beforeSceneId != null && !sceneIds.has(m.beforeSceneId)) return 'Invalid project structure. Marker ' + m.id + ' "beforeSceneId" does not resolve.';
+  }
+
+  if (d.chronOrder.length !== sceneIds.size || new Set(d.chronOrder).size !== d.chronOrder.length || !d.chronOrder.every(id => sceneIds.has(id))) {
+    return 'Invalid project structure. "chronOrder" must contain every scene id exactly once.';
+  }
+  if (!d.dismissed.every(isStr)) return 'Invalid project structure. "dismissed" must be an array of strings.';
+
+  if (d.timelinePrefs != null) {
+    const tp = d.timelinePrefs;
+    if (typeof tp !== 'object') return 'Invalid project structure. "timelinePrefs" must be an object.';
+    if (!['ordinal', 'true'].includes(tp.axis)) return 'Invalid project structure. "timelinePrefs.axis" must be "ordinal" or "true".';
+    if (tp.threadCharId != null && (!Number.isInteger(tp.threadCharId) || !charIds.has(tp.threadCharId))) {
+      return 'Invalid project structure. "timelinePrefs.threadCharId" must be null or resolve to a character.';
+    }
+    if (!Number.isInteger(tp.zoomPos) || tp.zoomPos < 0 || tp.zoomPos > 100) {
+      return 'Invalid project structure. "timelinePrefs.zoomPos" must be an integer 0-100.';
+    }
+  }
+
+  return null;
+}
+
 function importProjectJSON(inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
@@ -483,11 +688,15 @@ function importProjectJSON(inputEl) {
     try {
       const d = JSON.parse(e.target.result);
 
-      if (!d || d.v !== DATA_VERSION) {
-        alert('Invalid project file version. Expected v: "' + DATA_VERSION + '"' + (d && d.v ? ' but found v: "' + d.v + '"' : '') + '.');
+      if (!d || (d.v !== '2' && d.v !== '3')) {
+        alert('Invalid project file version. Expected v: "2" or "3"' + (d && d.v ? ' but found v: "' + d.v + '"' : '') + '.');
         return;
       }
 
+      if (d.v === '3') {
+        const v3Err = validateV3Import(d);
+        if (v3Err) { alert(v3Err); return; }
+      } else {
       const requiredFields = ['characters', 'locations', 'themes', 'misc', 'scenes', 'sections'];
       const missingFields = requiredFields.filter(f => !Array.isArray(d[f]));
       if (missingFields.length > 0) {
@@ -627,6 +836,9 @@ function importProjectJSON(inputEl) {
         return;
       }
 
+      migrateV2toV3(d);
+      } // end d.v === '2' branch
+
       const name = d.projectName || file.name.replace(/\.json$/i, '') || 'Imported Project';
       delete d.projectName;
       delete d.exportedAt;
@@ -639,7 +851,18 @@ function importProjectJSON(inputEl) {
         d.revision = d.revision || 0;
         const id = genProjId();
         const now = new Date().toISOString();
-        localStorage.setItem(projKey(id), JSON.stringify(d));
+        // These dialog-button callbacks run after the reader.onload try/catch
+        // below has already returned, so a storage failure here isn't caught
+        // by it — without its own guard it would throw uncaught and silently
+        // fail (the dialog closes either way, so the user would see nothing
+        // and assume the import worked). Same write-before-index-entry
+        // ordering as createAndOpenProject/duplicateProject.
+        try {
+          localStorage.setItem(projKey(id), JSON.stringify(d));
+        } catch(e) {
+          alert('Could not import the project (browser storage is full or unavailable). Please free up space and try again.');
+          return;
+        }
         const index = loadProjectIndex();
         index.push({ id, name, createdAt: now, modifiedAt: now, sceneCount: d.scenes.length, theme: d.theme || 'ivory' });
         saveProjectIndex(index);
@@ -650,7 +873,13 @@ function importProjectJSON(inputEl) {
 
       // Overwrite the matching local project with the file's contents.
       const replaceExisting = (existing) => {
-        localStorage.setItem(projKey(existing.entry.id), JSON.stringify(d));
+        // See finishAsNew's comment above — same uncaught-storage-failure risk.
+        try {
+          localStorage.setItem(projKey(existing.entry.id), JSON.stringify(d));
+        } catch(e) {
+          alert('Could not update the local copy (browser storage is full or unavailable). Please free up space and try again.');
+          return;
+        }
         const index = loadProjectIndex();
         const entry = index.find(p => p.id === existing.entry.id);
         if (entry) {
@@ -721,12 +950,13 @@ function importProjectJSON(inputEl) {
   inputEl.value = '';
 }
 
-// Bump whenever pride-and-prejudice.json / count-of-monte-cristo.json change enough
-// that existing (untouched) sample projects should be refreshed with the new content —
-// e.g. the wordCount/povs addition this constant was introduced for. A user who's still
-// on an older version gets the refresh automatically on their next Projects-page visit;
-// no manual localStorage reset needed.
-const SAMPLES_VERSION = 2;
+// Bump whenever count-of-monte-cristo.json / frankenstein.json / dracula.json
+// change enough that existing (untouched) sample projects should be
+// refreshed with the new content — e.g. the wordCount/povs addition this
+// constant was introduced for. A user who's still on an older version gets
+// the refresh automatically on their next Projects-page visit; no manual
+// localStorage reset needed.
+const SAMPLES_VERSION = 4;
 
 function ensureSampleProjects() {
   // Seeded/refreshed up to SAMPLES_VERSION already? Nothing to do. Tracked by a version
@@ -757,9 +987,37 @@ function ensureSampleProjects() {
   // entries from before sampleKey existed only ever recorded a name, so check both.
   const deletedSamples = new Set(prefs.deletedSamples || []);
 
+  // Retired as of SAMPLES_VERSION 4 — Pride and Prejudice and Count of Monte
+  // Cristo (in its original form) were both fully linear, single-storyline
+  // sample data, so neither actually demonstrated the Timeline views
+  // (multi-storyline, non-linear chronology, era markers). Monte Cristo was
+  // restructured in place instead (its source novel has real parallel
+  // revenge threads the original sample just never used); Pride and
+  // Prejudice is close to strictly linear by design, so it's retired outright
+  // in favor of Dracula (see samplesToLoad below), which is genuinely
+  // multi-storyline with real dated diary entries to anchor. An untouched
+  // (revision 0) copy is removed outright; an edited copy is the user's own
+  // now and is just unflagged as a sample rather than deleted.
+  [{ key: 'pride-and-prejudice', name: 'Pride and Prejudice' }].forEach(sample => {
+    const index = loadProjectIndex();
+    const entry = index.find(p => p.isSample && (p.sampleKey === sample.key || (!p.sampleKey && p.name === sample.name)));
+    if (!entry) return;
+    let cur = null;
+    try { cur = JSON.parse(localStorage.getItem(projKey(entry.id)) || 'null'); } catch(e) {}
+    if (cur && (cur.revision || 0) !== 0) {
+      delete entry.isSample;
+      delete entry.sampleKey;
+      saveProjectIndex(index);
+    } else {
+      localStorage.removeItem(projKey(entry.id));
+      saveProjectIndex(index.filter(p => p.id !== entry.id));
+    }
+  });
+
   const samplesToLoad = [
-    { key: 'pride-and-prejudice', name: 'Pride and Prejudice', file: 'pride-and-prejudice.json' },
     { key: 'count-of-monte-cristo', name: 'The Count of Monte Cristo', file: 'count-of-monte-cristo.json' },
+    { key: 'frankenstein', name: 'Frankenstein; or, The Modern Prometheus', file: 'frankenstein.json' },
+    { key: 'dracula', name: 'Dracula', file: 'dracula.json' },
   ];
 
   const loadPromises = samplesToLoad.map(sample => {
@@ -770,7 +1028,14 @@ function ensureSampleProjects() {
         return response.json();
       })
       .then(d => {
-        if (!d || d.v !== DATA_VERSION) return false;
+        // All three current samples are v3-native (storylines/reveals/anchors/
+        // markers hand-authored directly — v2 has no concept of any of them).
+        // The v2-migration branch is kept for any v2 sample file added later
+        // (or a stale cached copy of one still in a user's own project list),
+        // not because a current sample needs it.
+        if (!d) return false;
+        if (d.v === '2') migrateV2toV3(d);
+        else if (d.v !== '3') return false;
         delete d.projectName;
         const index = loadProjectIndex();
         // sampleKey identifies the same entry across a rename; name is the fallback

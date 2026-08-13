@@ -3,6 +3,17 @@
 (function(){
   var $ = function(id){ return document.getElementById(id); };
 
+  // Menu-bar/tooltip shortcut labels are authored as Ctrl/Alt (Windows/Linux
+  // convention) — the actual keydown handler (editor.js) already accepts
+  // Cmd (metaKey) interchangeably with Ctrl, so this is purely a display fix:
+  // swap each labeled shortcut to its Mac convention (⌘/⌥) on a Mac, reading
+  // the replacement from a data-sc-mac/data-title-mac attribute right on the
+  // same element rather than parsing/rewriting the displayed text.
+  if (/Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '')) {
+    document.querySelectorAll('[data-sc-mac]').forEach(function(el){ el.textContent = el.dataset.scMac; });
+    document.querySelectorAll('[data-title-mac]').forEach(function(el){ el.title = el.dataset.titleMac; });
+  }
+
   // Header
   $('proj-back-btn').addEventListener('click', backToProjects);
   $('help-btn').addEventListener('click', toggleHelp);
@@ -71,7 +82,14 @@
     setTimeout(updatePanelMenuStates, 50);
     closeAllMenus();
   });
-  $('menu-chart').addEventListener('click', function(){ toggleChartView(); closeAllMenus(); });
+  $('menu-view-board').addEventListener('click', function(){ closeTimelineView(); closeChartView(); closeAllMenus(); });
+  $('menu-view-chart').addEventListener('click', function(){ closeTimelineView(); if (!chartMode) openChartView(); closeAllMenus(); });
+  $('menu-view-timeline').addEventListener('click', function(){ if (!timelineMode) runWithDiscardGuard(_openTimelineViewImpl); closeAllMenus(); });
+  $('menu-show-inspector').addEventListener('click', function(){
+    togglePanel('tl-panel');
+    setTimeout(updateTlPanelMenuState, 50);
+    closeAllMenus();
+  });
 
   // Help menu
   $('mi-help-overview').addEventListener('click', function(){ window.open('index.html','_blank'); closeAllMenus(); });
@@ -113,7 +131,10 @@
     ['ck-locations-btn','ck-locations-wrap','locations'],
     ['ck-themes-btn','ck-themes-wrap','themes'],
     ['ck-misc-btn','ck-misc-wrap','misc'],
-    ['sc-povs-btn','sc-povs-wrap','povs']
+    ['sc-povs-btn','sc-povs-wrap','povs'],
+    ['sc-also-sl-btn','sc-also-sl-wrap','storylines'],
+    ['sc-reveals-btn','sc-reveals-wrap','reveals'],
+    ['sc-requires-btn','sc-requires-wrap','reveals']
   ].forEach(function(t){
     var wrapId = t[1], type = t[2];
     $(t[0]).addEventListener('click', function(){ toggleCkDrop(wrapId, type); });
@@ -127,7 +148,10 @@
     ['ek-locations-btn','ek-locations-wrap','locations'],
     ['ek-themes-btn','ek-themes-wrap','themes'],
     ['ek-misc-btn','ek-misc-wrap','misc'],
-    ['ed-povs-btn','ed-povs-wrap','povs']
+    ['ed-povs-btn','ed-povs-wrap','povs'],
+    ['ed-also-sl-btn','ed-also-sl-wrap','storylines'],
+    ['ed-reveals-btn','ed-reveals-wrap','reveals'],
+    ['ed-requires-btn','ed-requires-wrap','reveals']
   ].forEach(function(t){
     var wrapId = t[1], type = t[2];
     $(t[0]).addEventListener('click', function(){ toggleCkDrop(wrapId, type); });
@@ -138,19 +162,84 @@
   var detToggle = $('det-toggle');
   detToggle.addEventListener('change', function(){ toggleDetails(detToggle.checked); });
   $('sec-filter-btn').addEventListener('click', toggleSecFilter);
-  $('srch-inp').addEventListener('input', onSearch);
+  $('srch-inp').addEventListener('input', onSearchInput);
   $('srch-scope').addEventListener('change', onSearch);
   $('srch-clr').addEventListener('click', clearSearch);
   var scaler = $('scaler');
   scaler.addEventListener('input', function(){ setScale(scaler.value); });
 
   // Chart view
-  $('chart-type-cards').addEventListener('click', closeChartView);
-  $('chart-type-snake').addEventListener('click', function(){ setChartType('snake'); });
-  $('chart-type-circle').addEventListener('click', function(){ setChartType('circle'); });
+  $('chart-type-cards').addEventListener('click', function(){ closeTimelineView(); closeChartView(); });
+  $('chart-type-snake').addEventListener('click', function(){ closeTimelineView(); setChartType('snake'); });
+  $('chart-type-circle').addEventListener('click', function(){ closeTimelineView(); setChartType('circle'); });
   $('chart-wc-toggle').addEventListener('click', toggleShowWordCount);
   $('chart-trace-sel').addEventListener('change', function(){ setChartTrace(this.value); });
   $('chart-print-btn').addEventListener('click', printChart);
+
+  // Timeline view (schema v3 §6)
+  $('tl-view-loom').addEventListener('click', function(){ setTlViewFromToggle('strip'); });
+  $('tl-view-path').addEventListener('click', function(){ setTlViewFromToggle('braid'); });
+  $('tl-axis-ordinal').addEventListener('click', function(){ setTlAxis('ordinal'); });
+  $('tl-axis-true').addEventListener('click', function(){ setTlAxis('true'); });
+  $('tl-braid-mode-narrative').addEventListener('click', function(){ setTlBraidChronMode(false); });
+  $('tl-braid-mode-chronology').addEventListener('click', function(){ setTlBraidChronMode(true); });
+  $('tl-thread-sel').addEventListener('change', function(){ setTlThread(this.value); });
+  $('tl-zoom').addEventListener('input', function(){ setTlZoom(this.value); });
+  $('tl-zoom').addEventListener('dblclick', function(){ this.value = 50; setTlZoom(50); });
+  $('tl-add-storyline-btn').addEventListener('click', addStoryline);
+  $('tl-tab-inspector').addEventListener('click', function(){ tlSwitchTab('inspector'); });
+  $('tl-tab-conflicts').addEventListener('click', function(){ tlSwitchTab('conflicts'); });
+  // #tl-track itself (not the scroll container) has its own click listener,
+  // wired once in timeline.js alongside the drag machinery — it needs the
+  // _tlDragOccurred check a listener here wouldn't have, so it isn't duplicated.
+  $('tl-chron-scroll').addEventListener('click', function(e){ if (e.target === $('tl-chron-scroll')) tlSelectScene(null); });
+  $('tl-ms-scroll').addEventListener('click', function(e){ if (e.target === $('tl-ms-scroll') || e.target.id === 'tl-ms-row') tlSelectScene(null); });
+  $('tl-chron-arrow-left').addEventListener('click', function(){ tlScrollByPage('tl-chron-scroll', -1); });
+  $('tl-chron-arrow-right').addEventListener('click', function(){ tlScrollByPage('tl-chron-scroll', 1); });
+  // Hover callout (timeline.js tlShowCallout()) is positioned once, relative
+  // to its anchor card's rect at show time — any scroll that could move that
+  // card away from under it just dismisses it instead of tracking it live.
+  $('tl-chron-scroll').addEventListener('scroll', function(){ clearTimeout(_tlCalloutTimer); tlHideCallout(); });
+  $('tl-ms-scroll').addEventListener('scroll', function(){ clearTimeout(_tlCalloutTimer); tlHideCallout(); });
+  // #tl-lane-scroll is the one real (native) vertical scrollbar for the
+  // storyline lanes; tlSyncLaneScroll() mirrors its position onto #tl-track
+  // via translateY so the card rows track the labels. Wheel events over the
+  // card area itself are forwarded to #tl-lane-scroll (rather than given
+  // their own independent scroll handling) so scrolling anywhere in the
+  // chronology row scrolls the lanes, not just when the cursor happens to be
+  // over the narrow 132px label column. Only when the gesture is vertical-
+  // dominant (|deltaY| > |deltaX|) — a trackpad horizontal swipe reports a
+  // small noisy deltaY alongside its deltaX, and preventDefault() cancels
+  // the whole wheel event including that deltaX, so treating any nonzero
+  // deltaY as "vertical" hijacked and stuttered #tl-chron-scroll's native
+  // horizontal panning on every such swipe.
+  $('tl-lane-scroll').addEventListener('scroll', tlSyncLaneScroll);
+  $('tl-lane-scroll').addEventListener('scroll', function(){ clearTimeout(_tlCalloutTimer); tlHideCallout(); });
+  $('tl-chron-scroll-wrap').addEventListener('wheel', function(e){
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    const laneScroll = $('tl-lane-scroll');
+    if (laneScroll.scrollHeight <= laneScroll.clientHeight) return;
+    e.preventDefault();
+    laneScroll.scrollTop += e.deltaY;
+  }, { passive: false });
+  $('tl-ms-arrow-left').addEventListener('click', function(){ tlScrollByPage('tl-ms-scroll', -1); });
+  $('tl-ms-arrow-right').addEventListener('click', function(){ tlScrollByPage('tl-ms-scroll', 1); });
+  $('tl-braid-scroll').addEventListener('click', function(e){ if (e.target === $('tl-braid-scroll') || e.target.id === 'tl-braid-svg') tlSelectScene(null); });
+  $('tl-braid-scroll').addEventListener('scroll', tlBraidUpdateMarkerHud);
+  $('tl-braid-scroll').addEventListener('scroll', tlBraidUpdateSectionHud);
+  $('tl-braid-scroll').addEventListener('scroll', tlBraidUpdateWatermark);
+  $('tl-panel-strip-btn').addEventListener('click', function(){ togglePanel('tl-panel'); });
+  $('tl-panel-collapse-btn').addEventListener('click', function(){ togglePanel('tl-panel'); });
+  $('tl-delete-scene-btn').addEventListener('click', tlDeleteSelectedScene);
+  $('tl-new-scene-btn').addEventListener('click', tlShowNewSceneForm);
+  // Cancel/Save Changes dim to "nothing to do" while the form is clean (Timeline
+  // only — refreshTlSaveCancelState() itself no-ops outside timelineMode). Any
+  // field change, checkbox-dropdown toggle, or the Anchor "Clear" button needs
+  // to re-run the dirty check; a delegated input+change+click listener on the
+  // shared form catches all of them without touching board's own wiring at all.
+  ['input','change','click'].forEach(function(evt){
+    $('form-edit').addEventListener(evt, function(){ setTimeout(refreshTlSaveCancelState, 0); });
+  });
 
   // Add-item popup
   $('ap-cancel').addEventListener('click', closeAddPopup);
@@ -179,6 +268,8 @@
   // Discard Scene Confirm modal
   $('discard-cfm-cancel').addEventListener('click', closeDiscardConfirm);
   $('discard-cfm-ok').addEventListener('click', confirmDiscard);
+  $('tl-move-cfm-discard').addEventListener('click', tlConfirmMoveDiscard);
+  $('tl-move-cfm-save').addEventListener('click', tlConfirmMoveSave);
 
   // Summary modal
   $('mclose').addEventListener('click', closeModal);
@@ -187,6 +278,7 @@
   $('rpt-close').addEventListener('click', closeReportModal);
   [
     ['rpt-type-scenelist','scenelist'],
+    ['rpt-type-chronology','chronology'],
     ['rpt-type-character','character'],
     ['rpt-type-location','location'],
     ['rpt-type-theme','theme'],

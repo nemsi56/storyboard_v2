@@ -78,6 +78,7 @@ function generateReport() {
   const secSet = rptSelectedSecs();
   let html = '';
   if (rptType === 'scenelist') html = buildSceneListReport(secSet);
+  if (rptType === 'chronology') html = buildChronologyReport(secSet);
   if (rptType === 'character') html = buildCharacterReport(secSet);
   if (rptType === 'location')  html = buildLocationReport(secSet);
   if (rptType === 'theme')     html = buildThemeReport(secSet);
@@ -126,6 +127,10 @@ function rptBaseCSS() {
     .tag-t{background:#e8dff7;color:#5a2f90}
     .tag-m{background:#fdecd5;color:#8f5520}
     .tag-p{background:#d6f0ea;color:#0e7c6b}
+    .chron-node{margin:16px 0 2px}
+    .chron-node:first-child{margin-top:0}
+    .chron-node-date{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#555;padding-bottom:3px;border-bottom:1px solid #ddd}
+    .chron-node-note{font-size:10px;color:#999;font-style:italic;margin:3px 0 2px}
     .scene-entry{margin:3px 0;padding:4px 8px;border-left:2px solid #ccc}
     .scene-entry-title{font-weight:600;color:#222;font-size:11px}
     .scene-entry-meta{color:#666;font-size:11px}
@@ -175,13 +180,26 @@ function rptPageHeader(title) {
 }
 
 function rptEsc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  // No call site currently uses a single-quoted HTML attribute (only "..."),
+  // so this wasn't exploitable — escaped anyway so it stays that way if a
+  // future report template adds one.
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function rptFieldRow(label, val) {
   return `<div class="field-row"><span class="field-lbl">${label}</span><span class="field-val">${val}</span></div>`;
 }
 function rptTagsHtml(arr, cls) {
   return arr.map(t => `<span class="tag ${cls}">${rptEsc(t)}</span>`).join('');
+}
+// Scene ref arrays hold ids now — resolve to display names just before
+// building HTML, rather than threading name resolution through every caller.
+function rptNamesOf(ids, lib) {
+  const map = new Map(S[lib].map(x => [x.id, x.name]));
+  return (ids || []).map(id => map.get(id)).filter(Boolean);
+}
+function rptPovNamesOf(ids) {
+  const map = new Map([...S.characters.map(c => [c.id, c.name]), ...S.povCustom.map(p => [p.id, p.name])]);
+  return (ids || []).map(id => map.get(id)).filter(Boolean);
 }
 
 function buildSceneListReport(secSet) {
@@ -203,37 +221,99 @@ function buildSceneListReport(secSet) {
   } else {
     scenes.forEach(sc => {
       html += `<div class="scene-block">`;
-      html += `<div class="scene-num">Scene ${numMap.get(sc.id) ?? 1}</div>`;
+      html += `<div class="scene-num">${numMap.has(sc.id) ? 'Scene ' + numMap.get(sc.id) : 'Offscreen'}</div>`;
       html += `<div class="scene-title">${rptEsc(sc.title || '(Untitled)')}</div>`;
       if (inc.section)                       html += rptFieldRow('Section',    rptEsc(rptSecName(sc.sectionId)));
       if (inc.summary    && sc.summary)      html += rptFieldRow('Summary',    rptEsc(sc.summary));
       if (inc.notes      && sc.notes)        html += rptFieldRow('Notes',      rptEsc(sc.notes));
-      if (inc.characters && sc.characters?.length) html += rptFieldRow('Characters', rptTagsHtml(sc.characters, 'tag-c'));
-      if (inc.locations  && sc.locations?.length)  html += rptFieldRow('Locations',  rptTagsHtml(sc.locations,  'tag-l'));
-      if (inc.themes     && sc.themes?.length)     html += rptFieldRow('Themes',      rptTagsHtml(sc.themes,     'tag-t'));
-      if (inc.misc       && sc.misc?.length)       html += rptFieldRow('Misc Items',  rptTagsHtml(sc.misc,       'tag-m'));
-      if (inc.pov        && sc.povs?.length)       html += rptFieldRow('POV',         rptTagsHtml(sc.povs,       'tag-p'));
+      if (inc.characters && sc.characters?.length) html += rptFieldRow('Characters', rptTagsHtml(rptNamesOf(sc.characters, 'characters'), 'tag-c'));
+      if (inc.locations  && sc.locations?.length)  html += rptFieldRow('Locations',  rptTagsHtml(rptNamesOf(sc.locations,  'locations'),  'tag-l'));
+      if (inc.themes     && sc.themes?.length)     html += rptFieldRow('Themes',      rptTagsHtml(rptNamesOf(sc.themes,     'themes'),     'tag-t'));
+      if (inc.misc       && sc.misc?.length)       html += rptFieldRow('Misc Items',  rptTagsHtml(rptNamesOf(sc.misc,       'misc'),       'tag-m'));
+      if (inc.pov        && sc.povs?.length)       html += rptFieldRow('POV',         rptTagsHtml(rptPovNamesOf(sc.povs),                  'tag-p'));
       html += `</div>`;
     });
   }
   return html + '</body></html>';
 }
 
+// Chronology mode's own node list (Path view, Chronology axis) — one entry
+// per exact-anchor group, via braidChronColumns() (timeline.js), the same
+// function that view itself renders from. Unlike Scene List's reading order,
+// this includes offscreen scenes as their own nodes (that's exactly the one
+// place they belong — "when it happened" — matching Path/Loom's own
+// Chronology axis) and can merge 2+ simultaneous scenes (different
+// storylines, identical anchor) into one node.
+function buildChronologyReport(secSet) {
+  const inc = {
+    section:    document.getElementById('rpt-cl-section').checked,
+    summary:    document.getElementById('rpt-cl-summary').checked,
+    notes:      document.getElementById('rpt-cl-notes').checked,
+    characters: document.getElementById('rpt-cl-characters').checked,
+    locations:  document.getElementById('rpt-cl-locations').checked,
+    themes:     document.getElementById('rpt-cl-themes').checked,
+    misc:       document.getElementById('rpt-cl-misc').checked,
+    pov:        document.getElementById('rpt-cl-pov').checked,
+  };
+  const includedIds = new Set(rptFilterScenes(secSet).map(s => s.id));
+  const numMap = buildSceneNumMap();
+  const sceneById = new Map(S.scenes.map(s => [s.id, s]));
+  const nodes = braidChronColumns(S.chronOrder || [], sceneById)
+    .map(col => ({ ids: col.ids.filter(id => includedIds.has(id)) }))
+    .filter(col => col.ids.length);
+
+  let html = rptPageHeader('Chronology');
+  if (!nodes.length) {
+    html += '<p style="color:#aaa;margin-top:20px;font-style:italic">No scenes match the selected sections.</p>';
+    return html + '</body></html>';
+  }
+  nodes.forEach(node => {
+    const scenes = node.ids.map(id => sceneById.get(id)).filter(Boolean);
+    const merged = scenes.length > 1;
+    html += `<div class="chron-node">`;
+    html += `<div class="chron-node-date">${rptEsc(fmtAnchor(scenes[0].anchor) || 'No date set')}</div>`;
+    if (merged) html += `<div class="chron-node-note">Simultaneous — ${scenes.length} scenes</div>`;
+    scenes.forEach(sc => {
+      html += `<div class="scene-block">`;
+      html += `<div class="scene-num">${numMap.has(sc.id) ? 'Scene ' + numMap.get(sc.id) : 'Offscreen'}</div>`;
+      html += `<div class="scene-title">${rptEsc(sc.title || '(Untitled)')}</div>`;
+      if (inc.section)                       html += rptFieldRow('Section',    rptEsc(rptSecName(sc.sectionId)));
+      if (inc.summary    && sc.summary)      html += rptFieldRow('Summary',    rptEsc(sc.summary));
+      if (inc.notes      && sc.notes)        html += rptFieldRow('Notes',      rptEsc(sc.notes));
+      if (inc.characters && sc.characters?.length) html += rptFieldRow('Characters', rptTagsHtml(rptNamesOf(sc.characters, 'characters'), 'tag-c'));
+      if (inc.locations  && sc.locations?.length)  html += rptFieldRow('Locations',  rptTagsHtml(rptNamesOf(sc.locations,  'locations'),  'tag-l'));
+      if (inc.themes     && sc.themes?.length)     html += rptFieldRow('Themes',      rptTagsHtml(rptNamesOf(sc.themes,     'themes'),     'tag-t'));
+      if (inc.misc       && sc.misc?.length)       html += rptFieldRow('Misc Items',  rptTagsHtml(rptNamesOf(sc.misc,       'misc'),       'tag-m'));
+      if (inc.pov        && sc.povs?.length)       html += rptFieldRow('POV',         rptTagsHtml(rptPovNamesOf(sc.povs),                  'tag-p'));
+      html += `</div>`;
+    });
+    html += `</div>`;
+  });
+  return html + '</body></html>';
+}
+
+// extraMeta resolves the OTHER category's ids to names for display — every
+// scene ref array (characters/locations/themes/misc/povs) holds ids now, so
+// a raw sc.locations.map(rptEsc) would print ids instead of names.
+const rptResolveNames = (ids, lib) => {
+  const map = new Map(S[lib].map(x => [x.id, x.name]));
+  return (ids || []).map(id => map.get(id)).filter(Boolean).map(rptEsc).join(', ');
+};
 const LIB_RPT_CFG = {
   character: { key:'characters', prefix:'rpt-ch', title:'Character Report', emptyMsg:'No characters in library.', emptyScene:'Does not appear in selected scenes',
-               extraMeta: (inc, sc) => inc.location && sc.locations?.length ? sc.locations.map(rptEsc).join(', ') : null },
+               extraMeta: (inc, sc) => inc.location && sc.locations?.length ? rptResolveNames(sc.locations, 'locations') : null },
   location:  { key:'locations',  prefix:'rpt-lo', title:'Location Report',  emptyMsg:'No locations in library.',  emptyScene:'Not used in selected scenes',
-               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
+               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? rptResolveNames(sc.characters, 'characters') : null },
   theme:     { key:'themes',     prefix:'rpt-th', title:'Theme Report',     emptyMsg:'No themes in library.',     emptyScene:'Not present in selected scenes',
-               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
+               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? rptResolveNames(sc.characters, 'characters') : null },
   misc:      { key:'misc',       prefix:'rpt-mi', title:'Misc Items Report',emptyMsg:'No misc items in library.', emptyScene:'Not present in selected scenes',
-               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
-  // POV isn't a real library array (S.povs doesn't exist) — names come from the
-  // Character library plus S.povCustomNames, so `items` supplies the {name} list
-  // in place of S[key], and there's no per-item Notes field to show.
+               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? rptResolveNames(sc.characters, 'characters') : null },
+  // POV isn't a real library array (S.povs doesn't exist) — entities come from
+  // the Character library plus S.povCustom, so `items` supplies the {id,name}
+  // list in place of S[key], and there's no per-item Notes field to show.
   pov:       { key:'povs',       prefix:'rpt-pv', title:'POV Report',       emptyMsg:'No POV assigned to any scene.', emptyScene:'Not POV in selected scenes',
-               items: () => usedPovNames().map(name => ({ name })),
-               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? sc.characters.map(rptEsc).join(', ') : null },
+               items: () => usedPovEntities(),
+               extraMeta: (inc, sc) => inc.characters && sc.characters?.length ? rptResolveNames(sc.characters, 'characters') : null },
 };
 
 function buildLibItemReport(secSet, type) {
@@ -252,7 +332,7 @@ function buildLibItemReport(secSet, type) {
     html += `<p style="color:#aaa;margin-top:20px;font-style:italic">${cfg.emptyMsg}</p>`;
   } else {
     items.forEach(item => {
-      const appears = scenes.filter(sc => (sc[cfg.key] || []).includes(item.name));
+      const appears = scenes.filter(sc => (sc[cfg.key] || []).includes(item.id));
       html += `<h2>${rptEsc(item.name)} <span style="font-weight:400;letter-spacing:0;font-size:10px;color:#ccc">${appears.length} scene${appears.length!==1?'s':''}</span></h2>`;
       if (inc.notes && item.notes) html += `<div class="scene-entry-summary" style="margin:-4px 0 8px">${rptEsc(item.notes)}</div>`;
       if (!appears.length) {
@@ -264,7 +344,7 @@ function buildLibItemReport(secSet, type) {
           const extra = cfg.extraMeta(inc, sc);
           if (extra) meta.push(extra);
           html += `<div class="scene-entry">`;
-          html += `<span class="scene-entry-title">Scene ${numMap.get(sc.id) ?? 1} — ${rptEsc(sc.title || '(Untitled)')}</span>`;
+          html += `<span class="scene-entry-title">${rptEsc(sceneNumPrefix(sc.id))}${rptEsc(sc.title || '(Untitled)')}</span>`;
           if (meta.length) html += ` <span class="scene-entry-meta">· ${meta.join(' · ')}</span>`;
           if (inc.summary && sc.summary) html += `<div class="scene-entry-summary">${rptEsc(sc.summary)}</div>`;
           html += `</div>`;
@@ -293,8 +373,8 @@ function buildMatrixReport(secSet) {
   const scenes    = rptFilterScenes(secSet);
   const numMap    = buildSceneNumMap();
   // POV isn't a real library array (S.povs doesn't exist) — build its axis items
-  // from the names actually assigned as POV, same as the POV item report above.
-  const axisItems = axis === 'povs' ? usedPovNames().map(name => ({ name })) : (S[axis] || []);
+  // from the entities actually assigned as POV, same as the POV item report above.
+  const axisItems = axis === 'povs' ? usedPovEntities() : (S[axis] || []);
   const axisLabel = axis === 'povs' ? 'POV' : (SECS.find(s => s.key === axis)?.label || axis);
   const title     = flip ? `Cross-Reference: Scenes × ${axisLabel}` : `Cross-Reference: ${axisLabel} × Scenes`;
   let html = rptPageHeader(title);
@@ -314,9 +394,9 @@ function buildMatrixReport(secSet) {
     html += `</tr></thead><tbody>`;
     scenes.forEach(sc => {
       const secStr = showSec ? ` <span class="mx-scene-sec" style="font-weight:400">· ${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
-      html += `<tr><td class="mx-row-hdr" style="width:200px;max-width:200px"><div class="mx-row-wrap"><span class="mx-row-num">${numMap.get(sc.id) ?? 1} —</span><span class="mx-row-title">${rptEsc(sc.title||'(Untitled)')}${secStr}</span></div></td>`;
+      html += `<tr><td class="mx-row-hdr" style="width:200px;max-width:200px"><div class="mx-row-wrap"><span class="mx-row-num">${numMap.has(sc.id) ? numMap.get(sc.id) + ' —' : 'Off —'}</span><span class="mx-row-title">${rptEsc(sc.title||'(Untitled)')}${secStr}</span></div></td>`;
       axisItems.forEach(item => {
-        html += (sc[axis] || []).includes(item.name) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
+        html += (sc[axis] || []).includes(item.id) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
       });
       html += `</tr>`;
     });
@@ -326,13 +406,13 @@ function buildMatrixReport(secSet) {
     html += `<table id="mx-full"><thead><tr><th style="min-width:130px">${rptEsc(axisLabel)}</th>`;
     scenes.forEach(sc => {
       const secStr = showSec ? `<span class="mx-scene-sec" style="display:block;white-space:nowrap">${rptEsc(rptSecName(sc.sectionId))}</span>` : '';
-      html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">Sc ${numMap.get(sc.id) ?? 1}</span>${secStr}</th>`;
+      html += `<th title="${rptEsc(sc.title||'(Untitled)')}"><span class="mx-scene-num">${numMap.has(sc.id) ? 'Sc ' + numMap.get(sc.id) : 'Off'}</span>${secStr}</th>`;
     });
     html += `</tr></thead><tbody>`;
     axisItems.forEach(item => {
       html += `<tr><td class="mx-row-hdr">${rptEsc(item.name)}</td>`;
       scenes.forEach(sc => {
-        html += (sc[axis] || []).includes(item.name) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
+        html += (sc[axis] || []).includes(item.id) ? `<td class="mx-cell mx-dot">●</td>` : `<td class="mx-cell"></td>`;
       });
       html += `</tr>`;
     });

@@ -2,6 +2,7 @@
 
 // ── SEARCH ────────────────────────────────────────────────────────────────────
 let searchQ = '', searchScope = 'both';
+let _searchDebounceTimer = null;
 
 function onSearch() {
   searchQ    = document.getElementById('srch-inp').value.trim().toLowerCase();
@@ -10,8 +11,19 @@ function onSearch() {
   document.getElementById('srch-wrap').classList.toggle('srch-active', !!searchQ);
   renderBoard();
 }
+// Debounced entry point for the search box's own 'input' event (fires once
+// per keystroke). renderBoard() is a full rebuild — innerHTML wipe plus a
+// fresh renderCard() (new DOM nodes + listeners) for every visible scene —
+// which is wasteful to redo on every keystroke on a large project. The scope
+// <select>'s 'change' event (one per selection, not a hot path) still calls
+// onSearch() directly below for instant feedback.
+function onSearchInput() {
+  clearTimeout(_searchDebounceTimer);
+  _searchDebounceTimer = setTimeout(onSearch, 150);
+}
 
 function clearSearch() {
+  clearTimeout(_searchDebounceTimer); // a keystroke's debounced onSearch() must not re-fire after this and stomp the clear
   document.getElementById('srch-inp').value = '';
   searchQ = '';
   document.getElementById('srch-clr').style.display = 'none';
@@ -59,7 +71,7 @@ function closeAddPopup() {
 // exactly what was checked instead of resetting to nothing.
 function ckCurrentlyChecked(prefix, sec) {
   const box = document.getElementById(prefix + '-' + sec);
-  return box ? [...box.querySelectorAll('input:checked')].map(c => c.value) : [];
+  return box ? [...box.querySelectorAll('input:checked')].map(c => parseInt(c.value, 10)) : [];
 }
 function confirmAdd() {
   if (!apSec) return;
@@ -68,27 +80,36 @@ function confirmAdd() {
   const notes = document.getElementById('ap-notes').value.trim();
   if (!name) { inp.focus(); return; }
   // A character name and a custom POV name share one combined list in every
-  // POV dropdown (see povNames()) — colliding would render two identical
+  // POV dropdown (see povEntities()) — colliding would render two identical
   // checkboxes and let renderPovLibSec's custom-name edit/delete handlers
   // attach to what's actually a character row. confirmPovAdd already guards
   // this in the other direction; mirror it here.
-  if (S[apSec].some(x => x.name === name) || (apSec === 'characters' && S.povCustomNames.includes(name))) {
+  if (S[apSec].some(x => x.name === name) || (apSec === 'characters' && S.povCustom.some(p => p.name === name))) {
     inp.select(); return;
   }
   pushHistory('Add ' + SINGULAR[apSec] + ' "' + name + '"');
   trackItemAdded(apSec);
-  S[apSec].push({ name, notes });
+  const newId = S.nextEntId++;
+  S[apSec].push({ id: newId, name, notes });
   const newCkChecked = ckCurrentlyChecked('ck', apSec);
   const newEkChecked = ckCurrentlyChecked('ek', apSec);
   if (apReturnCk && apReturnCk.sec === apSec) {
-    if (apReturnCk.prefix === 'ck') newCkChecked.push(name);
-    if (apReturnCk.prefix === 'ek') newEkChecked.push(name);
+    if (apReturnCk.prefix === 'ck') newCkChecked.push(newId);
+    if (apReturnCk.prefix === 'ek') newEkChecked.push(newId);
   }
   renderLibSec(apSec); renderCk(apSec, newCkChecked); renderEditCk(apSec, newEkChecked);
   if (apSec === 'characters') {
     renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
     renderPovCk('ed', ckCurrentlyChecked('ed', 'povs'));
   }
+  // Auto-checking the new item above sets each checkbox's .checked property
+  // directly, which fires no 'input'/'change' event — the only events
+  // #form-new's own live-state listener responds to (checkNewSceneLive()) —
+  // so minting straight from a New Scene checklist previously left Save/
+  // Cancel disabled and the discard guard skipped until some other field
+  // was touched. Only relevant when the return checklist was 'ck' (New
+  // Scene); 'ek' (Edit Scene) has no such live-state gate to keep in sync.
+  if (apReturnCk && apReturnCk.sec === apSec && apReturnCk.prefix === 'ck') checkNewSceneLive();
   closeAddPopup();
   recordDataEdit();
   saveState();
@@ -123,6 +144,8 @@ function toggleMenu(name) {
       updateThemeMenuState();
       updatePanelMenuStates();
       updateZoomMenuState();
+      if (typeof updateTlPanelMenuState === 'function') updateTlPanelMenuState();
+      if (typeof updateViewMenuActiveStates === 'function') updateViewMenuActiveStates();
     }
   }
 }
@@ -188,6 +211,10 @@ function toggleAllPanels() {
 function menuImport() { closeAllMenus(); document.getElementById('menu-import-input').click(); }
 function menuNewScene() {
   closeAllMenus();
+  // In timeline mode, New Scene opens the Inspector's own New Scene form
+  // (same #form-new node, reparented — see tlShowNewSceneForm) instead of
+  // Card view's Scene panel.
+  if (typeof timelineMode !== 'undefined' && timelineMode) { tlShowNewSceneForm(); return; }
   // A pending insert-zone anchor is only meant for the very next Add Scene —
   // entering the New Scene form through the menu instead is a fresh, untargeted
   // add and must not silently splice into wherever an earlier insert-zone click
@@ -235,20 +262,34 @@ function updateLibClearBtn() {
 }
 
 // ── REMOVE LIB ITEM ───────────────────────────────────────────────────────────
-function removeItem(sec, name) {
-  pushHistory('Remove "' + name + '"');
-  S[sec] = S[sec].filter(x => x.name !== name);
-  S.scenes.forEach(sc => { sc[sec] = (sc[sec] || []).filter(x => x !== name); });
-  S.selections[sec].delete(name);
+function removeItem(sec, id) {
+  const item = S[sec].find(x => x.id === id); if (!item) return;
+  pushHistory('Remove "' + item.name + '"');
+  S[sec] = S[sec].filter(x => x.id !== id);
+  S.scenes.forEach(sc => { sc[sec] = (sc[sec] || []).filter(x => x !== id); });
+  S.selections[sec].delete(id);
   // Deliberately NOT clearing a scene's povs when the matching character is
   // removed — keep it selectable as a plain custom POV name instead of
   // losing the assignment, since a removed library character may still be
-  // the intended POV.
-  if (sec === 'characters' && S.scenes.some(sc => (sc.povs || []).includes(name)) && !S.povCustomNames.includes(name)) {
-    S.povCustomNames.push(name);
+  // the intended POV. The POV id itself must change (a character id is no
+  // longer a valid POV once the character is gone), so scenes still pointing
+  // at it are rewritten to a freshly minted custom POV entry of the same name.
+  if (sec === 'characters' && S.scenes.some(sc => (sc.povs || []).includes(id))) {
+    const newPovId = S.nextEntId++;
+    S.povCustom.push({ id: newPovId, name: item.name });
+    S.scenes.forEach(sc => { sc.povs = (sc.povs || []).map(v => v === id ? newPovId : v); });
+    // Swap in place rather than leaving S.povOrder's append-only repair
+    // (orderedUsedPovEntities()) to tack the new id onto the end — the old
+    // character id's manually-dragged position in the Library panel's POV
+    // row would otherwise be silently lost the moment the character is
+    // deleted, even though the same POV name is still present, just under a
+    // new custom-entry id.
+    const povOrderIdx = S.povOrder.indexOf(id);
+    if (povOrderIdx !== -1) S.povOrder[povOrderIdx] = newPovId;
   }
-  const newCkChecked = ckCurrentlyChecked('ck', sec).filter(v => v !== name);
-  const newEkChecked = ckCurrentlyChecked('ek', sec).filter(v => v !== name);
+  if (sec === 'characters' && S.timelinePrefs.threadCharId === id) S.timelinePrefs.threadCharId = null;
+  const newCkChecked = ckCurrentlyChecked('ck', sec).filter(v => v !== id);
+  const newEkChecked = ckCurrentlyChecked('ek', sec).filter(v => v !== id);
   renderLibSec(sec); renderCk(sec, newCkChecked); renderEditCk(sec, newEkChecked); renderBoard(); updateLibClearBtn();
   if (sec === 'characters') {
     renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
@@ -293,10 +334,10 @@ function openLibEditModal(sec, idx) {
 // get their own opener (sharing the same modal DOM) rather than overloading
 // openLibEditModal, which assumes a SECS-configured {name, notes} array.
 function openPovEditModal(idx) {
-  const name = S.povCustomNames[idx]; if (name === undefined) return;
+  const entry = S.povCustom[idx]; if (!entry) return;
   libEditSec = 'povCustom'; libEditIdx = idx;
   document.getElementById('lib-edit-hdr').textContent = 'Edit POV Name';
-  document.getElementById('lib-edit-name').value = name;
+  document.getElementById('lib-edit-name').value = entry.name;
   document.getElementById('lib-edit-notes-wrap').style.display = 'none';
   document.getElementById('lib-edit-modal').classList.add('open');
   setTimeout(() => document.getElementById('lib-edit-name').focus(), 60);
@@ -305,8 +346,12 @@ function closeLibEditModal() {
   document.getElementById('lib-edit-modal').classList.remove('open');
   libEditSec = null; libEditIdx = null;
 }
+// Renaming no longer needs to propagate anywhere: scene refs, selections, and
+// checklist values all hold this item's id, which a rename never changes —
+// every render resolves the current name fresh from S[sec] (schema v3 §4.2).
 function saveLibEdit() {
   if (libEditSec === 'povCustom') { savePovEdit(); return; }
+  if (libEditSec === 'revealsLib') { saveRevealEdit(); return; }
   if (libEditSec === null || libEditIdx === null) return;
   const item = S[libEditSec][libEditIdx]; if (!item) return;
   const sec     = libEditSec;
@@ -315,117 +360,146 @@ function saveLibEdit() {
   const newNotes = document.getElementById('lib-edit-notes').value.trim();
   if (!newName) { document.getElementById('lib-edit-name').focus(); return; }
   // Same collision as confirmAdd: renaming a character onto an existing
-  // custom POV name would create the same characters/povCustomNames overlap.
-  const povCollision = sec === 'characters' && S.povCustomNames.includes(newName);
+  // custom POV name would create the same characters/povCustom overlap.
+  const povCollision = sec === 'characters' && S.povCustom.some(p => p.name === newName);
   if (newName !== oldName && (povCollision || S[sec].some((x, i) => i !== libEditIdx && x.name === newName))) {
     document.getElementById('lib-edit-name').select(); return;
   }
   pushHistory('Edit "' + oldName + '"');
   item.name  = newName;
   item.notes = newNotes;
-  if (newName !== oldName) {
-    S.scenes.forEach(scene => {
-      const i = (scene[sec] || []).indexOf(oldName);
-      if (i !== -1) scene[sec][i] = newName;
-      if (sec === 'characters' && Array.isArray(scene.povs)) {
-        const pi = scene.povs.indexOf(oldName);
-        if (pi !== -1) scene.povs[pi] = newName;
-      }
-    });
-    if (S.selections[sec].has(oldName)) {
-      S.selections[sec].delete(oldName);
-      S.selections[sec].add(newName);
-    }
-    if (sec === 'characters' && S.selections.povs.has(oldName)) {
-      S.selections.povs.delete(oldName);
-      S.selections.povs.add(newName);
-    }
-  }
-  const renameInList = arr => arr.map(v => v === oldName ? newName : v);
-  const newCkChecked = renameInList(ckCurrentlyChecked('ck', sec));
-  const newEkChecked = renameInList(ckCurrentlyChecked('ek', sec));
   closeLibEditModal();
-  renderLibSec(sec); renderCk(sec, newCkChecked); renderEditCk(sec, newEkChecked); renderBoard();
+  renderLibSec(sec); renderCk(sec, ckCurrentlyChecked('ck', sec)); renderEditCk(sec, ckCurrentlyChecked('ek', sec)); renderBoard();
   if (sec === 'characters') {
-    renderPovCk('sc', renameInList(ckCurrentlyChecked('sc', 'povs')));
-    renderPovCk('ed', renameInList(ckCurrentlyChecked('ed', 'povs')));
+    renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
+    renderPovCk('ed', ckCurrentlyChecked('ed', 'povs'));
     renderPovLibSec();
   }
   recordDataEdit();
   saveState();
 }
-// Rename a custom POV name (mirrors the "characters" branch of saveLibEdit()
-// above field-for-field, since S.povCustomNames is a plain string array with
-// no notes and isn't one of the SECS-configured library arrays).
+// Rename a custom POV name (mirrors saveLibEdit() above field-for-field,
+// since S.povCustom is not one of the SECS-configured library arrays).
 function savePovEdit() {
   const idx = libEditIdx;
-  const oldName = S.povCustomNames[idx]; if (oldName === undefined) return;
+  const entry = S.povCustom[idx]; if (!entry) return;
+  const oldName = entry.name;
   const newName = document.getElementById('lib-edit-name').value.trim();
   if (!newName) { document.getElementById('lib-edit-name').focus(); return; }
   const nameTaken = newName !== oldName && (
     S.characters.some(c => c.name === newName) ||
-    S.povCustomNames.some((n, i) => i !== idx && n === newName)
+    S.povCustom.some((p, i) => i !== idx && p.name === newName)
   );
   if (nameTaken) { document.getElementById('lib-edit-name').select(); return; }
   pushHistory('Edit POV name "' + oldName + '"');
-  S.povCustomNames[idx] = newName;
-  if (newName !== oldName) {
-    S.scenes.forEach(scene => {
-      if (!Array.isArray(scene.povs)) return;
-      const pi = scene.povs.indexOf(oldName);
-      if (pi !== -1) scene.povs[pi] = newName;
-    });
-    if (S.selections.povs.has(oldName)) {
-      S.selections.povs.delete(oldName);
-      S.selections.povs.add(newName);
-    }
-  }
-  const renameInList = arr => arr.map(v => v === oldName ? newName : v);
+  entry.name = newName;
   closeLibEditModal();
-  renderPovCk('sc', renameInList(ckCurrentlyChecked('sc', 'povs')));
-  renderPovCk('ed', renameInList(ckCurrentlyChecked('ed', 'povs')));
+  renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
+  renderPovCk('ed', ckCurrentlyChecked('ed', 'povs'));
   renderPovLibSec(); renderBoard();
   recordDataEdit();
   saveState();
 }
+// Reveal library entries (S.revealsLib) have no notes concept and are looked
+// up by id, not array index (the reveal checklists carry ids, never
+// positions) — reuses the same modal DOM as openLibEditModal/openPovEditModal.
+function openRevealEditModal(id, kind) {
+  const entry = S.revealsLib.find(r => r.id === id); if (!entry) return;
+  libEditSec = 'revealsLib'; libEditIdx = id;
+  document.getElementById('lib-edit-hdr').textContent = 'Edit ' + (kind === 'reveal' ? 'Reveal' : 'Foreshadow');
+  document.getElementById('lib-edit-name').value = entry.label;
+  document.getElementById('lib-edit-notes-wrap').style.display = 'none';
+  document.getElementById('lib-edit-modal').classList.add('open');
+  setTimeout(() => document.getElementById('lib-edit-name').focus(), 60);
+}
+// Rename a reveal (mirrors savePovEdit() above field-for-field) — re-renders
+// all four reveal checklists (see REVEAL_CK_BOXES) since a rename is visible
+// wherever this reveal's label is shown, regardless of which box it was
+// opened from.
+function saveRevealEdit() {
+  const id = libEditIdx;
+  const entry = S.revealsLib.find(r => r.id === id); if (!entry) return;
+  const oldLabel = entry.label;
+  const newLabel = document.getElementById('lib-edit-name').value.trim();
+  if (!newLabel) { document.getElementById('lib-edit-name').focus(); return; }
+  if (newLabel !== oldLabel && S.revealsLib.some(r => r.id !== id && r.label === newLabel)) {
+    document.getElementById('lib-edit-name').select(); return;
+  }
+  pushHistory('Edit reveal "' + oldLabel + '"');
+  entry.label = newLabel;
+  closeLibEditModal();
+  REVEAL_CK_BOXES.forEach(boxId => { if (document.getElementById(boxId)) renderRevealCk(boxId, ckBoxChecked(boxId)); });
+  recordDataEdit();
+  saveState();
+}
 // Delete a custom POV name — mirrors removeItem() above field-for-field,
-// scoped to S.povCustomNames/scene.povs instead of a SECS array.
-function removePovCustomName(name) {
-  pushHistory('Remove POV name "' + name + '"');
-  S.povCustomNames = S.povCustomNames.filter(n => n !== name);
-  S.scenes.forEach(sc => { sc.povs = (sc.povs || []).filter(v => v !== name); });
-  S.selections.povs.delete(name);
-  renderPovCk('sc', ckCurrentlyChecked('sc', 'povs').filter(v => v !== name));
-  renderPovCk('ed', ckCurrentlyChecked('ed', 'povs').filter(v => v !== name));
+// scoped to S.povCustom/scene.povs instead of a SECS array.
+function removePovCustomId(id) {
+  const entry = S.povCustom.find(p => p.id === id); if (!entry) return;
+  pushHistory('Remove POV name "' + entry.name + '"');
+  S.povCustom = S.povCustom.filter(p => p.id !== id);
+  S.scenes.forEach(sc => { sc.povs = (sc.povs || []).filter(v => v !== id); });
+  S.selections.povs.delete(id);
+  renderPovCk('sc', ckCurrentlyChecked('sc', 'povs').filter(v => v !== id));
+  renderPovCk('ed', ckCurrentlyChecked('ed', 'povs').filter(v => v !== id));
   renderPovLibSec(); renderBoard(); updateLibClearBtn();
   recordDataEdit();
   saveState();
 }
 
-let libDelSec = null, libDelName = null;
+let libDelSec = null, libDelId = null;
 let secDelId = null;
-function openLibDelModal(sec, name) {
-  libDelSec = sec; libDelName = name;
+function openLibDelModal(sec, id) {
+  const item = S[sec].find(x => x.id === id); if (!item) return;
+  libDelSec = sec; libDelId = id;
   const cfg = SECS.find(s => s.key === sec);
   const label = cfg.label.replace(/s$/, '');
-  document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (${label}) from the entire file? This cannot be undone.`;
+  document.getElementById('libdel-msg').textContent = `Permanently delete "${item.name}" (${label}) from the entire file? This cannot be undone.`;
   document.getElementById('libdel-modal').classList.add('open');
 }
 // Shares the libdel-modal DOM with openLibDelModal above; kept separate
 // because 'povCustom' isn't a SECS key, so the cfg/label lookup above
 // doesn't apply.
-function openPovDelModal(name) {
-  libDelSec = 'povCustom'; libDelName = name;
-  document.getElementById('libdel-msg').textContent = `Permanently delete "${name}" (POV) from the entire file? This cannot be undone.`;
+function openPovDelModal(id) {
+  const entry = S.povCustom.find(p => p.id === id); if (!entry) return;
+  libDelSec = 'povCustom'; libDelId = id;
+  document.getElementById('libdel-msg').textContent = `Permanently delete "${entry.name}" (POV) from the entire file? This cannot be undone.`;
   document.getElementById('libdel-modal').classList.add('open');
 }
-function closeLibDelModal() { document.getElementById('libdel-modal').classList.remove('open'); libDelSec = null; libDelName = null; }
+// Shares the libdel-modal DOM with the openers above; 'revealsLib' isn't a
+// SECS key either, so openLibDelModal's cfg/label lookup doesn't apply.
+function openRevealDelModal(id, kind) {
+  const entry = S.revealsLib.find(r => r.id === id); if (!entry) return;
+  libDelSec = 'revealsLib'; libDelId = id;
+  const label = kind === 'reveal' ? 'Reveal' : 'Foreshadow';
+  document.getElementById('libdel-msg').textContent = `Permanently delete "${entry.label}" (${label}) from the entire file? This cannot be undone.`;
+  document.getElementById('libdel-modal').classList.add('open');
+}
+function closeLibDelModal() { document.getElementById('libdel-modal').classList.remove('open'); libDelSec = null; libDelId = null; }
 function confirmLibDel() {
-  if (!libDelSec || !libDelName) return;
-  const s = libDelSec, n = libDelName;
+  if (!libDelSec || libDelId === null) return;
+  const s = libDelSec, id = libDelId;
   closeLibDelModal();
-  if (s === 'povCustom') { removePovCustomName(n); return; }
-  removeItem(s, n);
+  if (s === 'povCustom') { removePovCustomId(id); return; }
+  if (s === 'revealsLib') { removeRevealItem(id); return; }
+  removeItem(s, id);
+}
+// Delete a reveal — mirrors removePovCustomId() above field-for-field,
+// scoped to S.revealsLib/scene.foreshadows+payoffs instead of S.povCustom/
+// scene.povs. Removing it from a scene's foreshadows/payoffs here is exactly
+// the same cleanup confirmSaveEdit()'s post-save GC does for an
+// unchecked-then-orphaned reveal — just triggered by deletion instead.
+function removeRevealItem(id) {
+  const entry = S.revealsLib.find(r => r.id === id); if (!entry) return;
+  pushHistory('Remove reveal "' + entry.label + '"');
+  S.revealsLib = S.revealsLib.filter(r => r.id !== id);
+  S.scenes.forEach(sc => {
+    sc.foreshadows = (sc.foreshadows || []).filter(v => v !== id);
+    sc.payoffs     = (sc.payoffs     || []).filter(v => v !== id);
+  });
+  REVEAL_CK_BOXES.forEach(boxId => { if (document.getElementById(boxId)) renderRevealCk(boxId, ckBoxChecked(boxId).filter(v => v !== id)); });
+  recordDataEdit();
+  saveState();
 }
 
 // ── CARD DETAILS TOGGLE ───────────────────────────────────────────────────────
@@ -484,13 +558,25 @@ function addScene() {
   if (!title) { errEl.textContent = 'Please enter a scene title.'; titleEl.focus(); return; }
   if (S.scenes.some(s => s.title.toLowerCase() === title.toLowerCase())) { errEl.textContent = 'Title already exists.'; titleEl.select(); return; }
   const row = {};
-  SECS.forEach(({ key }) => { row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => c.value); });
+  SECS.forEach(({ key }) => { row[key] = [...document.querySelectorAll(`#ck-${key} input:checked`)].map(c => parseInt(c.value, 10)); });
   const sectionId = S.sections.length ? (parseInt(document.getElementById('sc-section').value) || null) : null;
   const wordCount = parseWordCount(document.getElementById('sc-wordcount').value);
   const povs = ckCurrentlyChecked('sc', 'povs');
+  const storylineId = parseInt(document.getElementById('sc-storyline').value, 10) || S.storylines[0].id;
+  const alsoStorylineIds = ckBoxChecked('sc-also-sl').filter(id => id !== storylineId);
+  const anchor = readAnchorFromForm('sc');
+  const durationMin = parseWordCount(document.getElementById('sc-duration').value);
+  const offscreen = document.getElementById('sc-offscreen').checked;
+  const foreshadows = ckBoxChecked('sc-reveals');
+  const payoffs = ckBoxChecked('sc-requires');
   pushHistory('Add scene "' + truncStr(title, 22) + '"');
   trackSceneAdded();
-  const newScene = { id: S.nextId++, title, summary, notes, ...row, sectionId, wordCount, povs };
+  const newId = S.nextId++;
+  const newScene = {
+    id: newId, title, summary, notes, ...row, sectionId, wordCount, povs,
+    storylineId, alsoStorylineIds, anchor, durationMin, offscreen, foreshadows, payoffs,
+  };
+  S.chronOrder.push(newId);
   if (pendingInsert !== null) {
     const { afterId, sectionId: piSecId } = pendingInsert; pendingInsert = null;
     if (afterId !== null) {
@@ -517,6 +603,7 @@ function addScene() {
   document.querySelectorAll('#form-new .ck-drop-list input').forEach(c => { c.checked = false; });
   SECS.forEach(({ key, label }) => { const w = document.getElementById('ck-' + key + '-wrap'); if (w) updateCkDropLabel(w, label); });
   const scPovWrap = document.getElementById('sc-povs-wrap'); if (scPovWrap) updateCkDropLabel(scPovWrap, 'POV names');
+  resetNewSceneTimingReveals();
   setNewSceneLive(false);
   renderBoard();
   renderPovLibSec();
@@ -534,8 +621,32 @@ function addScene() {
 
   recordDataEdit();
   saveState();
+
+  // In timeline mode, this scene was created from the Inspector's own New
+  // Scene form (tlShowNewSceneForm) — switch the Inspector over to showing
+  // it in Edit mode instead of leaving the now-reset New Scene form open.
+  if (typeof timelineMode !== 'undefined' && timelineMode && typeof _tlAfterCreateScene === 'function') {
+    _tlAfterCreateScene(newId);
+  }
+  return newId;
 }
 
+// Shared by addScene() (post-commit) and cancelNewScene() — both return the
+// Timing/Reveals fields to their blank-draft defaults: the first storyline,
+// no other storylines/anchor/duration/offscreen/reveals/requires. Re-renders
+// (rather than just clearing checkboxes, like the plain library checklists
+// above) so the reveal boxes' mint text inputs are also cleared, and so a
+// storyline that's been added/renamed/deleted since this tab was last blank
+// is reflected correctly.
+function resetNewSceneTimingReveals() {
+  document.getElementById('sc-anchor-date').value = '';
+  document.getElementById('sc-anchor-time').value = '';
+  document.getElementById('sc-duration').value = '';
+  document.getElementById('sc-offscreen').checked = false;
+  refreshNewSceneStorylineField();
+  renderRevealCk('sc-reveals', []);
+  renderRevealCk('sc-requires', []);
+}
 function cancelNewScene() {
   pendingInsert = null;
   document.getElementById('sc-title').value = '';
@@ -545,11 +656,19 @@ function cancelNewScene() {
   document.querySelectorAll('#form-new .ck-drop-list input').forEach(c => { c.checked = false; });
   SECS.forEach(({ key, label }) => { const w = document.getElementById('ck-' + key + '-wrap'); if (w) updateCkDropLabel(w, label); });
   const scPovWrap = document.getElementById('sc-povs-wrap'); if (scPovWrap) updateCkDropLabel(scPovWrap, 'POV names');
+  resetNewSceneTimingReveals();
   document.querySelectorAll('.ck-drop-wrap.open').forEach(w => w.classList.remove('open'));
   const secSel = document.getElementById('sc-section');
   if (secSel) secSel.value = '';
   document.getElementById('scerr').textContent = '';
   setNewSceneLive(false);
+  // In timeline mode, cancelling the Inspector's New Scene form returns to
+  // its empty state rather than leaving a blank form-new sitting there —
+  // Card view has no equivalent (it just stays on the New Scene tab).
+  if (typeof timelineMode !== 'undefined' && timelineMode) {
+    document.getElementById('form-new').style.display = 'none';
+    document.getElementById('tl-inspector-empty').style.display = '';
+  }
 }
 
 function deleteScene(id) {
@@ -557,10 +676,27 @@ function deleteScene(id) {
   if (!confirm(`Delete "${sc.title}"?`)) return;
   pushHistory('Delete scene "' + truncStr(sc.title, 22) + '"');
   trackSceneDeleted();
+  // Capture chronOrder's position of this scene before it's filtered out —
+  // that's the re-anchor target for any marker pointing at it (ThruLine's
+  // deleteScene rule: re-anchor to the next scene in that order, or null=end).
+  const chronIdx = S.chronOrder.indexOf(id);
   S.scenes = S.scenes.filter(s => s.id !== id);
   S.selIds.delete(id);
+  S.chronOrder = S.chronOrder.filter(cid => cid !== id);
+  S.constraints = S.constraints.filter(c => c.a !== id && c.b !== id);
+  const nextChronId = (chronIdx !== -1 && S.chronOrder[chronIdx] !== undefined) ? S.chronOrder[chronIdx] : null;
+  S.markers.forEach(m => { if (m.beforeSceneId === id) m.beforeSceneId = nextChronId; });
   if (S.editingId === id) cancelEdit();
   renderBoard();
+  // renderBoard() no-ops uselessly against a hidden board while timeline mode
+  // is open (same gap M5's undo/redo fix closed for renderBoard's other
+  // callers) — Timeline is a separate render tree and also needs its own
+  // selection reset, since deleting the scene currently open in the Inspector
+  // would otherwise leave a stale/orphaned form showing there.
+  if (typeof timelineMode !== 'undefined' && timelineMode) {
+    if (typeof _tlDoSelectScene === 'function') _tlDoSelectScene(null, {});
+    if (typeof renderTimeline === 'function') renderTimeline();
+  }
   renderPovLibSec();
   recordDataEdit();
   saveState();
@@ -590,6 +726,14 @@ function openEditMode(id) {
     document.getElementById('ed-section').value = sc.sectionId || '';
   }
   SECS.forEach(({ key }) => renderEditCk(key, sc[key] || []));
+  renderStorylineSelect(sc.storylineId);
+  renderAlsoStorylineCk(sc.storylineId, sc.alsoStorylineIds || []);
+  document.getElementById('ed-anchor-date').value = sc.anchor ? sc.anchor.date : '';
+  document.getElementById('ed-anchor-time').value = (sc.anchor && sc.anchor.time) ? sc.anchor.time : '';
+  document.getElementById('ed-duration').value = sc.durationMin || '';
+  document.getElementById('ed-offscreen').checked = !!sc.offscreen;
+  renderRevealCk('ed-reveals', sc.foreshadows || []);
+  renderRevealCk('ed-requires', sc.payoffs || []);
   document.getElementById('tab-edit').disabled = false;
   document.getElementById('tab-edit').classList.remove('dim');
   switchTab('edit');
@@ -615,25 +759,43 @@ function isEditFormDirty() {
     const sectionId = parseInt(document.getElementById('ed-section').value) || null;
     if (sectionId !== (sc.sectionId ?? null)) return true;
   }
+  const numSort = (a, b) => a - b;
   for (const { key } of SECS) {
-    const checked  = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value).sort();
-    const original = [...(sc[key] || [])].sort();
+    const checked  = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => parseInt(c.value, 10)).sort(numSort);
+    const original = [...(sc[key] || [])].sort(numSort);
     if (JSON.stringify(checked) !== JSON.stringify(original)) return true;
   }
-  const checkedPovs  = ckCurrentlyChecked('ed', 'povs').sort();
-  const originalPovs = [...(sc.povs || [])].sort();
+  const checkedPovs  = ckCurrentlyChecked('ed', 'povs').sort(numSort);
+  const originalPovs = [...(sc.povs || [])].sort(numSort);
   if (JSON.stringify(checkedPovs) !== JSON.stringify(originalPovs)) return true;
+  if ((parseInt(document.getElementById('ed-storyline').value, 10) || null) !== sc.storylineId) return true;
+  const checkedAlso  = ckBoxChecked('ed-also-sl').sort(numSort);
+  const originalAlso = [...(sc.alsoStorylineIds || [])].sort(numSort);
+  if (JSON.stringify(checkedAlso) !== JSON.stringify(originalAlso)) return true;
+  if (JSON.stringify(readAnchorFromForm()) !== JSON.stringify(sc.anchor || null)) return true;
+  if (parseWordCount(document.getElementById('ed-duration').value) !== (sc.durationMin || null)) return true;
+  if (document.getElementById('ed-offscreen').checked !== !!sc.offscreen) return true;
+  const checkedForeshadows  = ckBoxChecked('ed-reveals').sort(numSort);
+  const originalForeshadows = [...(sc.foreshadows || [])].sort(numSort);
+  if (JSON.stringify(checkedForeshadows) !== JSON.stringify(originalForeshadows)) return true;
+  const checkedPayoffs  = ckBoxChecked('ed-requires').sort(numSort);
+  const originalPayoffs = [...(sc.payoffs || [])].sort(numSort);
+  if (JSON.stringify(checkedPayoffs) !== JSON.stringify(originalPayoffs)) return true;
   return false;
 }
 // ── DISCARD CONFIRMATION (unsaved New/Edit scene) ─────────────────────────────
-let pendingDiscard = null; // { editActive, newLive } — what to discard if confirmed
-function openDiscardConfirm(editActive, newLive) {
-  pendingDiscard = { editActive, newLive };
+// afterDiscard is optional: when the caller has its own next step to run once
+// the user confirms discarding (e.g. timeline.js's runWithDiscardGuard —
+// switching modes or selecting a different scene), it replaces the default
+// cancelEdit()/cancelNewScene() so that step doesn't have to be duplicated.
+let pendingDiscard = null; // { editActive, newLive, afterDiscard? }
+function openDiscardConfirm(editActive, newLive, afterDiscard) {
+  pendingDiscard = { editActive, newLive, afterDiscard };
   const msgEl = document.getElementById('discard-cfm-msg');
   if (editActive) {
     const sc = S.scenes.find(s => s.id === S.editingId);
     msgEl.textContent = sc
-      ? `Discard changes to Scene ${sceneDisplayNum(sc.id)} — "${sc.title}"? Your edits will be lost.`
+      ? `Discard changes to ${sceneNumPrefix(sc.id)}"${sc.title}"? Your edits will be lost.`
       : 'Discard your changes? They will be lost.';
   } else {
     msgEl.textContent = 'Discard this new scene? Your entries will be lost.';
@@ -646,8 +808,9 @@ function closeDiscardConfirm() {
 }
 function confirmDiscard() {
   if (!pendingDiscard) return;
-  const { editActive, newLive } = pendingDiscard;
+  const { editActive, newLive, afterDiscard } = pendingDiscard;
   closeDiscardConfirm();
+  if (afterDiscard) { afterDiscard(); return; }
   if (editActive) cancelEdit();
   if (newLive) cancelNewScene();
 }
@@ -673,6 +836,7 @@ function maybeCancelSceneFormWithConfirm() {
   openDiscardConfirm(editDirty, newLive);
 }
 if (document.getElementById('discard-cfm-modal')) onBackdropClick('discard-cfm-modal', closeDiscardConfirm);
+if (document.getElementById('tl-move-cfm-modal')) onBackdropClick('tl-move-cfm-modal', () => tlConfirmMoveDiscard());
 function saveEdit() {
   const sc = S.scenes.find(s => s.id === S.editingId); if (!sc) return;
   const titleEl = document.getElementById('ed-title'), errEl = document.getElementById('ederr');
@@ -680,8 +844,7 @@ function saveEdit() {
   errEl.textContent = '';
   if (!title) { errEl.textContent = 'Please enter a title.'; titleEl.focus(); return; }
   if (S.scenes.some(s => s.id !== sc.id && s.title.toLowerCase() === title.toLowerCase())) { errEl.textContent = 'Title already exists.'; titleEl.select(); return; }
-  const sceneNum = sceneDisplayNum(sc.id);
-  document.getElementById('savecfm-msg').textContent = `Save changes to Scene ${sceneNum} — "${title}"?`;
+  document.getElementById('savecfm-msg').textContent = `Save changes to ${sceneNumPrefix(sc.id)}"${title}"?`;
   document.getElementById('savecfm-modal').classList.add('open');
 }
 function confirmSaveEdit() {
@@ -695,7 +858,19 @@ function confirmSaveEdit() {
   sc.wordCount = parseWordCount(document.getElementById('ed-wordcount').value);
   sc.povs = ckCurrentlyChecked('ed', 'povs');
   if (S.sections.length) sc.sectionId = sectionId;
-  SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => c.value); });
+  SECS.forEach(({ key }) => { sc[key] = [...document.querySelectorAll(`#ek-${key} input:checked`)].map(c => parseInt(c.value, 10)); });
+  sc.storylineId = parseInt(document.getElementById('ed-storyline').value, 10) || S.storylines[0].id;
+  sc.alsoStorylineIds = ckBoxChecked('ed-also-sl').filter(id => id !== sc.storylineId);
+  sc.anchor = readAnchorFromForm();
+  sc.durationMin = parseWordCount(document.getElementById('ed-duration').value);
+  sc.offscreen = document.getElementById('ed-offscreen').checked;
+  sc.foreshadows = ckBoxChecked('ed-reveals');
+  sc.payoffs = ckBoxChecked('ed-requires');
+  // A revealsLib entry referenced by no scene in either list is garbage-
+  // collected on save (schema v3 §7) — keeps the library from accumulating
+  // orphans left by minting a reveal and then never tagging/untagging it.
+  const usedRevealIds = new Set(S.scenes.flatMap(s => [...(s.foreshadows || []), ...(s.payoffs || [])]));
+  S.revealsLib = S.revealsLib.filter(r => usedRevealIds.has(r.id));
   // If section changed, move scene to end of new section so numbering stays sequential
   if (S.sections.length && sectionId !== oldSecId) {
     const idx = S.scenes.indexOf(sc);
@@ -712,13 +887,27 @@ function confirmSaveEdit() {
 function closeSaveCfm() { document.getElementById('savecfm-modal').classList.remove('open'); }
 function setNewSceneLive(on) {
   document.getElementById('tab-new').classList.toggle('live', on);
+  // Cancel/Save dim to "nothing to do" while the form is blank — mirrors
+  // Timeline's own refreshTlSaveCancelState() dirty-gated disable for Edit
+  // Scene's Cancel/Save Changes buttons.
+  document.getElementById('new-cancel').disabled = !on;
+  document.getElementById('asb').disabled = !on;
 }
 function checkNewSceneLive() {
+  const storylineSel = document.getElementById('sc-storyline');
+  // A non-default storyline counts as content the same way a checked
+  // checklist box does — everything else here (anchor/duration/offscreen)
+  // is blank by default, so any non-blank value is unambiguously "entered".
+  const storylineChanged = !!(storylineSel && S.storylines.length && storylineSel.value !== String(S.storylines[0].id));
   const hasContent = !!(
     document.getElementById('sc-title').value.trim() ||
     document.getElementById('sc-summary').value.trim() ||
     document.getElementById('sc-notes').value.trim() ||
     document.getElementById('sc-wordcount').value.trim() ||
+    document.getElementById('sc-anchor-date').value ||
+    document.getElementById('sc-duration').value.trim() ||
+    document.getElementById('sc-offscreen').checked ||
+    storylineChanged ||
     document.querySelectorAll('#form-new .ck-drop-list input:checked').length
   );
   setNewSceneLive(hasContent);
@@ -731,11 +920,170 @@ function switchTab(t) {
   document.getElementById('form-edit').style.display = t === 'edit' ? '' : 'none';
 }
 
+// ── TIMING / REVEALS (New Scene + Edit Scene forms, schema v3 §7) ────────────
+// Generic "read the checked ids out of this checklist box" helper — like
+// ckCurrentlyChecked, but for boxes not named by the ck-/ek- prefix
+// convention (the Timing/Reveals groups' ids are already fully qualified).
+function ckBoxChecked(boxId) {
+  const box = document.getElementById(boxId);
+  return box ? [...box.querySelectorAll('input:checked')].map(c => parseInt(c.value, 10)) : [];
+}
+// A date is required for a non-null anchor; a time typed with no date is
+// meaningless (nothing to anchor it to), so it's dropped along with the rest
+// of the anchor rather than kept as an orphan value. prefix picks the form
+// (New Scene's 'sc' or Edit Scene's default 'ed') — both share the same field
+// layout, just under different ids.
+function readAnchorFromForm(prefix='ed') {
+  const date = document.getElementById(prefix + '-anchor-date').value || null;
+  if (!date) return null;
+  return { date, time: document.getElementById(prefix + '-anchor-time').value || null };
+}
+function renderStorylineSelect(selectedId) {
+  const sel = document.getElementById('ed-storyline'); if (!sel) return;
+  sel.innerHTML = '';
+  S.storylines.forEach(st => {
+    const opt = document.createElement('option'); opt.value = String(st.id); opt.textContent = st.name;
+    sel.appendChild(opt);
+  });
+  sel.value = String(selectedId);
+}
+// New Scene's storyline field has no "loaded scene" to source a value from
+// the way Edit Scene's does (openEditMode always calls renderStorylineSelect
+// with the real scene's storylineId) — it just needs to always show a valid
+// default (the first storyline) and stay valid across storyline add/rename/
+// delete while the New Scene tab sits open. Preserves the current selection
+// across a refresh when it's still a real storyline (mirrors
+// renderSectionSelects()'s same current-value-preserving pattern for
+// sc-section/ed-section), only falling back to the first storyline when the
+// previously-selected one no longer exists.
+function refreshNewSceneStorylineField() {
+  const sel = document.getElementById('sc-storyline'); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '';
+  S.storylines.forEach(st => {
+    const opt = document.createElement('option'); opt.value = String(st.id); opt.textContent = st.name;
+    sel.appendChild(opt);
+  });
+  const stillValid = [...sel.options].some(o => o.value === cur);
+  sel.value = stillValid ? cur : String(S.storylines[0].id);
+  renderAlsoStorylineCk(parseInt(sel.value, 10), stillValid ? ckBoxChecked('sc-also-sl') : [], 'sc');
+}
+function renderAlsoStorylineCk(primaryId, checked=[], prefix='ed') {
+  const wrap = document.getElementById(prefix + '-also-sl-wrap');
+  const box  = document.getElementById(prefix + '-also-sl'); if (!box) return;
+  box.innerHTML = '';
+  const others = S.storylines.filter(st => st.id !== primaryId);
+  if (!others.length) {
+    const empty = document.createElement('div'); empty.className = 'ck-drop-empty';
+    empty.textContent = 'No other storylines';
+    box.appendChild(empty);
+    if (wrap) updateCkDropLabel(wrap, 'other storylines');
+    return;
+  }
+  others.forEach(st => {
+    const item = document.createElement('label'); item.className = 'ck-drop-item';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = String(st.id); cb.checked = checked.includes(st.id);
+    cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, 'other storylines'); });
+    const sp = document.createElement('span'); sp.textContent = st.name;
+    item.appendChild(cb); item.appendChild(sp); box.appendChild(item);
+  });
+  if (wrap) updateCkDropLabel(wrap, 'other storylines');
+}
+// Shared by "This scene reveals" and "Foreshadow", each in both the New
+// Scene and Edit Scene forms (sc-/ed- prefixes) — all four list the same
+// S.revealsLib, and the inline mint adds to that one shared library
+// regardless of which box it was opened from, so minting from any of them
+// re-renders all four to keep them in sync.
+const REVEAL_CK_BOXES = ['ed-reveals', 'ed-requires', 'sc-reveals', 'sc-requires'];
+// The box-id suffixes here are legacy DOM ids, not data fields — the *-reveals
+// box (labeled "Foreshadow" in the UI) backs scene.foreshadows, and the
+// *-requires box (labeled "This scene reveals") backs scene.payoffs. Only the
+// element ids are unrenamed; the data fields and this function's `kind`
+// return value both match their UI labels.
+function revealBoxKind(boxId) { return boxId.endsWith('-requires') ? 'reveal' : 'foreshadow'; }
+function renderRevealCk(boxId, checked=[]) {
+  const wrap = document.getElementById(boxId + '-wrap');
+  const box  = document.getElementById(boxId); if (!box) return;
+  const kind = revealBoxKind(boxId);
+  box.innerHTML = '';
+  const mintRow = document.createElement('div'); mintRow.className = 'ck-drop-mint';
+  const inp = document.createElement('input'); inp.type = 'text';
+  inp.placeholder = kind === 'reveal' ? 'New reveal…' : 'New foreshadow…';
+  inp.maxLength = 80;
+  const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = '+ Add';
+  const mint = () => {
+    const label = inp.value.trim(); if (!label) { inp.focus(); return; }
+    pushHistory('Add reveal "' + truncStr(label, 22) + '"');
+    const id = S.nextEntId++;
+    S.revealsLib.push({ id, label });
+    recordDataEdit(); saveState();
+    inp.value = '';
+    REVEAL_CK_BOXES.forEach(id2 => {
+      if (!document.getElementById(id2)) return;
+      const c = ckBoxChecked(id2).concat(id2 === boxId ? [id] : []);
+      renderRevealCk(id2, c);
+    });
+    // Same reasoning as confirmAdd()/confirmPovAdd(): auto-checking sets
+    // .checked directly, firing no event checkNewSceneLive() would catch.
+    if (boxId.startsWith('sc-')) checkNewSceneLive();
+  };
+  btn.addEventListener('click', e => { e.stopPropagation(); mint(); });
+  inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); mint(); } });
+  inp.addEventListener('click', e => e.stopPropagation());
+  mintRow.appendChild(inp); mintRow.appendChild(btn);
+  box.appendChild(mintRow);
+  const selectedLabel = kind === 'reveal' ? 'reveals' : 'foreshadow';
+  if (!S.revealsLib.length) {
+    const empty = document.createElement('div'); empty.className = 'ck-drop-empty';
+    empty.textContent = kind === 'reveal' ? 'No reveals yet' : 'Nothing to foreshadow yet';
+    box.appendChild(empty);
+    if (wrap) updateCkDropLabel(wrap, selectedLabel);
+    return;
+  }
+  S.revealsLib.forEach(r => {
+    const item = document.createElement('label'); item.className = 'ck-drop-item';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = String(r.id); cb.checked = checked.includes(r.id);
+    cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, selectedLabel); });
+    const sp = document.createElement('span'); sp.textContent = r.label; sp.style.flex = '1';
+    const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'iedit'; edit.title = 'Edit'; edit.textContent = '✎';
+    const del  = document.createElement('button'); del.type = 'button'; del.className  = 'idel';  del.title = 'Remove'; del.textContent = '×';
+    edit.addEventListener('mousedown', e => e.stopPropagation());
+    edit.addEventListener('click',     e => { e.stopPropagation(); openRevealEditModal(r.id, kind); });
+    del.addEventListener('mousedown',  e => e.stopPropagation());
+    del.addEventListener('click',      e => { e.stopPropagation(); openRevealDelModal(r.id, kind); });
+    item.appendChild(cb); item.appendChild(sp); item.appendChild(edit); item.appendChild(del); box.appendChild(item);
+  });
+  if (wrap) updateCkDropLabel(wrap, selectedLabel);
+}
+function toggleFormGroup(groupId) {
+  document.getElementById(groupId).classList.toggle('collapsed');
+}
+// New Scene's Timing/Reveals groups (sc-) mirror Edit Scene's (ed-) field for
+// field, so both prefixes share this same wiring loop.
+['ed', 'sc'].forEach(prefix => {
+  const timingToggle = document.getElementById(prefix + '-timing-toggle'); if (!timingToggle) return;
+  timingToggle.addEventListener('click', () => toggleFormGroup(prefix + '-timing-group'));
+  document.getElementById(prefix + '-reveals-toggle').addEventListener('click', () => toggleFormGroup(prefix + '-reveals-group'));
+  document.getElementById(prefix + '-anchor-clear').addEventListener('click', () => {
+    document.getElementById(prefix + '-anchor-date').value = '';
+    document.getElementById(prefix + '-anchor-time').value = '';
+    if (prefix === 'sc') checkNewSceneLive();
+  });
+  // Changing the primary storyline must both refresh "Also part of" (the new
+  // primary can't also appear there) and drop it from whatever was checked —
+  // the same invariant applied on every load (state.js, schema v3 §2.5).
+  document.getElementById(prefix + '-storyline').addEventListener('change', e => {
+    const primaryId = parseInt(e.target.value, 10);
+    renderAlsoStorylineCk(primaryId, ckBoxChecked(prefix + '-also-sl').filter(id => id !== primaryId), prefix);
+  });
+});
+
 // ── SUMMARY MODAL ─────────────────────────────────────────────────────────────
 function openModal(id) {
   const sc = S.scenes.find(s => s.id === id); if (!sc) return;
   const hasInfo = !!(sc.summary || sc.notes); if (!hasInfo) return;
-  document.getElementById('mnum').textContent = `Scene ${sceneDisplayNum(sc.id)}`;
+  const mnumVal = sceneDisplayNum(sc.id);
+  document.getElementById('mnum').textContent = mnumVal !== null ? `Scene ${mnumVal}` : 'Offscreen';
   document.getElementById('mtit').textContent = sc.title;
   const sumSec = document.getElementById('msum-section'), sumEl = document.getElementById('msum');
   const notesSec = document.getElementById('mnotes-section'), notesEl = document.getElementById('mnotes');
@@ -798,7 +1146,7 @@ function renderLibSec(sec) {
   if (!S[sec].length) { list.innerHTML = '<div class="eh">None yet</div>'; return; }
   S[sec].forEach((item, idx) => {
     const name = item.name;
-    const isOn = S.selections[sec].has(name);
+    const isOn = S.selections[sec].has(item.id);
     const li = document.createElement('div');
     li.className = 'li' + (isOn ? ' on ' + cfg.secCls : '');
     li.dataset.idx = idx; li.dataset.sec = sec;
@@ -811,9 +1159,9 @@ function renderLibSec(sec) {
     edit.addEventListener('mousedown', e => e.stopPropagation());
     edit.addEventListener('click',     e => { e.stopPropagation(); openLibEditModal(sec, idx); });
     del.addEventListener('mousedown',  e => e.stopPropagation());
-    del.addEventListener('click',      e => { e.stopPropagation(); openLibDelModal(sec, name); });
+    del.addEventListener('click',      e => { e.stopPropagation(); openLibDelModal(sec, item.id); });
     li.appendChild(dh); li.appendChild(dot); li.appendChild(nm); li.appendChild(edit); li.appendChild(del);
-    li.addEventListener('click', () => toggleLibItem(sec, name));
+    li.addEventListener('click', () => toggleLibItem(sec, item.id));
     dh.addEventListener('mousedown', e => startLibDrag(e, sec, idx));
     list.appendChild(li);
   });
@@ -842,11 +1190,10 @@ function renderCkList(prefix, sec, checked=[]) {
     return;
   }
   S[sec].forEach(libItem => {
-    const name = libItem.name;
     const item = document.createElement('label'); item.className = 'ck-drop-item';
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = name; cb.checked = checked.includes(name);
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = String(libItem.id); cb.checked = checked.includes(libItem.id);
     cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, lbl); });
-    const sp = document.createElement('span'); sp.textContent = name;
+    const sp = document.createElement('span'); sp.textContent = libItem.name;
     item.appendChild(cb); item.appendChild(sp); box.appendChild(item);
   });
   if (wrap) updateCkDropLabel(wrap, lbl);
@@ -859,10 +1206,19 @@ function renderEditCk(sec, checked=[]) { renderCkList('ek', sec, checked); }
 // board order: unassigned scenes first (leftmost), then each section in
 // S.sections order. This ensures numbers run 1…N left-to-right across ALL
 // sections regardless of the underlying S.scenes array order.
+// Offscreen scenes get NO entry at all (not just a skipped number) — they're
+// never shown to the reader, so they shouldn't occupy a slot in the reader-
+// facing numbering sequence. Every OTHER scene's number is therefore its
+// rank among on-page scenes only, with no gaps where an offscreen scene sits
+// — e.g. three on-page scenes with an offscreen one between the 2nd and 3rd
+// are numbered 1, 2, 3, not 1, 2, 4. Callers must treat a missing map entry
+// (sceneDisplayNum() returning null) as "this scene has no display number,"
+// not as an error.
 // Callers that need every scene's number in the same pass (rendering all
 // cards, or all chart segments) should build this once and look up by id,
 // rather than each calling sceneDisplayNum() — which rebuilds this same
-// ordered list from scratch on every single call.
+// ordered list from scratch on every single call. manuscriptOrder() below
+// mirrors this exact grouping as a scene array — if this changes, that must too.
 function buildSceneNumMap() {
   const map = new Map();
   let ordered = S.scenes;
@@ -873,14 +1229,52 @@ function buildSceneNumMap() {
       ...S.sections.flatMap(sec => S.scenes.filter(s => s.sectionId === sec.id)), // each section in order
     ];
   }
-  ordered.forEach((s, i) => map.set(s.id, i + 1));
+  let n = 1;
+  ordered.forEach(s => { if (!s.offscreen) map.set(s.id, n++); });
   return map;
 }
+// Returns null (not a fallback number) for an offscreen or otherwise-unknown
+// scene id — callers must handle that case explicitly rather than assume
+// every scene has a display number.
 function sceneDisplayNum(sceneId) {
-  return buildSceneNumMap().get(sceneId) ?? 1;
+  return buildSceneNumMap().get(sceneId) ?? null;
+}
+// "Scene N — " prefix for a scene id, or "" for an offscreen (no display
+// number) scene — callers prepend this directly before the scene's title
+// instead of hardcoding "Scene ${sceneDisplayNum(id)} — " everywhere and
+// having to separately remember to handle the null case.
+function sceneNumPrefix(sceneId) {
+  const n = sceneDisplayNum(sceneId);
+  return n !== null ? `Scene ${n} — ` : '';
+}
+// The manuscript order (schema v3 §5.1), as a scene array rather than a
+// number map: exactly renderBoard()'s / buildSceneNumMap()'s display order,
+// computed from data, never from the DOM. Everything timeline-related (the
+// manuscript ribbon, wires, reveal-order checks) consumes this — if
+// renderBoard()'s grouping ever changes, this function (and buildSceneNumMap
+// above) must change with it.
+function manuscriptOrder() {
+  if (!S.sections.length) return [...S.scenes];
+  const validSecIds = new Set(S.sections.map(s => s.id));
+  return [
+    ...S.scenes.filter(s => !validSecIds.has(s.sectionId)),
+    ...S.sections.flatMap(sec => S.scenes.filter(s => s.sectionId === sec.id)),
+  ];
 }
 
-function renderCard(container, scene, idx, numMap) {
+// Built once per render pass (renderBoard) and shared by every card, rather
+// than each card independently re-scanning the libraries to resolve its own
+// tag ids — a Map<id, entity> per category, `povs` unioning characters and
+// custom POVs (schema v3 §4: "build once per render pass, never .find() in a
+// loop").
+function buildLibMaps() {
+  const maps = {};
+  SECS.forEach(({ key }) => { maps[key] = new Map(S[key].map(x => [x.id, x])); });
+  maps.povs = new Map([...S.characters.map(c => [c.id, c]), ...S.povCustom.map(p => [p.id, p])]);
+  return maps;
+}
+
+function renderCard(container, scene, idx, numMap, libMaps) {
   const isd = drag.on && drag.ids.includes(scene.id);
   const sel = S.selIds.has(scene.id);
   const dpb = drag.on && drag.dropId === scene.id && drag.before;
@@ -888,11 +1282,16 @@ function renderCard(container, scene, idx, numMap) {
   let hlCls = '';
   if (searchQ)         { if (sceneMatchesSearch(scene)) hlCls = 'hl-s'; }
   else                 { if (sceneMatchesLib(scene))    hlCls = 'hl';   }
+  const warned = typeof sceneHasWarning === 'function' && sceneHasWarning(scene.id);
   const card = document.createElement('div');
-  card.className = ['sc', isd?'isd':'', sel?'sel':'', hlCls, dpb?'dpb':'', dpa?'dpa':''].filter(Boolean).join(' ');
+  card.className = ['sc', isd?'isd':'', sel?'sel':'', hlCls, dpb?'dpb':'', dpa?'dpa':'', warned?'sc-warn':''].filter(Boolean).join(' ');
   card.dataset.id = scene.id;
   const bar    = document.createElement('div');    bar.className    = 'sc-bar';
   const badge  = document.createElement('div');    badge.className  = 'sbadge'; badge.textContent = '✓';
+  // Board cards show a warn-dot regardless of which view is active (§8) — the
+  // only conflict-engine UI board mode gets; the Conflicts tab itself lives in
+  // the timeline's right panel.
+  const warnDot = document.createElement('div'); warnDot.className = 'warn-dot';
   const delbtn = document.createElement('button'); delbtn.className = 'cdel';   delbtn.title = 'Delete'; delbtn.textContent = '×';
   const hasInfo = !!(scene.summary || scene.notes);
   const sumbtn = document.createElement('button'); sumbtn.className = 'csum' + (hasInfo ? ' hs' : ''); sumbtn.title = hasInfo ? 'View summary / notes' : ''; sumbtn.textContent = 'ⓘ'; if (!hasInfo) sumbtn.style.visibility = 'hidden';
@@ -903,7 +1302,10 @@ function renderCard(container, scene, idx, numMap) {
   sumbtn.addEventListener('click', e => { e.stopPropagation(); if (hasInfo) openModal(scene.id); });
   editbtn.addEventListener('mousedown', e => e.stopPropagation());
   editbtn.addEventListener('click', e => { e.stopPropagation(); openEditMode(scene.id); });
-  const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${numMap.get(scene.id) ?? 1}`;
+  // renderBoard() only ever calls this with on-page (non-offscreen) scenes —
+  // offscreen scenes live only in Timeline's Chronology views — so every
+  // scene reaching here is guaranteed a real display number.
+  const num  = document.createElement('div'); num.className  = 'cnum'; num.textContent = `Scene ${numMap.get(scene.id)}`;
   const tit  = document.createElement('div'); tit.className  = 'ctit'; tit.textContent = scene.title;
   const meta = document.createElement('div'); meta.className = 'cmeta';
   SECS.forEach(({ key, label, tag }) => {
@@ -911,17 +1313,25 @@ function renderCard(container, scene, idx, numMap) {
     const row  = document.createElement('div'); row.className  = 'crow';
     const lbl  = document.createElement('div'); lbl.className  = 'clbl'; lbl.textContent = label;
     const tags = document.createElement('div'); tags.className = 'ctags';
-    scene[key].forEach(v => { const t = document.createElement('span'); t.className = 'tag ' + tag; t.textContent = v; tags.appendChild(t); });
+    // A stale id (entry removed since) is treated as absent, never crashes —
+    // same rule as the validSecIds pattern used for sectionId elsewhere.
+    scene[key].forEach(id => {
+      const entity = libMaps[key].get(id); if (!entity) return;
+      const t = document.createElement('span'); t.className = 'tag ' + tag; t.textContent = entity.name; tags.appendChild(t);
+    });
     row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
   });
   if (scene.povs && scene.povs.length) {
     const row  = document.createElement('div'); row.className  = 'crow';
     const lbl  = document.createElement('div'); lbl.className  = 'clbl'; lbl.textContent = 'POV';
     const tags = document.createElement('div'); tags.className = 'ctags';
-    scene.povs.forEach(v => { const t = document.createElement('span'); t.className = 'tag tp'; t.textContent = v; tags.appendChild(t); });
+    scene.povs.forEach(id => {
+      const entity = libMaps.povs.get(id); if (!entity) return;
+      const t = document.createElement('span'); t.className = 'tag tp'; t.textContent = entity.name; tags.appendChild(t);
+    });
     row.appendChild(lbl); row.appendChild(tags); meta.appendChild(row);
   }
-  card.appendChild(bar); card.appendChild(badge); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
+  card.appendChild(bar); card.appendChild(badge); card.appendChild(warnDot); card.appendChild(delbtn); card.appendChild(sumbtn); card.appendChild(editbtn);
   card.appendChild(num); card.appendChild(tit); card.appendChild(meta);
   card.addEventListener('mousedown', e => onCardDown(e, scene.id));
   container.appendChild(card);
@@ -930,29 +1340,47 @@ function renderCard(container, scene, idx, numMap) {
 function renderBoard() {
   if (typeof chartMode !== 'undefined' && chartMode) { renderChart(); return; }
   const board = document.getElementById('board'), emp = document.getElementById('sbemp');
+  // #board.innerHTML='' below briefly leaves the scroll container (#sbscrl,
+  // overflow-x:auto) with nothing to scroll — scrollWidth collapses toward 0
+  // for that instant, and the browser clamps scrollLeft down to fit, which
+  // never un-clamps once the cards are appended back even though #board is
+  // full width again a moment later. Restoring the pre-render value at the
+  // end (the browser re-clamps it to whatever's now valid, so this is a
+  // no-op when content genuinely got narrower, e.g. a scene was deleted)
+  // keeps a re-render from silently yanking the board back to its left edge
+  // — most noticeably, starting a card drag (which re-renders to apply the
+  // dragged card's dimmed style) used to do exactly that, defeating any
+  // attempt to drag toward a section currently scrolled out of view.
+  const sbscrl = document.getElementById('sbscrl');
+  const savedScrollLeft = sbscrl ? sbscrl.scrollLeft : 0;
   board.innerHTML = '';
   document.querySelectorAll('.sec-pin').forEach(p => p.remove()); // clear body-level pins
   updateCount();
   const hasSecs = S.sections.length > 0;
   board.classList.toggle('has-secs', hasSecs);
-  if (!S.scenes.length) { emp.style.display='flex'; return; }
+  // Offscreen scenes are never shown to the reader, so they have no place on
+  // the Scene Board (a reading-order view) — only in Timeline's Chronology
+  // views. Create/edit them from the Timeline Inspector instead.
+  const onPageScenes = S.scenes.filter(s => !s.offscreen);
+  if (!onPageScenes.length) { emp.style.display='flex'; return; }
   emp.style.display = 'none';
 
   // Built once per render pass and shared by every card below, instead of
   // each card independently rebuilding the same ordered scene list just to
   // look up its own number.
   const numMap = buildSceneNumMap();
+  const libMaps = buildLibMaps();
 
   if (!hasSecs) {
     // Original flat layout
-    S.scenes.forEach((scene, idx) => renderCard(board, scene, idx, numMap));
+    onPageScenes.forEach((scene, idx) => renderCard(board, scene, idx, numMap, libMaps));
   } else {
     // Section group layout
     const validSecIds = new Set(S.sections.map(s => s.id));
-    const unassigned  = S.scenes.filter(s => !validSecIds.has(s.sectionId));
+    const unassigned  = onPageScenes.filter(s => !validSecIds.has(s.sectionId));
     const allGroups   = [
       { id: null, name: 'Unassigned', scenes: unassigned, isUnasgn: true },
-      ...S.sections.map(sec => ({ id: sec.id, name: sec.name, scenes: S.scenes.filter(s => s.sectionId === sec.id), isUnasgn: false })),
+      ...S.sections.map(sec => ({ id: sec.id, name: sec.name, scenes: onPageScenes.filter(s => s.sectionId === sec.id), isUnasgn: false })),
     ];
     let groups;
     if (secFilterIds.size === 0) {
@@ -996,7 +1424,7 @@ function renderBoard() {
       group.scenes.forEach(scene => {
         const wrap = document.createElement('div'); wrap.className = 'card-wrap';
         body.appendChild(wrap);
-        renderCard(wrap, scene, S.scenes.indexOf(scene), numMap);
+        renderCard(wrap, scene, S.scenes.indexOf(scene), numMap, libMaps);
         addInsertZone(wrap, scene.id, group.id);
       });
       // For empty sections, show a single insert zone so the column is still usable
@@ -1022,25 +1450,44 @@ function renderBoard() {
   }
   document.getElementById('clrsel').style.display = S.selIds.size > 0 ? 'inline-block' : 'none';
   if (hasSecs) alignSecHeaders();
+  if (sbscrl) sbscrl.scrollLeft = savedScrollLeft;
 }
 
 // ── ALIGN SECTION HEADERS ─────────────────────────────────────────────────────
 // After render, measure each sec-body's actual card extent (including overflow columns)
 // and set explicit widths on the header and group so the header spans all card columns.
 function alignSecHeaders() {
-  // Clear any previously-set explicit widths first so natural layout takes effect
+  const cs = parseFloat(document.getElementById('board').style.getPropertyValue('--cs') || '1') || 1;
+  const minW = Math.ceil((174 + 24) * cs); // at minimum: one card width + 12px padding each side
+  // Force each group to a guaranteed-generous width before measuring, rather
+  // than clearing to '' (auto) and trusting the browser to size a
+  // flex-direction:column;flex-wrap:wrap container (.sec-body) to fit every
+  // wrapped column on its own. Chromium/Safari do that correctly, but
+  // Firefox doesn't reliably expand such a container's auto/intrinsic width
+  // past its first column or two — clearing to '' and measuring there would
+  // capture cards Firefox has already squeezed on top of each other, and the
+  // explicit width this function sets afterward would just pin that wrong,
+  // too-narrow layout in place permanently (nothing re-measures until this
+  // function runs again, which is exactly why the resulting clipped card
+  // stayed stuck regardless of scroll position). Worst case every card needs
+  // its own column, so cardCount columns' worth of width is always enough
+  // headroom, without depending on any browser's particular auto-sizing
+  // behavior for the actual measurement below.
   document.querySelectorAll('.sec-group').forEach(grp => {
-    grp.style.width = '';
+    const cardCount = grp.querySelectorAll('.sc').length;
+    grp.style.width = Math.max(minW, cardCount * minW) + 'px';
     const h = grp.querySelector('.sec-hdr');
     if (h) h.style.width = '';
   });
-  // One rAF: browser re-lays-out with cleared widths, then we measure card extents
+  // One rAF: browser re-lays-out at the generous width, then we measure card extents.
+  // Read every group's target width first, then write all of them — writing
+  // group i's width would invalidate the layout group i+1 is about to read,
+  // forcing one synchronous reflow per group instead of a single reflow for
+  // the whole pass.
   requestAnimationFrame(() => {
-    const cs = parseFloat(document.getElementById('board').style.getPropertyValue('--cs') || '1') || 1;
-    const minW = Math.ceil((174 + 24) * cs); // at minimum: one card width + 12px padding each side
-    document.querySelectorAll('.sec-group').forEach(grp => {
+    const measurements = [...document.querySelectorAll('.sec-group')].map(grp => {
       const hdr = grp.querySelector('.sec-hdr');
-      if (!hdr) return;
+      if (!hdr) return null;
       let w = minW;
       const gl = grp.getBoundingClientRect().left;
       // Measure the rightmost edge of any card relative to this group's left edge
@@ -1048,9 +1495,9 @@ function alignSecHeaders() {
         const r = c.getBoundingClientRect();
         w = Math.max(w, Math.ceil(r.right - gl + 12)); // +12 = right padding
       });
-      hdr.style.width = w + 'px';
-      grp.style.width = w + 'px';
+      return { hdr, grp, w };
     });
+    measurements.forEach(m => { if (m) { m.hdr.style.width = m.w + 'px'; m.grp.style.width = m.w + 'px'; } });
     updateSecPins(); // re-sync pins after widths settle
   });
 }
@@ -1087,16 +1534,21 @@ function updateSecPins() {
 }
 
 function updateCount() {
-  let n;
+  let secScoped;
   if (S.sections.length === 0 || secFilterIds.size === 0) {
-    n = S.scenes.length;
+    secScoped = S.scenes;
   } else {
     const validSecIds = new Set(S.sections.map(s => s.id));
-    n = S.scenes.filter(s => {
+    secScoped = S.scenes.filter(s => {
       const secId = validSecIds.has(s.sectionId) ? s.sectionId : 'unassigned';
       return secFilterIds.has(secId);
-    }).length;
+    });
   }
+  // Offscreen scenes are never rendered on the board itself (see renderBoard's
+  // onPageScenes) — offscreen is a Chronology-views-only concept, so it's not
+  // called out here at all.
+  const shown = secScoped.filter(s => !s.offscreen);
+  const n = shown.length;
   document.getElementById('sbcnt').textContent = `Showing ${n} scene${n !== 1 ? 's' : ''}`;
 }
 
@@ -1123,65 +1575,74 @@ function renderSectionSelects() {
 
 // ── POV (Point of View) ────────────────────────────────────────────────────────
 // Multi-select checklist, exactly like Characters/Locations/etc, but sourced
-// from the Character library UNION S.povCustomNames (not S.characters alone)
-// — a scene's POV doesn't have to be tagged as a Character in that scene, or
+// from the Character library UNION S.povCustom (not S.characters alone) — a
+// scene's POV doesn't have to be tagged as a Character in that scene, or
 // exist in the Character library at all, since a scene (often a full
-// chapter here) can have several POV characters at once.
-function povNames() {
-  return [...S.characters.map(c => c.name), ...S.povCustomNames];
+// chapter here) can have several POV characters at once. Ids are shared
+// (S.nextEntId), so a character id and a povCustom id are never ambiguous.
+function povEntities() {
+  return [...S.characters.map(c => ({ id: c.id, name: c.name })), ...S.povCustom.map(p => ({ id: p.id, name: p.name }))];
 }
-// Names actually assigned as POV on at least one scene — the Library panel's
-// read-only POV section shows only these, so every entry is meaningful to
-// click (a name with zero scenes would just highlight nothing).
-function usedPovNames() {
+// Entities actually assigned as POV on at least one scene — the Library
+// panel's read-only POV section shows only these, so every entry is
+// meaningful to click (one with zero scenes would just highlight nothing).
+function usedPovEntities() {
   const used = new Set();
-  S.scenes.forEach(sc => (sc.povs || []).forEach(n => used.add(n)));
-  return povNames().filter(n => used.has(n));
+  S.scenes.forEach(sc => (sc.povs || []).forEach(id => used.add(id)));
+  return povEntities().filter(e => used.has(e.id));
 }
 // Display/drag order for the POV row. Character-derived and custom POV
-// names come from two different lists (S.characters order, S.povCustomNames
+// entities come from two different lists (S.characters order, S.povCustom
 // order) with no order of their own as a merged set, so dragging needs its
 // own list — S.povOrder — rather than reordering either source list
 // directly (which would also reorder the Characters section, or desync
-// from usedPovNames()'s filter). Append-only: a name that stops being used
+// from usedPovEntities()'s filter). Append-only: an id that stops being used
 // keeps its stored position for if it's ever used again, instead of losing
 // it the moment it's temporarily filtered out.
-function orderedUsedPovNames() {
-  const used = usedPovNames();
-  const newOnes = used.filter(n => !S.povOrder.includes(n));
-  if (newOnes.length) {
-    S.povOrder = [...S.povOrder, ...newOnes];
-    recordDataEdit();
-    saveState();
-  }
-  const usedSet = new Set(used);
-  return S.povOrder.filter(n => usedSet.has(n));
+function orderedUsedPovEntities() {
+  const used = usedPovEntities();
+  const usedIds = used.map(e => e.id);
+  const newOnes = usedIds.filter(id => !S.povOrder.includes(id));
+  // In-memory repair only — this runs as a side effect of rendering (called
+  // from renderPovLibSec, itself called from many places), not a user action,
+  // so it must not call recordDataEdit()/saveState() here: doing so used to
+  // mark a project "edited" and bump its revision the instant it was merely
+  // opened and rendered, which both falsely dirtied the backup-status nag and
+  // (via ensureSampleProjects()'s revision-0 check) permanently excluded any
+  // sample the user had only looked at from future SAMPLES_VERSION refreshes.
+  // S.povOrder still gets appended in memory so ordering is correct this
+  // session; it's persisted for real on whatever the next genuine edit is,
+  // the same lazy-repair pattern loadState() already uses for other
+  // invariants (chronOrder, stale POV ids, etc).
+  if (newOnes.length) S.povOrder = [...S.povOrder, ...newOnes];
+  const usedSet = new Set(usedIds);
+  const byId = new Map(used.map(e => [e.id, e]));
+  return S.povOrder.filter(id => usedSet.has(id)).map(id => byId.get(id));
 }
-function togglePovHighlight(name) {
+function togglePovHighlight(id) {
   const s = S.selections.povs;
-  if (s.has(name)) s.delete(name); else s.add(name);
+  if (s.has(id)) s.delete(id); else s.add(id);
   renderPovLibSec(); renderBoard(); updateLibClearBtn();
 }
 function renderPovLibSec() {
   const list = document.getElementById('il-povs'); if (!list) return;
   list.innerHTML = '';
-  const names = orderedUsedPovNames();
-  if (!names.length) { list.innerHTML = '<div class="eh">None yet</div>'; return; }
-  names.forEach((name, idx) => {
-    const isOn = S.selections.povs.has(name);
-    // A name is either a Character (edit/delete lives in the Characters
+  const entries = orderedUsedPovEntities();
+  if (!entries.length) { list.innerHTML = '<div class="eh">None yet</div>'; return; }
+  entries.forEach((entry, idx) => {
+    const isOn = S.selections.povs.has(entry.id);
+    // An entity is either a Character (edit/delete lives in the Characters
     // panel — editing it here would create a second place to rename the
     // same character, and deleting it can't just mean "delete the
-    // character") or a custom POV-only name (editable/deletable in place).
-    // povNames() guarantees these two sets never overlap.
-    const customIdx = S.povCustomNames.indexOf(name);
+    // character") or a custom POV-only entry (editable/deletable in place).
+    const customIdx = S.povCustom.findIndex(p => p.id === entry.id);
     const isCustom = customIdx !== -1;
     const li = document.createElement('div');
     li.className = 'li' + (isOn ? ' on sec-p' : '');
     li.dataset.idx = idx; li.dataset.sec = 'povs';
     const dh  = document.createElement('span'); dh.className = 'dh'; dh.textContent = '⠿';
     const dot = document.createElement('span'); dot.className = 'dot dp';
-    const nm  = document.createElement('span'); nm.className = 'iname'; nm.textContent = name;
+    const nm  = document.createElement('span'); nm.className = 'iname'; nm.textContent = entry.name;
     const edit = document.createElement('button'); edit.className = 'iedit' + (isCustom ? '' : ' disabled'); edit.textContent = '✎';
     const del  = document.createElement('button'); del.className  = 'idel'  + (isCustom ? '' : ' disabled'); del.textContent  = '×';
     edit.title = isCustom ? 'Edit' : 'Edit/delete in Character list';
@@ -1190,7 +1651,7 @@ function renderPovLibSec() {
     del.addEventListener('mousedown',  e => e.stopPropagation());
     if (isCustom) {
       edit.addEventListener('click', e => { e.stopPropagation(); openPovEditModal(customIdx); });
-      del.addEventListener('click',  e => { e.stopPropagation(); openPovDelModal(name); });
+      del.addEventListener('click',  e => { e.stopPropagation(); openPovDelModal(entry.id); });
     } else {
       // Disabled: absorb the click (so it doesn't also toggle highlight via
       // the li's own listener below) without opening anything.
@@ -1198,28 +1659,12 @@ function renderPovLibSec() {
       del.addEventListener('click',  e => e.stopPropagation());
     }
     li.appendChild(dh); li.appendChild(dot); li.appendChild(nm); li.appendChild(edit); li.appendChild(del);
-    li.addEventListener('click', () => togglePovHighlight(name));
+    li.addEventListener('click', () => togglePovHighlight(entry.id));
     dh.addEventListener('mousedown', e => startLibDrag(e, 'povs', idx));
     list.appendChild(li);
   });
 }
-// Any name in `checked` that isn't currently a valid option (a character
-// since removed from the library, or a name saved before this feature
-// existed) is folded into S.povCustomNames on the spot, so it becomes a
-// normal, consistently-reusable option instead of a dead/lost selection.
-// This can run on a pure "view" path (opening Edit mode on an old scene, with
-// no mutation the caller itself saves), so persist it here rather than
-// leaving the fold live-only-in-memory until some unrelated later edit —
-// otherwise a reload right after opening such a scene silently drops it.
 function renderPovCk(prefix, checked=[]) {
-  let foldedNew = false;
-  checked.forEach(name => {
-    if (!S.characters.some(c => c.name === name) && !S.povCustomNames.includes(name)) {
-      S.povCustomNames.push(name);
-      foldedNew = true;
-    }
-  });
-  if (foldedNew) { recordDataEdit(); saveState(); }
   const wrap = document.getElementById(prefix + '-povs-wrap');
   const box  = document.getElementById(prefix + '-povs'); if (!box) return;
   box.innerHTML = '';
@@ -1228,19 +1673,19 @@ function renderPovCk(prefix, checked=[]) {
   addBtn.textContent = '+ Add POV Name…';
   addBtn.addEventListener('click', e => { e.stopPropagation(); openPovAddFromCk(prefix); });
   box.appendChild(addBtn);
-  const names = povNames();
-  if (!names.length) {
+  const entries = povEntities();
+  if (!entries.length) {
     const empty = document.createElement('div'); empty.className = 'ck-drop-empty';
     empty.textContent = 'No POV names yet';
     box.appendChild(empty);
     if (wrap) updateCkDropLabel(wrap, 'POV names');
     return;
   }
-  names.forEach(name => {
+  entries.forEach(entry => {
     const item = document.createElement('label'); item.className = 'ck-drop-item';
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = name; cb.checked = checked.includes(name);
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = String(entry.id); cb.checked = checked.includes(entry.id);
     cb.addEventListener('change', () => { if (wrap) updateCkDropLabel(wrap, 'POV names'); });
-    const sp = document.createElement('span'); sp.textContent = name;
+    const sp = document.createElement('span'); sp.textContent = entry.name;
     item.appendChild(cb); item.appendChild(sp); box.appendChild(item);
   });
   if (wrap) updateCkDropLabel(wrap, 'POV names');
@@ -1261,14 +1706,18 @@ function confirmPovAdd() {
   const inp = document.getElementById('pov-add-input');
   const name = inp.value.trim();
   if (!name) { inp.focus(); return; }
-  if (S.characters.some(c => c.name === name) || S.povCustomNames.includes(name)) { inp.select(); return; }
+  if (S.characters.some(c => c.name === name) || S.povCustom.some(p => p.name === name)) { inp.select(); return; }
   pushHistory('Add POV name "' + name + '"');
-  S.povCustomNames.push(name);
+  const id = S.nextEntId++;
+  S.povCustom.push({ id, name });
   const scChecked = ckCurrentlyChecked('sc', 'povs');
   const edChecked = ckCurrentlyChecked('ed', 'povs');
-  if (povAddReturnPrefix === 'sc') scChecked.push(name);
-  if (povAddReturnPrefix === 'ed') edChecked.push(name);
+  if (povAddReturnPrefix === 'sc') scChecked.push(id);
+  if (povAddReturnPrefix === 'ed') edChecked.push(id);
   renderPovCk('sc', scChecked); renderPovCk('ed', edChecked);
+  // Same reasoning as confirmAdd() above: auto-checking sets .checked
+  // directly, firing no event checkNewSceneLive() would otherwise catch.
+  if (povAddReturnPrefix === 'sc') checkNewSceneLive();
   closePovAddModal();
   recordDataEdit();
   saveState();
@@ -1600,6 +2049,8 @@ function beginCardDrag(id, e) {
   drag.ox = e.clientX - r.left; drag.oy = e.clientY - r.top;
   const sc = S.scenes.find(s => s.id === id), ghost = document.getElementById('ghost');
   ghost.innerHTML = '';
+  // Only an on-board (non-offscreen) card can start a board drag in the
+  // first place, so it's always guaranteed a real display number here.
   const n = document.createElement('div'); n.className = 'cnum'; n.textContent = `Scene ${sceneDisplayNum(sc.id)}`;
   const t = document.createElement('div'); t.className = 'ctit'; t.textContent = sc.title;
   ghost.appendChild(n); ghost.appendChild(t);
@@ -1608,7 +2059,30 @@ function beginCardDrag(id, e) {
   ghost.style.left = (e.clientX - drag.ox) + 'px'; ghost.style.top = (e.clientY - drag.oy) + 'px';
   renderBoard();
 }
+// Auto-scrolls #sbscrl (overflow-x:auto — the board's only scroll axis;
+// overflow-y is hidden) toward the cursor whenever a card drag holds it
+// within CARD_DRAG_SCROLL_EDGE px of the container's left/right edge —
+// without this, a section beyond the current scroll position (very possibly
+// the entire rest of the board, e.g. right after a drag starts) was simply
+// unreachable mid-drag, since nothing else scrolls the container for you.
+// Speed ramps linearly from 0 at the edge threshold up to
+// CARD_DRAG_SCROLL_SPEED right at the container's physical edge.
+const CARD_DRAG_SCROLL_EDGE = 70;
+const CARD_DRAG_SCROLL_SPEED = 22;
+function autoScrollBoardDuringDrag(e) {
+  const sbscrl = document.getElementById('sbscrl'); if (!sbscrl) return;
+  const r = sbscrl.getBoundingClientRect();
+  if (e.clientY < r.top || e.clientY > r.bottom) return;
+  if (e.clientX < r.left + CARD_DRAG_SCROLL_EDGE) {
+    const depth = Math.min(1, (r.left + CARD_DRAG_SCROLL_EDGE - e.clientX) / CARD_DRAG_SCROLL_EDGE);
+    sbscrl.scrollLeft -= CARD_DRAG_SCROLL_SPEED * depth;
+  } else if (e.clientX > r.right - CARD_DRAG_SCROLL_EDGE) {
+    const depth = Math.min(1, (e.clientX - (r.right - CARD_DRAG_SCROLL_EDGE)) / CARD_DRAG_SCROLL_EDGE);
+    sbscrl.scrollLeft += CARD_DRAG_SCROLL_SPEED * depth;
+  }
+}
 function moveCardDrag(e) {
+  autoScrollBoardDuringDrag(e);
   const g = document.getElementById('ghost');
   g.style.left = (e.clientX - drag.ox) + 'px'; g.style.top = (e.clientY - drag.oy) + 'px';
   const cards = [...document.querySelectorAll('.sc')].filter(c => !drag.ids.includes(+c.dataset.id));
@@ -1720,18 +2194,18 @@ function endLibDrag() {
     const isPov = ld.sec === 'povs';
     pushHistory('Reorder ' + (isPov ? 'POV' : ld.sec));
     if (isPov) {
-      // The rendered list is orderedUsedPovNames(), a filtered view of the
-      // full S.povOrder — splice by the *names* at these visible positions
-      // rather than raw indices, so names currently hidden (unused) keep
-      // their stored position instead of getting shuffled by an index that
-      // doesn't account for them.
-      const visible = orderedUsedPovNames();
-      const fromName = visible[ld.fromIdx], toName = visible[ld.dropIdx];
+      // The rendered list is orderedUsedPovEntities(), a filtered view of the
+      // full S.povOrder — splice by the *ids* at these visible positions
+      // rather than raw indices, so ids currently hidden (unused) keep their
+      // stored position instead of getting shuffled by an index that doesn't
+      // account for them.
+      const visible = orderedUsedPovEntities();
+      const fromId = visible[ld.fromIdx].id, toId = visible[ld.dropIdx].id;
       const arr = S.povOrder;
-      arr.splice(arr.indexOf(fromName), 1);
-      let ti = arr.indexOf(toName);
+      arr.splice(arr.indexOf(fromId), 1);
+      let ti = arr.indexOf(toId);
       if (!ld.before) ti++;
-      arr.splice(ti, 0, fromName);
+      arr.splice(ti, 0, fromId);
       renderPovLibSec();
     } else {
       const arr = S[ld.sec];
@@ -1740,6 +2214,16 @@ function endLibDrag() {
       if (!ld.before) ti++;
       arr.splice(ti, 0, item);
       renderLibSec(ld.sec); renderCk(ld.sec, ckCurrentlyChecked('ck', ld.sec)); renderEditCk(ld.sec, ckCurrentlyChecked('ek', ld.sec));
+      // povEntities() derives the combined character+custom-name POV list
+      // from S.characters' own array order — every other mutator that can
+      // reorder/rename/add/remove a character (confirmAdd, removeItem,
+      // saveLibEdit) already refreshes both POV checklists for this same
+      // reason; this drag-reorder path was the one gap, leaving an
+      // already-open scene form's POV dropdown showing the pre-drag order.
+      if (ld.sec === 'characters') {
+        renderPovCk('sc', ckCurrentlyChecked('sc', 'povs'));
+        renderPovCk('ed', ckCurrentlyChecked('ed', 'povs'));
+      }
     }
     recordDataEdit();
     saveState();
@@ -1773,7 +2257,7 @@ document.addEventListener('mousemove', e => {
   // wherever the cursor happens to be. e.buttons reflects the CURRENT button
   // state on every mousemove regardless of where the release happened, so a
   // stuck drag self-heals on the next mouse movement inside the window.
-  if (e.buttons === 0 && (ptr.down || ld.on || sld.on || lpDr.on || cpDr.on || spDr.on)) {
+  if (e.buttons === 0 && (ptr.down || ld.on || sld.on || (typeof tlLaneDrag !== 'undefined' && tlLaneDrag.on) || lpDr.on || cpDr.on || spDr.on)) {
     if (ptr.down) {
       if (ptr.dragging) {
         drag.on = false; drag.ids = []; drag.dropId = null; drag.dropSecId = null;
@@ -1789,6 +2273,7 @@ document.addEventListener('mousemove', e => {
     // skip their mutating branch whenever dropIdx is null or unchanged).
     if (ld.on)  { ld.dropIdx = null; endLibDrag(); }
     if (sld.on) { sld.dropIdx = null; endSecListDrag(); }
+    if (typeof tlLaneDrag !== 'undefined' && tlLaneDrag.on) { tlLaneDrag.dropIdx = null; endStorylineDrag(); }
     [lpDr, cpDr, spDr].forEach(dr => {
       if (!dr.on) return;
       dr.on = false;
@@ -1805,6 +2290,7 @@ document.addEventListener('mousemove', e => {
   }
   if (ld.on)  moveLibDrag(e);
   if (sld.on) moveSecListDrag(e);
+  if (typeof tlLaneDrag !== 'undefined' && tlLaneDrag.on) moveStorylineDrag(e);
   [lpDr, cpDr, spDr].forEach(dr => {
     if (!dr.on) return;
     const newW = Math.max(dr.min, Math.min(dr.max, dr.startW + (e.clientX - dr.startX)));
@@ -1819,6 +2305,7 @@ document.addEventListener('mouseup', e => {
   }
   if (ld.on)  endLibDrag();
   if (sld.on) endSecListDrag();
+  if (typeof tlLaneDrag !== 'undefined' && tlLaneDrag.on) endStorylineDrag();
   [lpDr, cpDr, spDr].forEach(dr => {
     if (!dr.on) return;
     dr.on = false;
@@ -1833,6 +2320,14 @@ document.addEventListener('mouseup', e => {
 // this is easy to trigger by accident. An edit that's merely open but
 // unchanged has nothing to lose, so it's still dismissed silently.
 document.addEventListener('mousedown', e => {
+  // Timeline mode reparents #form-edit out of #cp into #tl-panel's Inspector
+  // tab (timeline.js), so the #cp-scoped "outside" check below can no longer
+  // recognize a click inside it as "inside" — every click on the reparented
+  // form would wrongly read as "outside the panel" and cancel the edit.
+  // Timeline mode already has its own equivalent (tlSelectScene/
+  // runWithDiscardGuard, wired to clicks on empty chron/manuscript track
+  // space), so this board-only handler just steps aside entirely.
+  if (typeof timelineMode !== 'undefined' && timelineMode) return;
   const tabNew = document.getElementById('tab-new');
   if (!tabNew) return;
   const editActive = S.editingId !== null;
@@ -1859,7 +2354,7 @@ document.addEventListener('mousedown', e => {
 // IDs of the overlay modals/popups — used both by ESCAPE_ACTIONS below and to
 // stop Alt-letter shortcuts from firing underneath one (e.g. Alt+N opening a
 // New Scene form beneath an open "delete this?" confirmation).
-const MODAL_IDS = ['discard-cfm-modal', 'modal', 'add-popup', 'lib-edit-modal', 'libdel-modal', 'savecfm-modal', 'secdel-modal', 'rpt-modal', 'pov-add-modal'];
+const MODAL_IDS = ['discard-cfm-modal', 'modal', 'add-popup', 'lib-edit-modal', 'libdel-modal', 'savecfm-modal', 'secdel-modal', 'rpt-modal', 'pov-add-modal', 'tl-move-cfm-modal'];
 function anyModalOpen() {
   // showImportChoiceDialog() (projects.js) builds its overlay dynamically
   // rather than toggling a fixed element's class, so it isn't one of the
@@ -1894,6 +2389,19 @@ const ESCAPE_ACTIONS = [
   { isOpen: () => document.getElementById('sec-filter-drop')?.classList.contains('open'), close: closeSecFilter },
   { isOpen: () => !!document.querySelector('#menu-bar .mi.open'), close: closeAllMenus },
   { isOpen: () => typeof chartMode !== 'undefined' && chartMode, close: closeChartView },
+  // Chron-strip drag cancel, then marker popover/context menu, take priority
+  // over everything else in timeline mode (§6.5, §6.7) — mirrors ThruLine's
+  // "cancel drag -> close popover/modal -> clear selection" Escape ordering.
+  { isOpen: () => typeof isTlDragActive === 'function' && isTlDragActive(), close: () => cancelTlDrag() },
+  { isOpen: () => !!document.getElementById('tl-marker-popover'), close: closeMarkerPopover },
+  { isOpen: () => !!document.getElementById('tl-marker-context-menu'), close: closeMarkerContextMenu },
+  { isOpen: () => document.getElementById('tl-move-cfm-modal')?.classList.contains('open'), close: () => tlConfirmMoveDiscard() },
+  { isOpen: () => typeof isFlagModeActive === 'function' && isFlagModeActive(), close: () => clearFlagMode() },
+  // Timeline mode's own deselect (§6.6) takes priority over the board's scene-
+  // form Escape entry below while active, since selecting a scene there opens
+  // the very same #form-edit — deselecting must also clear the chron/ribbon
+  // selection highlight and restore the Inspector placeholder, not just cancel.
+  { isOpen: () => typeof timelineMode !== 'undefined' && timelineMode && (S.editingId !== null || tlSelectedId !== null), close: () => tlSelectScene(null) },
   { isOpen: () => S.editingId !== null || document.getElementById('tab-new')?.classList.contains('live'), close: maybeCancelSceneFormWithConfirm },
   { isOpen: () => !!searchQ, close: clearSearch },
   { isOpen: () => S.selIds.size > 0, close: clearCardSel },
@@ -1920,11 +2428,17 @@ document.addEventListener('keydown', e => {
     // Undo/redo must not hijack a text field's own native undo (typing in a
     // scene's title/summary/notes and pressing Ctrl+Z should fix the typo,
     // not revert an unrelated board action), and must not fire while a card/
-    // library/section-list drag is in progress — the app's undo rebuilds
-    // S.scenes and re-renders the board out from under an active drag, and
-    // the eventual mouseup would then commit a reorder against post-undo
-    // state and clobber the redo stack.
-    if (!inInput && !drag.on && !ld.on && !sld.on) {
+    // library/section-list/chron-strip drag is in progress — the app's undo
+    // rebuilds S.scenes and re-renders out from under an active drag, and the
+    // eventual mouseup would then commit a reorder against post-undo state and
+    // clobber the redo stack. Also blocked while any modal is open: the
+    // Library/POV Edit modal (openLibEditModal/openPovEditModal) captures an
+    // array index at open time and writes back to S[sec][idx] on Save — an
+    // undo firing while it's open (e.g. focus has moved to a modal button, so
+    // inInput is false) can reorder/shrink that array underneath it, so Save
+    // then silently overwrites the wrong entity. Matches the Alt-shortcut
+    // handler below, which already excludes open modals for the same reason.
+    if (!inInput && !anyModalOpen() && !drag.on && !ld.on && !sld.on && !(typeof tlLaneDrag !== 'undefined' && tlLaneDrag.on) && !(typeof isTlDragActive === 'function' && isTlDragActive())) {
       if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (typeof undo === 'function') undo(); return; }
       if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); if (typeof redo === 'function') redo(); return; }
     }
@@ -1935,9 +2449,14 @@ document.addEventListener('keydown', e => {
       // Ctrl+Shift+E (Caps Lock cancels the Shift-driven uppercasing, so
       // e.key comes back lowercase 'e').
       if (e.shiftKey && e.code === 'KeyE') { e.preventDefault(); exportCurrentProject(); return; }
-      if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); return; }
-      if (e.key === '-') { e.preventDefault(); zoomOut(); return; }
-      if (e.key === '0') { e.preventDefault(); zoomReset(); return; }
+      // Board-only zoom is a no-op in timeline mode (schema v3 §6.1) — the
+      // timeline has its own zoom slider.
+      const inTimeline = typeof timelineMode !== 'undefined' && timelineMode;
+      if (!inTimeline) {
+        if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomIn(); return; }
+        if (e.key === '-') { e.preventDefault(); zoomOut(); return; }
+        if (e.key === '0') { e.preventDefault(); zoomReset(); return; }
+      }
     }
   }
   // Alt shortcuts (not in an input field, and not underneath an open modal —
@@ -1947,13 +2466,21 @@ document.addEventListener('keydown', e => {
   // Option+N → a dead key), so matching on e.key silently breaks every one of these.
   // e.code reports the physical key regardless of what the modifier composes.
   if (e.altKey && !e.ctrlKey && !e.metaKey && !inInput && !anyModalOpen()) {
+    const inTimeline = typeof timelineMode !== 'undefined' && timelineMode;
     if (e.code === 'KeyN') { e.preventDefault(); menuNewScene(); return; }
-    if (e.code === 'KeyC') { e.preventDefault(); openAddPopup('characters'); return; }
-    if (e.code === 'KeyL') { e.preventDefault(); openAddPopup('locations'); return; }
-    if (e.code === 'KeyT') { e.preventDefault(); openAddPopup('themes'); return; }
-    if (e.code === 'KeyM') { e.preventDefault(); openAddPopup('misc'); return; }
+    // Create -> Character/Location/Theme/Misc belong to board mode's library
+    // workflow — a disabled item's shortcut is a no-op in timeline mode.
+    if (!inTimeline) {
+      if (e.code === 'KeyC') { e.preventDefault(); openAddPopup('characters'); return; }
+      if (e.code === 'KeyL') { e.preventDefault(); openAddPopup('locations'); return; }
+      if (e.code === 'KeyT') { e.preventDefault(); openAddPopup('themes'); return; }
+      if (e.code === 'KeyM') { e.preventDefault(); openAddPopup('misc'); return; }
+    }
     if (e.code === 'KeyR') { e.preventDefault(); openReportModal(); return; }
     if (e.code === 'KeyV') { e.preventDefault(); toggleChartView(); return; }
+    // KeyT is already Add Theme in this codebase (contrary to the schema v3
+    // spec's assumption that it was free) — Timeline view uses Alt+K instead.
+    if (e.code === 'KeyK') { e.preventDefault(); toggleTimelineView(); return; }
   }
   if (e.key === 'Escape') {
     // Close/clear only the single front-most thing, in priority order, and

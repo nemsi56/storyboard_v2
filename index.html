@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SceneSetter — Interactive Beatboard for Writers</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; connect-src 'self' https://formspree.io https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<title>SceneSetter — Interactive Story Organizer for Writers</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com https://www.paypalobjects.com https://www.paypal.com; connect-src 'self' https://formspree.io https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self' https://www.paypal.com">
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-NNVHKFSNPG"></script>
 <script src="ga.js"></script>
@@ -15,12 +15,21 @@
 <!-- ══ LANDING PAGE ══════════════════════════════════════════════════════════ -->
 <div id="landing">
   <div class="landing-hdr">
-    <h1 class="landing-logo">📝 SceneSetter</h1>
+    <h1 class="landing-logo"><img src="images/icon.png" alt="" class="landing-logo-icon">SceneSetter</h1>
     <nav class="landing-nav">
       <a href="projects.html" class="landing-nav-link landing-nav-cta">Your Projects</a>
       <a href="tutorial.html" class="landing-nav-link" target="_blank" rel="noopener">Tutorial</a>
     </nav>
-    <div class="landing-hdr-spacer" aria-hidden="true"></div>
+    <div class="landing-hdr-spacer">
+     <form action="https://www.paypal.com/donate" method="post" target="_top">
+<input type="hidden" name="business" value="LSE5MGUBSYMHG" />
+<input type="hidden" name="no_recurring" value="0" />
+<input type="hidden" name="item_name" value="If you enjoy SceneSetter, please consider donating." />
+<input type="hidden" name="currency_code" value="USD" />
+<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
+<img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
+</form>
+    </div>
   </div>
 
   <div class="landing-body">
@@ -28,10 +37,11 @@
     <!-- HERO -->
     <section class="landing-hero-v2">
       <div class="landing-hero-inner">
+        <img src="images/icon.png" alt="" class="landing-hero-icon">
         <div class="landing-tagline">Organize. Visualize. Write.<br>See your story take shape.</div>
         <h2 class="landing-welcome">Welcome to SceneSetter</h2>
-        <p class="landing-hero-p">SceneSetter is a card-based visual story organizer built for writers of all kinds — novelists, screenwriters, playwrights, game designers, and anyone who needs to structure a narrative. It helps you organize your characters, locations, themes, and scenes so you can focus on telling your best story.</p>
-        <p class="landing-hero-p">Everything runs in your browser. No account needed, no data sent to any server. Your stories stay yours.</p>
+        <p class="landing-hero-p">SceneSetter is a visual story organizer built for writers of all kinds — novelists, screenwriters, playwrights, game designers, and anyone who needs to structure a narrative. It helps you organize your characters, locations, themes, and scenes so you can focus on telling your best story.</p>
+        <p class="landing-hero-p">Everything runs in your browser. No account needed, and your writing itself never leaves your device — it's stored locally, not on a server. Your stories stay yours.</p>
         <div class="landing-scroll-cue" aria-hidden="true">⌄</div>
       </div>
     </section>
@@ -57,13 +67,17 @@
       <div class="landing-feature reveal" data-accent="bl">
         <div class="landing-feature-text">
           <span class="landing-feature-num">02</span>
-          <h3>Character &amp; Element Library</h3>
-          <p>Build a library of characters, locations, themes, and miscellaneous items. Attach them to scenes to track who appears where, which locations are used, and how themes flow through your story. Assign one or more POV names per scene too — handy if your "scenes" are really chapters with a narrator.</p>
+          <h3>Library &amp; Sections</h3>
+          <p>Build a library of characters, locations, themes, and miscellaneous items, then attach them to scenes to track who appears where, which locations are used, and how themes flow through your story — assign one or more POV names per scene too, handy if your "scenes" are really chapters with a narrator. Group scenes into sections — acts, chapters, parts, or whatever structure fits your story — with color-coded headers to visually separate your narrative beats.</p>
         </div>
-        <div class="landing-feature-media">
-          <div class="overview-img-wrap landing-img-compact">
+        <div class="landing-feature-media landing-feature-media-multi">
+          <div class="overview-img-wrap landing-img-half">
             <div class="landing-window-dots"><span></span><span></span><span></span></div>
             <img src="images/overview-library.png" alt="Library panel showing characters, locations, themes" class="overview-img">
+          </div>
+          <div class="overview-img-wrap landing-img-half">
+            <div class="landing-window-dots"><span></span><span></span><span></span></div>
+            <img src="images/overview-sections.png" alt="Sections panel with color-coded acts" class="overview-img">
           </div>
         </div>
       </div>
@@ -83,23 +97,9 @@
         </div>
       </div>
 
-      <div class="landing-feature reveal" data-accent="pv">
-        <div class="landing-feature-text">
-          <span class="landing-feature-num">04</span>
-          <h3>Sections &amp; Organization</h3>
-          <p>Group scenes into sections — acts, chapters, parts, or whatever structure fits your story. Use color-coded headers to visually separate your narrative beats.</p>
-        </div>
-        <div class="landing-feature-media">
-          <div class="overview-img-wrap landing-img-compact">
-            <div class="landing-window-dots"><span></span><span></span><span></span></div>
-            <img src="images/overview-sections.png" alt="Sections panel with color-coded acts" class="overview-img">
-          </div>
-        </div>
-      </div>
-
       <div class="landing-feature reveal" data-accent="am">
         <div class="landing-feature-text">
-          <span class="landing-feature-num">05</span>
+          <span class="landing-feature-num">04</span>
           <h3>Scene Flow Chart</h3>
           <p>See your whole story as one continuous ribbon of scenes — winding into a snake or wrapped into a circle — so you can spot pacing, gaps, and structure at a glance. Switch to it anytime with the Cards/Snake/Circle icons in the board header. Section boundaries are marked automatically (hover a badge or wedge for its name). Click a character or POV name in the Library, or type in Search, and matching scenes highlight right in the chart, just like on the board. Click any scene to jump back to its card. Optionally size each scene's segment by its word count instead of splitting evenly, to spot unusually long or short scenes at a glance.</p>
         </div>
@@ -111,6 +111,24 @@
           <div class="overview-img-wrap landing-img-half">
             <div class="landing-window-dots"><span></span><span></span><span></span></div>
             <img src="images/overview-circle.png" alt="Scene flow chart, circle layout, showing sections as pie-slice wedges and characters traced through the ring" class="overview-img" id="ov-img-flowchart-2">
+          </div>
+        </div>
+      </div>
+
+      <div class="landing-feature reveal" data-accent="rd">
+        <div class="landing-feature-text">
+          <span class="landing-feature-num">05</span>
+          <h3>Timeline: Loom &amp; Path</h3>
+          <p>See your story from a second angle: not the order the reader experiences it, but when things actually happen. Give scenes real dates and sort your cast into storylines, and the Timeline is especially handy if you're writing non-linear — flashbacks, parallel plots, and simultaneous scenes all become easy to spot. <strong>Loom</strong> lays Chronology and Narrative out as two parallel rows connected by wires, one per storyline. <strong>Path</strong> plots the same story as a single line you can drag to reorder. A built-in Conflicts panel even catches a character in two places at once, or a reveal that lands before its setup.</p>
+        </div>
+        <div class="landing-feature-media landing-feature-media-multi">
+          <div class="overview-img-wrap landing-img-half">
+            <div class="landing-window-dots"><span></span><span></span><span></span></div>
+            <img src="images/overview-Loom.png" alt="Loom timeline view showing Chronology and Narrative rows connected by wires, with storyline lanes" class="overview-img" id="ov-img-loom">
+          </div>
+          <div class="overview-img-wrap landing-img-half">
+            <div class="landing-window-dots"><span></span><span></span><span></span></div>
+            <img src="images/overview-Path.png" alt="Path timeline view showing scenes connected along a single draggable line" class="overview-img" id="ov-img-path">
           </div>
         </div>
       </div>
@@ -154,9 +172,10 @@
     <!-- CLOSING -->
     <section class="landing-closing">
       <div class="landing-contact">
-        Thoughts? Suggestions? Issues? Urge to donate? Or simply want to be alerted to updates?<br>
+        Thoughts? Suggestions? Issues? Or simply want to be alerted to updates?<br>
         <a href="mailto:scenesetter@protonmail.com">Email us</a>
       </div>
+      <div class="landing-donate-line">If you like SceneSetter, please consider a donation to continue its development.</div>
       <div class="landing-enjoy">Enjoy!</div>
       <a href="projects.html" class="pm-btn pm-btn-primary landing-get-started">Get Started</a>
     </section>

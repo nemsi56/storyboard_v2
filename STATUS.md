@@ -1,6 +1,6 @@
 # Current Status
 
-As of July 17, 2026:
+As of July 26, 2026 (`thruLine_v3` branch, forked from `thruLine_v2` at `aa0bb78`):
 
 ## Notes
 strip_AI branch: removed all AI features (Analyze Story menu item, AI panel with Analysis/Chat tabs, ai.js, chat.js, and related state/CSS) so the app ships without them for now — to be reintroduced later. Also hardened the app: CSP meta tags on all pages, stricter JSON import validation, and cleanup of leftover AI localStorage keys.
@@ -1037,3 +1037,3247 @@ palette fallback on open. No console errors in any case.
 
 ### Not yet done
 - Not merged to `main` — pushed to `origin/feature/updates_v7`, PR not yet opened.
+
+## thruLine_v1 branch — SceneSetter v3: entity ids + Timeline feature (in progress)
+
+Integrates the ThruLine app's timeline/conflict-engine feature into SceneSetter, per
+`SCENESETTER_V3_TIMELINE_SPEC.md` (also in this repo — read that first for the full design;
+this section tracks implementation progress against its M1–M7 milestone list). Reference
+implementation lives in `../Timeline` (repo `thruLine`, branch `updates_v1`); code is ported
+and adapted from there, not re-implemented from prose. Branched from `main` at `5aa46e5`
+(post `feature/updates_v7` merge). M1–M6 complete as of this writing; M7 not started.
+
+**M1+M2 — Schema v3 migration + full identity refactor** (`state.js`, `editor.js`,
+`charts.js`, `reports.js`, `projects.js`): `DATA_VERSION` → `'3'`. Library entities, custom
+POVs, and every scene reference array move from name-based to a shared integer id space
+(`S.nextEntId`), with `migrateV2toV3()` running on load/import/sample-seed. New top-level
+timeline fields (`storylines`, `chronOrder`, `revealsLib`, `constraints`, `markers`,
+`dismissed`, `timelinePrefs`) are seeded with defaults during migration. The spec's two
+milestones were combined into one implementation pass — the identity refactor isn't
+separable from the migration in practice, since name-based rename-propagation code can't
+coexist with id-based scene refs. Rename-propagation loops in `editor.js` are deleted
+outright (renaming is now instant and identity-stable); `charts.js` trace lanes and
+`reports.js` builders resolve ids to names per render instead of string-matching.
+**Bug found and fixed along the way:** `STORAGE_KEY` was derived from `DATA_VERSION`
+(`'storyboard_v' + DATA_VERSION`), which would have silently broken the legacy
+single-project bootstrap (`migrateExistingData()`) the moment `DATA_VERSION` changed —
+decoupled it into a frozen fossil key (`'storyboard_v2'`).
+
+**M3 — Scene form Timing/Reveals groups + offscreen semantics** (`editor.html`,
+`editor.js`, `styles.css`): the Edit Scene form gains two collapsible groups per spec §7 —
+Timing (storyline select, "also part of" checklist, anchor date/time + clear button,
+duration, offscreen checkbox) and Reveals (two checklists over a shared `revealsLib`, with
+an inline mint-and-check add). Both extend `isEditFormDirty()`/`confirmSaveEdit()`
+field-for-field; a `revealsLib` entry referenced by no scene in either list is
+garbage-collected on save. Board cards get an "Offscreen" badge and the scene count reads
+"(N offscreen)" — the only other behavior change; charts/reports/word-count treat offscreen
+scenes exactly as before, per spec.
+
+**M4 — Timeline view shell** (new `timeline.js`, `editor.html`, `editor.js`, `editor-init.js`,
+`charts.js`, `projects.js`, `styles.css`): a fourth view-toggle mode (cards/snake/circle/
+timeline). ThruLine's chronology geometry engine (`../Timeline/js/time.js`), wires overlay,
+and hover mechanism (`../Timeline/js/wires.js`) are ported wholesale into `timeline.js`,
+adapted from `project`/`P` to `S`. Entering timeline mode hides the three left panels via a
+body-level class (their own collapse state is untouched, restored exactly on exit) and
+reparents the single `#form-edit` node into the right panel's Inspector tab rather than
+duplicating it — leaving moves it back. Board-only menu items (zoom, panel toggles,
+Create→library) grey out and their keyboard shortcuts no-op in timeline mode; Create→New
+Scene instead creates immediately with schema-v3 defaults and an auto-unique title, opening
+it in the Inspector. Every mode switch and scene reselection reuses the existing
+discard-confirm modal via a new optional `afterDiscard` callback on
+`openDiscardConfirm()`/`confirmDiscard()`. Chronology strip: storyline lanes (add/
+rename-inline/delete with scene reassignment + a last-lane guard), ordinal/true-scale
+positioning, zoom slider, character thread overlay. Manuscript ribbon: a new pure
+`manuscriptOrder()` function in `editor.js` (mirroring `renderBoard()`'s grouping exactly)
+drives display order and numbering, with section-color stripes as read-only separators in
+place of ThruLine's dividers (sections already existed here and fill that role).
+**Spec deviation:** Alt+T was already bound to "Add Theme" in this codebase (the spec
+assumed it was free), so Timeline view uses **Alt+K** instead.
+
+**M5 — Chron drag + markers** (`timeline.js`, `editor.js`, `editor-init.js`, `state.js`):
+ports ThruLine's `_chronDrag` family (`../Timeline/js/chron.js`) into a `_tlDrag` state
+machine — same candidate/threshold-4px/active two-phase pattern editor.js already uses for
+board card drag, wired once globally rather than per-render. Horizontal drag reorders
+`chronOrder` (ordinal axis only; true-scale shows a one-time "Switch to Ordinal to reorder
+by time" toast and disables it); vertical drag re-lanes (sets `storylineId`, strips it from
+`alsoStorylineIds` per the §2.5 invariant). No-op drops commit nothing; real moves push
+"Move scene (time)"/"Move scene (lane)" undo labels. Markers: right-click empty track space
+→ "Add marker here" (anchors to the nearest scene to the right in `chronOrder`); click a
+marker label → rename/delete popover. Ported verbatim ThruLine's July-2026
+`closeMarkerContextMenu()` pattern (every close path removes both the menu element and its
+document listener) to avoid the two-right-clicks-stray-menu bug it fixed there. Drag-cancel,
+marker-popover-close, and marker-context-menu-close all join `ESCAPE_ACTIONS` (editor.js)
+ahead of the timeline deselect entry, rather than a second keydown listener.
+**Bug found and fixed along the way:** `undo()`/`redo()` (`state.js`) call `renderBoard()`
+unconditionally, which no-ops into `renderChart()` on its own when chart view is open — but
+the timeline view is a wholly separate render tree with no such hook, so undoing/redoing a
+chron drag while timeline mode was open silently desynced the DOM from the data (confirmed:
+the underlying `S`/`chronOrder` state reverted correctly, only the on-screen card position
+didn't move). Fixed by calling `renderTimeline()` from both when `timelineMode` is active.
+
+**M6 — Conflict engine + panel + warn-dots** (new `conflicts.js`, `state.js`, `editor.js`,
+`editor.html`, `projects.js`, `timeline.js`, `styles.css`): ports `../Timeline/js/
+conflicts.js`'s pure `computeConflicts()` mechanically — fingerprints, the four check
+families (anchor-vs-chronOrder monotonicity, constraint violations + cycle DFS, bilocation,
+reveal-order/missing), the debounced 150ms recompute (hooked into `saveState()`), and flag
+mode. Two adaptations beyond the mechanical port: reader-order inputs use `manuscriptOrder()`
+filtered to `!offscreen` (this codebase has no stored `msOrder`), and bilocation is rebuilt
+around schema v3's multi-location scenes (ThruLine's single `locationId` doesn't exist here)
+— a conflict now requires both scenes to have at least one location tagged and their
+location *sets* to be completely disjoint, rather than a simple inequality. UI: a
+"Conflicts (N)" badge in the timeline strip header opens the right panel's Conflicts tab
+(severity dot, message, "show scenes" flag-mode toggle, "mark intentional" dismiss, a grayed
+"Dismissed" section with "restore warning"); warn-dots render on chron-strip cards, ribbon
+cards, and — new — board cards (`.sc-warn .warn-dot`, top-right corner, red), the last of
+these so a conflict is discoverable without ever opening the timeline. `pruneDismissed()`
+(ported from ThruLine's `saveProject()`) runs synchronously inside `saveState()` before every
+write, so a dismissed fingerprint the data no longer produces never survives a save.
+
+### Known non-obvious fixes worth knowing about if you touch this code
+- `updateViewToggleUI()` briefly existed in both `charts.js` and `timeline.js` — consolidated
+  into `timeline.js`'s unified 4-way version and the `<script>` order swapped
+  (`timeline.js` before `charts.js`) so `charts.js`'s own startup code can call it safely
+  without a load-order `ReferenceError`.
+- The migration's library-entity dedup (schema v3 §3.2 step 2) matches the spec precisely:
+  when a v2 library array has duplicate names, the *first* entry keeps the name→id mapping;
+  any later duplicate is dropped after ref-rewriting unless a scene ref still points at its
+  own (non-canonical) id.
+- Manual browser testing repeatedly hit a preview-tool caching quirk where navigating to the
+  same URL (even a fresh "Open" project flow) served a stale cached HTML/CSS/JS document
+  despite the server returning fresh content on `curl`/`fetch(..., {cache:'no-store'})` —
+  worked around by appending a cache-busting query string on navigation (and, for `<script>`
+  tags specifically, by rewriting `<link>`/re-fetching, since a busted HTML url alone didn't
+  bust the script urls it references). Confirmed this exact way for the M5 undo/redo fix
+  above: the stale cached `state.js` initially made the fix look like it hadn't worked at
+  all (old `undo()` in memory, no `renderTimeline()` call) until isolated by comparing
+  `undo.toString()` against the on-disk source. Not an app bug; noted here so a future
+  session doesn't chase it as one.
+
+### Verification
+Manually verified in-browser against both migrated sample projects (Pride and Prejudice,
+The Count of Monte Cristo) after each milestone: v2→v3 migration produces correct ids/
+counters/`chronOrder`; renaming a character with its scene open shows zero dirty-flag and
+propagates instantly everywhere (card tags, checklists, chart trace, reports); deleting a
+character who is a POV survives as a custom POV entry; `validateV3Import()` rejects dangling
+refs, malformed anchors, bad `chronOrder`, invalid `timelinePrefs.axis`, and duplicate
+cross-collection ids with specific messages, and accepts a real exported v3 project;
+Timing/Reveals fields round-trip through save/reload/undo, including the reveals
+garbage-collection case (tag on scene A, require on scene B, untag both, confirm the
+library entry is gone); Timeline view's mode entry/exit, panel-state round-trip, scene
+selection (reparenting the real edit form, not a copy), storyline add/rename/delete, zoom,
+thread overlay, and menu/shortcut disabling all confirmed across the ivory and slate themes.
+Chron-strip horizontal drag (reorders `chronOrder`, board/manuscript order left untouched,
+correct undo label) and vertical drag (re-lanes, correct undo label) both confirmed with
+real synthetic mouse drag events; marker add (via direct context-menu-button invocation —
+the automated right-click itself didn't reach the app, confirmed by dispatching a real
+`contextmenu` event instead, which worked, so this is a test-tool limitation, not a bug),
+rename, and delete all confirmed. Console clean throughout.
+
+Conflict engine verified live against real data mutations (not fixtures): built the
+bilocation case (shared character, disjoint locations, overlapping anchored intervals,
+including one participant marked offscreen — confirmed it still flags per §9) and the
+reveal-order case both ways (a reveal tagged on an *offscreen* scene correctly does NOT
+satisfy a later requirement; retagging it on an on-screen scene produces a "reveal used
+before shown" conflict with a correctly-numbered message; reordering the board so the
+revealing scene comes first — not touching `chronOrder` — clears it, confirming
+manuscript order, not chronology, drives the reveal check). "Show scenes" flag mode
+confirmed on both chron and ribbon cards simultaneously; hovering a different card while
+flagged does not dim the flagged one (the specificity fix holds); "mark intentional"
+dismisses (badge/panel update, `S.dismissed` persisted) and Escape clears flag mode.
+Fixing the underlying data and re-saving pruned the dismissed fingerprint automatically.
+Board warn-dot (`.sc-warn`) confirmed rendering independent of which view is open. Console
+clean throughout.
+
+**M7 — Polish + full verification** (`editor-init.js`): ran the spec's full §13
+checklist (24 items) across all five themes and against both a fresh project and a
+migrated sample (Pride and Prejudice).
+**Bug found and fixed:** the M3 Timing/Reveals form additions (`editor.html`'s
+`ed-also-sl-btn`, `ed-reveals-btn`, `ed-requires-btn`) were wired to `toggleCkDrop()`
+in the surrounding code but never actually hooked up — `editor-init.js`'s click-wiring
+loop for the checklist-dropdown buttons only listed the pre-existing
+characters/locations/themes/misc/POV buttons (both New Scene and Edit Scene variants),
+never the three new Timing/Reveals ones. Clicking "Also part of," "This scene
+reveals," or "Requires knowing" did nothing — `toggleCkDrop` was dead code from those
+buttons' perspective, so the dropdowns could never open and those fields were
+effectively unusable via mouse. Fixed by adding the three buttons to the existing
+wiring array (`toggleCkDrop`'s `sec` parameter is unused inside the function, so any
+label works; used `'storylines'`/`'reveals'` for clarity). Caught only by actually
+clicking the rendered buttons in-browser — reading the code in isolation, both the
+button markup and `toggleCkDrop` looked correct, and it would have passed a review
+that didn't drive the UI.
+
+### M7 verification
+All 24 checklist items confirmed, live in-browser, on both a fresh project and the
+migrated Pride and Prejudice sample:
+- **1–10** (migration/import/undo/validation/identity): re-spot-checked post-fix — v3
+  schema fields present and correct on a fresh migration, `v:'3'` persisted, rename
+  propagation (via the real `saveLibEdit()` path) shows zero dirty-flag on an open
+  scene form and preserves its checkbox selections. (An earlier false-positive dirty
+  reading during this pass was traced to a test-script mistake — calling
+  `renderAllCk()` directly clears checkbox state since it renders with no `checked`
+  argument — not an app bug; the real rename path always supplies
+  `ckCurrentlyChecked()`.)
+- **11–13** (Timing/Reveals/offscreen): anchor date/time/duration round-trip via
+  save/reload confirmed on scene data directly; reveal mint-and-check add, and the
+  "Also part of"/"Requires knowing" dropdowns all confirmed working after the fix
+  above; board offscreen badge and "(N offscreen)" count confirmed.
+- **14, 14a, 14b** (Timeline shell + mode round-trip + menu state): toggle/Alt+K entry,
+  panel hide on entry, Sections-panel-collapsed state surviving a full mode
+  round-trip while Library/Scene panels restore exactly, reparented `#form-edit`
+  working identically in both board and Inspector contexts, Create→library items
+  greyed with New Scene still enabled and creating "Untitled scene N" directly in the
+  Inspector, Reset Zoom disabled in timeline mode.
+- **15–17** (true scale, wires, thread): true-scale positioning and its drag-disabled
+  behavior (chronOrder unchanged after a drag attempt) confirmed; thread picker curve
+  survives an id-based character rename.
+- **18–19** (chron drag + markers): horizontal drag reorders `chronOrder` only (board
+  order untouched) with a correct "Move scene (time)" undo label that both undoes and
+  redoes the on-screen position; vertical drag re-lanes with "Move scene (lane)";
+  marker add (via a dispatched `contextmenu` event — the `computer` tool's real
+  right-click doesn't reach the app's listener in this environment, per the known
+  quirk), rename-on-blur, delete, and the two-successive-right-clicks-no-stray-menu
+  regression all confirmed.
+- **20–22** (conflicts): built a live bilocation case (shared character, disjoint
+  locations, overlapping anchored times); "show scenes" flags chron+ribbon+board
+  cards and hovering an unrelated card does not dim the flagged ones (specificity
+  regression holds); "mark intentional" dismisses, persists in `S.dismissed`, and
+  fixing the underlying anchor auto-pruned the dismissed fingerprint on next save; an
+  offscreen scene in a bilocation conflict still flagged.
+- **23** (XSS/CSP): grepped every `innerHTML` assignment across all `.js` files —
+  every one is either a clear (`= ''`) or static markup with no entity/scene-derived
+  interpolation; CSP meta tag confirmed byte-identical to `main`. Live-set a scene
+  title and a storyline name to `<img src=x onerror=alert(1)>` — rendered as literal
+  text everywhere (board, chron strip, ribbon, lane header, conflict message), no
+  `alert` fired, console stayed clean.
+- **24** (themes): cycled ivory/slate/studio/ocean/sunset with the bilocation conflict
+  still flagged and a thread active — storyline lane colors, wires, and flag/hover
+  states stayed distinct and readable in all five.
+
+**Post-M7 — bugs found via a real converted ThruLine dataset.** M7's own checklist
+testing used small, synthetic fixtures (a 2-3 scene test project, the existing Pride
+and Prejudice / Count of Monte Cristo samples, whose chronological and manuscript
+orders are nearly identical) — none of which exercised a Timeline view with real
+scroll or a manuscript order that diverges sharply from chronological order. A
+one-off Python script (not committed) converted ThruLine's own
+`Frankenstein.thruline.json` test fixture (`../Timeline`) into a SceneSetter v3
+project — 27 scenes, 3 storylines, a genuine frame-narrative structure (Walton's
+letters open the book; Victor's life is a flashback) — and importing it surfaced
+three real bugs the smaller fixtures never touched:
+
+1. **Wires zone was a hardcoded 48px sliver** (`styles.css`), not proportional to
+   the stage like ThruLine's own `#wiresZone{flex:1}` — ThruLine's chron/manuscript
+   sections size to their content (`flex:0 0 auto`) and the wires zone absorbs all
+   remaining space; SceneSetter instead gave chron/manuscript fixed flex-grow shares
+   and squeezed wires into a tiny fixed pixel band, making already-thin curves nearly
+   invisible. Fixed by mirroring ThruLine's approach: `#tl-chron-body`/`#tl-ms-scroll`
+   now content-size (capped at 55%/30% of stage height so a many-storyline project
+   can't starve the wires zone), `#tl-wires-zone` takes the remainder (`flex:1`,
+   `min-height:100px`). Lane rows were already fixed-height in `timeline.js`
+   (`laneH=92`, not computed from available space), so this didn't require any JS
+   changes. The user explicitly declined ThruLine's separate draggable resize handle
+   for this split — not needed once wires have proper room.
+2. **The "divider" between the two strips did nothing.** There was no actual divider
+   element — just `#tl-wires-zone`'s own bottom border, which read as a dead resize
+   handle. Resolved as a side effect of fix 1: once the zone visibly hosts real wire
+   curves, the border reads as a section boundary rather than a broken control.
+3. **Clicking any field in the Timeline Inspector emptied the panel** (`editor.js`,
+   `styles.css`). Two compounding bugs: (a) `#cp .p-body{display:flex;flex-direction:
+   column}` stopped matching once `#form-edit` was reparented into
+   `#tl-inspector-body` for Timeline mode, so `.cp-form-hdr` (Cancel/Save) and
+   `.cp-form-fields` fell back to flex-direction's row default and rendered side by
+   side instead of stacked — fixed by re-declaring the same rule scoped to
+   `#tl-inspector-body`. (b) Independently, editor.js's board-only "cancel edit on
+   click outside `#cp`" `mousedown` handler didn't know about the reparented form
+   either — since it's no longer inside `#cp`, *every* click on it (even squarely
+   inside a real field) read as "outside" and silently cancelled the edit. Fixed by
+   making that handler step aside entirely while `timelineMode` is true (Timeline
+   mode already has its own equivalent via `tlSelectScene`/`runWithDiscardGuard`).
+   Bug (a) alone produced the squeezed layout; bug (b) alone would have broken
+   clicking-into-fields even with perfect layout — confirmed by reproducing each
+   independently (a direct `.click()` call doesn't fire `mousedown` and didn't
+   trigger bug (b); a real simulated click did, regardless of exactly where in the
+   form it landed).
+
+All three fixes verified live: hover highlighting, chron drag, true-scale mode, and
+Conflicts flag-mode wire coloring all re-confirmed working with the new layout;
+Inspector field clicks and typing confirmed non-destructive on a genuinely fresh
+browser origin (stale HTTP caching in the preview tool made this unusually hard to
+verify — see the caching note earlier in this doc; a mid-session server/port restart
+was needed to rule out false negatives from cached JS).
+
+**Post-M7, round 2 — wires still weren't actually connecting to cards.** After the
+wires-zone sizing fix above landed, the user reported (screenshot) that curves still
+looked disconnected from the chronology strip, and that offscreen scenes had no wire
+at all. Two more real bugs, both in `redrawWires()` (`timeline.js`):
+
+4. **`if (s.offscreen) return;`** — ported verbatim from ThruLine, where an offscreen
+   scene genuinely has no manuscript position (excluded from `msOrder` entirely — the
+   Frankenstein conversion had to synthesize `sc_chase`'s manuscript placement by
+   hand for exactly this reason, since ThruLine's own file omitted it from
+   `msOrder`). SceneSetter's model is different: `renderManuscriptRibbon()` gives
+   *every* scene a `.tl-ms-card`, offscreen ones just get a dimmed `.tl-offscreen`
+   treatment (spec §6.2), so they always have a real card to draw a wire to. Removed
+   the skip; the existing `if (!chronEl || !msEl) return;` guard already covers any
+   genuine no-card case.
+5. **`ay = 0` was hardcoded** — every wire's chronology-side endpoint was pinned to
+   the wires-zone's top edge regardless of where the actual card sat, instead of the
+   card's real bottom edge (ThruLine's original: `ar.bottom - stageRect.top`). This
+   happened to look fine only for cards in the bottommost chron lane, immediately
+   above the zone boundary; any card in an upper storyline lane had its wire start
+   from thin air at the boundary line instead of visibly touching the card, reading
+   as "the wire disappears in the chronology pane." Root cause: `#tl-wires` was
+   nested inside `#tl-wires-zone` (sized to just the zone's own small box) rather
+   than being a direct child of `#tl-stage` like ThruLine's `#wires` (sized to the
+   whole stage) — a coordinate space too small to reach cards outside the zone at
+   all. Fixed by moving the `<svg id="tl-wires">` element in `editor.html` to be a
+   direct child of `#tl-stage`, and rewriting the endpoint math in `redrawWires()`
+   to anchor on `stageRect` with `ar.bottom`/`br.top` (both endpoints — the
+   manuscript side was already reading `br.top` correctly by coincidence, since the
+   old zone's bottom edge and the manuscript strip's top edge are the same line, but
+   the chron side had no such coincidence to save it).
+
+Verified on a genuinely fresh origin (another stale-cache-driven server/port
+restart): wires now visibly touch card edges in every storyline lane, not just the
+bottommost; the offscreen scene from the Frankenstein set (id 25, "A Pursuit Across
+the World") now gets a wire connecting its chron and manuscript cards, matching the
+26-scenes-had-wires → 27 count after the fix.
+
+**Frankenstein promoted to a permanent third sample project** (`frankenstein.json`,
+`projects.js`) rather than staying a one-off scratch file — its Timeline-heavy shape
+(frame narrative, multiple storylines, a real reveal-order conflict) makes it a
+better everyday demo of what M1–M7 actually built than the two v2-derived samples,
+whose chronological and manuscript orders are nearly identical. `ensureSampleProjects()`
+previously assumed every sample file was v2 and always ran `migrateV2toV3()`; it now
+accepts v3-native sample files as-is (v2 has nothing to migrate storylines/reveals/
+anchors *from*), gated on `d.v`. `SAMPLES_VERSION` bumped 2→3 so existing installs
+pick up the new sample on their next Projects-page visit. Verified end-to-end on a
+genuinely fresh browser origin: Frankenstein auto-seeds with the `SAMPLE` badge
+alongside the other two, with no manual import step, and opens with all 27 scenes/3
+storylines/wires/conflicts intact.
+
+**Post-M7, round 3 — chron strip lane clarity, from a user report of lanes "not
+matching up with their names."** Investigated at length (multiple live reproductions
+of add-storyline/delete-storyline/vertical-relane sequences, a full code read of
+`_tlDrag`'s lane-drop targeting, `snapshot()`/`applySnapshot()`'s storylines
+handling, undo/redo's render calls) and could not reproduce any actual data or
+positioning bug — a systematic check comparing every one of Frankenstein's 27
+scenes' real DOM `top` against its mathematically-expected lane position (derived
+independently from `S.storylines`/`s.storylineId`) came back with zero mismatches
+on a fresh, untouched import. The likely explanation, arrived at only after making
+the same misreading myself first: with no color distinction between lanes and only
+a thin dashed line separating them, it's easy to lose track of which row a card
+belongs to when scanning a wide horizontally-scrolled strip — especially since a
+single storyline's cards can appear at very different horizontal positions (early
+vs. late scenes), which reads at a glance like "the same row's cards jumped to a
+different lane" when they haven't. Fixed the ambiguity at its root rather than
+chasing a bug that isn't there: `.tl-lane-row`/`.tl-lane-label` (`styles.css`,
+`timeline.js`) now both carry a `--lane-c` custom property (`slColor(storyline.
+paletteIndex)`, the same color already used for each card's own top border and the
+wires) as a colored top border plus a faint `color-mix` background tint, so a card's
+own color and its row's color are directly, visually comparable — confirmed
+correct in both light and dark themes, and non-interfering with hover/flag
+dimming.
+
+While investigating, also found and fixed a real, reproducible bug in the same
+area: chronology markers' labels (the "1793 — GENEVA & INGOLSTADT" year captions)
+were invisible on every project that has any — not a z-index/stacking issue (fixed
+that too, `.tl-markers-layer`'s z-index was `1`, below `.tl-scene`'s `2`, so a card
+sitting at a marker's x-position fully hid it) but a genuine overflow clip: the
+label sits `top:-15px` above its marker line, and the line's own `top:4px` put the
+label 11px above `#tl-track`'s own top edge — entirely inside the region
+`#tl-chron-scroll`'s `overflow-y:hidden` clips away, regardless of z-index (an
+overflow clip and a stacking order are different mechanisms; raising z-index alone
+didn't fix this). Changed the marker line's `top` to `20px`, leaving the label
+comfortably inside the track's visible bounds. Confirmed visible in both light and
+dark themes after the fix.
+
+**Post-M7, round 4 — the lane-label round 3 fix was necessary but not sufficient;
+the real bug was elsewhere.** After round 3's color-coding shipped, the user kept
+reporting the same "lanes don't match their names" symptom, this time with a much
+higher-resolution screenshot and, eventually, their actual exported project file
+(imported and checked byte-for-byte against the running code — data was 100%
+correct, zero mismatches, in a from-scratch session; confirmed a stale-cache theory
+was wrong too, since the user had already re-tested in a private/incognito window).
+The eventual breakthrough was a screenshot zoomed in enough to show the *label
+column itself* visibly shorter than the row band it should exactly cover — a
+question of label-vs-row alignment, not card-vs-lane color. Verified precisely:
+`.tl-lane-label` elements were rendering at ~78px instead of their declared 92px,
+while `.tl-lane-row` elements (and the cards within them) stayed exactly at 92px.
+Root cause: `#tl-lane-labels` is a flex column, and `.tl-lane-label` — a flex
+item — has no `flex-shrink:0`, so flex's default shrink-to-fit silently compresses
+every label below its declared height the instant total lane height
+(`laneCount×92`) exceeds `#tl-chron-body`'s available space (`max-height:55%` from
+round 2's wires-zone fix, or just a shorter window). The track's own rows and cards
+are absolutely positioned — immune to flex shrinking — so they stay exactly at
+`i×92`, while the labels compress and *cumulatively drift*: label 1 lines up by
+coincidence (both start at the container's top), label 2 is off by the shrink
+amount, label 3 by double that, and so on — worse with every subsequent lane, which
+matches the reports precisely. This is why it eluded round 3's testing: the color
+verification checked card color/position against `S.storylines` math (always
+correct), never label position against row position, and every test window used
+happened to be tall enough to give labels their full 92px, so the shrink literally
+never triggered in that testing. Fixed with one line — `flex-shrink:0` on
+`.tl-lane-label` — so any excess now clips via `#tl-lane-labels`'
+`overflow-y:hidden`, exactly like the track's rows already clip via
+`#tl-chron-scroll`'s own `overflow-y:hidden`: the same failure mode on both sides
+instead of a silent divergence between them. Verified via direct
+`getBoundingClientRect()` comparison (label top/height now exactly matches its
+row's, at both a normal window size and a deliberately squeezed 1000×500) and
+visually — confirmed labels and rows now clip together at the same boundary under
+pressure rather than drifting apart.
+
+Also confirmed (unprompted, while helping diagnose): the right-click-on-empty-
+track-space "Add marker here" flow still works correctly; the user's separate
+question was about discoverability, not a bug — noted as a possible future
+affordance (a "+ Marker" button beside "+ Storyline") but not built, since it
+wasn't asked for.
+
+**Post-M7, round 5 — round 4's `flex-shrink:0` fix broke the "+ Storyline" button**,
+caught immediately by the user asking "where is it now?" `#tl-add-storyline-btn`
+was always just the last child of `#tl-lane-labels`' flex column (an unused
+`margin-top:auto` was always overridden by a later `margin:6px 8px 8px` shorthand
+in the same rule, so it never actually auto-pushed to the bottom) — before round
+4, flex-shrink was silently compressing the labels to make room for it; after
+disabling that shrink, the button simply got pushed past `#tl-lane-labels`'
+clipped bottom edge and became permanently unreachable the moment total lane
+height filled the available space (not a rare case — happened on the very next
+load of the 3-storyline Frankenstein project). Fixed by taking the button out of
+the flex flow entirely: pinned as a floating `position:absolute` overlay at the
+container's bottom edge, and reserved 40px (`BTN_RESERVE` in `timeline.js`) in
+both the track's and the label column's own height so it no longer overlaps the
+last lane's label either. The reserve is added identically to both containers, so
+it doesn't reintroduce round 4's label/row divergence. Verified: no overlap at
+normal and moderately small window heights (700–900px); at a deliberately extreme
+500px-tall window, the button does clip — but that's `#tl-chron-body`'s
+pre-existing `max-height:55%` cap clipping the same way it would clip actual lane
+content in that scenario, not a new failure mode.
+
+### Not yet done
+Nothing outstanding from the M7 checklist itself. Still not merged to `main` —
+stays on `thruLine_v1` per explicit instruction; main and all other branches are
+untouched by this work.
+
+## thruLine_v1 branch — Braid view (post-M7 addition)
+
+Ports ThruLine's Braid view — a read-only "structure chart" (reading order on x,
+story time on y, a cubic-bezier reading path that dashes upward for flashbacks) —
+from `../Timeline`'s `updates_v1` branch, commit `5142a2b` ("M8: Braid view + light
+theme repaint fix"), `js/braid.js`. This was explicitly out of scope for the M1–M7
+spec (`SCENESETTER_V3_TIMELINE_SPEC.md` §14 listed it under "do not build," since
+that spec had a fixed milestone list) — added now as deliberate new scope, same
+"port and adapt from `../Timeline`" pattern as M4–M6.
+
+**Architecture decision:** ThruLine has three mutually-exclusive editor view modes
+(Side-by-Side / Manuscript / Braid); SceneSetter's Timeline view only ever
+corresponds to "Side-by-Side" (chron strip + manuscript ribbon + wires shown
+together, no mode switch existed). Rather than add a 5th top-level Cards/Snake/
+Circle/Timeline view mode, Braid is a **toggle nested inside Timeline view** — a
+small "Strip / Braid" segmented control in the Timeline header swaps the whole
+stage body between the existing layout and the new chart, full-stage.
+
+**Touched files:** `timeline.js` (all render logic, `renderBraid()` +
+`_tlBraidThickenPaths()` + `setTlViewMode()` — lands inside this file rather than
+a separate `braid.js`, matching how chron/wires/manuscript were ported here too),
+`editor.html` (`#tl-view-switch` toggle, `#tl-braid-scroll`/`#tl-braid-svg`),
+`editor-init.js` (toggle + empty-space-click wiring), `styles.css` (Braid section).
+
+### How it works
+- `tlBraidMode` (bool, module-level in `timeline.js`) is ephemeral like
+  `chartMode` — not persisted, resets to Strip on every project open.
+- `renderBraid()` is called unconditionally from `renderTimeline()` (alongside the
+  existing chron/manuscript/wires calls) and no-ops via its own early return when
+  Braid isn't the active sub-mode or `#tl-braid-scroll` reports zero size — same
+  pattern the other render functions already use for elements that may not be
+  visible. `redrawWires()` gets a matching early return when `tlBraidMode` is true,
+  since Strip's wires are meaningless while Braid is showing.
+- Reuses every piece of existing cross-view machinery rather than reinventing it:
+  `slColor()`, `fmtAnchor()`, `highlightScene()`/`clearHighlight()` (generic
+  `[data-scene-id="…"]` selector — needed zero changes for a new element type),
+  `sceneHasWarning()`, flag-mode's `toggleFlagMode()`/`setFlagMode()` (also generic
+  selector — braid nodes pick up `.tl-flag` automatically), and `tlSelectScene()`
+  (`_tlDoSelectScene()` extended to include `.tl-braid-node` in its selection
+  query).
+- Two real adaptations beyond a mechanical port, both because SceneSetter's data
+  model differs from ThruLine's: (1) `manuscriptOrder()` (this app's `msOrder`
+  equivalent) includes offscreen scenes, unlike ThruLine's own `msOrder` which
+  never did — the reading-order x-axis explicitly filters `!s.offscreen` to match
+  ThruLine's visible behavior. (2) ThruLine's "dividers" (a separate act-break
+  concept) don't exist here — sections fill that role already (per spec §14), so
+  the vertical boundary ticks along the chart's top edge are computed by walking
+  the filtered `manuscriptOrder()` for `sectionId` changes (the same pattern
+  `renderManuscriptRibbon()`'s `lastSecKey` loop already uses) and colored with
+  each section's own `.color` instead of ThruLine's single literal accent hex.
+- The flashback-accent color (dark theme `#e0a458` / light theme `#b07a35`,
+  ThruLine's literal per-theme hex, §9.5) picks its variant off the same
+  `TL_DARK_THEMES` set `slColor()` itself already uses, rather than duplicating
+  ThruLine's own light/dark test.
+- Class names follow this app's `tl-`-prefixed convention throughout
+  (`tl-braid-node`, `tl-hi`, `tl-sel`, `tl-flag`, `tl-warn`) rather than ThruLine's
+  bare `braidNode`/`hi`/`sel`/`flag`.
+
+### Verified live (not just read)
+On the Frankenstein sample (27 scenes, 3 storylines, a genuine frame-narrative
+flashback structure) and Pride and Prejudice (18 scenes, 5 sections/acts):
+offscreen scene correctly absent from the x-axis (26/27 nodes) while still present
+in chron/manuscript when toggled back to Strip; a real flashback segment rendered
+dashed in the theme-correct accent color, confirmed by reading the computed
+`stroke` value directly (`#e0a458` in slate, `#e0a458`→ hex match, not just
+eyeballed); node click selects (`.tl-braid-node.tl-sel`, ring in `var(--acc)`,
+confirmed via computed style) and opens the Inspector with the right scene;
+toggling "show scenes" flag mode on a real conflict turned the two involved nodes
+red at full opacity and dimmed the rest to 0.25 (confirmed via computed styles,
+not just visually); switching theme (slate) while Braid was open repainted
+storyline colors and the flashback accent correctly — turns out no explicit
+refresh hook was needed here (unlike ThruLine, which had to fix this): SceneSetter's
+`saveState()` already schedules a debounced `renderTimeline()` via
+`scheduleConflictsRecompute()`, which now includes `renderBraid()` for free; window
+resize reflowed `rowH` with no stale render; toggling back to Strip restored
+chron+manuscript+wires and the axis switch/thread picker exactly, with the prior
+selection preserved; 4 divider ticks rendered at Pride and Prejudice's 4 act
+boundaries, each in that section's own color, confirmed by reading the actual
+computed stroke values. Console clean throughout; no `innerHTML` used anywhere in
+the new code (matches the existing `textContent`/`createElementNS` XSS-safe
+pattern).
+
+### Not yet done
+Not merged to `main` — stays on `thruLine_v1` per the same explicit instruction
+covering the rest of this branch's work.
+
+## thruLine_v1 branch — Chron strip lane-row/offscreen polish
+
+Two small Strip-view fixes reported directly from a screenshot after the Braid
+work above: lane-row borders that appeared to "stop" partway across the row, and
+offscreen scenes' labeling/differentiation.
+
+### Lane-row border vs. wires
+Investigated first as a possible layout bug — `getBoundingClientRect()` on every
+`.tl-lane-row` confirmed each one genuinely spans the full track width (e.g.
+3050px on the Frankenstein sample), so nothing was actually being clipped. The
+apparent "stop" was an optical illusion: the row's `border-top: 2px solid
+var(--lane-c)` is the same kind of thin colored stroke as the wire curves that
+cross through the same area, so wherever several wires happened to overlap the
+border, the eye read it as the border disappearing — which is also exactly the
+user's separate complaint that the borders "look too much like the wires."
+Fixed by replacing the flat border with a soft two-layer gradient
+(`background-image`, `--lane-c` fading to transparent over 18px from both the
+top and bottom edge into the row's own tint) — an area fill has no crisp edge to
+confuse with a wire's stroke, so the same change addressed both complaints.
+`timeline.js`/`renderChronStrip()` was untouched; this was CSS-only
+(`.tl-lane-row` in `styles.css`).
+
+### Offscreen tile differentiation
+- Chron cards (`.tl-scene`) never actually got the `.tl-offscreen` class despite
+  CSS already having a (dead) rule for it — offscreen was only signaled by
+  appending `' · off'` to the date/meta line. Manuscript cards (`.tl-ms-card`)
+  had a real `.tl-off-chip` div, but its text was the bare word `off`.
+- Both card types now get `.tl-offscreen` (chron cards newly, ribbon cards as
+  before) plus a `.tl-off-chip` reading **"Offscreen"** (not `off`/`OFFSCREEN`
+  — dropped the chip's `text-transform:uppercase` so the label reads exactly as
+  written); the chron card's old inline `' · off'` append is gone.
+- Both card types get dotted left/right side borders
+  (`border-left/right:2px dotted var(--o0)`) so an offscreen tile is
+  recognizable independent of its chip text.
+
+### Verified live
+On the real offscreen scene in the Frankenstein sample ("A Pursuit Across the
+World"): both its chron card and its manuscript card show the dotted side
+borders and the "Offscreen" chip (confirmed via computed styles, not just
+visually); each `.tl-lane-row`'s `background-image` confirmed present and keyed
+to that lane's own color. Console clean.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Timeline Inspector panel polish (fields, dirty-state buttons, click-off guard, delete, collapsible)
+
+A round of usability fixes for the Timeline Inspector, all user-requested directly
+against the running app rather than a spec.
+
+**Touched files:** `editor.html` (field ids, `#tl-panel` restructured for
+collapse, new delete-scene footer), `styles.css` (field hiding, caret size,
+disabled-button styling, panel/strip CSS, delete-button styling),
+`timeline.js` (footer/button-state helpers, click-off-panel discard guard,
+close-mode button reset), `editor-init.js` (new button wiring, delegated
+dirty-check listener), `editor.js` (`deleteScene()` extended for Timeline).
+
+### What changed
+- **Hidden fields**: Themes, Misc Items, Word Count, POV, and Notes are hidden
+  in the Inspector's Edit Scene form via `body.tl-mode #ed-*-field{display:none}`
+  — the fields themselves (and their ids) are untouched, so board's own Edit
+  Scene tab (the same shared `#form-edit` node) still shows all of them
+  normally; only Timeline's CSS scope hides them.
+- **Collapsible-group carets**: `.ffg-car` (the ▾ beside "Timing"/"Reveals")
+  went from 9px to 11px, matching `.ffg-hdr`'s own font-size exactly.
+- **Cancel/Save Changes dim when clean**: both buttons get a real `disabled`
+  attribute, toggled by a new `refreshTlSaveCancelState()` (guarded on
+  `timelineMode`, so it can never touch board's identical-id buttons) that
+  reads the existing `isEditFormDirty()`. A delegated `input`/`change`/`click`
+  listener on `#form-edit` (in `editor-init.js`) keeps it live against every
+  field, checkbox-dropdown toggle, and the Anchor "Clear" button; leaving
+  Timeline mode explicitly clears both buttons' `disabled` attribute so it can
+  never leak into the board's own form.
+- **Freeze on scroll**: turned out to already exist — `.cp-form-hdr` was
+  already `flex-shrink:0` above the independently-scrolling `.cp-form-fields`
+  (both inside and outside Timeline), confirmed by scripting a scroll and
+  checking the header's `getBoundingClientRect()` didn't move. No change
+  needed.
+- **Click-off-panel discard guard**: mirrors the board view's global "cancel
+  edit on click outside `#cp`" `mousedown` listener, previously Timeline-only
+  covered the empty-space clicks on the chron/manuscript/braid scroll
+  containers (each already routed through `tlSelectScene()`'s
+  `runWithDiscardGuard`). The new listener catches everything else outside
+  `#tl-panel` — header controls, zoom, tabs, blank stage chrome — that had no
+  guard at all before. It explicitly skips scene cards and the three scroll
+  containers so it doesn't pre-empt their own more-specific reselect action
+  with a generic "just deselect."
+- **Delete Scene**: a new footer button (visible only on the Inspector tab
+  with a scene open) calls the existing `deleteScene()` — unchanged rather than
+  duplicated, since it was already schema-v3-aware (chronOrder/marker/
+  constraint cleanup) and already shows a native `confirm()` "certainty alert."
+  `deleteScene()` gained one small Timeline-specific addition, the same idiom
+  M5's undo/redo fix used: call `renderTimeline()` and reset the Inspector
+  selection (`_tlDoSelectScene(null,{})`) when `timelineMode` is active, since
+  `renderBoard()` alone doesn't touch Timeline's separate render tree and would
+  otherwise leave a stale, orphaned form open on a just-deleted scene.
+- **Collapsible panel**: `#tl-panel` now uses the same `.panel`/`.p-strip`/
+  `.p-content` structure as the Library/Sections/Scene panels, reusing the
+  existing generic `togglePanel()`. Required switching `#tl-panel` from
+  `flex:0 0 300px` to `width:300px;flex-shrink:0`, since a flex-basis wins over
+  `width` in the sizing algorithm and would have silently blocked the shared
+  `.panel.collapsed{width:28px!important}` rule from taking effect. The
+  collapsed strip's divider was flipped to `border-left` (from the other
+  panels' `border-right`), since this panel sits at the right edge of the
+  window instead of the left.
+
+### Verified live
+On the Frankenstein sample: confirmed via computed styles that the five fields
+are actually `display:none` in Timeline but unaffected on board; confirmed
+Cancel/Save `disabled` is `true` on a freshly-opened clean scene and flips to
+`false` the instant a field changes (dispatched a real `input` event, not just
+inspected code); clicking a header control (the zoom slider) while dirty opened
+the same discard-confirm dialog board view uses, and clicking a *different*
+scene card while dirty did too — confirming Discard on the latter correctly
+switched to the newly-clicked card rather than just deselecting; deleted a real
+scene (patched `window.confirm` to simulate acceptance, since this environment
+auto-suppresses native dialogs as `false` — confirmed that suppression itself
+is what made the *first*, unpatched click correctly do nothing) and confirmed
+the scene count dropped, the chron/manuscript views both dropped its cards, and
+the Inspector reset to the empty state; collapsed and re-expanded the panel via
+both the collapse button and the strip button, confirming the stage reclaims
+the freed width and the panel returns to exactly 300px. Console clean
+throughout except the environment's own expected native-dialog-suppression
+notice.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Strip/Braid/Thread polish round
+
+Another round of direct, user-driven fixes across Strip view, Braid view, the
+Timeline header, and the character thread feature.
+
+**Touched files:** `editor.html`, `styles.css`, `timeline.js`, `editor-init.js`.
+
+### Strip view (Inspector panel)
+- `.ffg-car` (the Timing/Reveals ▾) went from 11px to 16px — matching the
+  header's own font-size still read visually smaller than the letters, since
+  the glyph itself doesn't fill its em box the way text does.
+- The Inspector panel's collapse button (◀) moved to the *left* of the
+  "Inspector" label (previously matched `#cp`'s own convention of trailing
+  the tabs; this panel diverges on purpose per direct request).
+- Inspector/Conflicts now reuse the app's real `.tabs`/`.tab` classes (the
+  same folder-tab look as New Scene/Edit Scene) instead of a bespoke flat
+  underline style — the old `.tl-panel-tabs`/`.tl-panel-tab` CSS rules were
+  removed outright (superseded), keeping only the ids for JS state.
+
+### Braid view
+- Removed the per-column "Sc n" tick row under "READING ORDER →" — each node
+  already shows its own number, so the tick row was pure duplication.
+- The Y-axis label changed from "STORY TIME ↓" to "CHRONOLOGY", with the ↓
+  pulled out of the rotated text run into its own unrotated `<text>` element
+  positioned just past the label's own end — the arrow previously rotated
+  along with the string and ended up pointing sideways instead of down.
+  Placement math: `getBBox()` on the (still-attached) rotated label reads its
+  *pre-rotation* horizontal width; halving that gives the offset from `leftY`
+  to the label's rotated bottom edge, which a `rotate(-90 …)` puts at the
+  string's first character (confirmed both by the rotation math and by
+  reading the rendered element's actual coordinates live).
+- Era-marker labels ("1793 — GENEVA & INGOLSTADT" etc.) moved out of the SVG
+  into a new HTML overlay (`#tl-braid-markers-hud`, absolutely-positioned
+  divs) so they can stay pinned to the visible left edge during horizontal
+  scroll (`tlBraidUpdateMarkerHud()`, wired to the scroll container's own
+  `scroll` event) — the dashed boundary *line* stays in the SVG and scrolls
+  normally, only the label needed to stay legible. A plain CSS
+  `position:sticky` wasn't reliable here since each label's vertical position
+  comes from an individually-set `top`, not normal document flow, so this
+  recomputes the offset directly against `scrollLeft` instead.
+
+### Timeline header
+Removed the "+ Scene" button entirely — "Create → New Scene" (menu item and
+Alt+N) already detects `timelineMode` and calls the exact same `tlCreateScene()`
+the button called (`menuNewScene()`, `editor.js`), so nothing was lost; verified
+scene creation still works via the menu.
+
+### Character thread trace
+- The trace line now draws with a light dash-dot-dash pattern
+  (`stroke-dasharray:"7 3 1.5 3"`, thinner stroke, `.7` opacity) instead of a
+  bold solid line, and `#tl-thread-svg`'s z-index moved above `.tl-scene`'s
+  (4 vs. 2) so the line now floats over the cards rather than hiding behind
+  them — the lighter stroke keeps a floated line from blocking card content.
+- `#tl-thread-sel` gets a glow (`box-shadow`, accent color) whenever a
+  character is actively traced, toggled by a new `updateTlThreadSelActive()`
+  called from both `renderThreadPicker()` (render pipeline) and
+  `setTlThread()` (immediate, on the user's own selection change).
+
+### Verified live
+On the Frankenstein sample: caret/tab/collapse-button placement confirmed via
+computed styles and screenshots at both normal and narrow window widths;
+Braid's "CHRONOLOGY ↓" confirmed via each text element's actual `x`/`y`/
+`transform` attributes (arrow unrotated, positioned past the rotated label's
+real end); scrolled the Braid chart 400px right and confirmed the era-marker
+labels stayed pinned to the left edge while the dashed lines and nodes scrolled
+normally; confirmed no `#tl-add-scene-btn` remains and that Create → New Scene
+still creates a scene correctly (27 → 28, undone back to 27); selected a
+character thread and confirmed via computed styles the trace path's dasharray/
+opacity/z-index and the selector's glow `box-shadow`, then cleared the
+selection and confirmed the glow class comes off. Console clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Braid legend/label fixes, thread line revision, Strip row captions, auto-fit zoom
+
+Another direct-feedback round, the biggest piece being a redesign of the
+Timeline zoom slider's semantics.
+
+**Touched files:** `editor.html`, `styles.css`, `timeline.js`, `editor-init.js`,
+`state.js`, `projects.js`, `frankenstein.json`.
+
+### Braid fixes
+- The era-marker HUD (previous round's fix) was pinned at `scrollLeft+12` —
+  close enough to the rotated "CHRONOLOGY" axis label (which sits at x≈18) to
+  land directly on top of it whenever a marker fell near vertical center at
+  `scrollLeft:0`. Moved to `scrollLeft + BRAID_LEFT + 4` (where the dashed
+  marker line itself starts, past the axis label's own margin) — same
+  frozen-on-scroll behavior, no more collision.
+- The ↓ arrow (added last round, below "CHRONOLOGY") wasn't visually centered
+  — the unicode glyph's own side bearings aren't symmetric in every font.
+  Replaced with a hand-drawn stem + triangle (`<line>` + `<polygon>`), both
+  built from `18±4` around the same x=18 the label itself is centered on —
+  confirmed via the actual rendered coordinates, not just visually.
+- Added `#tl-braid-legend`: a swatch + name per storyline, always visible
+  above the scrollable chart (not inside it, so it can't scroll away). Reuses
+  the Flow Chart's own `.chart-legend-item`/`-swatch`/`-name` classes rather
+  than a new bespoke style.
+
+### Strip view: row captions
+Added two centered captions inside `#tl-wires-zone` (already `position:
+relative`, previously empty): "Chronology — when it happened" pinned to its
+top edge (just below the storyline lanes) and "Narrative — what the reader
+gets" pinned to its bottom edge (just above the manuscript ribbon). Both
+`pointer-events:none`, hidden automatically along with the rest of Strip's
+chrome while Braid is active (`#tl-wires-zone` already display:none there).
+
+### Thread trace line — revised
+Last round changed this to a dash-dot-dash line; this round replaces that
+with the user's refined direction: solid, thicker (`stroke-width` 1.6→5), and
+more translucent (`opacity` .7→.4) so card text stays readable underneath it;
+the per-scene dot grew from r=3.5→7 and also dropped its solid border for the
+same translucent fill (`opacity` .4).
+
+### Timeline zoom — auto-fit at the low end
+The zoom slider used to be a direct 70-200px/scene control. It's now a 0-100
+*position* (`S.timelinePrefs.zoomPos`, replacing the old persisted
+`pxPerScene` field in `state.js`/`projects.js`/`frankenstein.json`) that maps
+piecewise: **0** = fit every scene into the chron strip's current width with
+no overlap and no horizontal scroll, recomputed live against the real
+container width and scene count (`tlZoomFitPx()`) rather than a frozen
+number, so it stays fit-to-window across resizes and scene add/delete;
+**50** (the new midpoint) = the feature's original fixed minimum, 70px/scene;
+**100** = the original fixed maximum, 200px/scene — so the slider's upper half
+reproduces the exact density range that existed before this change.
+`tlCurrentPxPerScene()` is the single function every layout call site now
+reads through (`chronTrackWidth()`, the chron strip's own card width, the
+manuscript ribbon's card width) instead of reading `S.timelinePrefs.pxPerScene`
+directly.
+- Chron strip cards were a flat 96px regardless of zoom (only the *pitch*
+  between them changed) — at the new auto-fit low end that let fixed-width
+  cards overlap even once their pitch had shrunk well below 96px. Card width
+  is now `Math.max(28, Math.min(96, pxPerScene-10))` — unchanged (96px) for
+  the whole pre-existing 70-200 range, only shrinking further once the slider
+  is pushed into new auto-fit territory below the midpoint.
+- The manuscript ribbon's card width had a hard 70px floor (`Math.max(70,
+  pxPerScene-14)`) that would have kept cards wider than their own pitch under
+  auto-fit for the same reason; floor lowered to 28px.
+- `tlZoomFitPx()` itself is floored at 38px (`TL_ZOOM_MIN_CARD_PX+10`) — past
+  the point where even the smallest readable card can't fit everyone in the
+  current width, `chronTrackWidth()`'s own `Math.max(containerW, …)` takes
+  over and allows horizontal scroll for the excess, rather than shrinking
+  cards into unreadable overlap just to avoid a scrollbar. Confirmed live:
+  at a narrow window (27-scene Frankenstein sample, ~850px available) the
+  floor kept the track wider than the viewport (scroll still needed); at a
+  wide window (1600px) the track resolved to *exactly* the container's
+  width with zero scroll and zero overlap.
+- Double-clicking the slider knob resets to 50 (today's typical density) —
+  wired as a plain `dblclick` listener, confirmed live.
+- `state.js`/`projects.js` updated in every place `timelinePrefs` is
+  seeded, loaded/validated (both the tolerant `loadState()` path and the
+  strict `validateV3Import()` used by JSON import), and default-constructed;
+  `frankenstein.json`'s stored prefs updated from `pxPerScene` to `zoomPos`
+  directly rather than left to fall back to the default on next load.
+  Confirmed: a re-exported-shaped project with the new field passes
+  `validateV3Import()` cleanly; one with the old `pxPerScene` field is
+  rejected with a clear, specific message (expected — a genuine schema
+  change, not a bug, and this branch has never been merged/exported to real
+  users yet).
+
+### Verified live
+On the Frankenstein sample: read the actual rendered arrow/stem coordinates
+to confirm true geometric centering (not just eyeballing); confirmed the
+marker HUD no longer overlaps the axis label at `scrollLeft:0`; confirmed the
+Braid legend lists all three storylines with their real colors; confirmed
+both row captions render and read correctly; confirmed the thread line's
+actual `stroke-width`/`opacity`/`stroke-dasharray` (now `null`) and circle
+`r`/`opacity` via computed attributes; confirmed `zoomPos` round-trips through
+`setTlZoom()`/`tlZoomSliderToPx()` correctly (50→70px exactly, matching the
+old fixed minimum); confirmed auto-fit (`zoomPos:0`) genuinely eliminates
+horizontal scroll once the window is wide enough for the scene count, and
+gracefully falls back to a (still non-overlapping) scroll when it isn't.
+Console clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Zoom slider tick, freeze fix, panel arrows, Braid arrow/legend/zoom
+
+Follow-up fixes from live feedback on the previous round, including two real
+bugs (the freeze not actually engaging, and the arrow-centering fix from last
+round still being off) rather than just new polish.
+
+**Touched files:** `editor.html`, `styles.css`, `timeline.js`.
+
+### Strip view
+- **Cancel/Save Changes + Title weren't actually frozen.** The prior round's
+  claim that `.cp-form-hdr{flex-shrink:0}` was sufficient turned out to be a
+  false negative — that test's form was short enough that nothing ever
+  overflowed *either* container, so it never exercised the real failure mode.
+  The actual bug: `#tl-inspector-body` had no bounded height of its own, so
+  `#form-edit` (a plain block child) just grew to fit its full content, never
+  giving `.cp-form-fields` anything to overflow *inside itself* — instead
+  `#tl-inspector-body`'s own `overflow-y:auto` (from the shared
+  `.tl-panel-body` rule) was the one actually engaging, scrolling the whole
+  form, header included. Fixed by making `#tl-inspector-body` itself
+  `display:flex;flex-direction:column;overflow:hidden` and giving
+  `#form-edit` (`.p-body`) `flex:1;min-height:0` so it's bounded to exactly
+  the available height — confirmed live by comparing `scrollHeight`/
+  `clientHeight` on both containers before and after, and by scrolling 300px
+  and checking the header's `getBoundingClientRect()` truly doesn't move.
+- **Title field frozen too** — `position:sticky;top:0` on the Edit form's
+  first `.ff` (Title), scoped to `#tl-inspector-body` only, so the board's own
+  Scene panel (same shared `#form-edit` node) is untouched.
+- **Zoom slider center tick** — a small `.tl-zoom-tick` mark at the wrapper's
+  horizontal midpoint, marking the slider's 50 position (the feature's
+  original fixed density) visually.
+- **Thread line/dot**: color changed from the accent to a literal neutral
+  grey (`#888c93`, deliberately not a theme var — the ask was for *neutral*,
+  not theme-tinted), and opacity dropped further (.4→.32) for "slightly more
+  translucent."
+- **Panel arrow direction was backwards.** `#tl-panel` sits at the *right*
+  edge of the window, but its collapse/expand triangles used the Library/
+  Sections panels' own left-edge convention verbatim (▶ to expand, ◀ to
+  collapse) — correct for a left-mounted panel, backwards for a right-mounted
+  one. Swapped: ◀ now expands (points into the workspace), ▶ now collapses
+  (points toward the panel's own edge).
+
+### Braid view
+- **The arrow was still off-center after last round's fix** — the previous
+  version *computed* an assumed center (x=18, the rotation pivot) rather than
+  measuring the actual rendered result, and that assumption was wrong: for
+  rotated text, the `x` attribute positions the **baseline**, not the visual
+  center, and glyphs sit asymmetrically around a baseline — confirmed live by
+  reading the label's real `getBoundingClientRect()` center (14px) against
+  the assumed pivot (18px), a 4px gap that exactly matches what was visible
+  in the screenshot. Fixed by measuring the label's actual rendered box
+  (`getBoundingClientRect()`, post-rotation, converted into the SVG's own
+  coordinate space via the svg element's own rect) instead of assuming
+  geometry, and centering the hand-drawn arrow on that measured value —
+  verified the arrow's own coordinates now match the label's measured center
+  exactly, not just visually.
+- **Legend swatches are now rings, not bars** — a new `.tl-braid-legend-swatch`
+  (a circle with a colored border and `--cbg` fill) replacing the reused
+  Flow-Chart bar swatch, matching the chart's own node styling instead.
+- **Zoom now actually does something in Braid** — previously the slider was
+  visible but inert there (Braid's column spacing was a hardcoded constant,
+  93px, never read from the zoom preference at all). Added a Braid-specific
+  mirror of the Strip zoom mapping (`tlBraidZoomFitDx()`/`tlBraidColDx()`,
+  same shared `S.timelinePrefs.zoomPos`, same 0=fit/50=original-default/
+  100=max shape, just against Braid's own container width and column count).
+  `braidColX()` now reads a module-level `_braidColDx` recomputed once per
+  `renderBraid()` call rather than a fixed constant, so every call site
+  (gridlines, nodes, paths, dividers, label-flip check) picks it up with no
+  further changes needed. **Caught and fixed one bug while verifying this**:
+  the initial fit formula had a stray `+ BRAID_ZOOM_MID_DX` term that made
+  `zoomPos:0` overshoot the container width instead of matching it exactly
+  (1593px content in a 1500px viewport) — found by directly comparing
+  `#tl-braid-scroll`'s `scrollWidth` against its `clientWidth`, fixed by
+  aligning the fit formula exactly with `renderBraid()`'s own `contentW`
+  calculation, and reverified: `scrollWidth === clientWidth` exactly at
+  `zoomPos:0` once the window has room, same graceful degrade-to-scroll as
+  Strip when it doesn't.
+
+### Verified live
+On the Frankenstein sample, after a genuine page reload (not just a
+re-render) to rule out stale-script false positives: all of the above
+re-confirmed via computed styles, actual element coordinates, and
+scrollWidth/clientWidth comparisons rather than visual impression alone.
+Console clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Thread color, zoom-tick contrast, Title/Summary spacing, Inspector menu item
+
+**Touched files:** `editor.html`, `styles.css`, `timeline.js`, `editor.js`,
+`editor-init.js`.
+
+### Strip view
+- Thread line/dot color changed from neutral grey to a literal very light red
+  (`#e57373`), opacity unchanged (.32, still translucent).
+- Zoom slider tick was hard to see, especially on dark themes — went from 1px/
+  `var(--o0)` to 2px/`var(--tx)` (the theme's own high-contrast ink color) plus
+  a 1px `var(--bg0)` halo, so it reads clearly against the native track's own
+  grey on both light and dark themes.
+- **Title field had an unintended white box.** Last round's sticky-Title fix
+  gave the sticky element `background:var(--cbg)` (the card/input tone,
+  noticeably lighter than the panel) so scrolled content couldn't peek through
+  underneath it — that choice is what created the "unnecessary white bg."
+  Switched to `var(--bg1)` (the panel's own ambient tone) so it blends in
+  seamlessly; confirmed via computed `backgroundColor` that it now matches
+  `#tl-panel`'s own background exactly. Also dropped the padding-top/negative-
+  margin trick from that fix (unneeded — `.cp-form-fields` already has zero
+  top padding, so there was nothing above the sticky element left to cover).
+- **Summary now has breathing room and a divider above it** —
+  `#ed-summary-field` (a new id on that field's wrapper, Timeline-scoped) gets
+  `border-top` + `margin-top`/`padding-top`, matching the same divider
+  convention the Timing/Reveals `.ffg` groups already use.
+
+### Timeline view
+Added "Show/Hide Inspector Panel" to the View menu, right after "Show/Hide
+Timeline View" (Inspector is Timeline's own panel, so it's grouped with that
+rather than the board's Library/Sections/Scene panel toggles above it — whose
+inverse relationship it mirrors exactly: `updateMenuForMode()` now disables
+this new item whenever `timelineMode` is false, the same way it already
+disables the board panel toggles whenever `timelineMode` is true).
+`updateTlPanelMenuState()` flips its label between "Show"/"Hide" same as
+`updatePanelMenuStates()` does for the others, called both after the toggle
+and whenever the View menu opens. Reuses the existing `togglePanel('tl-panel')`
+— no new collapse mechanism needed.
+
+### Verified live
+On the Frankenstein sample: thread line's actual `stroke`/`opacity` attributes
+confirmed; zoom tick's computed background/box-shadow confirmed on both ivory
+and slate; Title's computed background confirmed to exactly match the panel's
+own (no more visible box); Summary's `border-top` confirmed present; the new
+menu item toggles the panel, updates its own label correctly, and is properly
+enabled only in Timeline mode / disabled in board mode (checked both
+directions). Console clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — View-toggle unification (Loom/Path), View menu overhaul, Conflicts-panel filtering, section dividers
+
+The largest round yet: unifies the Cards/Snake/Circle/Timeline view switch
+that used to live only on the board into one control shared by all three
+views, renames Strip/Braid to **Loom**/**Path** with new icons as part of
+that same control, reworks the View menu's mode section into direct
+switch-to items, makes the Conflicts panel follow scene selection, and adds
+real vertical section dividers to Path (Braid).
+
+**Touched files:** `editor.html`, `styles.css`, `timeline.js`, `charts.js`,
+`editor.js`, `editor-init.js`, `conflicts.js`.
+
+### View-toggle unification
+`#view-toggle` (Cards/Flow/Timeline, previously reparented only between
+`#sbhdr` and `#chart-toolbar` via `openChartView()`/`closeChartView()`) now
+also reparents into `#tl-chron-hdr` on `_openTimelineViewImpl()` and back to
+`#sbhdr` on `_closeTimelineViewImpl()` — the exact same move-not-clone
+pattern Flow already used, so it keeps its listeners/state intact and now
+appears atop all three views identically, not just Cards and Flow.
+- Timeline's own item now spans two icon buttons, like Flow's Snake/Circle:
+  **Loom** (`#tl-view-loom`, replacing the old single Timeline icon and the
+  in-header "Strip" button) and **Path** (`#tl-view-path`, replacing
+  "Braid"). New icons: Loom is two crossed curved strands plus a straight
+  vertical (a woven-wires read); Path is a horizontal sine-wave squiggle
+  with four evenly-spaced beads sitting on it.
+- The old `#tl-view-switch` (Strip/Braid buttons inside `#tl-chron-hdr`) is
+  gone entirely — superseded by the shared control. `setTlViewFromToggle()`
+  is the new entry point Loom/Path call: opens Timeline first (guarded, via
+  `_openTimelineViewImpl`) if it isn't already active, then switches the
+  sub-view; if Timeline's already open, it just switches. `updateViewToggleUI()`
+  (the single source of truth for all the toggle's on/off states) grew two
+  more lines for Loom/Path instead of the old bare Timeline icon.
+
+### View menu overhaul
+- "Hide Inspector Panel" moved from the bottom of the menu (grouped with
+  Chart/Timeline toggles) up to directly below "Hide Scene Panel" — now
+  grouped with the other panel toggles it belongs with, still above the
+  "Hide All Panels" divider.
+- The old two-item "Show Scene Flow Chart" / "Show Timeline View" toggle
+  pair (dynamic Show/Hide text) is now three stacked, always-labeled items —
+  **Card Board**, **Scene Flow Chart**, **Timeline** — each a direct
+  switch-to action rather than a toggle, with the currently-active one
+  disabled/greyed (mirroring how the board's own panel-toggle items already
+  grey out during Timeline mode). `updateViewMenuActiveStates()` (new,
+  timeline.js) is the single source of truth, called from `openChartView()`/
+  `closeChartView()`, `_openTimelineViewImpl()`/`_closeTimelineViewImpl()`,
+  and whenever the View menu opens. `setChartMenuLabel()`/
+  `setTimelineMenuLabel()` (the old dynamic-label functions) are gone,
+  superseded by this.
+
+### Conflicts panel follows scene selection
+Selecting a scene now tees up the Conflicts tab with just that scene's own
+conflicts, ready the moment the user clicks over to it — `renderConflictsPanel()`
+filters `getActiveConflicts()`/`getDismissedConflicts()` by
+`c.sceneIds.includes(tlSelectedId)` unless showing everything. "Showing
+everything" is true when nothing's selected, or when the user explicitly
+clicks the red "Conflicts (N)" badge (`tlShowAllConflicts()`, a new function
+that sets `_tlConflictsFilterOverride` before switching to the tab) — any
+subsequent selection (including deselecting) clears that override via one
+new line in `_tlDoSelectScene()`, so the panel goes back to following
+whatever's selected. An empty filtered result reads "No conflicts involve
+this scene." instead of the generic "No conflicts found."
+
+### Path (Braid) view: vertical section dividers
+The existing short top-edge section-boundary ticks (added earlier this
+branch) are now full-height dashed vertical lines spanning the whole chart
+(`y1:42` to `contentH-16`), still colored per-section and still appended
+before the path/node layers so they read as background structure.
+
+### Narrative-row section label moved below
+`.tl-sep-label` (the section name shown on the manuscript ribbon's existing
+dividers) moved from `top:-15px` to `bottom:-15px`; `#tl-ms-row`'s bottom
+padding grew from 8px to 22px to give it room.
+
+### Other fixes from this round
+- Thread selector glow (`.tl-thread-active`) now uses the trace line's own
+  literal color (`#e57373`) instead of the accent, with a wider/stronger
+  glow.
+- Zoom slider now has a visible center tick (previous round); this round
+  fixes the actually-reported issues around it separately (see the two
+  entries above this one).
+- New `--lbl` CSS custom property per theme — equal to `--o0` on the three
+  light themes, a genuinely brighter literal color on slate/ocean
+  specifically — applied to `.tl-row-caption`, `.tl-braid-marker-label`,
+  `.tl-marker-label`, `.tl-gap-label`, and the Braid axis/arrow SVG labels
+  (`timeline.js`). Chrome-wide `--o0` usage elsewhere in the app (buttons,
+  hints, placeholders) was deliberately left alone — this was scoped to the
+  Timeline/Braid label text this conversation had been building.
+
+### Verified live
+On both the Frankenstein (no sections) and Pride and Prejudice (5 sections)
+samples: clicked Loom/Path/Cards/Snake from every other view to confirm the
+shared toggle reparents and switches correctly in both directions; opened
+the View menu and confirmed Inspector's new position, and that Card
+Board/Scene Flow Chart/Timeline show the correct one disabled in each of the
+three modes; selected an uninvolved scene and confirmed the Conflicts tab
+read "No conflicts involve this scene," selected the actually-involved scene
+and confirmed the real conflict appeared, then clicked the badge with the
+uninvolved scene still selected and confirmed it forced "show all," then
+selected a new scene and confirmed the override cleared — all via direct
+state/DOM inspection, not just visual read; confirmed Path's dividers are
+real full-height lines (`y1`/`y2` read out at the chart's actual top/bottom)
+in each section's own color; confirmed the Narrative-row label's computed
+`bottom`/`top` moved as intended; confirmed `--lbl` reads a genuinely
+different, brighter value than `--o0` specifically on slate; confirmed the
+thread selector's glow color matches the trace line's literal hex exactly.
+Console clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Loom scroll affordances, move-confirmation, contrast fixes, icon redraw
+
+**Touched files:** `editor.html`, `styles.css`, `timeline.js`, `editor.js`,
+`editor-init.js`.
+
+### Contrast/sizing fixes
+- Storyline lane label's scene count (".tl-lane-label i") was `var(--o0)` at
+  9px/400 weight — hard to read in both light and dark themes, since --o0 is
+  meant for faint chrome, not something worth reading. Switched to `var(--sub)`
+  (already theme-calibrated for readable secondary text) at 9.5px/600 weight.
+- "Also part of" dots (`.tl-conv-dot`) grew 6px→9px and gained a dark
+  `box-shadow` ring on top of the existing `--cbg` border — the border alone
+  wasn't enough separation from a light theme's own light card background.
+
+### Title/Summary divider — actually frozen now
+The divider added last round lived on Summary's own `border-top`, inside the
+*scrolling* region — it scrolled away with Summary, leaving the frozen Title
+area with no visible boundary a moment after any scroll. Moved to the sticky
+Title element's own `border-bottom` instead, confirmed via
+`getBoundingClientRect()` before/after a 200px scroll that it doesn't move.
+
+### Loom view: scroll affordances
+- Trackpad two-finger swipes past a row's horizontal scroll limit were
+  triggering the browser's own back/forward navigation gesture —
+  `overscroll-behavior-x: contain` added to `#tl-chron-scroll`, `#tl-ms-scroll`,
+  and `#tl-braid-scroll` stops the scroll from "escaping" the container.
+- Native scrollbars hidden on the chron and manuscript rows
+  (`scrollbar-width:none` + `::-webkit-scrollbar{display:none}`), replaced
+  with small bubble scroll-arrow buttons (`.tl-scroll-arrow`) for trackpad-less
+  users — one pair per row, absolutely positioned over a new wrapper element
+  (`#tl-chron-scroll-wrap`/`#tl-ms-scroll-wrap`, since buttons living *inside*
+  the scrolling element itself would scroll away with its content), shown only
+  on whichever side there's actually more to see
+  (`tlUpdateScrollArrows()`/`_tlUpdateScrollArrowPair()`, called after every
+  render and on scroll). Verified the visibility logic directly (both arrows
+  present in the middle of a scrollable row, only the trailing one at either
+  end) — real click-driven `behavior:'smooth'` scrolling doesn't animate in
+  this preview tool specifically (a documented environment quirk elsewhere in
+  this project too), so the actual scroll-by-page math was verified with a
+  temporary `behavior:'auto'` override instead, confirming the right button
+  moves `scrollLeft` by the correct page amount.
+
+### Move confirmation (chron drag)
+Dragging a scene in Loom (horizontal reorder or vertical re-lane) used to
+commit immediately on drop. `_tlDragFinish()` now stops short of committing —
+it stores the computed change (`_tlPendingMove`) and opens a new
+`#tl-move-cfm-modal` ("Save this move — changing '<title>' (when it
+happens/which storyline it belongs to)?") instead. **Save**
+(`tlConfirmMoveSave()`) applies exactly what `_tlDragFinish()` used to do
+inline (`pushHistory`, mutate, `recordDataEdit`, `saveState`, `renderTimeline`).
+**Discard** (`tlConfirmMoveDiscard()`) does nothing — the real card was never
+actually moved during the drag (only a ghost tracked the cursor), so simply
+not applying the pending change leaves `S` and the render exactly as they
+were. Wired into the shared modal machinery: added to `MODAL_IDS` (Alt-shortcut
+gating) and `ESCAPE_ACTIONS` (Escape discards, same as clicking the backdrop).
+Verified directly: simulated a drag-finish, confirmed `S.chronOrder`
+unchanged while the modal is open, confirmed Discard leaves it unchanged, and
+confirmed Save commits exactly the expected reorder (undoable via the normal
+undo stack).
+
+### Icon redraw (Loom/Path)
+Simplified per a hand sketch: Loom is now just two crossing curved strands (no
+third straight line), Path is a jagged zigzag with a bead at each vertex
+(replacing the smooth sine-wave/bead version from the previous round).
+
+### Verified live
+On the Frankenstein sample: computed styles for the lane-count color/weight
+and conv-dot size/shadow; Title/Summary divider position and freeze behavior;
+`overscroll-behavior-x`/`scrollbar-width` computed values; scroll-arrow
+visibility state at both a scrolled-to-start and scrolled-to-middle position;
+the full move-confirm flow (open → discard → re-open → save → undo). Console
+clean throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v1 branch — Loom/Path direct-feedback round: selection, drag, Conflicts panel, True-scale fixes
+
+Two back-to-back rounds of direct, user-driven fixes across Loom/Path, the
+Conflicts panel, and Chronology True scale — the largest single batch since
+the view-toggle unification. **Touched files:** `timeline.js` (bulk of the
+logic), `conflicts.js` (panel rewrite), `editor.html` (icons, toolbar
+markup), `styles.css` (throughout).
+
+### Selection & Inspector
+- Clicking a Loom card or Path/Braid node now expands the Inspector panel if
+  it's currently collapsed (`_tlDoSelectScene` calls `togglePanel('tl-panel')`
+  when needed) — previously the selection happened but stayed hidden behind
+  the collapsed strip.
+- Clicking off a selected card now actually deselects everywhere, including
+  empty space *inside* a chron lane row — the click handler on `#tl-track`
+  used to require `e.target === track` exactly, which a lane-row's own
+  background (a full-row absolutely-positioned div) never satisfies since
+  it's a distinct element. Now any bubbled click (cards call
+  `stopPropagation()` on their own) deselects.
+- Selected-card styling now reuses hover's exact treatment (same
+  `var(--c, var(--acc))` color source) at a heavier ring (3px vs 1px) instead
+  of a hardcoded `var(--acc)` that read as a different color; `redrawWires()`
+  gives the selected scene's wire the same full-opacity/heavy-width
+  treatment as a hovered one, persisting even while a *different* card is
+  being hovered.
+
+### Storyline palette
+Index 2 (purple) was `#a78bfa`/`#7b5ea7` — too close to index 0's blue at
+small sizes (dots, thin wires). Shifted toward magenta (hue ~285) for real
+separation.
+
+### Narrative (manuscript) ribbon drag-reorder
+Ribbon cards are now draggable to reorder, mirroring the chron strip's drag
+(candidate/threshold-4px/active two-phase pattern) but simpler — one row, no
+lanes. Reordering directly splices `S.scenes` (matching how
+`manuscriptOrder()`/`buildSceneNumMap()` derive reading order from that
+array's own storage order grouped by `sectionId` — the same thing
+`editor.js`'s board drag-reorder already relies on), reassigns the dropped
+scene's `sectionId` to match its new neighbor's, and reuses the same
+move-confirmation modal as chron drag (`_tlPendingMove` generalized to an
+`{label, apply}` shape so both drag flavors and the True-scale date-drag
+below share one commit path). Scene numbers update everywhere on save.
+
+### Drag text-selection bug
+`.tl-scene`/`.tl-ms-card` lacked `user-select:none` (unlike the board's
+`.sc`), so dragging a card in Loom dragged a browser text-selection across
+neighboring card titles at the same time. Added.
+
+### Loom/Path icon redraw (per hand sketch)
+Loom: same crossed-curve X, one leg now dashed. Path: redrawn as a thin
+curved "string" (`stroke-width:1.3`) with four larger beads (`r:2.1`) at
+fixed on-curve points, replacing the zigzag+small-dot version from the prior
+round.
+
+### Conflicts panel rework
+Previously filtered to the selected scene's own conflicts, with a "show all"
+override triggered only by the header badge. Reworked to always show every
+conflict (with a "Conflicts (N)" count header inside the panel body) —
+selecting a scene now scrolls the panel to and highlights that scene's
+conflict row instead of filtering the list down. Highlight color was
+initially `var(--acc)` (brown) which read as a different state than clicking
+a row directly (`flagActive`, red) — unified to the same `var(--rd)`
+treatment, just a heavier ring. Click-off now clears *both* forms of
+highlight — the card-driven one (via the general deselect path) and the
+row-click-driven "flag mode" one (`clearFlagMode()` added to the generic
+outside-click guard and to `_tlDoSelectScene`, since flag mode was previously
+only cleared via Escape).
+
+### Toolbar polish
+- `#chart-type-toggle .chart-type-btn`'s compact icon-button styling
+  (padding, border, on-state SVG color) was never extended to
+  `#chart-type-timeline-toggle` — Loom/Path buttons were falling back to the
+  base `.chart-type-btn` text-button padding, reading as visibly
+  smaller/misaligned next to Snake/Circle. Fixed, then further evened up by
+  enlarging the Loom/Path SVGs themselves (15px/12px tall → 18px) so the
+  bordered group's cross-axis height (set by its tallest child under the
+  default `align-items:stretch`) matches Snake/Circle's.
+- The CARDS/FLOW/TIMELINE labels floating above their buttons
+  (`.view-toggle-lbl`, `position:absolute`) only had `#tl-chron-hdr`'s 8px
+  top padding to render into before hitting `#tl-stage`'s `overflow:hidden`
+  clip (that header sits flush at the stage's own top edge) — increased to
+  16px. An earlier one-off `margin-bottom` bump on just the Timeline label
+  (meant to fix the same symptom before the real cause was found) was
+  removed once the header padding fix made it redundant — it was actually
+  making Timeline sit visibly higher than Flow.
+- Era-marker labels (`.tl-marker-label`, e.g. "1793 — GENEVA & INGOLSTADT")
+  are already positioned as high as they can go without clipping (a prior
+  round's fix), so at low zoom the top lane's cards render close enough
+  behind them to read as "covered" despite already being stacked on top via
+  z-index — no background meant no contrast against a card's own content.
+  Gave the label a solid background chip.
+
+### Chronology True scale: cross-lane order bug (thread zigzag)
+Root cause of a reported character-Thread zigzag and general "cards look
+out of order" complaint: `chronXTrueScale()`'s per-lane collision-avoidance
+pass (enforces a minimum on-screen gap between same-lane cards, since only
+same-lane cards can visually overlap) operates on each storyline in
+isolation. A lane with many tightly-clustered scenes can get pushed forward
+enough to numerically overtake a *different* lane's scene that's
+chronologically later — harmless for the pass's actual job (same-lane cards
+never overlap), but `S.chronOrder` (built from real dates, spanning every
+lane) was left non-monotonic in x, and `renderChronThread()` just walks
+`chronOrder` connecting points in sequence, so a cross-lane inversion read
+as the thread zig-zagging backward even though every scene's own date was
+correct. Fixed with one more forward-only sweep over `chronOrder` itself
+(not per-lane) after the existing pass — verified by asserting zero
+x-decreases along `chronOrder` on the Frankenstein sample (was 3 violations
+before the fix).
+
+Also (found while on the same code): the same collision pass has no upper
+bound, so a dense lane could push x values past 100 — cards rendered past
+the track's own right edge, past where the lane-row color band and
+everything else track-relative actually ends (visible as color bands
+stopping abruptly partway across, independent of the thread bug above).
+Rescales the whole map back into `[0,100]` when that happens.
+
+### Chronology True scale: drag now edits the anchor date
+Previously a deliberate limitation (`S.timelinePrefs.axis === 'true'` disabled
+horizontal drag entirely, with a one-time "Switch to Ordinal to reorder by
+time" toast) — horizontal position in True scale *is* the date axis, so
+dragging didn't have an obvious "reorder" meaning. Asked the user; went with
+the recommended option since they had no strong preference: dragging a card
+now edits its anchor date, interpreting the drop x-position as a date via
+the same anchored-scene timestamp range True scale itself uses for
+`ts -> x%` (added the inverse, `_tlXPercentToTs`), with a continuous
+placement-indicator line that tracks the cursor (rather than snapping
+between two cards, since there's no discrete "slot" concept here) and the
+same move-confirmation modal as every other drag, showing the resulting date
+(e.g. `… (to Oct 7, 1793)?`). Repositions the scene within `chronOrder` to
+sit next to its new date's neighbors (`_tlReorderChronForNewAnchor` — walks
+the existing order rather than a full resort, so unrelated scenes' relative
+positions are untouched) so the change can't reintroduce the cross-lane
+inversion bug above. The dead toast function/CSS this replaced was removed.
+
+### Scroll-arrow edge overlap at low zoom
+The bubble scroll-arrow buttons (26px wide, inset 6px from the edge) aren't
+part of document flow, so nothing previously reserved room for them — at a
+tight zoom/large scene count the edge-most cards rendered close enough to
+0%/100% (chron strip, percentage-positioned) or the row's own 10px padding
+(manuscript ribbon, flex-positioned) that the arrow sat directly on top of
+real card content. Manuscript row: padding bumped from 10px to 38px on each
+side. Chron strip: `chronXOrdinal()`'s `0-100%` domain is now inset by a
+pixel-based margin (`chronXEdgeMarginPct()`, accounting for the arrow's
+reach *and* the current card's half-width so it scales correctly at every
+zoom level) rather than running edge-to-edge.
+
+### Verified live
+All of the above tested in-browser on the Frankenstein sample across
+multiple fresh preview-server restarts (this environment's dev server
+intermittently served stale files across normal navigations — mid-session,
+not a project bug — worked around by restarting the server and/or a full
+hard navigation whenever a fix didn't appear to take effect before trusting
+a negative result). Confirmed via both visual screenshots and direct state
+inspection (`tlSelectedId`, `S.chronOrder`, `S.scenes` order, computed
+styles, simulated mousedown/mousemove/mouseup drag sequences). Console clean
+throughout.
+
+### Not yet done
+Not merged to `main` — same standing instruction as the rest of this branch.
+
+## thruLine_v2 branch — Ordinal: same-anchor scenes share a vertical
+
+New branch, forked from `thruLine_v1`. The user asked whether two scenes on
+different storylines that happen simultaneously could render at the same
+x-position in the Chronology strip instead of always staggering, and
+specifically wanted it for **Ordinal** mode (a separate discussion covered
+why the same idea is much harder and riskier in True scale — the per-lane
+collision-avoidance pass there actively fights exact date alignment; not
+attempted here, and not requested).
+
+### Why Ordinal is a clean fit for this
+Unlike True scale, Ordinal has no per-lane collision-avoidance pass at all —
+it doesn't need one. Every scene normally gets its own evenly-spaced rank
+slot (`(index + 0.5) / n`), and a slot is unique to one position in
+`chronOrder`, so two scenes can never collide purely from Ordinal's own
+math. That means sharing an x across storylines is safe by construction
+(different lanes can't visually overlap regardless of x) — the only real
+constraint is that two scenes on the *same* storyline must never collapse
+into one slot, since that *is* a real on-screen collision.
+
+### How it works (`chronXOrdinal()`, timeline.js)
+Two scenes are considered "the same anchor" only if their anchor is fully
+identical — same date *and* same time when both are set (`_tlAnchorKey()`;
+an untimed all-day scene and a precisely-timed one on the same date are not
+treated as simultaneous). A scene with no anchor date never matches
+anything, including another unanchored scene.
+
+Walks `chronOrder` once, building groups: a scene joins the current group
+only if its anchor key matches the group's key *and* its storyline isn't
+already represented in that group; otherwise it starts a new group. This is
+deliberately adjacency-scoped, not a global "every same-date scene
+everywhere merges" rule — two scenes could share a date but sit far apart in
+`chronOrder` (interleaved with unrelated scenes that don't share it), and
+forcing them to the same x in that case would contradict the ordering those
+interleaved scenes imply. Each group then gets exactly one evenly-spaced
+slot, shared by every scene in it, so the total slot count is the number of
+*groups*, not the number of scenes (meaning everything gets very slightly
+more breathing room whenever any grouping happens at all).
+
+For a project with no matching anchors anywhere (the common case), every
+scene ends up in its own group of one — output is bit-for-bit identical to
+the old per-scene formula, so this is a no-op for existing projects unless
+they actually have matching anchors.
+
+### Verified live
+On the Frankenstein sample, gave three scenes on three different
+storylines the same anchor (date + null time) to test the adjacency and
+same-lane rules directly:
+- Two of them (`Abandonment and Flight` / Victor's Account, `The Creature's
+  Awakening` / The Creature's Account) were already adjacent in
+  `chronOrder` — confirmed numerically identical x (`15.58…` both) and
+  pixel-identical rendered card centers (570.2px both), i.e. exact vertical
+  alignment.
+- A third scene on the same anchor, but on the *same* storyline as one of
+  the two above and adjacent to it in `chronOrder`, correctly got its own
+  slot (`19.2…`, ~102px to the right) instead of colliding.
+- A fourth scene on the same anchor but far away in `chronOrder` (not
+  adjacent to the other three) correctly stayed in its own slot (`77.17…`)
+  rather than jumping to match a date it shares but isn't adjacent to.
+
+Confirmed via `chronX('ordinal')`'s returned map directly and via
+`getBoundingClientRect()` on the rendered cards, not just visually. Console
+clean.
+
+### Not yet done
+Not merged anywhere — brand new branch, nothing to merge yet. The synthetic
+test anchors above were only ever mutated in the browser's in-memory/
+localStorage project state to verify the fix, never written to any tracked
+sample-project file.
+
+## thruLine_v2 branch — Loom/Path direct-feedback round 2: Conflicts scroll/dedupe, ribbon polish, Mac shortcuts
+
+Another round of direct, user-driven fixes, found via a walkthrough of `longfellow-job.json`
+(the showcase sample from the previous round). **Touched files:** `timeline.js`,
+`conflicts.js`, `editor.html`, `editor-init.js`, `styles.css`, `longfellow-job.json`.
+
+### Conflicts panel: scroll-to-center + mutual exclusivity with card selection
+- Clicking a conflict ("show scenes" or the row itself) previously just toggled flag mode
+  with no scrolling — the involved cards could be off-screen with no indication where.
+  Added `scrollTlConflictIntoView()`/`_tlCenterOnScenes()` (timeline.js): centers the
+  midpoint between every involved card in both the Chronology and Narrative rows (a
+  single-scene conflict just centers that one card). Wired into `setFlagMode()` so both
+  panel entry points get it for free.
+- Selecting a card and then clicking an unrelated conflict row used to leave BOTH
+  highlight systems active at once (the card's selection ring + wire, and the flagged
+  conflict's dimmed/highlighted scenes) — genuinely two independent pieces of state that
+  each needed their own action to clear, which read as "a puzzle to deselect." Added
+  `tlToggleFlagFromPanel()` (conflicts.js): every panel-driven flag toggle now clears card
+  selection first, making the two mutually exclusive in both directions (selecting a card
+  already cleared flag mode from the prior round). Routed through `runWithDiscardGuard` so
+  ordering stays correct even if a dirty edit is in progress. The generic click-off-guard in
+  timeline.js had its own now-redundant flag-clearing block removed (`tlSelectScene(null)`
+  already handles both via `_tlDoSelectScene`'s unconditional `clearFlagMode()`).
+
+### Narrative ribbon border color
+`buildRibbonCard()` set an inline `style.boxShadow` for the scene's section color (a 3px
+left inset) *in addition to* the storyline-color top border every card already gets — since
+inline styles always beat CSS class rules regardless of specificity, this also silently
+broke the `.tl-sel`/`.tl-hi` box-shadow rings on ribbon cards with a section (the inline
+section-color shadow just overrode them outright). Removed; section boundaries are already
+shown via the `.tl-sep`/`.tl-sep-label` dividers, so no information was lost, and ribbon
+cards now visually read as "this scene's storyline" the same way chron-strip cards already
+did.
+
+### First section's label missing from the Narrative row
+`renderManuscriptRibbon()`'s divider logic only ever fired on a section *transition*
+(`secKey !== lastSecKey && lastSecKey !== undefined`) — the very first group had nothing
+before it to transition from, so its name never rendered anywhere on the row, even though
+every later section's name showed fine at its own transition. Added a label-only leading
+marker (`.tl-sep-lead`, same positioning as `.tl-sep-label` minus the dashed divider line)
+for just the first group.
+
+### Anchor date/time inputs clipped in the Inspector
+`.anchor-row` packed the date input, time input, and a "Clear" button into one
+`flex:1`-each row — at `#tl-panel`'s 300px width (258px in `#cp`), a native
+`<input type=date>`/`<input type=time>` can't shrink below its own rendering width the way
+text can, so the year/AM-PM read as cut off. Changed to `flex-wrap:wrap` with a real
+`min-width:118px` on both inputs (enough for a native date/time input to render in full)
+and `flex:0 0 auto` on the button — date and time now always get a full line to themselves,
+with Clear wrapping to its own line only when there isn't room, instead of every element
+getting force-shrunk together.
+
+### Mac keyboard shortcut labels
+The actual keydown handler (`editor.js`) already accepted Cmd (`metaKey`) interchangeably
+with Ctrl for every one of these — this was a display-only bug. Menu/tooltip shortcut
+labels are authored as Ctrl/Alt (Windows/Linux convention); added `data-sc-mac`/
+`data-title-mac` attributes alongside each one with the Mac-convention replacement (⌘/⌥),
+and a small Mac-detection block in `editor-init.js` (`/Mac|iPod|iPhone|iPad/` against
+`navigator.platform`/`navigator.userAgent`) that swaps them in on load. Alt shortcuts
+already worked correctly on Mac functionally (keyed off `e.code`, not `e.key`, from an
+earlier fix — Option+letter remaps `e.key` to an accented character on Mac) — only their
+displayed label was wrong.
+
+### "Why doesn't Path view show any jumps back in time?"
+Investigated rather than assumed a bug. Braid/Path's flashback detection
+(`bIdx < aIdx` between consecutive manuscript-order scenes' chron-order indices) is
+correct — `longfellow-job.json`'s reading order simply never jumped backward in
+chronology once offscreen scenes are excluded from the comparison (which is itself
+correct: an offscreen scene, like the sample's "Marcus Fences the Diadem," was never
+"read" in sequence, so it can't participate in a reading-order-vs-chron-order check).
+Not a code bug — the sample just didn't have one.
+
+Restructured the sample to actually have one, since the heist genre is a natural fit: the
+climax scene ("Nadia Grabs the Diadem," chronologically in the middle of the story) is now
+presented first in the manuscript as a cold open, with the rest of the story picking up at
+"six weeks earlier" — a genuine in-medias-res structure, and a direct, deliberate showcase
+of the flashback feature. Learned along the way that `manuscriptOrder()` groups strictly by
+`S.sections` order first, so moving a scene earlier within `S.scenes`'s own array order only
+changes its position *within* its existing section's block, never earlier than that block
+starts — the scene's `sectionId` had to be cleared to `null` (unassigned) to actually place
+it before every section, since unassigned scenes are the one group `manuscriptOrder()` puts
+first. Verified live: exactly one flashback edge (`115 → 100`, the cold open jumping back to
+the setup), rendered dashed in the flashback color, on a clean re-import of the corrected file.
+
+### Verified live
+The Conflicts-panel scroll/mutual-exclusivity fix, the Ordinal grouping from the prior
+round, and the Braid flashback fix were all confirmed directly in-browser (including a
+fresh re-import of the corrected sample file). The pure-CSS/HTML-only fixes (ribbon border
+removal, first-section label, anchor-row wrapping, Mac shortcut labels) were verified by
+code inspection, computed-style math, and — for the ribbon border and first-section label
+specifically — an earlier screenshot taken mid-session before this environment's dev server
+began serving stale files across normal navigations again (a recurring, environment-specific
+quirk already noted in the previous round's entry, not a product bug); repeated
+server/tab restarts and even a `document.write`-based full-document reload were used to
+work around it, with mixed success on the last couple of items specifically. Flagged
+directly to the user rather than claiming untested confidence.
+
+### Not yet done
+Not merged anywhere. The remaining un-screenshotted items (anchor-row wrap, ribbon border on
+a truly fresh load, Mac shortcut labels) should get a quick visual pass in a normal browser
+session (outside this dev-preview tool's caching quirk) before considering this round fully
+closed out.
+
+## thruLine_v2 branch — Ribbon polish, Mac shortcuts (part 3): Inspector/Conflicts panel background, frozen Conflicts header
+
+Two small direct-feedback fixes on top of the last round.
+
+### Inspector/Conflicts panel background
+`#tl-panel` used `var(--bg1)` while its own active tab (`.tab.on`) is `var(--bg2)` —
+a mismatch the New/Edit Scene pane (`#cp`) doesn't have, since `#cp` is `var(--bg2)` too,
+consistently matching its own tabs. Changed `#tl-panel` to `var(--bg2)` to match; also
+updated the Inspector's frozen Title field (`#tl-inspector-body .cp-form-fields > .ff:first-child`),
+which hardcoded `var(--bg1)` for the same reason and would otherwise have gone stale
+against the panel's new background.
+
+### Frozen "CONFLICTS (N)" header
+`.conflictCountHdr` now sits `position:sticky;top:0` at the top of `#tl-conflicts-body`,
+same pattern as the Inspector's already-frozen Title field. Moved the container's
+top padding onto the header itself (`#tl-conflicts-body{padding:0 12px 12px}`, header
+gets `padding:12px 0 10px`) so it sits flush against the scroll edge instead of leaving
+a gap — same trick the Inspector's own sticky header already uses, for the same reason.
+
+### Verified live
+Both confirmed on a fresh load this time (no caching issues this round) — computed
+`background-color` on `#tl-panel` matches `--bg2` exactly, and the header visibly stays
+pinned while scrolling the conflict list beneath it.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v2 branch — Deferred idea: offscreen scenes hidden outside Chronology
+
+Discussed, not implemented. The user asked whether offscreen scenes could be scoped to
+live *only* in the Chronology rows — excluded entirely (not just visually dimmed) from
+Cards view, Flow charts, and the Narrative row, including their scene numbering, and
+reappearing/recounted the moment "Offscreen" is unchecked.
+
+Assessed rather than built: this isn't a single-point fix. The app has no one shared
+"scenes in display order" function — five separate places independently rebuild that same
+ordering and would all need the identical `.filter(s => !s.offscreen)` to stay consistent:
+`buildSceneNumMap()`/`manuscriptOrder()` (editor.js, the shared numbering *and* the
+Narrative row's order), `renderBoard()`'s own scene-gathering (editor.js, Cards view),
+`updateCount()` (editor.js, the "Showing N scenes" header), `orderedScenes()` (charts.js,
+Flow view), and `rptFilterScenes()` (reports.js, **not mentioned by the user** but sharing
+the same numbering — skipping it would leave every offscreen scene mislabeled "Scene 1" in
+every report, a real regression, not just an inconsistency). The Chronology row itself needs
+no changes at all — it already iterates `S.scenes` directly, independent of all five.
+
+Two open questions surfaced that need the user's call before implementing: whether Reports
+should follow the same exclusion rule (recommended, for one consistent numbering scheme
+app-wide), and what the Board's "Showing N scenes (M offscreen)" header should say once
+offscreen scenes are no longer counted in N (drop the note entirely, or keep a passive
+"(+M offscreen)"). Also worth knowing going in: since scenes are normally created from the
+Board, checking "Offscreen" on one immediately removes it from the Board — Timeline/Loom's
+Chronology row becomes the only place left to find and un-check it, which is an intended
+consequence of the request, not a side effect.
+
+Not implemented — the user asked to defer, this section exists so the assessment isn't
+lost if it comes up again.
+
+## thruLine_v2 branch — Fifth full-app audit & fixes
+
+A fresh full-app audit of the branch in its current state (commit `9ee86ff`), covering
+every JS file plus the security surface (CSP, `innerHTML`/`document.write` sinks, import
+validation, localStorage error handling). Overall verdict: strong — CSP intact on every
+page, zero unescaped user data reaching any HTML sink, `reports.js`'s `document.write`
+path fully `rptEsc`-escaped, v3 import validation thorough on entity references. All four
+findings from the prior (July 18) audit were confirmed already fixed. Six real issues
+turned up this round, all fixed and verified live; several more low-severity/efficiency
+items were fixed in a same-session follow-up round below.
+
+### Delegation note
+Two subagents covered `editor.js`+`charts.js` and the `projects.js`/`reports.js`/support-
+file surface in parallel while the main session covered `state.js`, `timeline.js`,
+`conflicts.js`, and the import/persistence paths directly. Every subagent finding was
+independently re-verified against source before being fixed or logged; one subagent claim
+(that `validateV3Import` already repaired `nextId`/`nextSecId`) was checked against the
+actual code and found wrong — it repaired only `nextEntId` despite a comment claiming
+parity with the v2 import's repair — and is one of the fixes below.
+
+### What was found and fixed
+- **Timeline "New Scene" bypassed the discard guard.** `menuNewScene()` (editor.js) called
+  `tlCreateScene()` (timeline.js) directly in Timeline mode, which immediately selects the
+  new scene via `_tlDoSelectScene` — silently discarding a dirty Inspector edit instead of
+  prompting, the one entry point in Timeline mode that didn't go through
+  `runWithDiscardGuard`. `tlCreateScene()` now wraps its own body (`_tlCreateSceneImpl`) in
+  the guard, so any future caller gets the same protection for free.
+- **v3 import never repaired `nextId`/`nextSecId`**, and skipped section-entry validation
+  entirely — both real gaps the v2 import branch already closes. `validateV3Import`
+  (projects.js) now repairs both counters against the actual max scene/section id in the
+  file, type-checks `sectionId`, and validates every `sections` entry (positive-int `id`,
+  string `name`, unique ids) the same way the v2 path does.
+- **`createAndOpenProject` wrote the index entry before the project blob**, and the blob
+  write had no try/catch (every other project-creation path writes blob-first) — a quota
+  failure mid-creation left a permanent index entry pointing at data that was never
+  written, later surfacing as a misleading "may be corrupted" alert. Now writes the blob
+  first (guarded, alerts and bails on failure) before touching the index.
+- **Chart section lettering/legend ignored the active section filter.** `hasUnassignedScenes()`
+  (charts.js) checked all of `S.scenes` while the chart itself renders from the filtered
+  `orderedScenes()` — filtering out "Unassigned" still shifted every real section's letter
+  by one and left a phantom "Unassigned" row in the printed legend. Now checks
+  `orderedScenes()` directly.
+- **`pruneDismissed()` ran a full O(n²) `computeConflicts()` on every single save**, even
+  when `S.dismissed` was empty (the common case) — now early-returns first.
+- **The Timeline zoom slider saved on every `input` tick** — dragging it stringified the
+  whole project and re-ran conflict pruning per pixel of movement. `setTlZoom()` now
+  debounces the `saveState()` call by 300ms; the render itself stays synchronous so the
+  slider still feels immediate.
+- **Minor:** empty project-rename silently no-opped with the modal left open — now
+  refocuses the input; `rptEsc` (reports.js) didn't escape single quotes (no exploitable
+  gap today, since no report template uses single-quoted attributes, but one edit away
+  from one); `index.html`'s landing copy claimed "no data sent to any server," which GA/
+  Formspree telemetry contradicts — reworded to make the actual claim (story content never
+  leaves the browser) instead of an inaccurate absolute one.
+
+### How it was verified
+Live in the browser (this environment's `.claude/launch.json` "Storyboard" config,
+`python3 -m http.server`) against the Frankenstein and Longfellow Job sample projects —
+not just by reading the diff:
+- Reproduced the discard-guard bypass first (dirtied a scene's title, called
+  `menuNewScene()`, confirmed it silently proceeded), then confirmed the fixed version
+  opens the discard-confirm modal with the correct scene name/message, "Keep Editing"
+  preserves the in-progress edit untouched, and no scene was created underneath it.
+- Called `validateV3Import` directly against cloned project data with a deliberately stale
+  `nextId`/`nextSecId` and confirmed both repair correctly against the real max id;
+  separately confirmed a duplicate section id and a non-string section name are now both
+  rejected with a clear error.
+- Ran `createAndOpenProject` end-to-end and confirmed the index/blob pair is written
+  consistently; cleaned up the test project's index entry and blob afterward.
+- Simulated a section filter in-memory (added a section, unassigned a scene, filtered it
+  out) and confirmed `hasUnassignedScenes()` now returns `false` exactly when
+  `orderedScenes()` renders no unassigned scene, `true` otherwise.
+- Set the zoom slider via `setTlZoom()` and confirmed the in-memory value updates
+  immediately while the localStorage write only lands after the 300ms debounce window.
+- Confirmed the empty-rename refocus, and `rptEsc`'s new single-quote escaping, directly.
+
+### Follow-up round: remaining low-priority efficiency fixes
+Three more items from the same audit's low-severity list, fixed and verified in the same
+session:
+- `computeLaneRuns` (charts.js) rebuilt `buildSceneNumMap()` internally on every call;
+  `addSnakeTraceLanes`/`addCircleTraceLanes` called it once per traced lane (up to
+  `LANE_SANITY_CAP` = 24×). Now takes a shared `numMap` built once by the caller. Verified
+  both Snake and Circle charts still render correctly with a traced character selected.
+- `alignSecHeaders` (editor.js) interleaved DOM reads and writes per section group,
+  forcing one synchronous reflow per group. Now reads every group's target width first,
+  then writes all of them in a single pass. Verified the batched measurement logic
+  produces correct per-section widths against a real multi-section project (this
+  environment's `requestAnimationFrame` doesn't fire in a backgrounded automation tab, so
+  the read/write logic itself was extracted and run directly to confirm correctness rather
+  than relying on the rAF timing).
+- `build.js`'s `JS_FILES` list was missing `timeline.js`, `conflicts.js`, and
+  `editor-init.js` — dormant today since the minified bundle isn't actually deployed
+  (GitHub Pages serves source directly), but would have shipped a bundle silently missing
+  the entire Timeline view and Conflicts engine if it ever were. Fixed to match
+  `editor.html`'s real script order.
+
+Explicitly left unfixed (flagged as real but non-trivial, not "easy"): `sceneMatchesLib`
+(editor.js) rebuilds its selection list on every call and is invoked per-scene from both
+`renderCard` and `sceneMatchesChart` (3 call sites across editor.js/charts.js) — hoisting
+it to a build-once-per-render-pass value needs a new parameter threaded through multiple
+function signatures across two files. Likewise `toggleLibItem`/`clearAllSel`/
+`clearCardSel`/`toggleCardSel` each triggering a full `renderBoard()` teardown for a single
+class toggle — the correct fix is a targeted-DOM-update path, not a small patch.
+
+### Not yet done
+Not merged anywhere. No further open findings from this audit as of this entry — a future
+audit should re-check from scratch rather than assume this list is exhaustive.
+
+## thruLine_v2 branch — Direct-feedback round: Reveals/Foreshadow UI, New Scene timing fields, five Timeline/board drag bugs
+
+A ten-item direct-feedback round covering the Reveals feature's UI polish plus several real bugs across the board and Timeline, all fixed and verified live against the Frankenstein and Monte Cristo sample projects.
+
+### Reveals/Foreshadow UI (4 items)
+- The "Requires knowing" box's empty-state copy ("No reveals selected", "New reveal…", "No reveals yet") borrowed the *other* box's wording — `renderRevealCk` (editor.js) now derives box-specific copy from whether it's a `*-reveals` or `*-requires` box, instead of one hardcoded string shared by both.
+- Renamed "Requires knowing" to "Foreshadow" throughout (label text, comments); the underlying field/id names (`ed-requires`/`sc-requires`) are unchanged since scene data itself isn't touched by a copy rename.
+- Reveal library entries (`S.revealsLib`) had no way to rename or delete a mis-typed one short of editing localStorage by hand. Added ✎/× buttons to each reveal checklist row, mirroring the existing custom-POV-name edit/delete pattern exactly: `openRevealEditModal`/`saveRevealEdit`/`openRevealDelModal`/`removeRevealItem`, dispatched through the same shared `lib-edit-modal`/`libdel-modal` DOM `openLibEditModal`/`confirmLibDel` already use for `povCustom`. Deleting a reveal cleans it out of every scene's `reveals`/`requires` arrays, matching `confirmSaveEdit`'s existing orphan-GC rule.
+- The New Scene form was missing the entire Timing group (storyline, also-part-of, anchor, duration, offscreen) and Reveals group (this-scene-reveals, foreshadow) that Edit Scene already has — scenes could only get storylines/anchors/reveals by creating them blank and then immediately re-opening Edit. Added the matching HTML fields (`sc-` prefixed, identical layout to `ed-`), parameterized `readAnchorFromForm`/`renderAlsoStorylineCk` to take a form prefix (default `ed`, so every existing Edit Scene call site is unchanged), and added `refreshNewSceneStorylineField()` to keep the New Scene storyline `<select>` valid across storyline add/rename/delete and undo/redo (mirroring `renderSectionSelects()`'s existing preserve-current-value-if-still-valid pattern for `sc-section`/`ed-section`). `addScene()` now reads all the new fields into the created scene; `checkNewSceneLive()` now treats a non-default storyline, a set anchor/duration, or a checked offscreen box as "has content" the same way a checked library checklist already did.
+
+### Five bugs (root-caused, reproduced before the fix, confirmed fixed after)
+- **Loom wire stays dark after deselecting a card.** `_tlDoSelectScene()` (timeline.js) never called `redrawWires()` — selecting a card only *looked* like it darkened the wire because a click naturally fires a hover event first (which does redraw), but clicking empty track space to deselect fires no hover event on any card, so the previously-selected scene's wire kept its last "selected" opacity (`1`) forever. Added an explicit `redrawWires()` call at the end of `_tlDoSelectScene()`, covering both directions uniformly. Verified live: a selected scene's wire path attribute read `opacity="1"` before deselecting and `opacity="0.5"` (the real default) immediately after.
+- **Card-board drag jumps the board to the left edge, with no way to scroll to a later section mid-drag.** `renderBoard()`'s `board.innerHTML=''` momentarily collapses `#board`'s width to zero; since `#sbscrl` (the actual `overflow-x:auto` scroll container) clamps `scrollLeft` to fit whatever `scrollWidth` is at that instant, the clamp-to-0 never un-clamps once cards are re-appended a moment later. `beginCardDrag()` calling `renderBoard()` just to apply the dragged card's dimmed `.isd` style triggered this on every drag start. Fixed at the root: `renderBoard()` now captures `#sbscrl.scrollLeft` before rebuilding and restores it after (a no-op if content genuinely got narrower, e.g. a real scene deletion — the browser just re-clamps it). Also added edge-triggered auto-scroll (`autoScrollBoardDuringDrag`, called every `moveCardDrag` tick) so a card can now actually be dragged toward a section currently scrolled off-screen. Verified live: scrolled to 400px, started a drag, scroll stayed at 400; parked the cursor at `#sbscrl`'s right edge and watched `scrollLeft` climb (400 → 419 → 438) on successive move ticks, and stop advancing once away from the edge.
+- **A stray section header can remain on screen after switching from Cards to Timeline.** Section "pins" (the sticky label that appears once a section's real header scrolls out of view) are appended straight to `<body>`, not `#board` — `renderBoard()` clears them on every call, but Timeline mode never calls `renderBoard()` again, so a pin present at the moment of switching stuck around indefinitely. `openChartView()` (charts.js) already had the identical fix for the same reason; `_openTimelineViewImpl()` was just missing it. Verified live: forced a visible pin, switched to Timeline, confirmed `.sec-pin` count dropped from 5 (1 visible) to 0.
+- **Dragging a card in the Timeline chron strip intermittently fails, requiring a retry.** Root cause: `scheduleConflictsRecompute()`'s 150ms debounce (armed by *every* `saveState()`) calls `renderTimeline()`, which fully rebuilds `#tl-track` — including the active drag's own ghost/insert-line elements (both carry `.tl-scene`, matched by the strip's own teardown selector). Starting a new drag within 150ms of any earlier save — the ordinary case right after finishing an edit — silently disconnects the ghost from the DOM mid-drag: the drag's JS state keeps tracking correctly, but the visual feedback the user is actually watching vanishes, reading as "the drag stopped working." Fixed by skipping the debounced re-render while `isTlDragActive()`. Verified live by reproduction: triggered a save, began a drag, confirmed the ghost's `isConnected` flipped to `false` within 150ms on the unfixed code and stayed `true` on the fixed code; a real end-to-end drag via the browser's drag primitive still completes and shows the move-confirmation modal correctly.
+- **Dragging a card to another storyline sometimes pops the discard-changes alert with Save greyed out, and Discard is the only way to keep working.** If the dragged scene is also the one open in the Inspector, committing the move changes `scene.storylineId`/`sectionId` in the data model but never refreshes the Inspector form's own `<select>` — so `isEditFormDirty()`'s comparison against the now-stale dropdown value spuriously returns `true` the next time anything checks it (e.g. selecting a different scene), while the Save/Cancel buttons' `disabled` state — last computed *before* the drag — never got the memo either. `tlConfirmMoveSave()` now re-populates the Inspector via `openEditMode()` (the same call a fresh selection already makes) whenever the just-moved scene is the one currently open, immediately after applying the move. Verified live end-to-end: relaned scene 1 (open in the Inspector) to a second storyline — before the fix, the form kept showing the old storyline, `isEditFormDirty()` was `true`, and selecting a different scene triggered the discard modal; after the fix, the form shows the new storyline, dirty is `false`, and selecting another scene works with no prompt. Confirmed the identical fix also covers a cross-section manuscript-row drag (`isEditFormDirty()`'s section check has the same shape).
+
+### One small polish item
+- Thread-line dots (character Thread overlay on the Chronology row) enlarged from `r=7` to `r=11` for legibility.
+
+### Verified live
+All ten items confirmed directly in the browser against the Frankenstein and Monte Cristo sample projects — not just by reading the diff. Two of the five bugs (#4 and #5 above) needed the actual before/after mechanism reproduced (mutating state directly and inspecting DOM attributes/flags) since they're timing- or state-mismatch-dependent, not visible from a single interaction. Every sample project mutated in the course of testing (new test scenes, relaned/resectioned scenes, added storylines, deleted/renamed reveals) was restored to its pristine, unedited state afterward by removing the local copy and letting `ensureSampleProjects()` reseed it fresh from the checked-in JSON fixture — confirmed each time by re-checking scene count, storyline count, and `revision: 0`.
+
+### Not yet done
+Not merged anywhere. No further open items from this round.
+
+## thruLine_v2 branch — Reveals/Foreshadow relabeling, Path view polish, conflict-message rewording
+
+Two rounds of direct-feedback fixes on top of the previous round's Reveals/Foreshadow UI work, plus a diagnostic question about the conflict engine that turned out not to be a bug.
+
+### Round one: ten items
+- Canceling the reveal-item edit modal no longer deselects the Timeline card / clears the Inspector — the modal (a plain data-entry dialog, not a `.cfm-modal`) was missing from the click-outside deselect guard's modal checklist; now uses the existing `anyModalOpen()` helper (editor.js), which also protects a few other non-`.cfm-modal` dialogs that had the same latent gap.
+- Foreshadow box's mint placeholder reworded to "New foreshadow…".
+- **Path view (Braid) section dividers now have labels**, including the first section (previously unlabeled entirely), pinned to stay visible at the top of the viewport on vertical scroll while still scrolling naturally with horizontal scroll so each label tracks its own divider.
+- Reveal library edit/delete modal titles are now context-aware ("Edit Reveal" vs "Edit Foreshadow", matching delete-confirm text) based on which box's ✎/× was clicked, instead of always saying "Reveal".
+- New Scene tab's Cancel/Save buttons now grey out when the form has no content, matching Edit Scene's existing dirty-gated disable in Timeline mode.
+- Storyline legend ring in Path view thickened (2px → 3.5px) for color legibility.
+- **Swapped the Reveal/Foreshadow display labels** per the user's correction — "This scene reveals" (`scene.reveals`) and "Foreshadow" (`scene.requires`) had the concepts backwards from what the user intended. This is a display-only swap: the underlying data fields, ids, and conflict-engine logic (conflicts.js) are completely unchanged, so no migration was needed and existing sample-project data displays correctly under the swapped labels — verified by checking a real tagged scene (Frankenstein) renders its existing `requires` tag correctly checked in the now-relabeled box.
+- Path view's "READING ORDER →" / "CHRONOLOGY" axis labels + arrow, previously plain SVG `<text>` that scrolled away in both directions, converted to an HTML overlay pinned via `position:sticky` (top:0;left:0) — frozen in the top-left corner regardless of scroll direction, with no per-scroll JS recompute needed (unlike markers/sections, these never track a moving target). Hit and fixed a placement bug along the way: the sticky overlay must be the *first* child inside the scroll container, or its natural (pre-sticky) flow position ends up wherever the tall SVG's own height happens to place it, so it never becomes visible until scrolled far down.
+- Gave the axis labels a real opaque background — the old SVG-text version had none at all, so gridlines/paths rendered visibly through the letters.
+
+### Round two: four items
+- Added visible spacing between "READING ORDER →" and the section-header row directly below it (they were nearly touching).
+- Reworked the axis-label opacity fix into two full-viewport-sized opaque bars (`#tl-braid-top-bar`, `#tl-braid-left-bar`, sized in JS to the scroll container's own `clientWidth`/`clientHeight`) instead of small pill-shaped backgrounds around just the label text — gridlines/paths/markers that scroll into these margins are now fully hidden behind the bars, not just around the letters.
+- Selected node in Path view made more prominent: the ring was previously *thinner* than the plain hover state (4px vs. hover's 5px), which read as less emphatic than just hovering. Now 6px, scaled up 25%, with a glow — while explicitly *not* recoloring the node (see below).
+- Reworded the "Reveal used before shown" conflict message, which read confusingly under the new label swap: now titled "Reveal before foreshadow" — *"Scene X — '[title]' reveals '[item]' before foreshadowed in Scene Y — '[title]'."* Updated the sibling "never shown" message ("Reveal never foreshadowed") to match the same vocabulary for consistency, since it wasn't asked for but had the identical staleness problem.
+
+### Follow-up round: two more
+- Section headers moved onto the *same* opaque top bar as "READING ORDER →" (bar height increased to cover both rows) instead of sitting in a gap below it where grid content could still show through. Surfaced and fixed a real stacking-order bug in the process: `#tl-braid-axis-hud` carries an explicit `z-index:6`, and `#tl-braid-section-hud` had none (`auto`) — an explicit z-index beats a z-index:auto sibling regardless of DOM order, so the bar was silently painting over the section labels until `#tl-braid-section-hud` was given `z-index:7`.
+- Selected node's ring/glow no longer overrides the node's own storyline color with a fixed accent color — `renderBraid()` now also sets `circle.style.color` (not just `.stroke`) to the node's real color, so the CSS glow's `drop-shadow(currentColor)` matches it instead of showing an unrelated accent-colored halo.
+
+### Diagnostic: "conflict not showing" question
+User asked whether something was wrong after tagging an earlier scene's item as "Reveal" and a later scene's same item as "Foreshadow" with no conflict appearing. Reproduced the exact scenario end-to-end through the real Edit Scene form (not just by mutating `S` directly) and got a correct `reveal-order` conflict — the engine itself is not broken. Likely causes flagged back to the user: minting the same-sounding reveal text twice (creating two distinct library entries instead of reusing one), one of the two scenes being marked Offscreen (excluded from the reader-order check entirely), or simply not knowing where the signal surfaces (Conflicts badge count + panel row + card warn-dot — there is no popup alert).
+
+### Verified live
+Every item in all three rounds confirmed directly in the browser (Frankenstein and Monte Cristo samples) — stacking order, sticky-scroll behavior on both axes, color values, and the conflict message text were all checked programmatically (computed styles, `getBoundingClientRect()` before/after scroll, `getActiveConflicts()` output), not just visually. Every sample project touched during testing (mutated storylines, reveals, scene tags) was restored to pristine state afterward via the same remove-local-copy-and-reseed approach used in prior sessions, confirmed each time by re-checking scene count and `revision: 0`.
+
+### Not yet done
+Not merged anywhere. No further open items from this round.
+
+## thruLine_v3 branch — Chronology lane-column overhaul (fill-down, scrollbar, zoom-to-fit), hover callout
+
+A direct-feedback round entirely focused on the Loom Chronology pane's lane column and the
+Timeline zoom-to-fit setting, plus a new hover-callout feature. Every item verified live
+against the sample projects (Frankenstein, Count of Monte Cristo), including several with
+temporary test data (extra storylines, duplicated scenes to reach realistic scene counts)
+added and then removed/undone afterward.
+
+### Chronology lane column: fill-down, then a real scrollbar
+`#tl-chron-body` was `flex:0 0 auto` (content-sized) with a `max-height:55%` cap meant only
+as a ceiling for many-storyline projects — but content-sizing meant a project with few
+storylines left a large dead band between the last lane row and the wires zone below, with
+the "+ Storyline" button stranded right after the last row instead of using the available
+space. First fix: `flex:1 1 auto` so the box actively grows to fill the cap, with
+`#tl-lane-labels`/`#tl-track` given `height:100%` to stretch along with it (JS switched from
+setting an exact `height` to a `min-height`, so a lane list taller than the filled box still
+clips/scrolls the same as before). Second fix (a separate round): storylines that didn't fit
+under the cap were silently clipped with no way to reach them, and the button — a
+`position:absolute` overlay on `#tl-lane-labels` — clipped away with them, since an
+absolutely-positioned descendant of a scrolling container still scrolls with that container's
+content, it only escapes normal flow. Split `#tl-lane-labels` into a `#tl-lane-scroll`
+sub-region (the real, native scrollbar) plus the button as a true flex sibling below it, so
+it's reachable regardless of scroll position or lane count. `#tl-track` can't scroll natively
+in sync (its own scroll container is already claimed for horizontal paging), so
+`tlSyncLaneScroll()` mirrors `#tl-lane-scroll`'s `scrollTop` onto `#tl-track` via a matching
+`translateY` — verified row-for-row alignment holds at any scroll offset via
+`getBoundingClientRect()`, and confirmed the existing drag-relane hit test
+(`_tlLaneAtClientY`, keyed off live rects) needed no changes since it already reads
+post-transform positions. Wheel events over the card area are forwarded to the lane
+scrollbar too, so scrolling isn't limited to the narrow 132px label column. Cap later raised
+from 55% to 65% (verified 6 lanes now fit before scrolling vs. 5 before, at a 1100px-tall
+window) to show more lanes before the scrollbar kicks in, chosen conservatively rather than
+more aggressively specifically to keep the wires zone comfortable — it was a hardcoded
+sliver that made wire curves "nearly invisible" before an earlier round gave it guaranteed
+room (see the Post-M7 hardening entry above).
+
+**Reverted, same session:** the `flex:1 1 auto` fill-down fix, on reflection, overcorrected —
+it meant *every* project's `#tl-chron-body` claimed the full 65% regardless of actual
+content, pushing the button and the "Chronology" caption below it down by a large fixed
+amount even for a 1-2-storyline project with nothing to fill that space. Reverted to
+`flex:0 0 auto` (content-sized growth, `max-height:65%` now purely a ceiling for
+many-storyline projects) so the box starts right under the header and grows only as
+storylines are added; the button's spacing above it now comes from a fixed 24px top margin
+instead of stretching the whole box. Verified live: 1 storyline sits high on the page with
+the button right below it, each added storyline grows the box and pushes the button/caption
+down proportionally, and 10 storylines still correctly caps at 65% with the scrollbar intact.
+
+### Three bugs found while shipping the above
+- **Trackpad horizontal scroll went jittery.** The wheel-forwarding listener (added for the
+  lane scrollbar) treated any nonzero `deltaY` as a vertical gesture and called
+  `preventDefault()`, which also cancels the accompanying `deltaX` — a trackpad horizontal
+  swipe reports a small noisy `deltaY` alongside its `deltaX`, so nearly every such swipe got
+  hijacked mid-gesture. Fixed to only intercept when `|deltaY| > |deltaX|`; verified with
+  synthetic wheel events that a horizontal-dominant gesture no longer gets prevented while a
+  vertical-dominant one still scrolls the lanes.
+- **Wires bled through the lane label column.** `#tl-wires` (a full-`#tl-stage` SVG
+  connecting each scene's chronology position to its manuscript-row position) was never
+  clipped by the label column — cards get clipped for free by `#tl-chron-scroll`'s own
+  scroll boundary, but wires aren't inside that scrollable region, so a wire endpoint for any
+  card scrolled behind the column still drew straight through it. A pre-existing gap, only
+  newly visible once more of the column became populated/reachable. Fixed with an explicit
+  `z-index:6` + opaque background on `#tl-lane-labels`; confirmed via the actual SVG path
+  data (endpoints extending from deeply negative x-coordinates through the column's 0-132px
+  range) that the fix masks it correctly.
+- **Path view's vertical "CHRONOLOGY" axis label** was getting clipped by a top bar that grew
+  taller in an earlier round without this label's own offset being adjusted (`top:38px` →
+  `60px`), and its down-arrow was floating beside the word's middle instead of sitting below
+  it — a `flex-direction:column` + `writing-mode:vertical-rl` interaction actually lays
+  column children out on the *cross* axis, not stacked, under that combination. Switched to
+  `row-reverse`, confirmed via measured `getBoundingClientRect()`s that the arrow now centers
+  exactly on the word's axis and sits directly below it.
+
+### Zoom-to-fit didn't actually fit
+The lowest zoom setting is supposed to fit every scene into the window with no horizontal
+scroll (`tlZoomFitPx()`/`tlBraidZoomFitDx()`), but with enough scenes (reported: 89) that true
+fit needed tighter spacing than a hardcoded "readable card" floor, the fit calculation
+silently clamped back up past that floor and the promise silently became "scroll anyway."
+Three independent floors had to go: the fit functions' own fixed floor (38px/scene,
+40px/column — replaced with a purely technical 2px floor, not a readability minimum); the
+matching floor in three separate `cardW` formulas (replaced with `tlLoomCardW()`, which keeps
+width within its own pitch instead of a fixed minimum); and a second, subtler floor from
+`box-sizing:border-box` itself — card padding + border alone impose a ~16px floor regardless
+of requested width, since a border-box element can't render smaller than its own padding +
+border. `tlApplyCardWidth()` now scales padding down together with width below that
+threshold. Braid nodes got the parallel fix (`braidNodeR()`, scaling circle radius down with
+column spacing and dropping the scene-number label once it no longer fits legibly), plus the
+manuscript ribbon's flex `gap` (8px × 88 gaps alone was enough to blow out the container even
+after every card had shrunk) got the same treatment. Verified with a real 89-scene test
+project (39 real + duplicated to 89, cleaned up afterward): both Loom (chron track +
+manuscript ribbon) and Path fit with zero horizontal scroll at zoom 0, confirmed via
+`scrollWidth === clientWidth` and actual rightmost-element position, not just the computed
+values; re-verified a normal 27-scene project still renders cleanly at zoom 0 (slightly
+denser than before — 28px/scene vs. the old 38px floor — but fully legible, no regression).
+
+**Follow-up diagnostic, no bug found:** after the above, Chronology looked appropriately
+sized at zoom 0 but Narrative looked over-condensed on a dense multi-storyline project.
+Investigated by reproducing the exact shape (90 scenes across 5 storylines) — card boxes
+turned out to be *identical* size in both panes (4px, both exactly fitting the container).
+The real cause is structural, not a bug: Chronology spreads its scenes across N lanes, so
+each lane only has to visually accommodate its own subset (real breathing room, both
+horizontally and vertically), while Narrative shows every scene in one continuous row (no
+"lane" to spread across, since manuscript order is a single reading sequence) — same card
+size, same total width, but N× the density in that one strip. Decided against changing
+Narrative's sizing (would mean either letting it scroll, undoing the zoom-to-fit fix above,
+or shrinking Chronology to match Narrative's cramped density) in favor of the hover callout
+below, which makes any card's full info reachable regardless of how small it renders.
+
+### New: hover callout with full card info
+Every chron and manuscript card now shows a read-only popover (title, date/time, storyline
+name, summary, POV, characters, locations) on a 400ms hover delay, independent of the card's
+rendered size — the point being that a card shrunk down for a tight fit-to-window zoom level
+is still fully inspectable even though it's no longer legible at its rendered size.
+`tlWireCardHover()` replaces the previously-duplicated mouseenter/mouseleave pair at both
+card-creation sites with one shared helper doing both the existing cross-highlight and the
+new callout, so the two can't drift apart. Dismissed on mouseleave, drag start, any scroll of
+the chron/manuscript/lane-label scroll containers (position is computed once at show time,
+not tracked live), and on re-render (a mid-hover zoom change or undo can tear out and rebuild
+the anchor card without ever firing its mouseleave). Character/location names resolved via
+editor.js's existing `buildLibMaps()` rather than re-deriving id-to-name lookups. Verified
+live at both normal card size and the ~16px cards produced by the lowest zoom setting;
+confirmed the popover flips below the card when too close to the viewport top, dismisses
+correctly on mouseleave/scroll, and that cross-highlight (hover-to-thicken-wires) still works
+alongside it. One follow-up polish item: the storyline line now reads e.g. "Victor's Account
+storyline" instead of just the bare name, clarifying what that meta item is at a glance.
+
+### Empty-state message straddling into the New Scene pane
+`#sbemp` ("Create your first scene to get started") is `position:absolute` expecting `#sbp`
+(the Scene Board Panel) as its containing block (`inset:46px 0 0 0`), but `#sbp` never had
+`position:relative` set — so it fell back to the viewport as its containing block, centering
+the message across the *entire* window instead of just the board area, visibly straddling
+into the Library/Sections/New-Scene panels to its left. Fixed by adding `position:relative`
+to `#sbp`. Verified with a fresh empty project that the message now stays confined to the
+board panel.
+
+### Reveal-order conflict missing violations when an item is foreshadowed on multiple scenes
+User reported dragging a "payoff" scene before its "foreshadow" scene in the Narrative row
+without the conflict alert firing. Live-reproduced the report's exact mechanics four
+different ways (direct data mutation, real form + same-section drag, real form + no-sections
+drag, real form + cross-section drag) — all four correctly triggered the conflict, ruling out
+the drag path, the form's save path, and section-boundary handling as the cause. The real
+cause only showed up once the user's actual project file was loaded and inspected: their
+reveal item was tagged **Foreshadow on five separate scenes** (several hints building toward
+one payoff), not just one. `computeConflicts()`'s reveal-order check walked reader order with
+a single "has this item been foreshadowed at all yet" flag — it latched `true` at the FIRST
+foreshadow scene and stayed `true` for the rest of the read-through, so dragging the payoff
+back past a *later* foreshadow scene (while still staying after the first one) silently
+produced no conflict, since the flag was already satisfied from the earliest hint. Fixed by
+checking each payoff directly against every scene that foreshadows the same item, flagging it
+if any of them still sits at or after the payoff (reported against the nearest/first such
+still-pending one) — a single-foreshadow item behaves identically to before. Verified against
+the user's actual file (imported directly, not recreated): confirmed 0 conflicts before the
+fix when reproducing their exact drag (a payoff scene moved before 2 of its item's 5
+foreshadow scenes), and a correct "Reveal before foreshadow" conflict after. Regression-
+checked the Frankenstein sample's existing single-foreshadow conflict still fires identically.
+
+### Not yet done
+Not merged anywhere. No further open items from this round.
+
+## thruLine_v4 branch — Path view Narrative/Chronology toggle, drag-to-reorder
+
+Adds a "Narrative" / "Chronology" toggle above the Path (Braid) chart, in the same header
+row as the Ordinal/True scale switch it's nested alongside (hidden unless Path view is
+active, same pattern). Narrative mode is the default and is pixel-identical to the Path view
+that existed before this round — one column per scene in reading order, row = the scene's
+own rank in `S.chronOrder` (an independent value from its column, which is what lets the
+connecting path show a flashback: a later column landing on an earlier row). Chronology mode
+walks `S.chronOrder` across the columns instead (top axis label becomes "SCENES →"), merging
+scenes that share an exact anchor into one node — but the row axis stays Chronology too, same
+as Narrative mode's label ("CHRONOLOGY," unchanged). The row isn't a second independent value
+here, though: it's simply each column's own position, so column order and row order are the
+same sequence by construction. That was a mid-round correction — the first pass had Chronology
+mode's row show each scene's reading-order rank (a mirror of Narrative mode, swapping which
+axis is independent), which the user caught as wrong: dragging in this mode is meant to work
+"just as in Loom view" — a single real-time ordering being edited, not two independently
+meaningful axes — so the resting chart is always a monotonic southeast staircase (no
+"flashback" is possible when the row only ever measures the column's own position), and
+dragging a node here has the exact same effect as dragging a card in Loom's own Chronology
+row. Two or more scenes sharing an exact anchor (date AND time) merge into one column/node,
+titled with each scene's title joined by " / " — same identical-anchor rule
+`chronXOrdinal()` (Loom's own Chronology-row x-position grouping) already used, reused here
+via a new `braidChronColumns()` rather than reimplemented. Both modes are draggable — dropping
+a node reorders `S.chronOrder` (Chronology mode) or `S.scenes`'/reading order (Narrative mode,
+mirrors the existing Manuscript-ribbon drag in Loom exactly) — through the same move-
+confirmation dialog Loom's own chron/manuscript drags already use, so it participates in undo
+identically. Since both modes ultimately mutate the same `S.chronOrder`/`S.scenes` the rest of
+the app already reads from, dragging in Path immediately updates Loom (and vice versa) with no
+new sync code.
+
+**Touched files:** `timeline.js` (all the logic — `renderBraid()` generalized from a fixed
+msOrder×chronOrder axis pair into a column/row abstraction; new `_tlBraidDrag*` family
+mirroring the existing `_tlMsDrag*`/chron-drag families), `editor.html` (mode-switch buttons),
+`editor-init.js` (click wiring), `styles.css` (switch styling reuses `#tl-axis-switch`'s rule;
+one new `.tl-braid-node.tl-drag-source` rule).
+
+### How it works
+- `colIds`/`rowOf(col, i)`/`rowCount` are computed once per `renderBraid()` call and drive
+  every downstream piece (gridlines, the connecting path, node placement) — Narrative mode's
+  values are exactly the old `msOrder`/`chronIndex`/`N`, just renamed, so that mode's rendering
+  is provably unchanged. Chronology mode's `rowOf` ignores the column entirely and just returns
+  its own index `i` — row = column position, always, which is what makes the isFlashback check
+  in the path-drawing loop (`bIdx < aIdx`) permanently false there: `bIdx` is always `i + 1`, so
+  it can never be less than `aIdx`'s `i`. No special-casing needed for "no regression" — it
+  falls straight out of the row formula.
+- Section dividers only make sense as contiguous spans in Narrative mode (a section is a run
+  of scenes in *reading* order) — Chronology mode leaves that layer empty rather than drawing
+  something structurally meaningless.
+- Era markers (dashed lines pinned to a `beforeSceneId` chron-order position) are Narrative-
+  mode-only for now — Chronology mode's chronological axis moved from rows to columns, so a
+  marker there would need to become a *vertical* line at a column position instead of the
+  existing horizontal-line/HUD machinery; scoped out of this round (skipped, not drawn wrong)
+  rather than building the second orientation.
+- Drag hit-testing doesn't query real DOM rects the way the chron/manuscript row drags do
+  (`_tlFindDropBeforeId` etc.) — a braid column's x position is a pure formula
+  (`braidColX(i)`), so the braid drag family computes the drop target directly from
+  `_braidColIds` (the exact column list the last render built) and cursor x.
+
+### Bug found and fixed during verification
+`_tlDragCleanupVisual()`'s single `document.querySelector('.tl-scene[...], .tl-ms-card[...],
+.tl-braid-node[...]')` returns the *first* DOM match for a scene id, but all three elements
+for the same scene coexist simultaneously (Loom and Path both stay in the DOM, just CSS-
+hidden, whichever isn't the active sub-view) — so ending a Path drag could clear the
+`tl-drag-source` fade from the wrong (hidden) element and leave the real braid node stuck
+faded after Discard. This ambiguity predates this round (the same query already mixed
+`.tl-scene`/`.tl-ms-card`) but wasn't visibly reachable until a third overlapping selector
+was added. Fixed by switching to `querySelectorAll` + remove-from-every-match — safe
+regardless of which element actually had the class, since it was only ever added to the one
+that started the drag.
+
+### Verification
+Live in the browser against The Count of Monte Cristo (39 scenes): toggled Narrative ↔
+Chronology repeatedly with a clean console throughout; confirmed Narrative mode's rendering
+byte-for-byte matches pre-change output (section dividers, legend, axis labels). Simulated a
+merge (temporarily co-anchoring two scenes on a temporary second storyline, in-memory only,
+never saved) and confirmed a single node rendered with " / "-joined title, the correct shared
+anchor label, a legend entry reading "Simultaneous scenes," and the scene count dropping by
+exactly one. Dragged that merged node to a new position and confirmed the move-confirmation
+dialog read correctly and `S.chronOrder` updated with the whole group moved as one contiguous
+block. Dragged a Narrative-mode node and confirmed the existing "its place in reading order"
+confirmation flow fires identically to the pre-existing Manuscript-ribbon drag. Switched to
+Loom after a Chronology-mode reorder and confirmed the Chronology row reflects the new order
+with no extra wiring. Reloaded and reopened the project afterward and confirmed zero test
+artifacts persisted (39 scenes, one storyline, zero anchored scenes) — all test mutations
+were applied directly to the in-memory `S` object and never went through `saveState()`.
+
+### Not yet done
+Not merged anywhere. Era markers unsupported in Chronology mode (see above — a real gap, not
+an oversight; fixed in a later round below, see "Era markers now render in Chronology mode
+too"). No automated test suite exists for this app; verification above was manual via the
+Claude Code browser preview tool, as with every other round in this file.
+
+## thruLine_v4 branch — Mode-switch order flip, "Events" axis rename, watermark, drag-reliability fix
+
+Three small follow-ups plus one real bug fix from live user feedback on the Narrative/
+Chronology toggle above.
+
+### Mode-switch order flipped; top axis relabeled "Events"
+Per direct request: the toggle buttons now read Chronology, then Narrative (was the reverse),
+and Chronology mode's top axis label changed from "SCENES →" to "EVENTS →" (`renderBraid()`,
+one line each — no layout/logic change, display text only).
+
+### Prominent mode watermark
+A large (46px), low-opacity (13%) label — "NARRATIVE ORDER" or "CHRONOLOGY ORDER" — now sits
+centered in the Path chart's current viewport at all times, re-centered on every scroll event
+(`tlBraidUpdateWatermark()`, same "recompute against scrollLeft/scrollTop + half the client
+size" pattern the era-marker labels already use) and behind the chart's own content in paint
+order, so it only reads clearly in genuinely empty grid space and fades under populated areas.
+**Hit a real stacking bug getting there:** the first attempt used `z-index:-1` on the watermark
+to sit it behind the plain (non-positioned) `#tl-braid-svg` sibling — this made it vanish
+completely rather than just go behind the chart, because a negative z-index escapes the local
+container entirely and paints behind whatever ANCESTOR stacking context claims it, which in
+this case was hidden behind opaque page chrome several levels up. Per CSS stacking rules, any
+*positioned* element (even at z-index:auto/0) already paints above a plain non-positioned
+sibling regardless of DOM order or z-index sign — so the actual fix was giving `#tl-braid-svg`
+`position:relative` (no offset needed) so both elements compete for paint order within the
+*same* local layer, where DOM order (watermark first, so it's "under") decides correctly.
+
+### Drag reliability: dropped moves that needed several tries
+User report: dragging a node in Path view sometimes silently didn't register — no move-
+confirmation dialog — requiring repeated attempts. Root cause: `_tlBraidDragMove()` (fires on
+every mousemove during a drag) wrote the ghost element's position, then immediately read
+`scroll.scrollHeight` to size the insert-line indicator — a write-then-read pattern that forces
+a **synchronous layout reflow on every single mousemove event** of the drag. On a chart with
+many nodes, that's real, repeated cost that can make the drop-position calculation lag behind
+the actual cursor: the user releases believing they're over a new column while
+`targetBeforeId` is still catching up to a stale one, which reads to the app as "no real move
+happened" (the resulting order equals the original, so no confirmation is shown — correct
+behavior for a genuine no-op, wrong outcome for what was actually a real, intended drag).
+Fixed by reading `scroll.scrollHeight` exactly once, in `_tlBraidDragBegin()` — the content
+height can't change mid-drag (nothing re-renders while dragging), so a single cached read at
+drag-start is exact for the whole gesture, cutting the forced-reflow count per mousemove
+roughly in half.
+
+**Diagnosing this took a wrong turn worth recording:** an initial batch of synthetic drag
+tests (dispatching real mousedown/mousemove/mouseup sequences via console) showed 9 failures
+out of 10 attempts, alongside a console error `e.target.closest is not a function` — this
+looked like a strong lead but was entirely a test-script artifact, not an app bug: several
+target nodes were scrolled outside the visible viewport, so `document.elementFromPoint()`
+correctly returned `null` for their coordinates, the test's own fallback (`|| document`)
+dispatched the synthetic mousedown directly on `document`, and the app's own
+`document.addEventListener('mousedown', ...)` guard (unrelated pre-existing code) choked on
+`document.closest` not existing (only Elements have `.closest`). Once the test scrolled each
+node into view before computing its coordinates, the error and the 9 failures both disappeared
+completely — confirming the real bug was the reflow, not anything related to that error.
+Re-running the same batch after the reflow fix: 11 of 12 randomized drags (varying distance,
+direction, and step count, including very fast 2-3-step drags) correctly opened the
+confirmation dialog; the one "failure" was independently confirmed as a genuine no-op (a 110px
+drag against a measured ~119px column pitch, landing back on the node's own current slot) —
+zero console errors, and the insert-line's cached height matched the container's real
+scrollHeight at drag-start.
+
+### Verification
+All three UI changes confirmed visually (button order, axis label text in Chronology mode,
+watermark text/position/centering-on-scroll in both modes) against The Count of Monte Cristo.
+The drag-reliability fix specifically verified via the batch-test methodology described above,
+both before (to confirm the real vs. false-lead failure modes) and after the fix. Reloaded and
+reopened the project afterward and confirmed zero test artifacts persisted (39 scenes,
+`chronOrder` still `[1,2,3,4,5,6,7,8,9,10,...]`) — every test drag in this round was either
+discarded or never crossed a real order-changing threshold, and none went through
+`saveState()`.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v4 branch — Era markers now render in Chronology mode too
+
+A follow-up to the "not yet supported in Chronology mode" gap noted above. The user pushed
+back on the reasoning behind that gap directly — correctly: Chronology mode's row (Y) axis is
+labeled "CHRONOLOGY," the same as Narrative mode's, so there was no real reason markers
+(pinned to a chronological position, rendered as a horizontal line at a row) should be
+Narrative-only. Re-examining the code confirmed the gap wasn't actually about the axis at all
+— it was a leftover assumption from an *earlier, since-corrected* version of Chronology mode
+(before the mid-round fix earlier in this file that made the row simply track each column's
+own position). The real, narrower blocker: markers looked up their row via `chronIndex`, a
+map built from the full, unfiltered `S.chronOrder` — correct for Narrative mode (whose
+`rowCount` is that same full length), but not for Chronology mode, whose rows are built from
+`colIds` (offscreen scenes filtered out, simultaneous scenes merged into one column) and can
+therefore have fewer rows than raw `chronIndex` has entries for.
+
+**Fix:** a new `markerRowIndex` map, built right after `colIds` — reuses `chronIndex` directly
+in Narrative mode (identical to before), and in Chronology mode walks `colIds` assigning every
+scene id in a column (all of them, for a merged column) to that column's own row index. The
+existing horizontal-line-plus-HUD-label rendering code is otherwise completely unchanged;
+only the `!tlBraidChronMode` guard around it was removed and the row lookup switched from
+`chronIndex` to `markerRowIndex`.
+
+### Verification
+Live against the Frankenstein sample (4 markers, exercises exactly the case `chronIndex` would
+have gotten wrong: fewer Chronology-mode rows than raw chronOrder entries once merges/offscreen
+filtering apply). All four markers — "1793 — GENEVA & INGOLSTADT," "1793–94 — THE CREATURE'S
+FIRST YEAR," "1795–96 — THE RECKONING," "1799 — WALTON'S EXPEDITION" — confirmed positioned at
+the correct row directly above their pinned scene in both modes, dashed line plus label
+correctly rendered, clean console. Re-verified Narrative mode's markers are pixel-for-pixel
+unchanged (same regression check as every geometry change in this file).
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v4 branch — Merged-node color too close to a storyline color
+
+User-reported, with a screenshot: a merged (simultaneous-scenes) node in Chronology mode was
+drawn in `var(--acc)`, and in the slate theme that accent (`#b07ef8`) sits close enough to the
+storyline palette's own purple (`#c065e8`, `The Creature's Account` in their project) to read
+as the same color at circle size — exactly the ambiguity the "Simultaneous scenes" legend entry
+was supposed to prevent.
+
+### Fix
+Added a dedicated `BRAID_MERGED_COLOR` (dark/light theme buckets, same pattern as
+`BRAID_FLASHBACK_COLOR`) — a fully desaturated gray in each bucket, not derived from `--acc` or
+any other theme variable. `STORYLINE_PALETTE`'s ten entries are all fully-saturated hues, so a
+true gray can't sit close to any of them regardless of which storyline colors happen to be in
+use in a given project — a stronger guarantee than picking "some other accent color" that could
+still coincidentally collide with a *different* storyline down the line. Applied to both the
+merged node's own stroke and the legend swatch that explains it, via one shared
+`braidMergedColor()` helper so they can't drift apart.
+
+### Verification
+Reproduced the exact collision first (two scenes on different storylines, one of them the
+purple "Creature's Account," given a matching anchor and made adjacent in `S.chronOrder` so
+they'd actually merge), confirmed the pre-fix color read as `--acc` (`#b07ef8`, one component
+away from the storyline's `#c065e8`), then confirmed post-fix the merged node and legend swatch
+both render `#9aa3ad` — numerically and visually distinct from every storyline color in the
+project (blue `#5aa9e6`, orange `#e0a458`, purple `#c065e8`). All test mutations (anchors on
+scenes 8/12) applied directly to the in-memory `S` object; reloaded and reopened the project
+afterward and confirmed the real stored anchors (`1793-11-11`/`1793-11-12`, distinct dates)
+were untouched.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v4 branch — Era-marker lines visually "cutting" node labels
+
+User-reported, with a screenshot: an era marker placed right before a node made it look like
+the marker's dashed line sliced through the node's own title text, in both Path view modes.
+
+### Root cause
+Measured directly rather than guessed: at the chart's minimum row spacing (`BRAID_MIN_ROWH` =
+26px, the common case once a project has enough scenes that fit-to-window zoom bottoms out),
+a marker's line — positioned at the midpoint between its target row and the row above it — can
+land as little as 2-3px from the top of the target node's own title text. SVG `<text>` has no
+background by default, so the marker's dashed stroke shows straight through the gaps in the
+letterforms whenever it passes this close, reading as a strikethrough. This isn't unique to
+markers — any line-based content (gridlines, the connecting path) can suffer the same
+legibility problem at tight zoom — but markers were the one a user actually noticed and
+reported, since their dashed styling reads as intentional "content," not background structure.
+
+### Fix
+Added `applyBraidLabelHalo()` — a small shared helper applied to both the title and time-label
+`<text>` elements, using `paint-order:stroke` with a `var(--cbg)`-colored stroke (matching the
+node circle's own fill) drawn *underneath* the fill. This gives every label a cheap opaque
+backing that knocks out whatever's drawn behind it — markers, gridlines, paths — without
+computing per-marker clearance or measuring real text bounding boxes. Fixes the problem at any
+zoom level generically, not just the specific case in the screenshot.
+
+### Verification
+Reproduced the exact reported collision first (Frankenstein sample, zoomed to fit-to-window so
+rowH bottoms out at 26px, in the slate/dark theme matching the user's screenshot) — measured
+the marker line at y=161 against the target node's title text at y=172, a 9-11px true baseline
+gap that reads as visually touching given the text's ascent. Confirmed post-fix: the same
+marker line no longer visibly touches or crosses the label text in either Path view mode, in
+both a dark (slate) and light (ivory) theme, with a clean console throughout.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v4 branch — Leading era marker still clipped, round two
+
+The label-halo fix above solved markers overlapping *arbitrary* node text, but the user came
+back with a second screenshot: a marker pinned before the very first scene was still cut off,
+this time at the very top edge of the chart, in both Path view modes.
+
+### What the first attempt got wrong
+The initial fix (`BRAID_MARKER_TOP_CLEAR`, since removed) clamped just the leading marker's own
+Y upward so it would clear `#tl-braid-top-bar` — a `position:sticky` bar that opaquely covers
+the first 54px of the viewport to hide scrolled-past content under the sticky axis labels (at
+`scrollTop: 0`, "scrolled past" and "not yet scrolled to" are the same 0px, so an
+insufficiently-cleared leading marker can render entirely behind it). That clamp worked for the
+bar, but it squeezed the marker's already-small gap to row 0 down to just a few px — trading
+one collision for another: the marker's *label* (an HTML div pinned near the left edge, same
+side row 0's own leftmost column naturally sits on) ended up wide enough to overlap and hide
+row 0's own title behind its opaque background, visible in the user's second screenshot as
+"A Happy Childhood in Geneva" mostly obscured.
+
+### Real fix
+Rather than fighting over a few pixels squeezed between two fixed points (the top bar below,
+row 0 above), gave the leading marker real room on both sides at once:
+- `BRAID_ROW_Y0` (top padding before row 0) raised 70 → 120 — pads out the whole chart's top
+  margin, not just the marker's own position, so there's slack for both problems simultaneously
+  instead of relitigating the same cramped 20-30px band.
+- The leading marker's Y is now `braidRowY(0, rowH) - BRAID_MARKER_LEAD_GAP`, a **flat 40px**
+  gap — not the previous `rowH / 2`, which shrank to a mere 13px at `BRAID_MIN_ROWH` (the exact
+  zoom level most likely once a project has enough scenes, i.e. exactly when this was most
+  likely to be hit). Every other marker (pinned before row 1+) is unaffected — its gap is still
+  the natural midpoint between two real rows, which was never the problem.
+
+### Verification
+Reproduced the exact second-round collision first (Frankenstein, fit-to-window zoom, slate
+theme, scrolled to the very top) — measured the marker label's rect against row 0's title
+rect and confirmed they overlapped both horizontally and vertically pre-fix. Post-fix: label
+bottom at 242px, title top at 268px — a clean 26px gap, zero overlap — and the label sits at
+229px, well clear of the top bar's 54px band. Re-verified in both Path view modes and both a
+dark (slate) and light (ivory) theme, clean console throughout. This round only touched
+rendering constants (no scene data mutated), so no persistence check was needed.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v4 branch — Sample-project lineup overhaul: Dracula replaces Pride and Prejudice, Monte Cristo restructured
+
+Prompted by a direct question: are Pride and Prejudice and Count of Monte Cristo still the
+best samples to demonstrate the app's Timeline features (multi-storyline, non-linear
+chronology, era markers)? Checked the actual sample data rather than guessing — both were
+single-storyline (only the implicit default "Main") with `chronOrder` identical to
+manuscript order (zero displacement, i.e. fully linear). Frankenstein was the only sample
+demonstrating any of it. Verdict, given to the user before touching anything: Monte Cristo's
+*source novel* already has real parallel revenge threads the sample data just never used
+(a restructuring job, not a wrong-book problem); Pride and Prejudice is close to strictly
+linear by design (single POV, no flashbacks) — no restructuring fixes that. Agreed plan:
+restructure Monte Cristo in place, retire Pride and Prejudice, replace it with Dracula
+(genuinely parallel storylines, real dated diary entries to anchor, simultaneous events
+across characters — a natural fit for the Chronology-mode merge feature specifically).
+
+**Touched files:** `count-of-monte-cristo.json` (converted v2 → v3-native, in place),
+`dracula.json` (new, v3-native from scratch), `pride-and-prejudice.json` (removed),
+`projects.js` (`ensureSampleProjects()` — sample list, retirement logic, `SAMPLES_VERSION`
+3 → 4).
+
+### Monte Cristo: v2 → v3-native conversion
+Scene titles/summaries/word counts/POVs/sections untouched — only added what a v2 file
+structurally can't carry (v2 has no concept of storylines, anchors, chronOrder divergence,
+markers, or reveals). Converted via a one-off Python script (not hand-edited) to guarantee
+every id reference stays internally consistent:
+- **5 storylines** assigned along the real revenge-plot structure: Edmond's Revenge (the
+  throughline), Fernand's Reckoning, Danglars' Ruin, Villefort's Downfall, Valentine &
+  Maximilien. The Ball (scene 35, where every thread converges) carries the other three as
+  `alsoStorylineIds` rather than picking one arbitrarily.
+- **Real anchor dates** spanning 1815 (arrest) → 1829 (escape) → 1838 (revenge), with the
+  revenge section (scenes 21-30) deliberately interleaved out of manuscript order — e.g.
+  Danglars' financial ruin (scene 23) is dated *before* Fernand's public exposure (21) even
+  though the book presents Fernand's chapter first, since a slow-burning financial scheme
+  and a fast public scandal don't actually take the same amount of story-time to play out.
+  Total chronOrder-vs-manuscript displacement: 74 (vs. Frankenstein's 174) — real, not huge.
+- **One simultaneous-scenes pair**: "Fernand's Exposure" and "Mercédès Recognizes Her Lover"
+  share the exact same date+time (different storylines, same location — the opera) —
+  merges into one node in Path view's Chronology mode.
+- **5 era markers** and **2 reveal/foreshadow threads** (the Count's real identity; Héloïse's
+  poisoning), both newly added.
+
+### Dracula: built from scratch
+30 scenes across 4 storylines (Jonathan's Ordeal, Lucy's Decline, The Asylum, The Hunt) and
+4 sections ("Books"), with real 1893 dates drawn from the novel's own diary/letter dating.
+Manuscript order deliberately presents Jonathan's entire Transylvania ordeal first, then
+"rewinds" to Mina and Lucy's correspondence from the same weeks — an authentic non-linear
+structure lifted directly from the real novel's own chapter order, not invented for the
+sample (displacement: 28). One offscreen scene (the Demeter's wreck — reported secondhand,
+witnessed by no POV character directly), 5 era markers, 2 reveal/foreshadow threads (Dracula
+is a vampire; Renfield's fits are the Count's arrival), and two genuinely simultaneous
+cross-storyline scene pairs for the Chronology-mode merge feature.
+
+### Two real bugs caught during verification, not by inspection
+- **Reveal/foreshadow fields are swapped from what their names suggest.** `scene.reveals` is
+  the UI's "Foreshadow" field (the early hint) and `scene.requires` is the UI's "This scene
+  reveals" field (the later payoff) — confirmed against `editor.js`'s own
+  `REVEAL_CK_BOXES` comment ("Display labels are the OPPOSITE of these box-id suffixes").
+  Both new files were authored backwards at first, which the Conflicts panel caught
+  immediately as spurious "Reveal before foreshadow" errors on data that was actually
+  correctly ordered — the bug was in the authoring script, not the app. Fixed by swapping
+  which field each script populates; re-verified against the actual conflict-engine logic
+  (`conflicts.js`) reproduced in Python, not just re-loaded in the browser.
+- **A genuine bilocation conflict in the first Dracula draft.** The two scenes meant to
+  merge on Oct 3, 1893 ("Renfield Attacked" / "Dracula Attacks Mina") originally shared two
+  characters (Seward, Van Helsing) despite being tagged at different locations — a real
+  authoring mistake the app's bilocation check correctly caught, not a false positive.
+  Fixed by splitting who's present in each scene (Seward stays with Renfield; Van Helsing is
+  with the group at Mina's) rather than suppressing the check.
+
+### `ensureSampleProjects()` changes
+- `samplesToLoad` now lists Monte Cristo, Frankenstein, and Dracula (Pride and Prejudice
+  removed). All three are v3-native now, so the v2-migration branch is dead code for the
+  *current* samples but left in place for any v2 sample added later.
+- New retirement pass (gated behind the same `SAMPLES_VERSION` check, so it only ever runs
+  once per bump, not every page load): an untouched (revision 0) Pride and Prejudice sample
+  is deleted outright; an edited copy is left completely alone but unflagged (`isSample`/
+  `sampleKey` removed) so it becomes a normal project going forward instead of a permanently
+  orphaned "sample" that nothing will ever refresh again.
+- `SAMPLES_VERSION` bumped 3 → 4, which is what makes all of the above run automatically for
+  existing installs on their next Projects-page visit — no manual `localStorage` reset.
+
+### Verification
+Checked the STATUS.md history first per the user's explicit instruction, given past
+sample-duplication bugs (the seeding race condition and the rename/delete/version-bump
+resurrection bug, both documented earlier in this file) — the fixes for both are still
+intact and this round's retirement logic reuses the same revision-0/sampleKey patterns
+rather than inventing a new path.
+- Both new JSON files validated structurally (id uniqueness, every reference resolves,
+  `chronOrder` is a true permutation of scene ids) and semantically (bilocation and
+  reveal-order checks reimplemented in Python from the actual `conflicts.js` logic) before
+  ever loading them in the browser.
+- Fresh browser (cleared `localStorage`): seeds exactly Monte Cristo, Frankenstein, Dracula
+  — no Pride and Prejudice, no console errors, `Conflicts (0)` on both new/changed samples.
+- Simulated an old browser (`samplesVersion: 3`, Pride and Prejudice + old-shape Monte
+  Cristo + Frankenstein already seeded, all `revision: 0`): after one Projects-page visit,
+  exactly 3 projects remain — Pride and Prejudice gone, Monte Cristo refreshed **in place**
+  (same storage id, new 5-storyline content), Frankenstein untouched, Dracula newly added.
+  No duplicates.
+- Simulated an *edited* Pride and Prejudice (`revision: 5`): survives the same upgrade pass
+  completely intact, just silently unflagged as a sample (confirmed both `isSample` and
+  `sampleKey` are gone from its index entry afterward).
+- Path view Chronology mode: confirmed both Monte Cristo's and both of Dracula's intended
+  simultaneous-scene pairs actually merge into one node each, with `Conflicts (0)`.
+  Generate Report (POV type, Dracula) produced real HTML output with no console errors
+  (`window.open` mocked to capture the content directly, per this project's established
+  testing pattern for anything that opens a popup).
+- Export filename convention needed no code changes — `exportProjectJSON()` already derives
+  the filename from the project's index `name` (not from anything sample-specific), so
+  "Dracula" and "The Count of Monte Cristo" export correctly automatically.
+
+### Not yet done
+Not merged anywhere. `pride-and-prejudice.json` deleted from the repo entirely (fully
+unreferenced after this change — confirmed via repo-wide grep before removing it).
+
+## thruLine_v4 branch — Documenting the reveals/requires field swap
+
+Follow-up to the sample-project round above, after the user asked directly whether the
+reveals/requires naming mismatch (§ above: `scene.reveals` is the UI's "Foreshadow" field,
+`scene.requires` is "This scene reveals") was worth fixing. Assessed as not a functional
+problem — the UI, conflict engine, and every existing saved/exported project are all
+internally consistent with each other — but a real *developer* footgun: it had just tripped
+up this exact session's own sample-authoring work, and the only warning about it lived in
+one comment in `editor.js`, not anywhere a future schema change would likely go looking.
+Renaming the JSON fields to match their labels was assessed and rejected — a breaking change
+touching every saved project in every user's `localStorage` plus every exported `.json` file
+they might re-import, for a purely cosmetic inconsistency with zero user-facing effect.
+
+**Touched files:** `state.js` (`loadState()`'s scene-loading loop, and the `revealsLib`
+default), `conflicts.js` (the reveal-order check). Comments only — no behavior changed.
+
+Added the same explanation at both of the other two places someone editing this data is
+likely to be looking: `state.js`'s `loadState()` (right where `scene.reveals`/`.requires`
+are actually loaded) and its `revealsLib` default declaration, and `conflicts.js`'s
+reveal-order check itself (where the field meanings are read "backwards" from their names
+to actually implement the rule correctly). All three now point back to `editor.js`'s
+original `REVEAL_CK_BOXES` comment as the canonical explanation, rather than requiring
+whoever's reading to already know to look there.
+
+### Verification
+Comment-only change — reloaded the app fresh (cleared `localStorage`) and confirmed a clean
+console with no syntax errors introduced.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v4 branch — Tutorial: full Timeline documentation + table of contents; landing page Timeline row
+
+The Tutorial had no Timeline documentation at all — every Loom/Path feature built across this
+entire branch (storylines, anchors, era markers, the Narrative/Chronology toggle, drag-to-
+reorder, simultaneous-scene merging, the Conflicts panel, reveals/foreshadowing, offscreen
+scenes) was undocumented for an actual user. Also added the hypertext table of contents
+requested alongside it, and a matching feature row on the landing page using the two new
+screenshots (`images/overview-Loom.png`, `images/overview-Path.png`) the user supplied.
+
+**Touched files:** `tutorial.html` (new Timeline section, TOC, `id` on every existing `h2`),
+`index.html` (new "Timeline: Loom & Path" landing-page row), `index-init.js` (click-to-
+enlarge wiring for the two new images), `styles.css` (TOC styles; a 7th landing-page accent
+color — the existing 6 were all already in use by the other rows).
+
+### Tutorial: new Timeline section
+Placed between Scene Flow Chart and Reports (Timeline is another alternate view of the same
+data, same as Scene Flow Chart, not a "getting started" step) and split into the same
+sub-structure the app itself uses, so the copy can be cross-checked against real UI labels
+rather than paraphrased from memory — every field name, button label, and menu path
+(`Foreshadow`, `This scene reveals`, `+ Storyline`, `Also part of`, `Anchor`, `Thread`,
+`Ordinal`/`True scale`, `View > Timeline` / `Alt K`, `Add marker here`) was pulled directly
+from `editor.html`/`timeline.js`/`conflicts.js`, not written first and hoped to match:
+- **Storylines & Anchors** — what each is, where to set them, and that neither is required.
+- **Loom View** — the two-row/wires layout, storyline lanes, Ordinal vs. True scale, Thread
+  highlighting, era markers, offscreen scenes, and the drag-confirmation flow.
+- **Path View** — the Narrative/Chronology toggle (this branch's own main feature), what a
+  dashed flashback segment means, simultaneous-scene merging, and drag-to-reorder.
+- **Conflicts** — bilocation and reveal-order, in plain language, matching the actual
+  `conflicts.js` message copy.
+- **Reveals & Foreshadowing** — explained via the UI's own field labels throughout (not the
+  underlying JSON names, which — per the round just before this one — mean the opposite of
+  what they're called).
+
+### Table of contents
+Added right after the intro/backups box, before "Your Projects" — a two-column link grid to
+all 10 major sections (the existing 8 plus the two new Timeline entries implied by the split
+above are folded into one "The Timeline: Loom & Path" entry, matching how the section itself
+reads as one topic). Every existing `<h2>` got an `id` to anchor to; verified with a script
+(not by eye) that every TOC `href="#..."` resolves to a real id in the document.
+
+### Landing page: Timeline row
+A 7th `.landing-feature` row, matching the existing Scene Flow Chart row's two-image layout
+(`landing-feature-media-multi` + `landing-img-half`) since Loom and Path are naturally a
+pair, same as Snake and Circle. Needed a 7th accent color — the landing page's own bespoke
+dark palette (`--lacc`/`--lbl`/`--lgr`/`--lpv`/`--lam`/`--llv`, `#landing`-scoped, independent
+of the app's five `data-theme` palettes) only had 6, all already claimed by the other rows —
+added `--lrd` and a matching `[data-accent="rd"]` rule rather than reuse one of the existing
+six a second time.
+
+### Verification
+Landing page: confirmed the new row renders correctly (screenshot, on a freshly-restarted
+origin to rule out the stale-script-cache artifact this project's testing has repeatedly hit
+— confirmed via `fetch` that the cached tab really was serving an old `index-init.js` before
+the restart), click-to-enlarge opens the right image at full size, clean console.
+Tutorial: verified via `get_page_text` (a full, faithful text dump of the entire rendered
+page, immune to the scroll-position screenshot flakiness hit near the end of this session)
+that every new section's copy renders completely and in the right place; a small script
+confirmed all 10 TOC links resolve to a real heading id; clean console. Screenshot
+verification of the Timeline section specifically was inconclusive due to an unrelated
+Browser-pane scroll/screenshot timeout in this environment (reproduced on a fresh tab too,
+and the un-scrolled top of the same page screenshots fine) — not chased further since the
+text-dump and computed-style checks already independently confirmed correct rendering.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v4 branch — Tutorial redesign (Parts/screenshots/TOC), landing-page copy, and app-wide icon rollout
+
+Multi-round follow-up to the Timeline-documentation round above, driven by direct user
+feedback across many small iterations. The TOC and section-numbering scheme from that round
+turned out to still be confusing once read as a whole page rather than one new section, so
+the Tutorial was substantially reorganized; separately, the user supplied a real app icon
+(`images/icon.png`, 1024×1024) to replace the 📝 emoji used everywhere since the app's
+earliest version, and asked for several landing-page copy trims along the way.
+
+**Touched files:** `tutorial.html` (full content/TOC restructure, screenshots, icons),
+`tutorial-init.js` (new — click-to-enlarge modal), `index.html` (hero icon, hero copy,
+Timeline-row copy, header logo), `projects.html`/`editor.html` (header logo + link),
+`styles.css` (all new icon/screenshot/part/TOC styles), `images/icon.png` (new asset,
+user-supplied).
+
+### Tutorial: Table of Contents redesign
+The prior round's two-column plain link list gave no visual grouping and no explanation of
+why some section titles were numbered (1/2/3 on the "build" steps) and others weren't.
+Reworked into five grouped "part" cards — Getting Started, Cards, Flow, Timeline, Reference
+— each with a thumbnail, a one-sentence purpose statement, and a compact row of topic links.
+Dropped the per-item one-line description used in the very first redesign attempt, per the
+user's explicit "we don't need a line for each item" — the part-level description does that
+job instead.
+
+### Tutorial: content reorganized into Parts
+The three core views — Cards (data entry/arrangement), Flow (element use across the story),
+Timeline (timing structure) — now each open with a visual "Part" banner (thumbnail, eyebrow
+label, purpose paragraph) before their existing `h2` subsections, closed out by a
+"↑ Back to Contents" link. Getting Started and Reference get the same banner treatment
+without a thumbnail. This directly answers the original "why do some have numbers"
+complaint: the 1/2/3 badges now read as steps *within* the Cards part, not a flat sequence
+spanning the whole page.
+
+### Tutorial: screenshots woven into content, click-to-enlarge
+Screenshots were previously clustered only in the TOC; moved into the actual content next to
+the feature each one illustrates (Interface, Library, Sections, Tools & Features/
+highlighting, both Scene Flow Chart layouts, Loom, Path, all three Reports), each in a
+bordered card with a caption and the same click-to-enlarge interaction the landing page
+already has. `tutorial.html`'s CSP forbids inline scripts, so this needed a new external
+file (`tutorial-init.js`) — a generalized version of `index-init.js`'s modal, binding via a
+`.shot-img` class instead of a hardcoded per-id list.
+
+One bug from this round: the Library and Sections screenshots are narrow panel crops
+(287×598 and 332×311px) and were being stretched to the ~800px content-column width by the
+existing `.shot img { width:100% }` rule. Added a `.shot.narrow` modifier (`max-width`/
+`max-height`, `width:auto`) for panel-shaped screenshots specifically.
+
+### Icon rollout
+Replaced the 📝 emoji everywhere it served as the app's identity mark:
+- Landing page: header logo (22px → 44px per a follow-up ask) and a new 128px hero icon
+  above the "Organize. Visualize. Write." tagline (also enlarged once, from an initial 96px).
+- Tutorial: hero banner icon (grew across two follow-up rounds, 84px → 108px) and the small
+  top-left nav-link icon (28px) — the nav link was missed in the first icon pass since it
+  lives in a separate element from the hero banner; not caught until the user pointed out
+  it "wasn't changed."
+- Projects and the editor (card board): header `<h1>` icon, sized to match the landing
+  page's doubled 44px logo. Per a follow-up ask, the icon + "SceneSetter" wordmark on both
+  pages is now a link back to `index.html` (`.app-logo-link`, one shared class/rule for
+  both headers), consistent with the "Home" nav link Projects already had.
+
+### Landing page & Tutorial: copy simplification
+- Landing hero paragraph: dropped "card-based" from the app description.
+- Landing Timeline feature row: cut from four dense sentences (including an era-markers
+  aside that didn't earn its place in an overview) to four shorter ones, and added an
+  explicit "especially handy if you're writing non-linear" framing, mirroring the same
+  framing added to the Tutorial's own Timeline intro in the round above.
+- Tutorial hero subtitle: "An interactive beatboard for writers" → "An interactive tool for
+  writers" — the app is no longer only a beatboard.
+
+### Tutorial: smaller copy/UI fixes
+- "Add a Section"'s step icon was a circled "1" directly under "Create Sections"'s own
+  circled "2" `h2` badge, reading as a second, conflicting numbering scheme. Changed to "+"
+  (matching the icon already used for "Add Items"/"Create a Project" elsewhere).
+- Path view's Narrative/Chronology mode descriptions reworded to the user's exact requested
+  phrasing (Narrative: "against a vertical time chart, reflecting the story as presented to
+  the reader"; Chronology: "moves forward (downward), reflecting underlying events in real
+  time").
+- Both "Two scenes on different storylines…" sentences (simultaneous-anchor merging, in the
+  Storylines/Anchors and Path-view sections) changed to "Multiple scenes…" — the merge isn't
+  limited to exactly two.
+
+### Verification
+Each round verified live in the browser. This session repeatedly hit an unrelated
+Browser-pane bug — blank screenshots at any non-zero scroll position, reproduced on fresh
+tabs, independent of the page (confirmed via `elementFromPoint`/`get_page_text` that actual
+rendered content was correct throughout) — so verification leaned on DOM/computed-style
+checks instead of screenshots wherever that bug was in the way: grid column counts, image
+`naturalWidth`/`complete` on all 18 embedded screenshots, modal `open`/`display` state
+before and after a simulated click and an Escape keypress, all 23 TOC/back-to-top anchor
+links resolving to a real element id, the narrow-screenshot fix's actual rendered size via
+`getBoundingClientRect()` (202×420 and 260×244, down from stretching to ~800px wide), and
+the new header logo links' `href` on both Projects and the editor. Screenshots were used
+successfully wherever the bug didn't interfere (page top, fresh navigations).
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v5 branch — PayPal donate button
+
+Forked from `thruLine_v4`. Added a PayPal donate button (hosted-button-style form, not the
+JS SDK) to the top-right header of the landing page and the Projects page, using markup
+supplied directly by the user, plus a small copy change on the landing page's closing
+section.
+
+**Touched files:** `index.html` (CSP, header donate form, closing-section copy),
+`projects.html` (CSP, header donate form), `styles.css` (`.donate-form` styling,
+`.landing-donate-line`, a mobile header fix for the now-populated spacer slot).
+
+### How it works
+- The donate button drops into each page's existing right-aligned header slot rather than
+  new markup: `.landing-hdr-spacer` on the landing page (previously an empty `aria-hidden`
+  balancing column in the header's `1fr auto 1fr` grid) and `.pm-hdr-right` on Projects
+  (already home to the Home/Tutorial links, `margin-left:auto` flex row) — so no new
+  layout structure was needed on either page.
+- The form POSTs directly to `https://www.paypal.com/donate` (PayPal's own hosted donate
+  flow), which required widening both pages' CSP: `form-action` now allows
+  `https://www.paypal.com` (was `'self'`-only) and `img-src` now allows
+  `https://www.paypalobjects.com`/`https://www.paypal.com` for the button graphic and
+  PayPal's tracking pixel — both were previously blocked and would have silently failed
+  the submission / broken-imaged the button.
+- Landing page closing section: removed "Urge to donate?" from the existing contact line
+  (now just "Thoughts? Suggestions? Issues? Or simply want to be alerted to updates?") and
+  added a new dedicated line, "If you like SceneSetter, please consider a donation to
+  continue its development.", positioned between the contact line and "Enjoy!".
+- Mobile header fix: the landing header's `<480px` rule previously hid
+  `.landing-hdr-spacer` outright (`display:none`), correct when it held nothing — now that
+  it holds a real button, changed to `justify-self:center` (matching the logo/nav treatment
+  on that breakpoint) so the donate button stays visible and centered on mobile instead of
+  disappearing.
+
+### Verification
+Verified live in the browser on both pages: no console errors, no CSP violations (the
+donate button image and PayPal pixel both load, confirming the `img-src` widening took
+effect); the closing-section copy change confirmed via a full text-content dump, in the
+correct order (contact line → donate line → "Enjoy!"); mobile layout (375px) re-checked
+after the header CSS fix — button renders centered under the nav links, not hidden.
+Did not exercise an actual PayPal checkout (out of scope for local verification — the form
+posts to PayPal's real production endpoint).
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v5 branch — Offscreen scenes reworked into a Chronology-only concept; storyline reordering
+
+A multi-round follow-up, driven by direct user bug reports and feature requests, that turned
+"offscreen" from a half-applied field (documented as excluded from several views, but
+actually shown almost everywhere with no visual distinction beyond a badge) into a
+consistently-enforced Chronology-only concept, and separately added storyline drag-reorder
+to Loom view.
+
+**Touched files:** `editor.js` (numbering, Scene Board filtering, New Scene form reuse in
+Timeline, storyline drag), `timeline.js` (Loom/Path offscreen rendering, Inspector New Scene
+flow, Chronology/Narrative persistence, storyline drag), `charts.js` (Scene Flow Chart
+filtering), `reports.js`/`conflicts.js` (display-number fallback), `editor.html` (Inspector
+empty-state button), `editor-init.js` (button wiring), `styles.css` (offscreen node styling,
+storyline drag handle/indicators), `tutorial.html` (doc update).
+
+### Offscreen scenes: no display number, and not counted toward others'
+`buildSceneNumMap()` (editor.js) now skips offscreen scenes entirely when assigning numbers,
+rather than giving them a number nobody sees — every other scene's number is a contiguous
+count of on-page scenes only, no gaps where an offscreen scene sits. Since that one function
+feeds numbering everywhere, every consumer needed updating to treat a missing map entry as
+"no number" rather than crash or show a wrong fallback: the Scene Board's card badge and drag
+ghost (badge omitted entirely), discard/save confirmation dialogs and the summary modal
+("OFFSCREEN" instead of a number), Loom's ribbon (already excluded, now naturally
+contiguous), Path view (a lone offscreen node shows no number; a merged node mixing an
+offscreen scene with on-page ones shows only the on-page number(s), e.g. "5/10"), the Scene
+Flow Chart (blank segment, no digit), and all three report types (Scene List shows
+"OFFSCREEN"; Character/Location/etc. and the Cross-Reference Matrix drop or compact the
+number to "Off"/"Off —"). Directly exercised the trickiest edge case — a trace-lane run
+consisting entirely of an offscreen scene — to confirm it degrades cleanly ("Offscreen
+scene(s)" instead of "Scene undefined").
+
+### Offscreen scenes excluded from Cards and Flow entirely
+Per direct instruction ("offscreen scenes should not appear in cards or flow views - just
+Timeline views"): `renderBoard()` now filters to on-page scenes only for all card rendering,
+and `orderedScenes()` (the single source feeding the Scene Flow Chart) does the same.
+Discovered along the way that the Scene Board previously showed offscreen scenes (with a
+badge) and the Flow Chart showed them with no marking at all — neither actually matched the
+Tutorial's long-standing claim that they were "excluded from ... Scene Board, Scene Flow
+Chart, and reports." Once offscreen scenes could no longer reach `renderCard()`/chart layout
+at all, the defensive numMap-fallback code added earlier in this same round for those two
+paths became unreachable dead code and was reverted back to its simpler pre-fallback form.
+
+### Creating an offscreen scene: a New Scene form inside the Timeline Inspector
+Hiding offscreen scenes from Cards/Flow raised an obvious question: how does a user create
+one? Added a "+ New Scene" button to the Inspector's empty state (next to "Select a scene to
+edit it here"). Rather than the old `tlCreateScene()` (created a blank "Untitled scene"
+immediately, then opened it for editing), the button now reparents Card view's own
+`#form-new` into the Inspector — the exact same reparent-not-clone pattern already used for
+`#form-edit` — so it inherits all of Card view's existing title-validation, dirty-tracking,
+and discard-guard machinery for free. (The discard guard already checked for a live New Scene
+form even before this — evidently built in anticipation of this exact feature.) Save creates
+the scene and switches the Inspector to Edit mode showing it; Cancel returns to the empty
+state; `tlCreateScene()`/`_tlCreateSceneImpl()` removed as dead code, their only call site
+(`menuNewScene()`'s timeline branch) now routes here instead.
+
+Also removed the CSS rule that hid Themes, Misc Items, Word Count, POV, and Notes from the
+reparented Edit Scene form while in Timeline mode (an earlier, now-reversed design decision
+that those were "board-editing detail") — the Inspector's forms now show the identical field
+set to Card view's own New Scene tab, as requested.
+
+### Two real bugs found via user reports, not caught by initial testing
+- **Inspector stuck showing both the empty state and a leftover form.** `_tlDoSelectScene()`
+  only ever hid `#form-edit` on select/deselect, never `#form-new`. Sequence: open "+ New
+  Scene" (form-new shown), select a scene card directly without saving/cancelling first (the
+  discard guard's fast path skips cleanup entirely when the form was never made dirty) —
+  form-edit shows correctly, but form-new is left stuck visible underneath; deselecting later
+  shows the empty-state message *on top of* that same stuck form. Fixed by having
+  `_tlDoSelectScene()` unconditionally hide `#form-new` on every select/deselect. Also fixed
+  a related crash caught during testing: the new Inspector-driven creation path called
+  `_tlDoSelectScene(newId)` without its `opts` parameter, which every other call site always
+  supplies — crashed on `opts.focusTitle`.
+- **Chronology mode silently reset to Narrative on Cards → Path, but the button didn't say
+  so.** `_openTimelineViewImpl()` resets `tlBraidChronMode` to `false` every time Timeline
+  reopens, but never synced the Narrative/Chronology toggle buttons' `.on` classes — so
+  leaving Path in Chronology mode, switching to Cards, then straight back to Path left the
+  "Chronology" button still visually highlighted from the previous session while the actual
+  render had silently gone back to Narrative (which correctly excludes offscreen scenes).
+  Clicking Narrative then Chronology was the only way to force button and state back in sync
+  — read by the user as "offscreen scenes don't show up until you toggle twice." First fix
+  synced the buttons to the (still-reset-to-false) value; a same-round follow-up request
+  ("can the toggle remain in its last state") went further and stopped resetting
+  `tlBraidChronMode` at all — it now persists across Cards/Flow ↔ Timeline switches the same
+  way a persisted Loom/Path choice would, while `tlBraidMode` itself still resets to Loom on
+  every reopen (unchanged, wasn't part of the ask).
+
+### Storyline drag-reorder (Loom view)
+A "⠿" drag handle (mirroring the exact same handle character/interaction already used for
+Sections and Library items) added to the far-left edge of each storyline lane label. New
+`tlLaneDrag` state and start/move/end functions closely mirror `sld` (editor.js's Section
+list drag) — before/after drop-indicator line while dragging, splice-reorder `S.storylines`
+on release. Unlike every other Timeline drag, this one does NOT go through the move-
+confirmation flow scene drags use, since reordering storylines is purely cosmetic (which row
+a lane appears in) and never touches any scene's own data — instant and undo-able, same as
+reordering Sections. Wired into the existing global mousemove/mouseup listeners and the
+undo/redo drag-guard alongside the three other drag types already handled there. Assessed as
+low-risk before implementing, specifically because it's the fourth instance of an
+already-proven pattern in this codebase, not a new design.
+
+### Scene Board count line simplified
+The "Showing N scenes (+M offscreen — see Timeline)" aside added earlier in this round was
+removed per direct feedback — offscreen is a Chronology-views-only concept now, so calling it
+out on the Scene Board (which never shows offscreen scenes at all) was unnecessary noise.
+
+### Verification
+Every round verified live against the Dracula sample (which has a real offscreen scene with
+an era marker anchored directly to it — a useful edge case throughout). Confirmed via direct
+DOM/state inspection rather than screenshots alone: numbering contiguous everywhere
+(Scene Board 29/30, Loom ribbon 29/29, Path Narrative 29/29, Path Chronology showing the
+offscreen node unlabeled and merged nodes correctly joined e.g. "5/10"); Scene Board and Flow
+Chart both drop to 29 segments with the offscreen one fully absent; the full Inspector New
+Scene flow (open → fill in → save → auto-selects the new scene in Edit mode → appears in
+Chronology row, absent from Scene Board) with a fresh tab to rule out stale-script-cache
+artifacts (a recurring issue in this project's own testing history); the stuck-form bug and
+its crash fix reproduced and confirmed fixed; the Chronology-persistence fix replayed against
+the user's exact reported click sequence (Path+Chronology → Cards → Path) before and after;
+storyline drag reorder tested with real dispatched mouse events (not direct function calls),
+confirming the drop indicator, the reorder itself, matching card-row order, and undo. Clean
+console throughout every round.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v5 branch — View switch relocated to the menu bar; Timeline strip-header cleanup
+
+A direct-feedback round moving the Cards/Flow/Timeline view switch out of each view's own
+toolbar (where it used to physically move between `#sbhdr`, `#chart-toolbar`, and
+`#tl-chron-hdr` via reparenting) into a single permanent, centered spot on the menu-bar row —
+plus a follow-up cleanup of Timeline's strip header (Conflicts badge folded into its tab,
+Zoom relocated) and a polish pass (label clarity, dark-theme borders, smaller buttons, a
+Path-icon redraw, a Flow-view empty-state hint).
+
+**Touched files:** `editor.html` (`#menu-left`/`#menu-center`/`#menu-right` menu-bar
+structure, `#view-toggle` moved there permanently, Timeline strip-header markup
+reordered/trimmed, view-switch icon SVGs resized), `styles.css` (menu-bar height/centering,
+label and border styling, `.tl-panel-tab.has-warn`, various row-height/padding follow-on
+changes), `charts.js` (removed the now-unneeded view-toggle reparenting, added the Flow-view
+"no library selection" hint), `timeline.js` (reparents Timeline's own selectors—axis switch,
+braid-mode switch, thread picker, zoom—onto the menu bar instead of `#view-toggle`),
+`conflicts.js` (conflicts count moved from its own badge onto the Conflicts tab label),
+`editor-init.js` (removed the dead conflicts-badge listener).
+
+### View switch: permanent center-of-menu-bar home
+`#view-toggle` (Cards/Flow/Timeline) used to live in `#sbhdr` by default and get physically
+moved (not cloned — same reparent-not-clone pattern used throughout this codebase) into
+`#chart-toolbar` or `#tl-chron-hdr` whenever the chart or Timeline opened, so it would always
+sit at the top of whichever view was active. Per direct feedback this was a moving target;
+it now lives permanently in a new `#menu-center` on the menu-bar row itself, flanked by
+`#menu-left`/`#menu-right` (both `flex:1`, same centering trick `#hdr` already used for the
+project name) so it stays centered regardless of how wide the menu items or the row's other
+occupants are. The menu bar grew from 30px to 46px tall to fit the switch's small
+CARDS/FLOW/TIMELINE label floating above each icon group; `#sbhdr`/`#chart-toolbar` shrank
+back down to 46px now that they no longer need to reserve that headroom themselves, and
+`.mi-btn`/`.mi-drop` switched from hardcoded 30px offsets to `height:100%`/`top:100%` so the
+dropdown menus stay aligned to whatever the bar's actual height is.
+
+### Timeline's own selectors follow the switch up, plus a strip-header cleanup
+Once the view switch itself had a permanent home, Timeline's own view-scoped selectors
+(Ordinal/True scale, Chronology/Narrative, Thread, and — added in a same-round follow-up —
+Zoom) were moved to reparent onto that same `#menu-center` row next to the switch whenever
+Timeline opens (reversed on close), rather than living in `#tl-chron-hdr` as before. Zoom
+reparents last in the sequence so it always lands next to whichever of Thread or
+Chronology/Narrative is actually visible (the other is `display:none`, not removed, so DOM
+order alone determines adjacency in both Loom and Path). Separately, the strip header's own
+"Conflicts (N)" badge button was removed outright — its job folded into the Conflicts tab's
+own label (`renderConflictsBadge()` now targets `#tl-tab-conflicts` directly), which turns
+red via `.tl-panel-tab.has-warn:not(.on)` whenever there are active conflicts and the tab
+isn't the selected one (once selected, `.tab.on`'s own accent color takes over — red is only
+useful as an unselected at-a-glance warning). The now-dead `tlShowAllConflicts()` function and
+its listener were removed along with the badge button. Net effect on `#tl-chron-hdr`: with
+the axis/braid/thread/zoom controls reparented away and the badge gone, all that's left there
+by default is `#tl-status`, so its padding was simplified back to a plain `10px 14px` (the
+old asymmetric `16px 14px 8px` existed solely to clear the view-switch label that no longer
+lives there).
+
+### Polish pass: label clarity, dark-theme borders, smaller buttons, Path icon
+Four smaller direct-feedback items in the same area:
+- The CARDS/FLOW/TIMELINE label (`.view-toggle-lbl`) read as faint/blurry — its color
+  switched from the theme's dedicated-but-muted `--o0` to the theme's own high-contrast `--tx`
+  at `.62` opacity (scales consistently across all 5 themes instead of relying on each
+  theme's separately-tuned muted color, which varied in contrast), plus a font-size bump
+  (8→9px) and heavier weight (700→800).
+- Dark themes (Slate, Ocean) got a thin `rgba(255,255,255,.32)` border added to the Cards
+  button and the Flow/Timeline toggle groups — their default `--s0`/`--s1` fill/border sit too
+  close in luminance to the dark `--bg1` menu-bar background to read as distinct buttons; the
+  other three (light) themes get that contrast for free from a dark-on-light border already.
+- The view-switch buttons and their icon SVGs shrunk (~12-15% smaller icons, tighter padding,
+  smaller `#view-toggle` gap) per feedback that they were larger than necessary now that
+  they're a permanent fixture of the menu bar rather than a full toolbar row's main content.
+- The Path-view icon's connecting line thinned from `stroke-width 1.3` to `0.85` (dot radius
+  unchanged at 2.1) so it reads more like beads threaded on a string, per a supplied reference
+  image.
+
+### Flow view: empty-state hint when Trace is off
+`updateChartLegend()` (charts.js) already showed a "Select ‹category› in the library to trace
+them" hint when Trace was on but no lanes were chosen yet — but showed nothing at all in the
+far more common case of Trace being off entirely, even though library highlighting (unrelated
+to Trace, reuses the board's own `sceneMatchesLib()`) works in Flow view too. Added an `else
+if` branch: when Trace is off and no library selection is active, the same legend row now
+reads "Select items in the library to highlight them" — same spot, same styling, hidden the
+instant a library item is selected (mirroring how the trace hint disappears once a lane is
+picked).
+
+### Verification
+Every change verified live in-browser against the Dracula sample, across Cards, Flow (Snake
+and Circle), Loom, and Path (including the Chronology/Narrative sub-toggle) — centered
+positioning confirmed via bounding-rect math (not just eyeballing) showing the switch
+precisely centered on the full window width; a Path+Chronology → Cards → Path round trip
+confirmed the reparenting leaves no stray duplicate nodes and the state persists correctly;
+Slate (dark) theme confirmed for both the label-contrast fix and the new button borders,
+Ivory (light) confirmed the border rule correctly does *not* fire there; the Conflicts tab
+label tested by forcing `has-warn` + a nonzero count (real conflict count was 0 in this
+sample) — red while unselected, tab-accent color once selected; the Flow-view hint tested
+toggling library selection on/off and Trace on/off, confirming the two hints are mutually
+exclusive and each disappears/reappears correctly. One non-bug caught mid-session: a stale
+browser-cache artifact (old `conflicts.js` served after edits) that looked like a real bug
+until traced to the preview tool's HTTP cache, not the app — resolved by restarting the local
+dev server on a fresh port. Clean console throughout.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v5 branch — Chronology report type
+
+Adds a "Chronology" report next to "Scene List" in the Generate Report modal, with the same
+Include Fields checkboxes (Section, Summary, Notes, Characters, Locations, Themes, Misc
+Items, POV) and the same shared Sections-to-Include filter. Where Scene List walks reading
+order, Chronology walks the Path view's own Chronology axis — one entry per exact-anchor
+node, in `S.chronOrder` order, noting offscreen scenes and merging simultaneous ones.
+
+**Touched files:** `editor.html` (report-type button + `rpt-opts-chronology` panel, `rpt-cl-`
+prefixed checkboxes mirroring `rpt-sl-`), `editor-init.js` (button wiring), `reports.js`
+(`buildChronologyReport()`, dispatch in `generateReport()`, two small CSS rules for the new
+per-node date header).
+
+### How it works
+Reuses `braidChronColumns(S.chronOrder, sceneById)` (timeline.js) — the exact function Path
+view's Chronology axis renders its nodes from — rather than reimplementing the grouping
+logic. Each returned `{ids}` group becomes one report entry: a date header (`fmtAnchor()`,
+or "No date set" for an unanchored scene, which never groups with anything per
+`_tlAnchorKey()`'s null-never-matches rule) followed by one `.scene-block` per scene in the
+group, reusing Scene List's existing block markup/CSS as-is. A group with 2+ ids (simultaneous
+scenes on different storylines sharing one exact anchor) gets a "Simultaneous — N scenes"
+note above its scene blocks. Offscreen scenes get their own node here — the one place they
+belong, matching Path/Loom's own Chronology axis — labeled "Offscreen" via the same
+`numMap.has(id) ? 'Scene N' : 'Offscreen'` fallback Scene List already uses (`buildSceneNumMap()`
+skips offscreen scenes when assigning numbers). The shared section filter is applied by
+building a Set from `rptFilterScenes(secSet)` and filtering each node's `ids` against it,
+dropping a node entirely if none of its scenes survive the filter — same net effect as every
+other report type's section filter, just applied per-id instead of per-array-element since a
+node can mix scenes from different sections.
+
+### Verification
+Investigated originally to answer a user question ("why is no conflict showing" on an
+imported project) that surfaced how the reveal-order conflict check reads reading order, not
+chronology — which is what motivated this report (a plain-text substitute for eyeballing the
+Path view). Verified live against Dracula: confirmed via `DOMParser`-based structural checks
+(not just eyeballing) that node count, per-node dates, and scene-to-node grouping exactly
+match `braidChronColumns()`'s own output, including a real simultaneous-scene merge ("May 24,
+1893 · Simultaneous — 2 scenes") and the project's one real offscreen scene ("The Demeter
+Wrecks at Whitby") correctly labeled "Offscreen" under its own chronology date; confirmed the
+shared section filter drops the right scenes/nodes; rendered the generated HTML directly (the
+sandboxed preview browser blocks `window.open()` popups, so verification bypassed that and
+inspected/rendered the returned HTML string directly) to confirm visual output matches Scene
+List's styling. Clean console throughout.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v5 branch — Help-mode Timeline coverage, Tutorial correctness pass, shortcut cleanup, landing page merge
+
+Four smaller rounds: filling a real gap in the `?` help-mode overlay (Timeline had zero
+coverage), a multi-round Tutorial accuracy/wording pass driven entirely by direct user
+corrections, removing keyboard-shortcut references that don't reliably work, and merging two
+landing-page feature blocks into one.
+
+**Touched files:** `ui.js` (`HELP_ZONES`), `tutorial.html` (many small text fixes throughout),
+`editor.html` (menu shortcut labels removed), `index.html` (Library/Sections features merged
+and renumbered).
+
+### Help mode: Timeline had no coverage at all
+`HELP_ZONES` (the `?`-button hover-tooltip system) covered every Cards/Flow control but not a
+single Timeline element — Loom and Path were completely undocumented in help mode. Added nine
+new zones (`#tl-axis-switch`, `#tl-braid-mode-switch`, `#tl-thread-wrap`, `#tl-zoom-ctl`,
+`#tl-lane-labels`, `#tl-chron-scroll-wrap`, `#tl-ms-scroll`, `#tl-braid-scroll`,
+`.tl-panel-tabs`) and fixed two stale ones: `#view-toggle`'s tip still said "Cards / Snake /
+Circle" with no mention of Timeline at all, and `#chart-legend`'s tip didn't know about the
+new Flow-view highlight hint (previous round, this same branch). Verified per-zone visibility
+is automatic and needed no new show/hide logic — `openHelp()` already skips any zone whose
+element measures near-zero size, which is exactly how Timeline already hides whichever of
+Ordinal/True-Scale vs. Chronology/Narrative isn't active; confirmed via direct DOM query
+(not eyeballing) that Cards, Flow, Loom, and Path each show precisely the zones relevant to
+that state and nothing else.
+
+### Tutorial: a dozen-plus direct corrections, verified against the real code before writing
+Every item below was raised as a specific "this looks wrong" by the user; each was checked
+against the actual DOM/JS/CSS before being fixed, not just reworded on faith — two of the
+user's own proposed replacement texts turned out to contain small factual errors (caught and
+corrected, flagged back rather than silently "fixed"):
+- **Edit a Scene** was wrong about the actual interaction — a plain card click only selects
+  a card (for drag/multi-select); editing requires the pencil (✏️) icon specifically
+  (confirmed via `editbtn.addEventListener('click', ...)` — the only call site of
+  `openEditMode()`). Corrected.
+- **Search caption/alt text** reworded to gender-neutral, category-general phrasing per direct
+  request ("Selecting items in the Library highlights the scenes they appear in").
+- **Theme scope** — Tutorial claimed theme choice "applies across all projects." Verified
+  empirically (not just from reading `state.js`): set Dracula to Slate, switched projects,
+  confirmed Frankenstein stayed Ivory. Theme is per-project (`saveState()`); only the *default*
+  for a brand-new project comes from the global last-used value (`saveGlobalPrefs()`).
+  Corrected to state the real per-project scope.
+- **Storylines / Anchor date & time** said "Scene form" — inside the Timeline part of the
+  Tutorial that's wrong; Timeline reparents the Edit/New Scene forms into the **Inspector
+  panel**, so that's what a Timeline user actually sees. Corrected both mentions.
+- **Path view drag-to-reorder** — Chronology-mode wording iterated twice per direct feedback,
+  landing on "it changes the real-time order of underlying events (which may or may not be the
+  order the reader sees)" — clearer than either of the two earlier phrasings about distinguishing
+  event time from reading order.
+- **Conflicts section** — described a "Conflicts badge in the Timeline header," which no longer
+  exists (removed to a Conflicts *tab* on the Inspector panel two rounds earlier, this same
+  branch — see the "Timeline strip header cleanup" entry above). Corrected to describe the
+  actual current UI, including that the tab's own label carries the live count and turns red.
+- **Reveal before foreshadow** — said a payoff is flagged when it sits before *every* foreshadow
+  scene; the actual engine (`conflicts.js`) flags it if it sits before *any* one of them
+  (`revealers.find(r => r.idx2 >= sIdx)` — first match, not all). Corrected "every" → "a".
+- **Reveals & Foreshadowing** — replaced with user-dictated text, but checked against the
+  form's actual markup first: the dictated text said "Timing group," but Foreshadow/This scene
+  reveals actually live under the separate **Reveals** group (`ed-reveals-group`, distinct from
+  `ed-timing-group`) — corrected and flagged back rather than publishing the wrong group name.
+- **Reports table** gained a Chronology row (matching the new report type added earlier this
+  branch), and Scene List's own row now says "in reading order" to contrast against it.
+- **Workflow suggestions** gained two new tips (Scene Flow Chart pacing check, reaching for
+  Timeline on non-linear stories) — previously every tip was Cards/Reports-only, with neither
+  of the other two views mentioned at all.
+- **Keyboard reference**: first pass grouped shortcuts by the app's real Ctrl-vs-Alt convention
+  (universal editing actions vs. SceneSetter-specific ones) and filled in several real
+  shortcuts that were bound in code but missing from the docs. Second pass reversed course
+  per direct report that "a number of the shortcuts don't work" — removed every shortcut
+  mention except Undo/Redo, both from this reference list and two stray inline "(Alt V)"/
+  "(Alt K)" callouts elsewhere in the Timeline/Flow-chart sections that would otherwise have
+  gone stale against the trimmed list.
+
+### Shortcut labels removed from the app's own menus (not just the Tutorial)
+Same "these don't reliably work" report extended to the live UI: every `<span class="di-sc">`
+shortcut hint was removed from the File/Create/View menu items (Export as JSON, New Scene,
+Add Character/Location/Theme/Misc, Generate Report, Zoom In/Out/Reset, Scene Flow Chart,
+Timeline) and the Loom button's `title`/`data-title-mac` tooltip, leaving only Undo and Redo
+labeled. Scoped deliberately to *display* only, per the user's own wording ("remove all of
+them... from the menu") — the underlying `Alt`-key handlers in `editor.js`'s keydown listener
+were left untouched rather than assuming they should be ripped out too; flagged this scoping
+choice back to the user rather than silently going further.
+
+### Landing page: Library + Sections merged into one feature, renumbered
+Per direct request ("combine ... into one as #2, just as we combine Scene Flow chart or
+timeline"): the two single-image features "Character & Element Library" (was #02) and
+"Sections & Organization" (was #04) merged into one "Library & Sections" feature at #02,
+using the exact same two-screenshot side-by-side layout (`landing-feature-media-multi` +
+`landing-img-half`) Scene Flow Chart and Timeline already use for their own two-screenshot
+pairs — rather than inventing a new layout pattern. Everything after renumbered down by one
+(Search & Analysis stays #03; Flow Chart, Timeline, Reports become #04/#05/#06), going from
+7 numbered features to 6. The merged pair intentionally kept its original non-enlargeable
+compact presentation (no `id`/click-to-enlarge hint) rather than gaining the modal-enlarge
+behavior Search's and Timeline's images have — matching what the two source features already
+did, not a new capability.
+
+### Verification
+Help zones: verified via direct DOM query per view state (Cards/Flow/Loom/Path), not
+eyeballing — confirmed exact zone-selector lists match expectations in each state, plus a
+live hover confirming tooltip text. Tutorial/menu edits: each factual claim (theme scope,
+Edit-a-Scene interaction, Reveals-group location, "every" vs. "a" foreshadow logic) verified
+against running app state or source before being published, not taken on faith from the
+user's own phrasing. Landing page: confirmed via computed style that both merged images
+render at equal half-width side by side, and via full-page text extraction that the
+"01 → 02 → 03 → 04 → 05 → 06" sequence has no gaps or duplicates. Clean console throughout
+every round. One recurring non-bug worth remembering for future sessions: this local preview
+setup's browser cache repeatedly served stale JS/HTML after edits, surfacing as
+`ReferenceError: X is not defined` or edits silently "not applying" — resolved every time by
+restarting the dev server on a fresh port, never a real app bug.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v6 branch — Full-app audit (efficiency, bugs, security/data) and fixes
+
+Requested directly: an audit of the whole app for code efficiency and solidity, any
+bugs/issues, and security/data integrity — plus a specific question about whether the
+long-standing `scene.reveals`/`scene.requires` field-vs-UI-label swap (documented but never
+fixed, see the `thruLine_v4` "Documenting the reveals/requires field swap" entry above) was
+worth fixing now, given it was originally rejected as a breaking change.
+
+Delegated across three parallel sub-audits to keep each one focused — `timeline.js` (Loom/
+Path rendering, drag, conflicts-cache wiring); `editor.js`/`editor-init.js`/`ui.js` (Cards/
+Flow, the New/Edit Scene forms, entity libraries, modals); and `charts.js`/`reports.js`/
+`conflicts.js`/the small init/misc files (Snake/Circle charts, printable reports, the
+conflict engine, tracking/backup/build) — each explicitly told to verify every finding
+against the actual code (callers/callees) before reporting, not speculate. Every finding
+that made it into the final report was independently re-verified (grep for callers, read the
+surrounding code, or reproduce live in the browser) before being trusted or acted on; several
+agent-reported claims that didn't survive that check were dropped rather than passed through.
+
+### Security/data verdict: strong, no vulnerabilities found
+CSP intact on all five pages (`script-src 'self'`, `object-src 'none'`, `base-uri 'self'`,
+PayPal `form-action`/`img-src` scoped only to the two pages with donate forms). Every
+user-data interpolation was checked for XSS: `projects.js`'s project-grid renderer escapes
+via `esc()`, `reports.js`'s `document.write()`-built report windows route everything through
+`rptEsc()` (including attribute-quote coverage), and `charts.js`/`timeline.js`/`conflicts.js`
+use `textContent`/`createElement` throughout — zero `innerHTML` sinks fed by untrusted
+(imported-JSON) data anywhere in the app. The v3 import validator (`validateV3Import` in
+`projects.js`) is genuinely rigorous: cross-collection id uniqueness, referential integrity on
+every id array, real-calendar-date anchor validation, counter auto-repair rather than
+rejection. No vulnerabilities found.
+
+### The reveals/requires rename — done
+Checked `main` and `release` directly: both are still on schema v2, with zero `reveals`/
+`requires` references anywhere — schema v3 (all of the Timeline work) has never shipped
+publicly. That fact reverses the earlier "breaking change" rejection, which assumed shipped
+v3 data that turns out not to exist; this branch's own local/exported test data was the only
+real v3 data anywhere, making this the last point where the rename is nearly free. Renamed
+`scene.reveals` → `scene.foreshadows` and `scene.requires` → `scene.payoffs` (matching their
+already-correct UI labels, "Foreshadow" and "This scene reveals") across `state.js`,
+`editor.js`, `conflicts.js`, `projects.js`, and all four sample project JSON files
+(`dracula.json`, `frankenstein.json`, `count-of-monte-cristo.json`, `longfellow-job.json`).
+`loadState()` gained a `sc.foreshadows ?? sc.reveals` / `sc.payoffs ?? sc.requires` fallback
+so any pre-rename local project or exported file still loads correctly and self-heals to the
+new field names on its next save. DOM element ids (`sc-reveals`, `ed-requires`, etc.) were
+deliberately left unrenamed — internal wiring only, never serialized or user-visible, and
+`revealBoxKind()`'s own comment now documents the id-to-field mapping directly rather than
+requiring the old field-vs-label explanation. The three stale swap-explanation comments (in
+`state.js`, `conflicts.js`, `editor.js`'s `REVEAL_CK_BOXES`) were removed as part of the same
+change, now that there's nothing backwards left to explain.
+
+### Bugs found and fixed
+- **Phantom data-edit on project open.** `orderedUsedPovEntities()` (editor.js) — called from
+  `renderPovLibSec()`, itself called from many render paths including plain project-open —
+  was calling `recordDataEdit()`/`saveState()` as a side effect of its own POV-order
+  self-repair. Reproduced live: opening a freshly seeded sample bumped `revision` 0→1 and
+  showed "1 change since backup" with zero user interaction. Worse than just a UI lie: since
+  all four sample JSONs ship `povOrder: []` with POVs already in use, *every* sample triggered
+  this on first open, and `ensureSampleProjects()` treats `revision !== 0` as "user edited
+  this, never auto-refresh it again" — so merely opening a sample permanently excluded it from
+  future `SAMPLES_VERSION` refreshes. Fixed by making the repair in-memory only (still appends
+  to `S.povOrder` for correct ordering this session, just doesn't persist/dirty until whatever
+  the next *real* edit is) — the same lazy-repair pattern `loadState()` already uses for its
+  other invariants (`chronOrder`, stale POV ids). Verified: reseeded from scratch, opened
+  Dracula, confirmed "Backed up Just now" and `revision: 0` instead of the dirty state.
+- **Ctrl+Z could corrupt the wrong Library/POV entity.** The undo/redo keyboard guard
+  (editor.js) excluded active drags and focused text inputs but not open modals — unlike the
+  Alt-shortcut handler right below it, which already checks `anyModalOpen()` for the same
+  reason. `openLibEditModal`/`openPovEditModal` capture an array index at open time and
+  `saveLibEdit`/`savePovEdit` write back to `S[sec][idx]`/`S.povCustom[idx]` on Save, never
+  re-resolving by id. Sequence: reorder a library (pushes an undo entry) → open Edit on some
+  entry (captures the index) → focus lands on a modal button, not an input → Ctrl+Z fires,
+  restoring the pre-reorder array under the still-open modal → Save writes the typed text onto
+  whatever entity now sits at that stale index. Fixed by adding the same `anyModalOpen()`
+  check to the undo/redo guard. Verified with real keyboard events (not synthetic
+  `dispatchEvent`, which this app's `document`-level keydown listener doesn't reliably receive
+  in headless testing): reordered characters, opened Edit on one, focused Cancel, sent a real
+  Ctrl+Z — history and array order both stayed untouched with the modal still open; closing
+  the modal and repeating confirmed undo still fires normally otherwise.
+- **Window/panel resize during a Timeline drag could destroy the drag's ghost.**
+  `scheduleTlRerender`'s `ResizeObserver` callback (timeline.js) calls the same
+  `renderTimeline()` that tears down and rebuilds `#tl-track`/`#tl-ms-row` — including a live
+  drag's ghost/insert-line elements — that `scheduleConflictsRecompute()` (conflicts.js)
+  already guards against via `isTlDragActive()`, with a comment explaining exactly this
+  hazard. The resize path was missing the identical guard. Fixed by adding it. Verified via a
+  marker-element technique (a `.tl-scene`-classed div appended to `#tl-track`, since
+  `renderChronStrip()` only removes elements matching that selector, not a blanket
+  `innerHTML=''`): with `_tlDrag.active` forced true, a forced layout change left the marker
+  in place; with it false, the marker was correctly wiped on the next render — confirming both
+  the guard and the test methodology. The actual browser `ResizeObserver` didn't fire
+  reliably from this environment's programmatic viewport/class changes (a test-harness
+  limitation, not an app bug), so the guard's mechanical correctness was confirmed via direct
+  code parity with the already-proven `conflicts.js` pattern plus the marker technique above.
+- **`pruneDismissed()` doubled the cost of every save once anything was dismissed.**
+  `saveState()` calls `pruneDismissed()` synchronously before every write, and `pruneDismissed`
+  itself ran a full fresh `computeConflicts()` pass whenever `S.dismissed` was non-empty — on
+  top of the debounced recompute `saveState()` already schedules via
+  `scheduleConflictsRecompute()`. Since "mark intentional" (dismissing a conflict) is an
+  encouraged, normal workflow, any user who used it paid for two full conflict computations on
+  every subsequent edit, one of them synchronous/blocking. Fixed by pruning against the
+  existing cached `_tlActiveConflicts` list instead of recomputing — trade-off is a one-save
+  lag before a just-fixed dismissed conflict drops out of the list (harmless: a stale
+  fingerprint matching nothing just sits inert). Verified live: dismissed a real conflict in
+  Frankenstein's sample, fixed the underlying scene data, confirmed the fingerprint survived
+  the save that fixed it (as expected) and was gone after the *next* save once the 150ms
+  debounce had refreshed the cache.
+- **Search rebuilt the entire board on every keystroke.** `onSearch()` (editor.js), wired to
+  the search box's `input` event, called `renderBoard()` — a full `innerHTML` wipe plus fresh
+  `renderCard()` for every visible scene — per keystroke, undebounced. Split into `onSearch()`
+  (unchanged) and a new debounced `onSearchInput()` (150ms) for the `input` listener; the
+  scope `<select>`'s `change` listener still calls `onSearch()` directly since it's not a hot
+  path. `clearSearch()` now also cancels any pending debounce so a stale keystroke can't
+  re-fire and stomp the clear. Verified live by instrumenting `renderBoard` as a call counter:
+  6 rapid keystrokes produced exactly 1 call (would have been 6 before the fix), and clicking
+  clear produced no extra call after waiting past the debounce window.
+- **Bilocation check missed an instant scene at the exact start of another scene's window.**
+  `intervalsOverlap()`'s (conflicts.js) plain half-open `[start, end)` test always evaluates a
+  zero-duration scene's own `start < end` as false, so an instant sitting exactly at the START
+  of another scene's duration window — a real bilocation — went unflagged. Rewrote to treat a
+  degenerate (start===end) interval as a point that must fall within `[otherStart, otherEnd)`
+  rather than as a second proper interval; both-instants-same-time (already handled) and
+  two-proper-intervals (unchanged) cases preserved. Verified live with constructed scene data
+  (shared character, disjoint locations, one instant scene anchored at the exact start
+  timestamp of another scene's hour-long window): the conflict now fires.
+- **v3 import didn't type-check `summary`/`notes`.** `wordCount` self-heals via
+  `normalizeWordCount()` regardless of what garbage is imported, but `summary`/`notes` have no
+  such normalization anywhere downstream — a non-string value would reach
+  `sceneMatchesSearch()`'s `.toLowerCase()` call as-is and throw. Added a type check to
+  `validateV3Import()` rejecting non-string `summary`/`notes` up front, matching how every
+  other scene field is already validated.
+- **`duplicateProject()` and the import dialog's deferred callbacks had no storage-failure
+  guard.** Every other project-creation path (`createAndOpenProject`, and now
+  `duplicateProject`) writes the data blob first inside a try/catch and bails before touching
+  the project index on failure — `duplicateProject()` didn't, and neither did the "Update
+  Local Copy"/"Keep Both" import-dialog callbacks (`finishAsNew`/`replaceExisting`), which run
+  as button `onClick` handlers *after* the reader's own try/catch has already returned, so a
+  quota/storage failure there was previously uncaught and silently swallowed. Added matching
+  try/catch + alert to all three, consistent with the existing pattern.
+
+### Efficiency fixes
+The reveal-order conflict check (conflicts.js) rescanned all of `readerOrder` per `payoffs`
+reference (O(N×R)) to find that item's foreshadowers; replaced with one upfront pass building
+a `reveal id → its foreshadowers, in reader order` map, looked up directly per payoff
+reference instead. Verified identical conflict output before/after on real sample data (the
+Frankenstein sample's genuine reveal-order conflict still fires, same fingerprint/message).
+Four confirmed-dead code paths removed after a repo-wide grep confirmed zero callers each:
+`chronTrueScaleGapDivider()`/`fmtGap()` (timeline.js — an apparently unshipped "time-skip
+divider" feature for the True-scale axis), `toggleFlagMode()` (conflicts.js — superseded by
+`tlToggleFlagFromPanel`), and an unused `scenesByStoryline` map rebuilt from scratch (O(n)
+`.find()` inside an O(n) loop) on every single Timeline render with its result never read.
+
+### Verification
+Every fix verified live in the browser via a local preview server, re-seeded from a cleared
+`localStorage` between rounds — Cards, Loom, Path, Snake, Circle, Duplicate, and Import all
+exercised with a clean console throughout. Same stale-browser-cache issue as the prior
+session's note (this environment's dev-server setup serves stale JS from Chrome's HTTP cache
+after edits with no explicit cache-control headers) recurred and was worked around the same
+way, by restarting the preview on a fresh port — not a real app bug, but worth remembering for
+future sessions testing this app. The rename was spot-checked end-to-end: opened a sample with
+real foreshadow/payoff data, confirmed the Edit Scene form's "Foreshadow"/"This scene reveals"
+checkboxes show the correct pre-checked state, and confirmed the conflict engine still
+correctly flags a genuine reveal-order violation (both organically, in Frankenstein's real
+sample data, and via a constructed test case) using the renamed fields end to end.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v6 branch — Firefox-only bug: cards clipped behind the next section
+
+User-reported: on the Scene Board, cards near the end of a section sometimes rendered as if
+clipped by the next section starting too early — "lost in the divider" — at certain Zoom
+slider positions (reported around 20-25% of the slider's range), and once it appeared it
+stayed stuck regardless of scrolling.
+
+### Investigation
+Initial hypothesis (the section-name sticky pin's default coloring being low-contrast against
+an adjacent section's similarly light header background) was tested and disproven directly —
+forcing the pin to loud colors at its real coordinates showed it rendering exactly where
+expected, just genuinely hard to notice, so that was a real but separate minor issue, not the
+cause of an actual missing/clipped card.
+
+Extensive live reproduction was attempted in the local Chromium-based testing tool: direct
+`setScale()` calls across the full zoom range, a rapid-fire sequence simulating a dragged
+slider, a real mouse-drag on the slider element itself (landing at the user's own reported
+20-25% range), and a synchronous bypass of `alignSecHeaders()`'s `requestAnimationFrame` to
+rule out timing entirely. Every attempt came back clean — every card correctly contained
+within its own section's box, with the intended ~12px safety margin. (One genuine timing
+finding along the way, specific to this testing tool and not the app: `requestAnimationFrame`
+callbacks don't fire in this remote browser tool's tab until something forces an actual paint,
+such as a screenshot request — several early "reproductions" turned out to be artifacts of
+that, not real bugs, and had to be discarded once caught.)
+
+The consistent failure to reproduce on Chromium despite hitting the user's exact reported
+zoom range, combined with the user confirming their browser zoom was 100% (ruling out a page-
+zoom rounding theory) and then naming their actual browser — Firefox — pointed to a genuine
+cross-engine rendering difference rather than a timing race or app-level logic bug.
+
+### Root cause
+Firefox has a known divergence from Chromium/Safari for `flex-direction:column;
+flex-wrap:wrap` containers (`.sec-body`, styles.css — each section's card area): it doesn't
+reliably expand such a container's auto/intrinsic width to include every wrapped column, only
+the first one or two. `alignSecHeaders()` (editor.js) worked by clearing each section's width
+to `''` (auto), measuring where the cards landed, then pinning an explicit width from that
+measurement. On Chromium/Safari the cleared/auto state correctly reflects every wrapped
+column, so the measurement — and this testing tool's exhaustive attempts to catch it doing
+something wrong — was always correct. On Firefox, the auto state itself is already
+too-narrow, so the measurement captures cards Firefox has already squeezed on top of each
+other, and the resulting explicit width permanently pins that broken layout in place — nothing
+ever re-triggers a correct re-measurement afterward, exactly matching the "stuck regardless of
+scroll" report. Whether it's visible at a given zoom level depends on how many columns that
+section actually needs at that card size relative to whatever Firefox's under-sized first pass
+allows.
+
+### Fix
+`alignSecHeaders()` no longer relies on any browser's auto-sizing behavior for the
+measurement at all. Before measuring, every section is first forced to a guaranteed-generous
+*explicit* width (worst case: one column per card, so `cardCount * minCardWidth` is always
+enough headroom regardless of the real column count) — sidestepping the Firefox divergence
+entirely, since "how many columns fit in a known, given width" is well-defined and consistent
+across engines, unlike "what's my own auto width." The real needed width is then measured
+within that generous space and the explicit width is shrunk down to it, same as before.
+
+### Verification
+Confirmed a true no-op for the (already-correct) Chromium behavior: identical final pixel
+widths before and after the fix (860px/581px/581px/581px across Dracula's four sections) at
+the same zoom level, and re-checked across a window resize and toggling Show Card Details
+off/on. Firefox itself isn't available in this environment's testing tool, so the fix could
+only be verified indirectly there (matching the documented cross-engine divergence precisely,
+and confirmed harmless on the engine that does work here) — the reporting user then confirmed
+live in their own Firefox browser that the clipped-card issue is resolved.
+
+### Not yet done
+Not merged anywhere.
+
+## thruLine_v6 branch — Second full-app audit, and fixing every open finding from the first
+
+Requested directly: a closing re-audit of the whole app (efficiency, bugs, security/data),
+same standard as the first — delegate the broad sweeps, verify everything personally before
+trusting it. Same three-way split as before (Timeline; Editor/board+init+ui;
+Conflicts/Charts/Reports/misc), each sub-audit explicitly told to re-verify the five specific
+changes the first audit made (the rename, the two save-skip fixes, the search debounce, the
+Firefox width fix) rather than just re-describe them, plus hunt generally. Every finding that
+reached this writeup was independently re-verified — grep for callers, read the surrounding
+code, or reproduce live — before being trusted or acted on.
+
+### Security/data verdict: clean, again
+No new sinks, no XSS regressions, no old `reveals`/`requires` stragglers anywhere (data,
+tests, or code) beyond the two intentional load-time fallback reads. CSP, escaping, and the
+v3 import validator's rigor all held up under a second look.
+
+### The one real regression, from this session's own earlier fix — found and fixed
+The conflicts sub-audit caught a real bug in the first audit's own `pruneDismissed()` change
+(pruning against a cached conflict list instead of a fresh recompute, to stop doubling the
+cost of every save once anything's dismissed): `undo()`/`redo()` (state.js) call `saveState()`
+right after `applySnapshot()` restores an older snapshot, **without** refreshing the conflicts
+cache first. Sequence: dismiss a conflict ("mark intentional") → make an edit that fixes it
+(the cache catches up 150ms later and drops it) → hit Undo. The restored data has the conflict
+active again, and the restored `S.dismissed` still contains it — but the save that follows
+prunes that restored dismissal against the *stale* (post-fix) cache and strips it, silently
+losing the user's "mark intentional" with no error and no action that looks like "un-dismiss."
+Fixed by calling `conflictsCacheRefreshNow()` immediately after `applySnapshot()` in both
+`undo()` and `redo()`, before their own `saveState()` runs — this also fixes undo's warn-dot
+rendering being one debounce cycle stale, for free. Verified live with the exact sequence in
+both directions: dismissed a real conflict, fixed its underlying data, confirmed the
+dismissal now survives the undo that restores the conflict (in memory, in the fresh cache, and
+in the persisted blob), and confirmed redo still correctly (and now immediately, not one save
+later) prunes a genuinely-fixed one.
+
+### Every other open finding from the first audit's report, fixed this round
+- **New Scene inline "+ Add" flows left Save/Cancel disabled.** Minting a character/location/
+  theme/misc, a custom POV name, or a reveal/foreshadow straight from a New Scene checklist
+  auto-checks the new item by setting `.checked` directly — which fires no `input`/`change`
+  event, the only events `checkNewSceneLive()` listens for. `confirmAdd()`, `confirmPovAdd()`,
+  and the reveal-mint closure inside `renderRevealCk()` (all editor.js) now call
+  `checkNewSceneLive()` explicitly right after auto-checking, when the return checklist
+  belongs to the New Scene form. Verified live: minting a character from a blank New Scene
+  form now correctly enables Save immediately.
+- **Library drag-reorder left an open scene form's POV dropdown stale.** `endLibDrag()`'s
+  Characters-reorder branch was the one Characters-library mutator that didn't refresh both
+  POV checklists afterward (every other one — `confirmAdd`, `removeItem`, `saveLibEdit` —
+  already does, since `povEntities()` derives its order from `S.characters`' own array order).
+  Added the same refresh.
+- **Deleting a POV-referenced character lost its dragged position in the POV row.**
+  `removeItem()` re-homes a deleted character's scene POV references to a freshly-minted
+  `povCustom` entry with a new id, but `S.povOrder` still held the old (now-gone) character
+  id — `orderedUsedPovEntities()`'s append-only repair would tack the new id onto the *end* on
+  next render, silently moving it from wherever the user had manually dragged it. Fixed by
+  swapping the new id into the old id's exact slot in `S.povOrder` directly, when present.
+  Verified live: deleted a POV-referenced character at `povOrder` position 0, confirmed the
+  new custom-entry id took that same position 0, not the end.
+- **`updateAxisAvailability()` corrected `timelinePrefs.axis` without saving it.** Added a
+  `saveState()` call matching every sibling `timelinePrefs` mutator in timeline.js — fires
+  once per genuine ordinal-fallback transition, not per render (the guard stops matching the
+  moment the correction lands).
+- **`renderBraid()` did real work on every zoom-slider tick regardless of Braid being
+  visible.** Its `!tlBraidMode` early-return used to come after a `manuscriptOrder()` pass and
+  a full legend rebuild — both invisible while Loom/Strip is the active mode, since
+  `#tl-braid-scroll`/`#tl-braid-legend` are `display:none` until `.tl-braid-active` is set, and
+  `setTlViewMode()` always re-renders fresh the moment Braid does become active. Moved the
+  early-return to the top of the function.
+- **Zoom-slider ticks rebuilt the storyline-lane labels and thread picker for nothing.**
+  Neither depends on zoom at all (`renderStorylineLanes()`'s row height is a hardcoded 92px;
+  the thread picker is just a character-name `<select>`) — both read only `S.storylines`/
+  `S.characters`, never `--cs`/zoomPos. Split `renderTimeline()`'s pipeline into a shared
+  `_renderTimelineCommon()` tail plus two entry points: the full `renderTimeline()`
+  (unchanged, still does everything) and a new `renderTimelineZoomOnly()` that skips those two
+  pieces. `setTlZoom()` — the zoom `<input>`'s handler, firing once per pixel of drag — now
+  calls the lean path.
+- **Chron/manuscript card drags forced a synchronous layout reflow on every mousemove.**
+  `_tlFindDropBeforeId`/`_tlInsertionX` (and their manuscript-row equivalents) re-queried
+  `getBoundingClientRect()` on every visible card, on every single mousemove, *after* the
+  drag ghost's own style had already been written that same tick — forcing the browser to
+  flush layout synchronously each time, the exact jank problem the Braid drag's own caching
+  comment already described (and had already fixed for Braid, but not chron/manuscript). Since
+  no render can happen while a drag is active, card positions are provably stable for the
+  whole gesture: `_tlDragBegin()`/`_tlMsDragBegin()` now cache every card's position relative
+  to its track in one read at drag-start, and the drop-target/insertion-point functions read
+  from that cache instead of the live DOM on every move. Verified live via direct event
+  dispatch (mousedown → mousemove past the 4px threshold → mousemove to a target position →
+  mouseup): the cache populated with the correct card count and positions, the drop target
+  resolved correctly, and the move-confirmation modal opened as expected, for both the chron
+  strip and the manuscript ribbon.
+- **`validateV3Import` didn't validate the legacy `reveals`/`requires` keys.** Pre-rename
+  files fall back through `sc.foreshadows ?? sc.reveals` on load (state.js), but the importer
+  only type/id-checked the new key names — a hand-edited or very old exported file using the
+  old names could carry malformed data straight through the fallback path unvalidated. Now
+  validates `reveals`/`requires` the same way when present, and checks referential integrity
+  against whichever pair (new or legacy) actually has data.
+- **`test-init.js`'s Editor/Projects-Page test blocks never ran.** They were gated behind
+  `isEditor`/`isProjects` checks keyed on `#app-storyboard`/`#proj-mgr`, elements that only
+  exist on editor.html/projects.html — never on test.html, so the gates were always false and
+  7 of the suite's 24 tests silently never executed despite the page reporting "all tests
+  passed." Every assertion inside only checks `typeof X === 'function'`, nothing page-specific,
+  so the gating served no purpose; removed it and made them run unconditionally. Also caught
+  and fixed a second, previously-invisible bug the same investigation surfaced: test.html's
+  own `<script>` list was missing `timeline.js` and `conflicts.js` (present on the real
+  editor.html but not here), so editor.js's top-level `ESCAPE_ACTIONS` array — which
+  references `closeMarkerPopover` (timeline.js) directly — threw a `ReferenceError` and halted
+  the rest of editor.js's execution the moment the newly-unhidden tests actually tried to run.
+  Added both scripts to test.html, matching editor.html's real load order. Verified: reloaded
+  test.html — 24/24 tests pass, zero console errors (previously the uncaught `ReferenceError`
+  was firing silently in the background even while the visible test count read as passing,
+  since none of the 24 *reachable* assertions happened to depend on the code after the throw).
+
+### Verification
+Every fix checked live via a fresh preview-server port (same stale-Chrome-HTTP-cache
+workaround as prior sessions). Re-seeded from cleared `localStorage`, exercised Loom, Path,
+zoom (real slider drag), chron/manuscript drag-to-reorder (via direct mouse-event dispatch,
+crossing the real 4px drag threshold, through to the move-confirmation modal and a clean
+discard), the New Scene inline-add flows, the POV-position-preserving delete, and test.html's
+full suite — clean console throughout every check.
+
+### Not yet done
+Not merged anywhere.
